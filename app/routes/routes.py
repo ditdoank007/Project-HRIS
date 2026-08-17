@@ -321,7 +321,19 @@ def api_dinas_luar_delete():
 @main.route('/kepegawaian/cari/dinas-luar-umum')
 @login_required
 def view_kepegawaian_cari_dinas_luar_umum():
-    return kepegawaian_cari_dinas_luar_umum()
+    return kepegawaian_cari_dinas_luar_umum('DL')
+
+
+@main.route('/kepegawaian/cari/dinas-luar-operasi')
+@login_required
+def view_kepegawaian_cari_dinas_luar_operasi():
+    return kepegawaian_cari_dinas_luar_umum('OPR')
+
+
+@main.route('/kepegawaian/cari/dinas-luar-pelatihan')
+@login_required
+def view_kepegawaian_cari_dinas_luar_pelatihan():
+    return kepegawaian_cari_dinas_luar_umum('POT')
 
 @main.route('/api/dinas-luar/cari')
 @login_required

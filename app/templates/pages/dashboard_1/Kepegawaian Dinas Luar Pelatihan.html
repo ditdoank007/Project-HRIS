@@ -28,7 +28,7 @@
             <div class="card-header-custom d-flex justify-content-between align-items-center mb-3" style="border-radius: 10px;">
                 <h6 class="mb-0"><i class="feather-users me-2"></i>Dinas Luar Pelatihan</h6>
                 <div class="header-actions">
-                    <a href="{{ url_for('main.view_kepegawaian_cari_dinas_luar_umum') }}"
+                    <a href="{{ url_for('main.view_kepegawaian_cari_dinas_luar_pelatihan') }}"
                         class="btn p-0 border-0 bg-transparent shadow-none text-decoration-none" title="Cari Data">
                         <i class="bi bi-search" style="color: #333; font-size: 1.1rem;"></i>
                     </a>
@@ -350,6 +350,18 @@ $(document).ready(function() {
             } else { showAlert('warning', r.error || 'Data tidak ditemukan'); }
         }).fail(function() { showAlert('danger', 'Gagal memuat data'); }).always(function() { $btn.prop('disabled', false).html('<i class="bi bi-search me-1"></i>Load'); });
     });
+
+    // ============================================
+    // AUTO LOAD EDIT DARI URL
+    // ============================================
+    const urlParams = new URLSearchParams(window.location.search);
+    const editNoSurat = urlParams.get('no_surat');
+
+    if (editNoSurat) {
+        console.log('✏️ Auto load No. Surat dari URL:', editNoSurat);
+        $('#noSurat').val(editNoSurat);
+        $('#btnLoadSurat').trigger('click');
+    }
 
     // Delete & Reset
     $('#btnDelete').click(function() {

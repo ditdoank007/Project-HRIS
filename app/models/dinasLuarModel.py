@@ -4,7 +4,7 @@ from app import db
 
 class DinasLuar(db.Model):
     """Model untuk tabel DINAS_LUAR."""
-    __tablename__ = 'dinas_luar'  # ✅ HARUS HURUF KECIL (sesuai database)
+    __tablename__ = 'DINAS_LUAR'  # ✅ HARUS HURUF KECIL (sesuai database)
 
     DINAS_TRANSAKSI_ID = db.Column(db.String(50), primary_key=True)
     GUID_SPRIN = db.Column(db.String(50), nullable=True)

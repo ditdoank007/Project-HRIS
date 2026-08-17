@@ -4,7 +4,7 @@ from app import db
 
 class SprinHeader(db.Model):
     """Model untuk tabel SPRIN_HEADER."""
-    __tablename__ = 'sprin_header'  # ✅ HARUS HURUF KECIL (sesuai database)
+    __tablename__ = 'SPRIN_HEADER'  # ✅ HARUS HURUF KECIL (sesuai database)
 
     GUID_SPRIN = db.Column(db.String(50), primary_key=True, nullable=False)
     TYPE_SPRIN_ID = db.Column(db.String(20), nullable=True)

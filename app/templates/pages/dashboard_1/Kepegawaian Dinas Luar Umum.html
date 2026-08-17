@@ -558,6 +558,17 @@ $(document).ready(function() {
     function hideAlert() {
         $('#alertContainer').addClass('d-none').hide();
     }
+
+    // ============================================
+    // Auto Load surat dari parameter URL
+    // ============================================
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlNoSurat = urlParams.get('no_surat');
+
+    if (urlNoSurat) {
+        $('#noSurat').val(urlNoSurat);
+        $('#btnLoadSurat').trigger('click');
+    }
 });
 </script>
 {% endblock %}

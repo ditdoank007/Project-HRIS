@@ -1,7 +1,7 @@
 <!-- pages/dashboard_1/Kepegawaian Cari Dinas Luar Umum.html -->
 {% extends "layout/baseDashboard1.html" %}
 
-{% block title %}- Cari Dinas Luar Umum{% endblock %}
+{% block title %}- {{ search_title }}{% endblock %}
 
 {% block content %}
 <div class="nxl-content">
@@ -12,8 +12,8 @@
             </div>
             <ul class="breadcrumb">
                 <li class="breadcrumb-item"><a href="/">Home</a></li>
-                <li class="breadcrumb-item"><a href="{{ url_for('main.view_kepegawaian_dinas_luar_umum') }}">Dinas Luar Umum</a></li>
-                <li class="breadcrumb-item">Cari Dinas Luar Umum</li>
+                <li class="breadcrumb-item"><a href="{{ url_for(main_url) }}">{{ page_title }}</a></li>
+                <li class="breadcrumb-item">{{ search_title }}</li>
             </ul>
         </div>
     </div>
@@ -23,8 +23,8 @@
             <div class="card mb-4 shadow-sm" style="border-radius: 10px; overflow: hidden; border: none;">
                 <div class="card-header-custom d-flex justify-content-between align-items-center p-3"
                     style="background: #ffffff; border-bottom: 1px solid #eee;">
-                    <h6 class="mb-0"><i class="bi bi-search me-2"></i>Cari Dinas Luar Umum</h6>
-                    <a href="{{ url_for('main.view_kepegawaian_dinas_luar_umum') }}" class="btn-close-custom text-dark">
+                    <h6 class="mb-0"><i class="bi bi-search me-2"></i>{{ search_title }}</h6>
+                    <a href="{{ url_for(main_url) }}" class="btn-close-custom text-dark">
                         <i class="bi bi-x-lg"></i>
                     </a>
                 </div>
@@ -36,14 +36,33 @@
                         <div class="row mb-3 align-items-center">
                             <div class="col-md-12 d-flex flex-column flex-md-row align-items-start align-items-md-center flex-wrap gap-2">
                                 <label class="fw-bold">Periode</label>
-                                <input type="month" id="filterPeriode" class="form-control-sm border" style="width:180px;">
-                                <span class="fw-bold">atau</span>
-                                <input type="number" id="filterTahun" class="form-control-sm border" placeholder="Tahun" style="width:100px;" min="2000" max="2099">
-                                <div class="form-check form-check-inline">
+
+                                <select id="filterBulan" class="form-select-sm border" style="width:150px;">
+                                    <option value="">- Bulan -</option>
+                                    <option value="01">Januari</option>
+                                    <option value="02">Februari</option>
+                                    <option value="03">Maret</option>
+                                    <option value="04">April</option>
+                                    <option value="05">Mei</option>
+                                    <option value="06">Juni</option>
+                                    <option value="07">Juli</option>
+                                    <option value="08">Agustus</option>
+                                    <option value="09">September</option>
+                                    <option value="10">Oktober</option>
+                                    <option value="11">November</option>
+                                    <option value="12">Desember</option>
+                                </select>
+
+                                <select id="filterTahun" class="form-select-sm border" style="width:110px;">
+                                    <option value="">- Tahun -</option>
+                                </select>
+
+                                <div class="form-check form-check-inline mb-0">
                                     <input class="form-check-input" type="radio" name="periodeType" id="periodeBulan" value="bulan" checked>
                                     <label class="form-check-label small" for="periodeBulan">Bulan</label>
                                 </div>
-                                <div class="form-check form-check-inline">
+
+                                <div class="form-check form-check-inline mb-0">
                                     <input class="form-check-input" type="radio" name="periodeType" id="periodeTahun" value="tahun">
                                     <label class="form-check-label small" for="periodeTahun">Tahun</label>
                                 </div>
@@ -130,40 +149,95 @@
 {% block script %}
 <script>
 $(document).ready(function() {
+
+    // Jenis pencarian dikirim dari controller:
+    // DL  = Umum
+    // OPR = Operasi
+    // POT = SD/Pelatihan
+    const typeSprin = "{{ type_sprin }}";
+
+    // Isi pilihan tahun secara dinamis
+    const currentYear = new Date().getFullYear();
+    for (let year = currentYear + 1; year >= 2000; year--) {
+        $('#filterTahun').append(
+            $('<option>', {
+                value: year,
+                text: year
+            })
+        );
+    }
+
     loadFilterFields();
-    searchDinasLuar();  // ✅ Auto load semua data
-    
+    searchDinasLuar();
+
     $('#btnRefresh').click(searchDinasLuar);
-    
-    // ✅ Enter untuk search
-    $('#filterValue1, #filterValue2').on('keydown', function(e) {
-        if (e.key === 'Enter') { e.preventDefault(); searchDinasLuar(); }
+
+    $('#periodeBulan, #periodeTahun').on('change', function() {
+        updatePeriodeControl();
     });
-    
+
+    $('#filterBulan, #filterTahun').on('change', function() {
+        searchDinasLuar();
+    });
+
+    // Enter untuk search
+    $('#filterValue1, #filterValue2').on('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            searchDinasLuar();
+        }
+    });
+
+    function updatePeriodeControl() {
+        const periodeType = $('input[name="periodeType"]:checked').val();
+
+        if (periodeType === 'bulan') {
+            $('#filterBulan').prop('disabled', false);
+            $('#filterTahun').prop('disabled', false);
+        } else {
+            $('#filterBulan').prop('disabled', true).val('');
+            $('#filterTahun').prop('disabled', false);
+        }
+    }
+
+    updatePeriodeControl();
+
     function loadFilterFields() {
         $.get('/api/dinas-luar/filter-fields', function(response) {
             if (response.success) {
-                const options = response.data.map(f => 
+                const options = response.data.map(f =>
                     `<option value="${f.field_id}">${f.field_name}</option>`
                 ).join('');
+
                 $('#filterField1, #filterField2').append(options);
             }
         });
     }
-    
+
     function searchDinasLuar() {
         const periodeType = $('input[name="periodeType"]:checked').val();
+
         let periode = '';
-        if (periodeType === 'bulan') { periode = $('#filterPeriode').val(); }
-        else { periode = $('#filterTahun').val(); }
-        
+
+        if (periodeType === 'bulan') {
+            const bulan = $('#filterBulan').val();
+            const tahun = $('#filterTahun').val();
+
+            if (bulan && tahun) {
+                periode = `${tahun}-${bulan}`;
+            }
+        } else {
+            periode = $('#filterTahun').val();
+        }
+
         const params = {
             filter_field1: $('#filterField1').val(),
             filter_value1: $('#filterValue1').val(),
             filter_field2: $('#filterField2').val(),
             filter_value2: $('#filterValue2').val(),
             periode: periode,
-            periode_type: periodeType
+            periode_type: periodeType,
+            type_sprin: typeSprin
         };
         
         $('#btnRefresh').prop('disabled', true).html('<i class="bi bi-hourglass-split me-1"></i>Memuat...');
@@ -181,6 +255,18 @@ $(document).ready(function() {
         });
     }
     
+    function getDetailUrl(noSurat) {
+        if (typeSprin === 'OPR') {
+            return '/kepegawaian/dinas-luar-operasi?no_surat=' + encodeURIComponent(noSurat);
+        }
+
+        if (typeSprin === 'POT') {
+            return '/kepegawaian/dinas-luar-pelatihan?no_surat=' + encodeURIComponent(noSurat);
+        }
+
+        return '/kepegawaian/dinas-luar-umum?no_surat=' + encodeURIComponent(noSurat);
+    }
+
     function renderTable(data) {
         const $tbody = $('#tableBody').empty();
         if (!data || data.length === 0) {
@@ -191,12 +277,12 @@ $(document).ready(function() {
             $tbody.append(`
                 <tr>
                     <td>${item.no}</td>
-                    <td><a href="/kepegawaian/dinas-luar-umum?no_surat=${encodeURIComponent(item.no_surat)}" class="text-primary fw-bold">${item.no_surat}</a></td>
+                    <td><a href="${getDetailUrl(item.no_surat)}" class="text-primary fw-bold">${item.no_surat}</a></td>
                     <td><small>${item.tgl_sprin}</small></td>
                     <td class="text-start"><small>${item.keterangan}</small></td>
                     <td class="text-start">${item.penempatan}</td>
                     <td><small>${item.update_by}</small></td>
-                    <td><a href="/kepegawaian/dinas-luar-umum?no_surat=${encodeURIComponent(item.no_surat)}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i></a></td>
+                    <td><a href="${getDetailUrl(item.no_surat)}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i></a></td>
                 </tr>
             `);
         });
