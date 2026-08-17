@@ -537,6 +537,15 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
+    // Auto-load pegawai dari parameter NIP pada URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlNip = urlParams.get("nip");
+
+    if (urlNip) {
+        nipField.value = urlNip.trim();
+        nipField.dispatchEvent(new Event("blur"));
+    }
+
     console.log("[Kepegawaian] Handler terpasang. Siap input/edit!");
 });
 </script>

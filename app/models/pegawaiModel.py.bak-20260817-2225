@@ -76,34 +76,20 @@ class Pegawai(db.Model):
     # Helper: ubah objek jadi dict (berguna untuk response JSON/API)
     # Password (PASS) sengaja TIDAK disertakan demi keamanan.
     def to_dict(self):
-        def format_date(value):
-            return value.strftime('%Y-%m-%d') if value else None
-
         return {
             'nip': self.NIP,
             'nama': self.NAMA,
+            'no_telp': self.NO_TELP,
+            'mail': self.MAIL,
+            'pangkat': self.PANGKAT,
+            'jabatan': self.JABATAN,
+            'jabatan_id': self.JABATAN_ID,
             'unit_kerja_id': self.UNIT_KERJA_ID,
-            'tgl_masuk': format_date(self.TGL_MASUK),
-            'status_peg': self.STATUS_PEG,
-            'is_keluar': self.IS_KELUAR,
-            'tgl_keluar': format_date(self.TGL_KELUAR),
-            'alasan_keluar': self.ALASAN_KELUAR,
             'gol_id': self.GOL_ID,
             'eselon': self.ESELON,
-            'tmt_class': format_date(self.TMT_CLASS),
-            'class_id': self.CLASS_ID,
-            'tmt_pangkat': format_date(self.TMT_PANGKAT),
-            'tmt_jabatan': format_date(self.TMT_JABATAN),
-            'jabatan_id': self.JABATAN_ID,
-            'tgl_lahir': format_date(self.TGL_LAHIR),
-            'jenis_kel': self.JENIS_KEL,
-            'no_telp': self.NO_TELP,
-            'email': self.MAIL,
             'alamat': self.ALAMAT,
-            'kelurahan': self.KELURAHAN,
-            'kecamatan': self.KECAMATAN,
+            'jenis_kel': self.JENIS_KEL,
             'kota': self.KOTA,
-            'gol_recruit': self.GOL_RECRUIT,
-            'tmt_cpns': format_date(self.TMT_CPNS),
-            'tmt_pns': format_date(self.TMT_PNS),
+            'status_peg': self.STATUS_PEG,
+            'is_keluar': self.IS_KELUAR,
         }
