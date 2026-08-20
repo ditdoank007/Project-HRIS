@@ -142,7 +142,42 @@
                         <!-- TAB 1: View From Finger -->
                         <div class="tab-pane fade show active" id="finger-pane" role="tabpanel" aria-labelledby="finger-tab">
                             <div class="tab-action-bar">
-                                <button class="btn btn-pill-blue" id="btnImpor">Impor</button>
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <!-- EXISTING IMPORT: DATABASE HRIS - JANGAN DIUBAH -->
+                                    <button class="btn btn-pill-blue" id="btnImpor" type="button">
+                                        Impor
+                                    </button>
+
+                                    <!-- NEW: IMPORT FILE .DAT -->
+                                    <input
+                                        type="file"
+                                        id="datFileInput"
+                                        accept=".dat"
+                                        multiple
+                                        hidden
+                                    >
+
+                                    <button
+                                        class="btn btn-pill-blue"
+                                        id="btnImporDat"
+                                        type="button"
+                                    >
+                                        IMPOR FILE FINGER (.DAT)
+                                    </button>
+
+                                    <span
+                                        id="datFileSummary"
+                                        class="small text-muted"
+                                    >
+                                        Belum ada file .DAT dipilih
+                                    </span>
+                                </div>
+
+                                <div
+                                    id="datFileList"
+                                    class="mt-2 small"
+                                    style="display:none;"
+                                ></div>
                             </div>
                             <div class="table-responsive">
                                 <table class="table text-center align-middle">
@@ -312,6 +347,175 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
             });
         });
+
+    // ================= IMPORT FILE FINGER (.DAT) =================
+    // Fungsi ini TERPISAH dari btnImpor existing.
+    // btnImpor = import database HRIS.
+    // btnImporDat = memilih file .DAT multi-file.
+
+    const btnImporDat = document.getElementById('btnImporDat');
+    const datFileInput = document.getElementById('datFileInput');
+    const datFileSummary = document.getElementById('datFileSummary');
+    const datFileList = document.getElementById('datFileList');
+
+    let selectedDatFiles = [];
+
+    btnImporDat.addEventListener('click', function () {
+        datFileInput.click();
+    });
+
+    datFileInput.addEventListener('change', function () {
+        selectedDatFiles = Array.from(datFileInput.files || [])
+            .filter(file => file.name.toLowerCase().endsWith('.dat'));
+
+        if (selectedDatFiles.length === 0) {
+            datFileSummary.textContent = 'Belum ada file .DAT dipilih';
+            datFileList.style.display = 'none';
+            datFileList.innerHTML = '';
+            return;
+        }
+
+        datFileSummary.textContent =
+            `${selectedDatFiles.length} file .DAT dipilih`;
+
+        datFileList.style.display = 'block';
+
+        datFileList.innerHTML = selectedDatFiles.map((file, index) => `
+            <div class="border rounded px-2 py-1 mb-1">
+                <strong>${index + 1}.</strong>
+                ${file.name}
+                <span class="text-muted">
+                    (${(file.size / 1024).toFixed(1)} KB)
+                </span>
+            </div>
+        `).join('');
+
+        console.log(
+            'DAT FILES SELECTED:',
+            selectedDatFiles.map(file => file.name)
+        );
+    });
+
+    async function uploadDatFiles() {
+
+        if (selectedDatFiles.length === 0) {
+            alert('Silakan pilih file .DAT terlebih dahulu.');
+            return;
+        }
+
+        const formData = new FormData();
+
+        selectedDatFiles.forEach(file => {
+            formData.append('files', file);
+        });
+
+        datFileSummary.textContent =
+            `Mengupload ${selectedDatFiles.length} file .DAT...`;
+
+        btnImporDat.disabled = true;
+
+        try {
+
+            const response = await fetch(
+                '/api/normalisasi/upload-dat',
+                {
+                    method: 'POST',
+                    body: formData
+                }
+            );
+
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                throw new Error(
+                    result.error || 'Upload file .DAT gagal.'
+                );
+            }
+
+            datFileSummary.textContent =
+                `${result.total_files} file diterima `
+                + `(${result.valid_files} valid, `
+                + `${result.invalid_files} invalid)`;
+
+            datFileList.innerHTML = result.data.map((item, index) => `
+                <div class="border rounded px-2 py-1 mb-1 ${
+                    item.valid ? '' : 'border-danger text-danger'
+                }">
+                    <strong>${index + 1}.</strong>
+                    ${item.filename}
+                    <span class="text-muted">
+                        (${(item.size / 1024).toFixed(1)} KB)
+                    </span>
+                    <span class="ms-2">
+                        ${item.message}
+                    </span>
+                </div>
+            `).join('');
+
+            datFileList.style.display = 'block';
+
+            // Setelah upload berhasil, langsung commit
+            // seluruh file .DAT ke FINGER_HARVEST_RAW.
+            const commitResponse = await fetch(
+                '/api/normalisasi/commit-dat',
+                {
+                    method: 'POST'
+                }
+            );
+
+            const commitResult = await commitResponse.json();
+
+            if (!commitResponse.ok || !commitResult.success) {
+                throw new Error(
+                    commitResult.error ||
+                    'File .DAT berhasil di-upload tetapi gagal masuk database.'
+                );
+            }
+
+            datFileSummary.textContent =
+                `${commitResult.inserted} record masuk database `
+                + `(${commitResult.duplicate} duplicate, `
+                + `${commitResult.invalid} invalid)`;
+
+            alert(
+                'Import .DAT selesai.\\n\\n'
+                + `Record masuk database : ${commitResult.inserted}\\n`
+                + `Duplicate             : ${commitResult.duplicate}\\n`
+                + `Invalid                : ${commitResult.invalid}`
+            );
+
+        } catch (error) {
+
+            console.error('DAT UPLOAD ERROR:', error);
+
+            datFileSummary.textContent =
+                'Upload .DAT gagal';
+
+            alert(
+                'Gagal upload file .DAT: '
+                + error.message
+            );
+
+        } finally {
+            btnImporDat.disabled = false;
+        }
+    }
+
+    btnImporDat.insertAdjacentHTML(
+        'afterend',
+        '<button class="btn btn-pill-blue" '
+        + 'id="btnUploadDat" type="button" disabled>'
+        + 'UPLOAD & PREVIEW'
+        + '</button>'
+    );
+
+    const btnUploadDat = document.getElementById('btnUploadDat');
+
+    btnUploadDat.addEventListener('click', uploadDatFiles);
+
+    datFileInput.addEventListener('change', function () {
+        btnUploadDat.disabled = selectedDatFiles.length === 0;
+    });
 
     // ================= TAB 1: View From Finger (Impor) =================
     const btnImpor = document.getElementById('btnImpor');

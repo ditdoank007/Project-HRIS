@@ -1,51 +1,146 @@
 # app/models/timeRecorderModel.py
+
 from app import db
 
 
 class TimeRecorder(db.Model):
     """
-    Model untuk tabel TIME_RECORDER.
-    Menyimpan log mentah sidik jari (raw fingerprint log) dari mesin absensi.
+    Model SQLAlchemy untuk tabel legacy TIME_RECORDER.
 
-    Primary Key : FINGER_ID
+    Mapping mengikuti database HRIS legacy
+    tanpa mengubah struktur database.
+
+    Legacy columns:
+        FingerID
+        Waktu
+        Status
+        Mesin
+        Ket
+        Transaksi
+        UpdateBy
+        UpdateDate
+        KetInject
+        ReffInject
+        trx
+
+    Legacy Primary Key:
+        (FingerID, Waktu, Status, Mesin)
     """
+
     __tablename__ = 'TIME_RECORDER'
 
-    # Primary Key
-    FINGER_ID = db.Column(db.Integer, primary_key=True, nullable=False)
+    # ============================================================
+    # LEGACY DATABASE PRIMARY KEY
+    # ============================================================
 
-    # Data waktu rekaman
-    WAKTU = db.Column(db.DateTime)
-    STATUS = db.Column(db.String(3))           # Kode status mesin (misal: 0/1)
+    FINGER_ID = db.Column(
+        'FingerID',
+        db.String(10),
+        primary_key=True,
+        nullable=False,
+    )
 
-    # Informasi mesin
-    MESIN = db.Column(db.String(100))
+    WAKTU = db.Column(
+        'Waktu',
+        db.DateTime,
+        primary_key=True,
+        nullable=False,
+    )
 
-    # Keterangan & transaksi
-    KET = db.Column(db.String(50))
-    TRANSAKSI = db.Column(db.String(50))
-    KET_INJECT = db.Column(db.String(150))     # Keterangan saat injeksi manual
-    REF_INJECT = db.Column(db.String(150))     # Referensi data injeksi
-    TRX = db.Column(db.String(50))
+    STATUS = db.Column(
+        'Status',
+        db.String(3),
+        primary_key=True,
+        nullable=False,
+    )
 
-    # Metadata
-    UPDATE_IN_BY = db.Column(db.String(50))
-    UPDATE_DATE = db.Column(db.DateTime)
+    MESIN = db.Column(
+        'Mesin',
+        db.String(100),
+        primary_key=True,
+        nullable=False,
+    )
+
+    # ============================================================
+    # LEGACY DATA COLUMNS
+    # ============================================================
+
+    KET = db.Column(
+        'Ket',
+        db.String(50),
+        nullable=True,
+    )
+
+    TRANSAKSI = db.Column(
+        'Transaksi',
+        db.String(50),
+        nullable=True,
+    )
+
+    UPDATE_IN_BY = db.Column(
+        'UpdateBy',
+        db.String(50),
+        nullable=True,
+    )
+
+    UPDATE_DATE = db.Column(
+        'UpdateDate',
+        db.DateTime,
+        nullable=True,
+    )
+
+    KET_INJECT = db.Column(
+        'KetInject',
+        db.String(150),
+        nullable=True,
+    )
+
+    REF_INJECT = db.Column(
+        'ReffInject',
+        db.String(150),
+        nullable=True,
+    )
+
+    TRX = db.Column(
+        'trx',
+        db.String(50),
+        nullable=True,
+    )
+
+    # ============================================================
+    # REPRESENTATION
+    # ============================================================
 
     def __repr__(self):
-        return f'<TimeRecorder {self.FINGER_ID}>'
+        return (
+            f'<TimeRecorder '
+            f'{self.FINGER_ID} '
+            f'{self.WAKTU} '
+            f'{self.STATUS} '
+            f'{self.MESIN}>'
+        )
+
+    # ============================================================
+    # SERIALIZATION
+    # ============================================================
 
     def to_dict(self):
         return {
             'finger_id': self.FINGER_ID,
-            'waktu': self.WAKTU.isoformat() if self.WAKTU else None,
+            'waktu': (
+                self.WAKTU.isoformat()
+                if self.WAKTU else None
+            ),
             'status': self.STATUS,
             'mesin': self.MESIN,
             'ket': self.KET,
             'transaksi': self.TRANSAKSI,
+            'update_in_by': self.UPDATE_IN_BY,
+            'update_date': (
+                self.UPDATE_DATE.isoformat()
+                if self.UPDATE_DATE else None
+            ),
             'ket_inject': self.KET_INJECT,
             'ref_inject': self.REF_INJECT,
             'trx': self.TRX,
-            'update_in_by': self.UPDATE_IN_BY,
-            'update_date': self.UPDATE_DATE.isoformat() if self.UPDATE_DATE else None
         }

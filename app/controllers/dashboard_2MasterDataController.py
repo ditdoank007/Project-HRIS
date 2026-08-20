@@ -39,7 +39,7 @@ def api_email_broadcast_get():
         # Cari nama pegawai yang update
         update_info = ''
         if email_config.UPDATE_BY:
-            peg = Pegawai.query.get(email_config.UPDATE_BY)
+            peg = Pegawai.query.filter(Pegawai.NIP == email_config.UPDATE_BY).first()
             nama_update = peg.NAMA if peg else email_config.UPDATE_BY
             tgl_update = email_config.UPDATE_DATE.strftime('%d/%m/%Y %H:%M:%S') if email_config.UPDATE_DATE else ''
             update_info = f'{nama_update} - {tgl_update}'
@@ -205,7 +205,7 @@ def api_kgr_save():
             ).first()
             
             if existing:
-                peg = Pegawai.query.get(nip)
+                peg = Pegawai.query.filter(Pegawai.NIP == nip).first()
                 return jsonify({
                     'error': f'Pegawai {peg.NAMA if peg else nip} sudah terdaftar di tim lain'
                 })
@@ -277,7 +277,7 @@ def api_kgr_save():
             
             db.session.commit()
             
-            peg = Pegawai.query.get(nip)
+            peg = Pegawai.query.filter(Pegawai.NIP == nip).first()
             nama_pegawai = peg.NAMA if peg else nip
             
             return jsonify({
@@ -350,7 +350,7 @@ def api_kgr_get():
     if not anggota:
         return jsonify({'error': 'Data tidak ditemukan'})
     
-    peg = Pegawai.query.get(anggota.NIP)
+    peg = Pegawai.query.filter(Pegawai.NIP == anggota.NIP).first()
     unit = MfUnitKerja.query.get(anggota.ID_UNIT_KERJA)
     
     return jsonify({

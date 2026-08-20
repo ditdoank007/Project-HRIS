@@ -58,7 +58,7 @@ def export_rekap_daftar_lembur_umum():
     # Ambil data lembur join pegawai via NIP
     rows = (
         db.session.query(Lembur, Pegawai)
-        .join(Pegawai, Lembur.NIP == Pegawai.NIP)
+        .join(Pegawai, Lembur.FINGER_ID == Pegawai.FINGER_ID)
         .filter(Lembur.TGL_KERJA.between(tgl_awal, tgl_akhir))
         .filter(Pegawai.UNIT_KERJA_ID.in_(unit_ids))
         .order_by(Pegawai.NAMA, Lembur.TGL_KERJA)
@@ -276,7 +276,7 @@ def export_detail_jam_lembur_umum():
     
     rows = (
         db.session.query(Lembur, Pegawai)
-        .join(Pegawai, Lembur.NIP == Pegawai.NIP)
+        .join(Pegawai, Lembur.FINGER_ID == Pegawai.FINGER_ID)
         .filter(Lembur.TGL_KERJA.between(tgl_awal, tgl_akhir))
         .filter(Pegawai.UNIT_KERJA_ID.in_(unit_ids))
         .order_by(Pegawai.NAMA, Lembur.TGL_KERJA)

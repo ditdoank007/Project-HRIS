@@ -15,26 +15,29 @@ class HakAksesForm(db.Model):
 
     # Primary Keys (sekaligus foreign keys)
     FORM_ID = db.Column(
+        'FormID',
         db.String(50),
-        db.ForeignKey('MF_FORM.FORM_ID'),
+        db.ForeignKey('MF_FORM.FormID'),
         primary_key=True,
         nullable=False
     )
     NIP = db.Column(
-        db.String(50),
+        'NIP',
+        db.String(20),
         db.ForeignKey('PEGAWAI.NIP'),
         primary_key=True,
         nullable=False
     )
 
     # Hak akses
-    IS_AKSES = db.Column(db.String(5))    # Y/N
-    TYPE_AKSES = db.Column(db.String(5))  # Jenis akses (misal: R, W, X)
-    MODUL = db.Column(db.String(50))
+    IS_AKSES = db.Column('isAkses', db.String(5))    # Y/N
+    TYPE_AKSES = db.Column('TypeAkses', db.String(5))  # Jenis akses
+    ID_UNIT_KERJA = db.Column('IdUnitKerja', db.String(5))
+    MODUL = db.Column('Modul', db.String(50))
 
     # Metadata
-    UPDATE_BY = db.Column(db.String(50))
-    UPDATE_DATE = db.Column(db.DateTime)
+    UPDATE_BY = db.Column('Updateby', db.String(50))
+    UPDATE_DATE = db.Column('UpdateDate', db.DateTime)
 
     def __repr__(self):
         return f'<HakAksesForm Form:{self.FORM_ID} NIP:{self.NIP}>'

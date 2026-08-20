@@ -1,28 +1,59 @@
 # app/models/eselonModel.py
+
 from app import db
 
 
 class MfEselon(db.Model):
     """
-    Model untuk tabel MF_ESELON.
-    Tabel master eselon jabatan pegawai.
+    Model SQLAlchemy untuk tabel legacy MF_ESELON.
 
-    Primary Key : ESELON (string, bukan angka)
-    Foreign Key : (tidak ada FK keluar pada tabel ini)
+    Mapping mengikuti database HRIS legacy hasil migrasi
+    tanpa mengubah struktur database.
+
+    Legacy columns:
+        eselon
+        UrutEselon
+
+    Catatan:
+        Database legacy tidak mendefinisikan PRIMARY KEY.
+        Karena SQLAlchemy ORM membutuhkan identifier, ESELON
+        digunakan sebagai ORM primary key berdasarkan struktur
+        data legacy yang tersedia.
+
+    Compatibility:
+        ESELON       -> eselon
+        URUT_ESELON  -> UrutEselon
     """
+
     __tablename__ = 'MF_ESELON'
 
-    # Primary Key
-    ESELON = db.Column(db.String(50), primary_key=True)
+    # ============================================================
+    # LEGACY DATABASE COLUMNS
+    # ============================================================
 
-    # Data eselon
-    URUT_ESELON = db.Column(db.Integer, nullable=True)
+    ESELON = db.Column(
+        'eselon',
+        db.String(50),
+        primary_key=True,
+    )
 
-    # Representasi objek (memudahkan debugging di console/log)
+    URUT_ESELON = db.Column(
+        'UrutEselon',
+        db.Integer,
+        nullable=True,
+    )
+
+    # ============================================================
+    # REPRESENTATION
+    # ============================================================
+
     def __repr__(self):
         return f'<Eselon {self.ESELON}>'
 
-    # Helper: ubah objek jadi dict (berguna untuk response JSON/API)
+    # ============================================================
+    # SERIALIZATION
+    # ============================================================
+
     def to_dict(self):
         return {
             'eselon': self.ESELON,

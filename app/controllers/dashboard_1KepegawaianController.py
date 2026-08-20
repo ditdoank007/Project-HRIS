@@ -274,7 +274,7 @@ def api_dinas_luar_cari():
             update_by_name = ''
 
             if sprin.UPDATE_BY:
-                peg = Pegawai.query.get(sprin.UPDATE_BY)
+                peg = Pegawai.query.filter(Pegawai.NIP == sprin.UPDATE_BY).first()
                 update_by_name = peg.NAMA if peg else sprin.UPDATE_BY
 
             update_date_str = (
@@ -383,7 +383,7 @@ def api_pegawai_get():
         if not nip:
             return jsonify({'error': 'NIP tidak boleh kosong'})
         
-        pegawai = Pegawai.query.get(nip)
+        pegawai = Pegawai.query.filter(Pegawai.NIP == nip).first()
         
         if not pegawai:
             return jsonify({'error': 'Pegawai tidak ditemukan'})
@@ -408,9 +408,16 @@ def api_pegawai_save():
         print("📥 Data diterima:", data)
         
         nip = data.get('nip', '').strip() if data.get('nip') else ''
-        
+        finger_id = data.get('finger_id', '').strip() if data.get('finger_id') else ''
+
+        # Legacy HRIS:
+        # Jika pegawai tidak memiliki NIP, Finger ID digunakan sebagai NIP.
         if not nip:
-            return jsonify({'error': 'NIP tidak boleh kosong'})
+            if not finger_id:
+                return jsonify({
+                    'error': 'NIP atau Finger ID wajib diisi'
+                })
+            nip = finger_id
         
         # Validasi wajib
         nama = data.get('nama', '').strip() if data.get('nama') else ''
@@ -422,13 +429,13 @@ def api_pegawai_save():
             return jsonify({'error': 'Tanggal Masuk tidak boleh kosong'})
         
         # Cek existing
-        pegawai = Pegawai.query.get(nip)
+        pegawai = Pegawai.query.filter(Pegawai.NIP == nip).first()
         is_update = pegawai is not None
         
         # Data umum
         unit_kerja_id = _safe_int(data.get('unit_kerja_id'), 1)
         jabatan_id = _safe_int(data.get('jabatan_id'), None)
-        gol_id = _safe_int(data.get('gol_id'), None)
+        gol_id = data.get('gol_id', '') or ''
         eselon = data.get('eselon', '') or ''
         class_id = _safe_int(data.get('class_id'), None)
         alamat = data.get('alamat', '') or ''
@@ -454,6 +461,7 @@ def api_pegawai_save():
         if is_update:
             # Update
             pegawai.NAMA = nama
+            pegawai.FINGER_ID = finger_id or pegawai.FINGER_ID
             pegawai.UNIT_KERJA_ID = unit_kerja_id
             pegawai.JABATAN_ID = jabatan_id
             pegawai.GOL_ID = gol_id
@@ -489,13 +497,12 @@ def api_pegawai_save():
             new_pegawai = Pegawai(
                 NIP=nip,
                 NAMA=nama,
+                FINGER_ID=finger_id or nip,
                 UNIT_KERJA_ID=unit_kerja_id,
                 JABATAN_ID=jabatan_id,
                 GOL_ID=gol_id,
                 ESELON=eselon,
                 CLASS_ID=class_id,
-                ABSENSI_ID=1,
-                TUNJANGAN_ID=1,
                 NO_TELP=no_telp,
                 MAIL=email,
                 PASS='surabaya-02',
@@ -506,9 +513,9 @@ def api_pegawai_save():
                 KECAMATAN=kecamatan,
                 KOTA=kota,
                 TGL_MASUK=_safe_date(tgl_masuk),
-                TMT_PANGKAT=tmt_pangkat,
-                TMT_CPNS=tmt_cpns,
-                TMT_PNS=tmt_pns,
+                TMTPANGKAT=tmt_pangkat,
+                TMTCPNS=tmt_cpns,
+                TMTPNS=tmt_pns,
                 TMT_CLASS=tmt_class,
                 TMT_JABATAN=tmt_jabatan,
                 GOL_RECRUIT=gol_recruit,
@@ -516,7 +523,7 @@ def api_pegawai_save():
                 IS_KELUAR=is_keluar,
                 TGL_KELUAR=tgl_keluar,
                 ALASAN_KELUAR=alasan_keluar,
-                UPDATE_IN_BY='admin',
+                UPDATE_BY='admin',
                 UPDATE_DATE=datetime.now()
             )
             db.session.add(new_pegawai)
@@ -1383,7 +1390,7 @@ def api_dinas_luar_get():
         
         peserta = []
         for dl in dinas_list:
-            peg = Pegawai.query.get(dl.NIP)
+            peg = Pegawai.query.filter(Pegawai.NIP == dl.NIP).first()
             peserta.append({
                 'transaksi_id': dl.DINAS_TRANSAKSI_ID, 'nip': dl.NIP,
                 'nama': peg.NAMA if peg else '-',

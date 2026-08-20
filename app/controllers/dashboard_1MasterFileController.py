@@ -766,7 +766,7 @@ def toggle_pegawai_vip():
     if not nip or is_vip is None:
         return jsonify({'status': 'error', 'message': 'nip dan is_vip wajib diisi'}), 400
 
-    pegawai = Pegawai.query.get(nip)
+    pegawai = Pegawai.query.filter(Pegawai.NIP == nip).first()
     if pegawai is None:
         return jsonify({'status': 'error', 'message': 'Pegawai tidak ditemukan'}), 404
 
@@ -1224,11 +1224,15 @@ def get_user_account_detail():
     if not nip:
         return jsonify({'status': 'error', 'message': 'NIP wajib diisi'}), 400
 
-    pegawai = Pegawai.query.get(nip)
+    pegawai = Pegawai.query.filter(Pegawai.NIP == nip).first()
     if pegawai is None:
         return jsonify({'status': 'error', 'message': f'Pegawai dengan NIP {nip} tidak ditemukan'}), 404
 
-    user_account = UserAccount.query.get(nip)
+    user_account = UserAccount.query.filter(
+        UserAccount.NIP == nip,
+        UserAccount.MODUL == 'HRIS'
+    ).first()
+
     operator_forms = _get_operator_forms(nip)
 
     return jsonify({
@@ -1281,32 +1285,83 @@ def save_user_account():
     if not isinstance(akses_list, list):
         return jsonify({'status': 'error', 'message': 'akses_list harus berupa list'}), 400
 
-    pegawai = Pegawai.query.get(nip)
+    pegawai = Pegawai.query.filter(Pegawai.NIP == nip).first()
     if pegawai is None:
         return jsonify({'status': 'error', 'message': f'Pegawai dengan NIP {nip} tidak ditemukan'}), 404
 
     # --- Validasi setiap entri akses_list sebelum ada perubahan apapun ke DB ---
+    #
+    # Existing HAK_AKSES_FORM dapat berisi legacy FormID yang tidak lagi
+    # memiliki pasangan MF_FORM Model 2. Permission legacy tersebut tetap
+    # boleh dipertahankan.
+    #
+    # Form baru wajib memiliki definisi MF_FORM HRIS Model 2.
+
     valid_type_akses = ('M', 'R')
     cleaned_akses = []
+
+    existing_access_ids = {
+        row.FORM_ID
+        for row in HakAksesForm.query.filter(
+            HakAksesForm.NIP == nip,
+            HakAksesForm.MODUL == 'HRIS'
+        ).all()
+    }
+
     for item in akses_list:
         if not isinstance(item, dict):
-            return jsonify({'status': 'error', 'message': 'Setiap item akses_list harus berupa object'}), 400
+            return jsonify({
+                'status': 'error',
+                'message': 'Setiap item akses_list harus berupa object'
+            }), 400
+
         form_id = (item.get('form_id') or '').strip()
         type_akses = (item.get('type_akses') or 'M').strip().upper()
 
         if not form_id:
-            return jsonify({'status': 'error', 'message': 'form_id wajib diisi pada setiap item akses_list'}), 400
+            return jsonify({
+                'status': 'error',
+                'message': 'form_id wajib diisi pada setiap item akses_list'
+            }), 400
+
         if type_akses not in valid_type_akses:
             return jsonify({
                 'status': 'error',
-                'message': f'type_akses harus "M" (Modify) atau "R" (Read Only), diterima: "{type_akses}"'
+                'message': (
+                    f'type_akses harus "M" (Modify) atau "R" (Read Only), '
+                    f'diterima: "{type_akses}"'
+                )
             }), 400
 
-        form = MfForm.query.get(form_id)
-        if form is None:
-            return jsonify({'status': 'error', 'message': f'Form dengan ID "{form_id}" tidak ditemukan'}), 400
+        # Permission lama/legacy milik user boleh dipertahankan walaupun
+        # FormID tersebut sudah tidak mempunyai definisi MF_FORM Model 2.
+        if form_id in existing_access_ids:
+            cleaned_akses.append({
+                'form_id': form_id,
+                'type_akses': type_akses
+            })
+            continue
 
-        cleaned_akses.append({'form_id': form_id, 'type_akses': type_akses})
+        # Permission baru wajib mempunyai definisi menu HRIS Model 2.
+        form = MfForm.query.filter(
+            MfForm.FORM_ID == form_id,
+            MfForm.MODUL == 'HRIS',
+            MfForm.MODEL == 2
+        ).first()
+
+        if form is None:
+            return jsonify({
+                'status': 'error',
+                'message': (
+                    f'Form HRIS Model 2 dengan ID "{form_id}" '
+                    f'tidak ditemukan'
+                )
+            }), 400
+
+        cleaned_akses.append({
+            'form_id': form_id,
+            'type_akses': type_akses
+        })
 
     init_level = LEVEL_VALUE[level_raw]
     now = datetime.utcnow()
@@ -1314,7 +1369,11 @@ def save_user_account():
 
     try:
         # --- Bagian 1: upsert USER_ACCOUNT (Level) ---
-        user_account = UserAccount.query.get(nip)
+        user_account = UserAccount.query.filter(
+            UserAccount.NIP == nip,
+            UserAccount.MODUL == 'HRIS'
+        ).first()
+
         if user_account is None:
             user_account = UserAccount(
                 NIP=nip,
@@ -1359,6 +1418,62 @@ def save_user_account():
         'status': 'success',
         'message': f'Data akun {pegawai.NAMA} berhasil disimpan ({len(cleaned_akses)} hak akses form)',
         'data': user_account.to_dict(),
+    })
+
+
+def delete_user_account():
+    """
+    Hapus account HRIS seorang pegawai.
+
+    Yang dihapus:
+      1. HAK_AKSES_FORM untuk NIP + Modul HRIS
+      2. USER_ACCOUNT untuk UserID + Modul HRIS
+
+    Yang TIDAK dihapus:
+      - PEGAWAI
+      - data kepegawaian lainnya
+      - account pada modul selain HRIS
+    """
+    payload = request.get_json(silent=True) or {}
+
+    nip = (payload.get('nip') or '').strip()
+
+    if not nip:
+        return jsonify({
+            'status': 'error',
+            'message': 'NIP wajib diisi'
+        }), 400
+
+    user_account = UserAccount.query.filter(
+        UserAccount.NIP == nip,
+        UserAccount.MODUL == 'HRIS'
+    ).first()
+
+    if user_account is None:
+        return jsonify({
+            'status': 'error',
+            'message': f'User Account HRIS untuk NIP {nip} tidak ditemukan'
+        }), 404
+
+    try:
+        # Hapus hak akses form HRIS milik account ini.
+        HakAksesForm.query.filter(
+            HakAksesForm.NIP == nip,
+            HakAksesForm.MODUL == 'HRIS'
+        ).delete()
+
+        # Hapus account HRIS.
+        db.session.delete(user_account)
+
+        db.session.commit()
+
+    except Exception:
+        db.session.rollback()
+        raise
+
+    return jsonify({
+        'status': 'success',
+        'message': f'User Account HRIS {nip} berhasil dihapus'
     })
 
 def master_uang_makan():
@@ -1417,7 +1532,7 @@ def save_uang_makan():
     if not current_nip:
         return jsonify({'status': 'error', 'message': 'Sesi login tidak valid (NIP tidak ditemukan)'}), 401
 
-    pegawai_pengisi = Pegawai.query.get(current_nip)
+    pegawai_pengisi = Pegawai.query.filter(Pegawai.NIP == current_nip).first()
     if pegawai_pengisi is None:
         return jsonify({
             'status': 'error',
@@ -2238,7 +2353,15 @@ def get_user_account_list():
     }
     not_yet_supported = ('Gol', 'No Finger')
 
-    query = UserAccount.query.join(Pegawai, UserAccount.NIP == Pegawai.NIP)
+    query = db.session.query(
+        UserAccount,
+        Pegawai
+    ).outerjoin(
+        Pegawai,
+        UserAccount.NIP == Pegawai.NIP
+    ).filter(
+        UserAccount.MODUL == 'HRIS'
+    )
 
     needs_unit_kerja_join = 'Unit Kerja' in (field1, field2)
     if needs_unit_kerja_join:
@@ -2263,13 +2386,13 @@ def get_user_account_list():
     data = [
         {
             'no': idx + 1,
-            'user_id': row.NIP,
-            'nama': row.pegawai.NAMA if row.pegawai else '-',
-            'jabatan': row.pegawai.JABATAN if row.pegawai else '-',
-            'level': LEVEL_LABEL.get(row.INIT_LEVEL, '-'),
-            'update_by': row.UPDATE_BY or '-',
+            'user_id': user_account.NIP,
+            'nama': pegawai.NAMA if pegawai else '-',
+            'jabatan': pegawai.JABATAN if pegawai else '-',
+            'level': LEVEL_LABEL.get(user_account.INIT_LEVEL, '-'),
+            'update_by': user_account.UPDATE_BY or '-',
         }
-        for idx, row in enumerate(rows)
+        for idx, (user_account, pegawai) in enumerate(rows)
     ]
 
     return jsonify({'status': 'success', 'data': data})

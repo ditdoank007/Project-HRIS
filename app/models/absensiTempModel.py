@@ -1,92 +1,299 @@
 # app/models/absensiTempModel.py
+
+from sqlalchemy.orm import synonym
+
 from app import db
 
 
 class AbsensiTemp(db.Model):
     """
-    Model untuk tabel ABSENSI_TEMP.
-    Menyimpan data absensi sementara (temporary) sebelum finalisasi.
+    Model SQLAlchemy untuk tabel legacy ABSENSI_TEMP.
 
-    Primary Key : ABSENSI_TEMP_ID
-    Foreign Key : ABSENSI_ID -> ABSENSI (ABSENSI_ID)
+    Mapping mengikuti database HRIS legacy tanpa mengubah
+    struktur database.
+
+    Database legacy tidak mendefinisikan PRIMARY KEY.
+
+    ORM identity:
+        FingerID + TglKerja
+
+    Struktur ABSENSI_TEMP identik dengan ABSENSI_BACKUP.
+    Tabel saat ini kosong, sehingga composite identity digunakan
+    untuk memenuhi kebutuhan SQLAlchemy ORM.
+
+    Legacy columns:
+        FingerID
+        TglKerja
+        TglJamIn
+        TglJamOut
+        KetIn
+        TransaksiIn
+        UpdateInBy
+        UpdateInDate
+        KetOut
+        TransaksiOut
+        UpdateOutBy
+        UpdateOutDate
+        TingkatTLM
+        TotalTLM
+        TotalPSW
+        TingkatPSW
+        IsInValid
+        isOutValid
+        AwalTLM
+        PersenPotTLM
+        PersenPotPSW
+        TglJamBakuIn
+        TglJamBakuOut
+        TransaksiIDFrom
+        PendukungIN
+        PendukungOut
+        HistoryTransaksiIn
+        HistoryTransaksiOut
     """
+
     __tablename__ = 'ABSENSI_TEMP'
 
-    # Primary Key
-    ABSENSI_TEMP_ID = db.Column(db.Integer, primary_key=True, nullable=False)
+    # ============================================================
+    # ORM COMPOSITE IDENTITY
+    # ============================================================
 
-    # Foreign Key ke tabel ABSENSI
-    ABSENSI_ID = db.Column(db.Integer, db.ForeignKey('ABSENSI.ABSENSI_ID'), nullable=True)
+    FINGER_ID = db.Column(
+        'FingerID',
+        db.String(50),
+        primary_key=True,
+        nullable=False,
+    )
 
-    # Data absen masuk (in)
-    TGL_JAM_IN = db.Column(db.DateTime)
-    KET_IN = db.Column(db.String(850))
-    TRANSAKSI_IN = db.Column(db.String(50))      # CHAR(50)
-    UPDATE_IN_BY = db.Column(db.String(50))
-    UPDATE_IN_DATE = db.Column(db.DateTime)
-    PENDUKUNG_IN = db.Column(db.String(50))
-    HISTORY_TRANSAKSI_IN = db.Column(db.String(450))
+    TGL_KERJA = db.Column(
+        'TglKerja',
+        db.DateTime,
+        primary_key=True,
+        nullable=False,
+    )
 
-    # Data absen pulang (out)
-    TGL_JAM_OUT = db.Column(db.DateTime)
-    KET_OUT = db.Column(db.String(850))
-    TRANSAKSI_OUT = db.Column(db.String(50))
-    UPDATE_OUT_BY = db.Column(db.String(50))
-    UPDATE_OUT_DATE = db.Column(db.DateTime)
-    PENDUKUNG_OUT = db.Column(db.String(50))
-    HISTORY_TRANSAKSI_OUT = db.Column(db.String(450))
+    # ============================================================
+    # JAM AKTUAL
+    # ============================================================
 
-    # Data potongan keterlambatan / pulang cepat
-    TINGKAT_TLM = db.Column(db.String(50))
-    TOTAL_TLM = db.Column(db.Float)
-    TINGKAT_PSW = db.Column(db.String(50))
-    TOTAL_PSW = db.Column(db.Float)
-    AWAL_TLM = db.Column(db.Float)
-    PERSEN_POT_TLM = db.Column(db.Float)
-    PERSEN_POT_PSW = db.Column(db.Float)
+    TGL_JAM_IN = db.Column(
+        'TglJamIn',
+        db.DateTime,
+    )
 
-    # Data validasi dan baku
-    IS_INVALID = db.Column(db.String(1))
-    IS_OUTVALID = db.Column(db.String(1))
-    TGL_JAM_BAKU_IN = db.Column(db.DateTime)
-    TGL_JAM_BAKU_OUT = db.Column(db.DateTime)
+    TGL_JAM_OUT = db.Column(
+        'TglJamOut',
+        db.DateTime,
+    )
 
-    # Lain-lain
-    TRAKSAKSI_ID_FROM = db.Column(db.String(250))
-    STATUS_UM = db.Column(db.Integer)
+    # ============================================================
+    # TRANSAKSI IN
+    # ============================================================
+
+    KET_IN = db.Column(
+        'KetIn',
+        db.String(450),
+    )
+
+    TRANSAKSI_IN = db.Column(
+        'TransaksiIn',
+        db.String(50),
+    )
+
+    UPDATE_IN_BY = db.Column(
+        'UpdateInBy',
+        db.String(50),
+    )
+
+    UPDATE_IN_DATE = db.Column(
+        'UpdateInDate',
+        db.DateTime,
+    )
+
+    PENDUKUNG_IN = db.Column(
+        'PendukungIN',
+        db.String(50),
+    )
+
+    HISTORY_TRANSAKSI_IN = db.Column(
+        'HistoryTransaksiIn',
+        db.String(450),
+    )
+
+    # ============================================================
+    # TRANSAKSI OUT
+    # ============================================================
+
+    KET_OUT = db.Column(
+        'KetOut',
+        db.String(450),
+    )
+
+    TRANSAKSI_OUT = db.Column(
+        'TransaksiOut',
+        db.String(50),
+    )
+
+    UPDATE_OUT_BY = db.Column(
+        'UpdateOutBy',
+        db.String(50),
+    )
+
+    UPDATE_OUT_DATE = db.Column(
+        'UpdateOutDate',
+        db.DateTime,
+    )
+
+    PENDUKUNG_OUT = db.Column(
+        'PendukungOut',
+        db.String(50),
+    )
+
+    HISTORY_TRANSAKSI_OUT = db.Column(
+        'HistoryTransaksiOut',
+        db.String(450),
+    )
+
+    # ============================================================
+    # KETERLAMBATAN / PULANG CEPAT
+    # ============================================================
+
+    TINGKAT_TLM = db.Column(
+        'TingkatTLM',
+        db.String(50),
+    )
+
+    TOTAL_TLM = db.Column(
+        'TotalTLM',
+        db.Float,
+    )
+
+    TOTAL_PSW = db.Column(
+        'TotalPSW',
+        db.Float,
+    )
+
+    TINGKAT_PSW = db.Column(
+        'TingkatPSW',
+        db.String(50),
+    )
+
+    AWAL_TLM = db.Column(
+        'AwalTLM',
+        db.Float,
+    )
+
+    PERSEN_POT_TLM = db.Column(
+        'PersenPotTLM',
+        db.Float,
+    )
+
+    PERSEN_POT_PSW = db.Column(
+        'PersenPotPSW',
+        db.Float,
+    )
+
+    # ============================================================
+    # VALIDASI
+    # ============================================================
+
+    IS_INVALID = db.Column(
+        'IsInValid',
+        db.String(1),
+    )
+
+    IS_OUTVALID = db.Column(
+        'isOutValid',
+        db.String(1),
+    )
+
+    # ============================================================
+    # JAM BAKU
+    # ============================================================
+
+    TGL_JAM_BAKU_IN = db.Column(
+        'TglJamBakuIn',
+        db.DateTime,
+    )
+
+    TGL_JAM_BAKU_OUT = db.Column(
+        'TglJamBakuOut',
+        db.DateTime,
+    )
+
+    # ============================================================
+    # REFERENSI TRANSAKSI
+    # ============================================================
+
+    TRANSAKSI_ID_FROM = db.Column(
+        'TransaksiIDFrom',
+        db.String(50),
+    )
+
+    # Compatibility alias untuk typo source lama
+    TRAKSAKSI_ID_FROM = synonym(
+        'TRANSAKSI_ID_FROM'
+    )
+
+    # ============================================================
+    # REPRESENTATION
+    # ============================================================
 
     def __repr__(self):
-        return f'<AbsensiTemp {self.ABSENSI_TEMP_ID}>'
+        return (
+            f'<AbsensiTemp '
+            f'{self.FINGER_ID} - {self.TGL_KERJA}>'
+        )
 
     def to_dict(self):
         return {
-            'absensi_temp_id': self.ABSENSI_TEMP_ID,
-            'absensi_id': self.ABSENSI_ID,
-            'tgl_jam_in': self.TGL_JAM_IN.isoformat() if self.TGL_JAM_IN else None,
+            'finger_id': self.FINGER_ID,
+            'tgl_kerja': (
+                self.TGL_KERJA.isoformat()
+                if self.TGL_KERJA else None
+            ),
+            'tgl_jam_in': (
+                self.TGL_JAM_IN.isoformat()
+                if self.TGL_JAM_IN else None
+            ),
+            'tgl_jam_out': (
+                self.TGL_JAM_OUT.isoformat()
+                if self.TGL_JAM_OUT else None
+            ),
             'ket_in': self.KET_IN,
             'transaksi_in': self.TRANSAKSI_IN,
             'update_in_by': self.UPDATE_IN_BY,
-            'update_in_date': self.UPDATE_IN_DATE.isoformat() if self.UPDATE_IN_DATE else None,
-            'pendukung_in': self.PENDUKUNG_IN,
-            'history_transaksi_in': self.HISTORY_TRANSAKSI_IN,
-            'tgl_jam_out': self.TGL_JAM_OUT.isoformat() if self.TGL_JAM_OUT else None,
+            'update_in_date': (
+                self.UPDATE_IN_DATE.isoformat()
+                if self.UPDATE_IN_DATE else None
+            ),
             'ket_out': self.KET_OUT,
             'transaksi_out': self.TRANSAKSI_OUT,
             'update_out_by': self.UPDATE_OUT_BY,
-            'update_out_date': self.UPDATE_OUT_DATE.isoformat() if self.UPDATE_OUT_DATE else None,
-            'pendukung_out': self.PENDUKUNG_OUT,
-            'history_transaksi_out': self.HISTORY_TRANSAKSI_OUT,
+            'update_out_date': (
+                self.UPDATE_OUT_DATE.isoformat()
+                if self.UPDATE_OUT_DATE else None
+            ),
             'tingkat_tlm': self.TINGKAT_TLM,
             'total_tlm': self.TOTAL_TLM,
-            'tingkat_psw': self.TINGKAT_PSW,
             'total_psw': self.TOTAL_PSW,
+            'tingkat_psw': self.TINGKAT_PSW,
+            'is_invalid': self.IS_INVALID,
+            'is_outvalid': self.IS_OUTVALID,
             'awal_tlm': self.AWAL_TLM,
             'persen_pot_tlm': self.PERSEN_POT_TLM,
             'persen_pot_psw': self.PERSEN_POT_PSW,
-            'is_invalid': self.IS_INVALID,
-            'is_outvalid': self.IS_OUTVALID,
-            'tgl_jam_baku_in': self.TGL_JAM_BAKU_IN.isoformat() if self.TGL_JAM_BAKU_IN else None,
-            'tgl_jam_baku_out': self.TGL_JAM_BAKU_OUT.isoformat() if self.TGL_JAM_BAKU_OUT else None,
-            'traksaksi_id_from': self.TRAKSAKSI_ID_FROM,
-            'status_um': self.STATUS_UM
+            'tgl_jam_baku_in': (
+                self.TGL_JAM_BAKU_IN.isoformat()
+                if self.TGL_JAM_BAKU_IN else None
+            ),
+            'tgl_jam_baku_out': (
+                self.TGL_JAM_BAKU_OUT.isoformat()
+                if self.TGL_JAM_BAKU_OUT else None
+            ),
+            'transaksi_id_from': self.TRANSAKSI_ID_FROM,
+            'pendukung_in': self.PENDUKUNG_IN,
+            'pendukung_out': self.PENDUKUNG_OUT,
+            'history_transaksi_in': self.HISTORY_TRANSAKSI_IN,
+            'history_transaksi_out': self.HISTORY_TRANSAKSI_OUT,
         }
