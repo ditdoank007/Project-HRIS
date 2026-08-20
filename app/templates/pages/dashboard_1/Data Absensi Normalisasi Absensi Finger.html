@@ -32,7 +32,10 @@
 
                 <div class="card-body">
                     <!-- Filter Section -->
-                    <div class="row g-3 mb-4">
+                    <div
+                        class="row g-3 mb-4"
+                        id="absensiFilterSection"
+                    >
                         <!-- Baris 1: Tanggal Activity -->
                         <div class="col-12 d-md-flex align-items-center">
                             <label class="col-md-2 form-label-custom mb-1 mb-md-0">Tanggal Activity</label>
@@ -123,13 +126,16 @@
                     <!-- Navigasi Tab -->
                     <ul class="nav nav-tabs orange-tab-bar" id="absensiTab" role="tablist">
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="finger-tab" data-bs-toggle="tab" data-bs-target="#finger-pane" type="button" role="tab">View From Finger</button>
+                            <button class="nav-link active" id="database-tab" data-bs-toggle="tab" data-bs-target="#database-pane" type="button" role="tab">FROM DATABASE</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="file-tab" data-bs-toggle="tab" data-bs-target="#file-pane" type="button" role="tab">FROM FILE</button>
                         </li>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="normalisasi-tab" data-bs-toggle="tab" data-bs-target="#normalisasi-pane" type="button" role="tab">Normalisasi</button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="export-tab" data-bs-toggle="tab" data-bs-target="#export-pane" type="button" role="tab">View Data Absensi (Hasil Export)</button>
+                            <button class="nav-link" id="export-tab" data-bs-toggle="tab" data-bs-target="#export-pane" type="button" role="tab">Data Hasil Ekspor</button>
                         </li>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="closing-tab" data-bs-toggle="tab" data-bs-target="#closing-pane" type="button" role="tab">Penentuan Tanggal Closing Absensi</button>
@@ -139,15 +145,49 @@
                     <!-- Konten Tab -->
                     <div class="tab-content border border-top-0 rounded-bottom p-2 bg-white" id="absensiTabContent">
 
-                        <!-- TAB 1: View From Finger -->
-                        <div class="tab-pane fade show active" id="finger-pane" role="tabpanel" aria-labelledby="finger-tab">
+                        <!-- TAB 1: View Data -->
+                        <div class="tab-pane fade show active" id="database-pane" role="tabpanel" aria-labelledby="database-tab">
+                            <div class="table-responsive">
+                                <table class="table text-center align-middle">
+                                    <thead class="table-custom-header">
+                                        <tr>
+                                            <th>No</th>
+                                            <th>NIP</th>
+                                            <th>Nama</th>
+                                            <th>Gol-Pangkat</th>
+                                            <th>Unit Kerja</th>
+                                            <th>Waktu</th>
+                                            <th>Status</th>
+                                            <th>Transaksi</th>
+                                        </tr>
+                                    </thead>
+
+                        <style>
+                            /* VIEW DATA - NIP dan NAMA rata kiri */
+                            #normalisasi-pane table tbody td:nth-child(2),
+                            #normalisasi-pane table tbody td:nth-child(3),
+                            #normalisasi-pane table tbody td:nth-child(4),
+                            #normalisasi-pane table tbody td:nth-child(6),
+                            #normalisasi-pane table tbody td:nth-child(7) {
+                                text-align: left !important;
+                            }
+
+                            #database-pane table tbody td:nth-child(2),
+                            #database-pane table tbody td:nth-child(3) {
+                                text-align: left !important;
+                            }
+                        </style>
+                        <tbody>
+                                        <tr><td colspan="8" style="padding: 25px;" class="text-start text-muted ps-3">Silakan pilih rentang tanggal lalu klik View Data atau Impor file .dat</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- TAB FROM FILE -->
+                        <div class="tab-pane fade" id="file-pane" role="tabpanel" aria-labelledby="file-tab">
                             <div class="tab-action-bar">
                                 <div class="d-flex align-items-center gap-2 flex-wrap">
-                                    <!-- EXISTING IMPORT: DATABASE HRIS - JANGAN DIUBAH -->
-                                    <button class="btn btn-pill-blue" id="btnImpor" type="button">
-                                        Impor
-                                    </button>
-
                                     <!-- NEW: IMPORT FILE .DAT -->
                                     <input
                                         type="file"
@@ -194,7 +234,13 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr><td colspan="8" style="padding: 25px;" class="text-start text-muted ps-3">No records to display.</td></tr>
+                                        <tr>
+                                            <td colspan="8"
+                                                style="padding: 25px;"
+                                                class="text-start text-muted ps-3">
+                                                Silakan impor file .dat lalu klik View Data.
+                                            </td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -228,11 +274,8 @@
                             </div>
                         </div>
 
-                        <!-- TAB 3: View Data Absensi (Hasil Export) -->
+                        <!-- TAB 3: Data Hasil Ekspor -->
                         <div class="tab-pane fade" id="export-pane" role="tabpanel" aria-labelledby="export-tab">
-                            <div class="tab-action-bar">
-                                <button class="btn btn-pill-blue" id="btnRefreshAbsensi">Refresh</button>
-                            </div>
                             <div class="table-responsive">
                                 <table class="table text-center align-middle" style="min-width: 1200px;">
                                     <thead class="table-custom-header">
@@ -241,11 +284,10 @@
                                             <th>Baku (In)</th><th>Baku (Out)</th><th>In</th><th>Out</th>
                                             <th>Awal TLM</th><th>Total TLM</th><th>Tk TLM</th><th>Pot TLM (%)</th>
                                             <th>Total PSW</th><th>Tk PSW</th><th>Pot PSW (%)</th>
-                                            <th>Transaksi In</th><th>Transaksi Out</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr><td colspan="18" style="padding: 25px;" class="text-start text-muted ps-3">No records to display.</td></tr>
+                                        <tr><td colspan="16" style="padding: 25px;" class="text-start text-muted ps-3">No records to display.</td></tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -273,6 +315,28 @@
 </div>
 {% endblock %}
 
+<style>
+/* ============================================================
+   DATA HASIL EKSPOR
+   Nama dan Hari HARUS rata kiri.
+   !important digunakan karena tabel induk menggunakan
+   text-center.
+   ============================================================ */
+
+#export-pane tbody td:nth-child(2),
+#export-pane tbody td:nth-child(5) {
+    text-align: left !important;
+}
+</style>
+
+<style id="export-data-final-alignment">
+/* FINAL: Data Hasil Ekspor */
+#tableExportData tbody td:nth-child(2),
+#tableExportData tbody td:nth-child(5) {
+    text-align: left !important;
+}
+</style>
+
 {% block script %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -283,12 +347,37 @@ document.addEventListener('DOMContentLoaded', function () {
     const filterField2 = document.getElementById('filterField2');
     const filterValue2 = document.getElementById('filterValue2');
 
-    // Set default tanggal
+    // Set default tanggal berdasarkan tanggal lokal operator.
+    // Tanggal awal  = hari ini - 8 hari.
+    // Tanggal akhir = hari ini - 1 hari.
+    // Hari berjalan tidak ikut diproses karena data finger
+    // hari ini belum lengkap.
+    function formatLocalDate(date) {
+        const year = date.getFullYear();
+        const month = String(
+            date.getMonth() + 1
+        ).padStart(2, '0');
+        const day = String(
+            date.getDate()
+        ).padStart(2, '0');
+
+        return `${year}-${month}-${day}`;
+    }
+
     const today = new Date();
-    const weekAgo = new Date(today);
-    weekAgo.setDate(today.getDate() - 7);
-    tglAwal.value = weekAgo.toISOString().split('T')[0];
-    tglAkhir.value = today.toISOString().split('T')[0];
+
+    const activityStart = new Date(today);
+    activityStart.setDate(
+        today.getDate() - 8
+    );
+
+    const activityEnd = new Date(today);
+    activityEnd.setDate(
+        today.getDate() - 1
+    );
+
+    tglAwal.value = formatLocalDate(activityStart);
+    tglAkhir.value = formatLocalDate(activityEnd);
 
     // ---------- helper ----------
     function qs(params) {
@@ -413,6 +502,7 @@ document.addEventListener('DOMContentLoaded', function () {
             `Mengupload ${selectedDatFiles.length} file .DAT...`;
 
         btnImporDat.disabled = true;
+        btnUploadDat.disabled = true;
 
         try {
 
@@ -433,71 +523,55 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             datFileSummary.textContent =
-                `${result.total_files} file diterima `
-                + `(${result.valid_files} valid, `
-                + `${result.invalid_files} invalid)`;
+                `${result.inserted} record masuk RAW `
+                + `(${result.duplicate} duplicate, `
+                + `${result.invalid} invalid)`;
 
-            datFileList.innerHTML = result.data.map((item, index) => `
-                <div class="border rounded px-2 py-1 mb-1 ${
-                    item.valid ? '' : 'border-danger text-danger'
-                }">
-                    <strong>${index + 1}.</strong>
-                    ${item.filename}
-                    <span class="text-muted">
-                        (${(item.size / 1024).toFixed(1)} KB)
-                    </span>
-                    <span class="ms-2">
-                        ${item.message}
-                    </span>
-                </div>
-            `).join('');
+            const preview = result.preview || [];
+
+            if (preview.length > 0) {
+                datFileList.innerHTML = preview.map(
+                    (item, index) => `
+                    <div class="border rounded px-2 py-1 mb-1">
+                        <strong>${index + 1}.</strong>
+                        ${item.filename || '-'}
+                        <span class="ms-2">
+                            ${item.finger_id || '-'}
+                            |
+                            ${item.waktu || '-'}
+                            |
+                            ${item.status || '-'}
+                        </span>
+                    </div>
+                `
+                ).join('');
+            }
 
             datFileList.style.display = 'block';
 
-            // Setelah upload berhasil, langsung commit
-            // seluruh file .DAT ke FINGER_HARVEST_RAW.
-            const commitResponse = await fetch(
-                '/api/normalisasi/commit-dat',
-                {
-                    method: 'POST'
-                }
-            );
-
-            const commitResult = await commitResponse.json();
-
-            if (!commitResponse.ok || !commitResult.success) {
-                throw new Error(
-                    commitResult.error ||
-                    'File .DAT berhasil di-upload tetapi gagal masuk database.'
-                );
-            }
-
-            datFileSummary.textContent =
-                `${commitResult.inserted} record masuk database `
-                + `(${commitResult.duplicate} duplicate, `
-                + `${commitResult.invalid} invalid)`;
-
             alert(
-                'Import .DAT selesai.\\n\\n'
-                + `Record masuk database : ${commitResult.inserted}\\n`
-                + `Duplicate             : ${commitResult.duplicate}\\n`
-                + `Invalid                : ${commitResult.invalid}`
+                'UPLOAD file .DAT selesai.\\n\\n'
+                + `Record masuk RAW : ${result.inserted}\\n`
+                + `Duplicate         : ${result.duplicate}\\n`
+                + `Invalid            : ${result.invalid}\\n\\n`
+                + 'Silakan klik VIEW DATA.'
             );
 
-        } catch (error) {
-
-            console.error('DAT UPLOAD ERROR:', error);
+        } catch (err) {
 
             datFileSummary.textContent =
-                'Upload .DAT gagal';
+                'Upload file .DAT gagal';
 
             alert(
                 'Gagal upload file .DAT: '
-                + error.message
+                + err.message
             );
 
         } finally {
+
             btnImporDat.disabled = false;
+            btnUploadDat.disabled =
+                selectedDatFiles.length === 0;
         }
     }
 
@@ -505,7 +579,7 @@ document.addEventListener('DOMContentLoaded', function () {
         'afterend',
         '<button class="btn btn-pill-blue" '
         + 'id="btnUploadDat" type="button" disabled>'
-        + 'UPLOAD & PREVIEW'
+        + 'UPLOAD'
         + '</button>'
     );
 
@@ -517,45 +591,160 @@ document.addEventListener('DOMContentLoaded', function () {
         btnUploadDat.disabled = selectedDatFiles.length === 0;
     });
 
-    // ================= TAB 1: View From Finger (Impor) =================
-    const btnImpor = document.getElementById('btnImpor');
-    const tbodyFinger = document.querySelector('#finger-pane tbody');
+    // ============================================================
+    // FORMAT TANGGAL ABSENSI
+    // ============================================================
 
-    btnImpor.addEventListener('click', function () {
+    function formatDateTimeID(value) {
+        if (!value) return '-';
+
+        const m = String(value).match(
+            /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}:\d{2}:\d{2}))?$/
+        );
+
+        if (!m) return value;
+
+        return `${m[3]}-${m[2]}-${m[1]}${m[4] ? ' ' + m[4] : ''}`;
+    }
+
+    const hariIndonesia = {
+        Sunday: 'Minggu',
+        Monday: 'Senin',
+        Tuesday: 'Selasa',
+        Wednesday: 'Rabu',
+        Thursday: 'Kamis',
+        Friday: 'Jumat',
+        Saturday: 'Sabtu'
+    };
+
+    function formatHariIndonesia(value) {
+        if (!value) return '-';
+        return hariIndonesia[value] || value;
+    }
+
+    // ================= TAB 1: VIEW DATA =================
+
+    const tbodyFinger =
+        document.querySelector('#database-pane tbody');
+
+    const fingerTab =
+        document.getElementById('database-tab');
+
+    const btnNormalisasi =
+        document.getElementById('btnNormalisasi');
+
+    const btnExportNormalisasi =
+        document.getElementById('btnExportNormalisasi');
+
+    // Normalisasi dan Export belum boleh dilakukan
+    // sebelum VIEW DATA berhasil.
+    btnNormalisasi.disabled = true;
+    btnExportNormalisasi.disabled = true;
+
+    let viewDataLoaded = false;
+
+    // Hasil NORMALISASI yang sedang tampil di browser.
+    // EXPORT akan menggunakan data ini, bukan cache RAM Gunicorn.
+    let normalisasiRows = [];
+
+    function loadViewData() {
+
         const params = getFilterParams();
+
         if (!params.tgl_awal || !params.tgl_akhir) {
             alert('Tanggal periode kosong');
             return;
         }
-        renderEmptyRow(tbodyFinger, 8, 'Memuat data...');
 
-        fetch('/api/normalisasi/import-finger?' + qs(params))
+        viewDataLoaded = false;
+        btnNormalisasi.disabled = true;
+        btnExportNormalisasi.disabled = true;
+
+        renderEmptyRow(
+            tbodyFinger,
+            8,
+            'Memuat data...'
+        );
+
+        fetch(
+            '/api/normalisasi/import-finger?'
+            + qs(params)
+        )
             .then(r => r.json())
             .then(res => {
-                if (res.error) { alert(res.error); return; }
-                if (!res.data || res.data.length === 0) {
-                    renderEmptyRow(tbodyFinger, 8, res.message || 'Data Log Finger Print Kosong.');
+
+                if (res.error) {
+                    alert(res.error);
+                    renderEmptyRow(
+                        tbodyFinger,
+                        8,
+                        res.error
+                    );
                     return;
                 }
-                tbodyFinger.innerHTML = res.data.map(r => `
+
+                if (!res.data || res.data.length === 0) {
+                    renderEmptyRow(
+                        tbodyFinger,
+                        8,
+                        res.message
+                        || 'Data Log Finger Print Kosong.'
+                    );
+                    return;
+                }
+
+                tbodyFinger.innerHTML =
+                    res.data.map(r => `
                     <tr>
                         <td>${r.no}</td>
                         <td>${r.nip || '-'}</td>
                         <td>${r.nama || '-'}</td>
                         <td>${r.gol || '-'}</td>
                         <td>${r.unit_kerja || '-'}</td>
-                        <td>${r.waktu || '-'}</td>
-                        <td><span class="badge ${r.status === 'IN' ? 'bg-success' : 'bg-warning text-dark'}">${r.status || '-'}</span></td>
+                        <td>${formatDateTimeID(r.waktu)}</td>
+                        <td>
+                            <span class="badge ${
+                                r.status === 'IN'
+                                    ? 'bg-success'
+                                    : 'bg-warning text-dark'
+                            }">
+                                ${r.status || '-'}
+                            </span>
+                        </td>
                         <td>${r.transaksi || '-'}</td>
                     </tr>
                 `).join('');
+
+                viewDataLoaded = true;
+                btnNormalisasi.disabled = false;
+
+                console.log(
+                    'VIEW DATA loaded:',
+                    res.total
+                );
             })
-            .catch(err => alert('Gagal memuat data: ' + err));
-    });
+            .catch(err => {
+
+                renderEmptyRow(
+                    tbodyFinger,
+                    8,
+                    'Gagal memuat data.'
+                );
+
+                alert(
+                    'Gagal memuat data: '
+                    + err
+                );
+            });
+    }
+
+    // Klik VIEW DATA = ambil data.
+    fingerTab.addEventListener(
+        'click',
+        loadViewData
+    );
 
     // ================= TAB 2: Normalisasi =================
-    const btnNormalisasi = document.getElementById('btnNormalisasi');
-    const btnExportNormalisasi = document.getElementById('btnExportNormalisasi');
     const inputDefaultTLM = document.getElementById('inputDefaultTLM');
     const tbodyNormalisasi = document.querySelector('#normalisasi-pane tbody');
 
@@ -567,12 +756,12 @@ document.addEventListener('DOMContentLoaded', function () {
         tbodyNormalisasi.innerHTML = rows.map(r => `
             <tr>
                 <td>${r.no}</td>
-                <td>${r.nip || '-'}</td>
-                <td>${r.nama || '-'}</td>
-                <td>${r.tgl_kerja || '-'}</td>
+                <td class="normalisasi-left">${r.nip || '-'}</td>
+                <td style="text-align: left;">${r.nama || '-'}</td>
+                <td class="normalisasi-left">${formatDateTimeID(r.tgl_kerja)}</td>
                 <td>1</td>
-                <td>${r.tgl_kerja || '-'}</td>
-                <td>${r.hari || '-'} / ${r.is_libur || ''}</td>
+                <td class="normalisasi-left">${formatDateTimeID(r.tgl_kerja)}</td>
+                <td class="normalisasi-left">${formatHariIndonesia(r.hari)} / ${r.is_libur || ''}</td>
                 <td>-</td>
                 <td>${r.jam_baku_in || '-'}</td>
                 <td>${r.jam_baku_out || '-'}</td>
@@ -590,6 +779,14 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     btnNormalisasi.addEventListener('click', function () {
+
+        if (!viewDataLoaded) {
+            alert(
+                'Silakan klik VIEW DATA terlebih dahulu.'
+            );
+            return;
+        }
+
         const defaultVal = inputDefaultTLM.value;
         if (!defaultVal) {
             alert('Nilai default TLM atau PSW kosong (utk tdk check in atau out)');
@@ -609,7 +806,25 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(r => r.json())
             .then(res => {
                 if (res.error) { alert(res.error); renderEmptyRow(tbodyNormalisasi, 19, res.error); return; }
-                renderNormalisasi(res.data);
+                normalisasiRows = Array.isArray(res.data)
+                    ? res.data
+                    : [];
+
+                renderNormalisasi(normalisasiRows);
+
+                btnNormalisasi.style.display = 'none';
+
+                btnExportNormalisasi.disabled =
+                    normalisasiRows.length === 0;
+
+                const absensiFilterSection =
+                    document.getElementById(
+                        'absensiFilterSection'
+                    );
+
+                if (absensiFilterSection) {
+                    absensiFilterSection.style.display = 'none';
+                }
             })
             .catch(err => alert('Gagal proses normalisasi: ' + err));
     });
@@ -617,60 +832,147 @@ document.addEventListener('DOMContentLoaded', function () {
     btnExportNormalisasi.addEventListener('click', function () {
         if (!confirm('Export data normalisasi ke tabel Absensi?')) return;
 
-        fetch('/api/normalisasi/export', { method: 'POST' })
+        if (!normalisasiRows.length) {
+            alert(
+                'Tidak ada hasil normalisasi untuk diekspor.'
+            );
+            return;
+        }
+
+        fetch('/api/normalisasi/export', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                tgl_awal: tglAwal.value,
+                tgl_akhir: tglAkhir.value,
+                rows: normalisasiRows
+            })
+        })
             .then(r => r.json())
             .then(res => {
-                if (res.error) { alert(res.error); return; }
+                if (res.error) {
+                    alert(res.error);
+                    return;
+                }
+
                 alert(res.message);
-                document.getElementById('btnRefreshAbsensi').click();
+
+                // ====================================================
+                // EXPORT BERHASIL
+                //
+                // Jangan refresh View Data Absensi.
+                // Jangan memanggil btnRefreshAbsensi.
+                //
+                // Operator harus melihat bahwa seluruh proses
+                // NORMALISASI -> EXPORT sudah selesai.
+                // ====================================================
+
+                normalisasiRows = [];
+
+                renderEmptyRow(
+                    tbodyNormalisasi,
+                    19,
+                    'Export berhasil. Proses normalisasi dan export selesai.'
+                );
+
+                btnNormalisasi.style.display = 'none';
+
+                btnExportNormalisasi.style.display = 'none';
+                btnExportNormalisasi.disabled = true;
+
+                const absensiFilterSection =
+                    document.getElementById(
+                        'absensiFilterSection'
+                    );
+
+                if (absensiFilterSection) {
+                    absensiFilterSection.style.display = 'none';
+                }
+
+                // ====================================================
+                // SETELAH EXPORT BERHASIL
+                //
+                // Gunakan DATA yang baru saja dikembalikan
+                // oleh proses EXPORT.
+                //
+                // JANGAN query ulang seluruh tabel ABSENSI.
+                // ====================================================
+
+                const exportedRows = Array.isArray(res.data)
+                    ? res.data
+                    : [];
+
+                renderExportData(exportedRows);
+
+                const exportTab =
+                    document.getElementById('export-tab');
+
+                if (exportTab) {
+                    bootstrap.Tab.getOrCreateInstance(
+                        exportTab
+                    ).show();
+                }
             })
             .catch(err => alert('Gagal export: ' + err));
     });
 
-    // ================= TAB 3: View Data Absensi (Hasil Export) =================
-    const btnRefreshAbsensi = document.getElementById('btnRefreshAbsensi');
+    // ================= TAB 3: Data Hasil Ekspor =================
     const tbodyExport = document.querySelector('#export-pane tbody');
 
-    btnRefreshAbsensi.addEventListener('click', function () {
-        if (!tglAwal.value || !tglAkhir.value) {
-            alert('Tanggal periode kosong');
+    function renderExportData(rows) {
+        if (!rows || rows.length === 0) {
+            renderEmptyRow(
+                tbodyExport,
+                16,
+                'Tidak ada data hasil export.'
+            );
             return;
         }
-        renderEmptyRow(tbodyExport, 18, 'Memuat data...');
 
-        fetch('/api/normalisasi/absensi-view?' + qs({ tgl_awal: tglAwal.value, tgl_akhir: tglAkhir.value }))
-            .then(r => r.json())
-            .then(res => {
-                if (res.error) { alert(res.error); return; }
-                if (!res.data || res.data.length === 0) {
-                    renderEmptyRow(tbodyExport, 18, 'No records to display.');
-                    return;
-                }
-                tbodyExport.innerHTML = res.data.map(r => `
-                    <tr>
-                        <td>${r.no}</td>
-                        <td>${r.nama || '-'}</td>
-                        <td>${r.finger_id || '-'}</td>
-                        <td>${r.tgl_kerja || '-'}</td>
-                        <td>${r.hari || '-'}</td>
-                        <td>${r.jam_baku_in || '-'}</td>
-                        <td>${r.jam_baku_out || '-'}</td>
-                        <td>${r.jam_in || '-'}</td>
-                        <td>${r.jam_out || '-'}</td>
-                        <td>${r.awal_tlm ?? '-'}</td>
-                        <td>${r.total_tlm ?? '-'}</td>
-                        <td>${r.tingkat_tlm ?? '-'}</td>
-                        <td>${r.persen_pot_tlm ?? '-'}</td>
-                        <td>${r.total_psw ?? '-'}</td>
-                        <td>${r.tingkat_psw ?? '-'}</td>
-                        <td>${r.persen_pot_psw ?? '-'}</td>
-                        <td>${r.transaksi_in ?? '-'}</td>
-                        <td>${r.transaksi_out ?? '-'}</td>
-                    </tr>
-                `).join('');
-            })
-            .catch(err => alert('Gagal memuat data: ' + err));
-    });
+        const hariIndonesia = {
+            Sunday: 'Minggu',
+            Monday: 'Senin',
+            Tuesday: 'Selasa',
+            Wednesday: 'Rabu',
+            Thursday: 'Kamis',
+            Friday: 'Jumat',
+            Saturday: 'Sabtu'
+        };
+
+        tbodyExport.innerHTML = rows.map(r => `
+            <tr>
+                <td>${r.no ?? '-'}</td>
+
+                <td style="text-align: left !important;">
+                    ${r.nama || '-'}
+                </td>
+
+                <td>${r.finger_id || '-'}</td>
+
+                <td>${r.tgl_kerja || '-'}</td>
+
+                <td style="text-align: left !important;">
+                    ${hariIndonesia[r.hari] || r.hari || '-'}
+                </td>
+
+                <td>${r.jam_baku_in || '-'}</td>
+                <td>${r.jam_baku_out || '-'}</td>
+                <td>${r.jam_in || '-'}</td>
+                <td>${r.jam_out || '-'}</td>
+
+                <td>${r.awal_tlm ?? '-'}</td>
+                <td>${r.total_tlm ?? '-'}</td>
+                <td>${r.tingkat_tlm ?? '-'}</td>
+                <td>${r.persen_pot_tlm ?? '-'}</td>
+
+                <td>${r.total_psw ?? '-'}</td>
+                <td>${r.tingkat_psw ?? '-'}</td>
+                <td>${r.persen_pot_psw ?? '-'}</td>
+            </tr>
+        `).join('');
+    }
 
     // ================= TAB 4: Penentuan Tanggal Closing Absensi =================
     const inputTglClosing = document.getElementById('inputTglClosing');

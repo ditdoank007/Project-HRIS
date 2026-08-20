@@ -51,9 +51,6 @@ def api_normalisasi_upload_dat():
                 "error": "Tidak ada file .DAT yang dipilih."
             }), 400
 
-        staging_dir = Path("/opt/hris/app/var/dat-import")
-        staging_dir.mkdir(parents=True, exist_ok=True)
-
         inserted = 0
         duplicate = 0
         invalid = 0
@@ -78,10 +75,6 @@ def api_normalisasi_upload_dat():
                     continue
 
                 content = file.read()
-
-                # Simpan file asli ke staging.
-                staging_path = staging_dir / Path(filename).name
-                staging_path.write_bytes(content)
 
                 # DAT dari aplikasi HRIS 2013 menggunakan CRLF.
                 content_text = content.decode(
@@ -123,6 +116,16 @@ def api_normalisasi_upload_dat():
                             "%Y-%m-%d %H:%M"
                         )
                     except ValueError:
+                        invalid += 1
+                        continue
+
+                    # Tolak tahun fingerprint yang tidak masuk akal.
+                    # Data HRIS historis menggunakan tahun >= 2000
+                    # dan tidak boleh melebihi tahun berjalan + 1.
+                    if (
+                        waktu.year < 2000
+                        or waktu.year > datetime.now().year + 1
+                    ):
                         invalid += 1
                         continue
 
@@ -359,6 +362,16 @@ def api_normalisasi_commit_dat():
                             "%Y-%m-%d %H:%M"
                         )
                     except ValueError:
+                        invalid += 1
+                        continue
+
+                    # Tolak tahun fingerprint yang tidak masuk akal.
+                    # Data HRIS historis menggunakan tahun >= 2000
+                    # dan tidak boleh melebihi tahun berjalan + 1.
+                    if (
+                        waktu.year < 2000
+                        or waktu.year > datetime.now().year + 1
+                    ):
                         invalid += 1
                         continue
 
@@ -886,6 +899,12 @@ def data_absensi_normalisasi_finger():
     """
     return render_template('pages/dashboard_1/Data Absensi Normalisasi Absensi Finger.html')
 
+def data_absensi_impor_file():
+    return render_template(
+        'pages/dashboard_1/Data Absensi Impor File.html'
+    )
+
+
 def api_normalisasi_get_fields():
     """
     API: daftar field yang bisa dipakai untuk filter (dropdown "- Pilih Field -").
@@ -901,8 +920,17 @@ def api_normalisasi_get_fields():
 
 def api_normalisasi_import_finger():
     """
-    TAB 1 - View From Finger.
-    Ambil log mentah TimeRecorder pada rentang tanggal, join ke Pegawai & UnitKerja.
+    TAB 1 - VIEW DATA.
+
+    Sumber data:
+        FINGER_HARVEST_RAW
+
+    Data ini dapat berasal dari:
+        1. HRIS Finger Collector / mesin finger
+        2. Import file .DAT
+
+    VIEW DATA hanya membaca RAW.
+    Tidak melakukan normalisasi dan tidak mengubah ABSENSI.
     """
     try:
         tgl_awal_str = request.args.get('tgl_awal', '')
@@ -913,65 +941,194 @@ def api_normalisasi_import_finger():
         filter_value2 = request.args.get('filter_value2', '')
 
         if not tgl_awal_str or not tgl_akhir_str:
-            return jsonify({'error': 'Tanggal periode kosong', 'data': []})
+            return jsonify({
+                'error': 'Tanggal periode kosong',
+                'data': []
+            })
 
-        tgl_awal = datetime.strptime(tgl_awal_str, '%Y-%m-%d')
-        tgl_akhir = datetime.strptime(tgl_akhir_str, '%Y-%m-%d') + timedelta(days=1)
-
-        query = (
-            db.session.query(TimeRecorder, Pegawai, MfUnitKerja)
-            .join(Pegawai, TimeRecorder.FINGER_ID == Pegawai.ABSENSI_ID)
-            .join(MfUnitKerja, Pegawai.UNIT_KERJA_ID == MfUnitKerja.UNIT_KERJA_ID)
-            .filter(TimeRecorder.WAKTU >= tgl_awal, TimeRecorder.WAKTU < tgl_akhir)
+        tgl_awal = datetime.strptime(
+            tgl_awal_str,
+            '%Y-%m-%d'
         )
 
-        field_mapping = {
-            'NIP': Pegawai.NIP,
-            'Nama': Pegawai.NAMA,
-            'UnitKerjaName': MfUnitKerja.NAMA_UNIT_KERJA,
-        }
-        if filter_field1 and filter_value1:
-            f = field_mapping.get(filter_field1)
-            if f is not None:
-                query = query.filter(f.ilike(f'%{filter_value1}%'))
-        if filter_field2 and filter_value2:
-            f = field_mapping.get(filter_field2)
-            if f is not None:
-                query = query.filter(f.ilike(f'%{filter_value2}%'))
+        tgl_akhir = (
+            datetime.strptime(
+                tgl_akhir_str,
+                '%Y-%m-%d'
+            )
+            + timedelta(days=1)
+        )
 
-        query = query.order_by(TimeRecorder.FINGER_ID, TimeRecorder.WAKTU)
-        results = query.all()
+        sql = text("""
+            SELECT
+                r.ID,
+                r.FINGER_ID,
+                r.USER_ID,
+                r.WAKTU,
+                r.STATUS,
+                r.PUNCH,
+                r.DEVICE_IP,
+                p.NIP,
+                p.Nama AS NAMA,
+                p.Gol AS GOL,
+                p.UnitKerja AS UNIT_KERJA
+            FROM FINGER_HARVEST_RAW r
+            INNER JOIN PEGAWAI p
+                ON CAST(r.USER_ID AS CHAR)
+                 = CAST(p.FingerID AS CHAR)
+            WHERE r.WAKTU >= :tgl_awal
+              AND r.WAKTU < :tgl_akhir
+        """)
+
+        params = {
+            'tgl_awal': tgl_awal,
+            'tgl_akhir': tgl_akhir,
+        }
+
+        conditions = []
+
+        field_mapping = {
+            'NIP': 'p.NIP',
+            'Nama': 'p.Nama',
+            'UnitKerjaName': 'p.UnitKerja',
+        }
+
+        if filter_field1 and filter_value1:
+            field = field_mapping.get(filter_field1)
+            if field:
+                conditions.append(
+                    f"{field} LIKE :filter_value1"
+                )
+                params['filter_value1'] = (
+                    f"%{filter_value1}%"
+                )
+
+        if filter_field2 and filter_value2:
+            field = field_mapping.get(filter_field2)
+            if field:
+                conditions.append(
+                    f"{field} LIKE :filter_value2"
+                )
+                params['filter_value2'] = (
+                    f"%{filter_value2}%"
+                )
+
+        if conditions:
+            sql = text("""
+                SELECT
+                    r.ID,
+                    r.FINGER_ID,
+                    r.USER_ID,
+                    r.WAKTU,
+                    r.STATUS,
+                    r.PUNCH,
+                    r.DEVICE_IP,
+                    p.NIP,
+                    p.Nama AS NAMA,
+                    p.Gol AS GOL,
+                    p.UnitKerja AS UNIT_KERJA
+                FROM FINGER_HARVEST_RAW r
+                INNER JOIN PEGAWAI p
+                    ON CAST(r.USER_ID AS CHAR)
+                     = CAST(p.FingerID AS CHAR)
+                WHERE r.WAKTU >= :tgl_awal
+                  AND r.WAKTU < :tgl_akhir
+                  AND """ + " AND ".join(conditions) + """
+                ORDER BY CAST(p.UnitKerja AS UNSIGNED), r.FINGER_ID, r.WAKTU
+            """)
+        else:
+            sql = text("""
+                SELECT
+                    r.ID,
+                    r.FINGER_ID,
+                    r.USER_ID,
+                    r.WAKTU,
+                    r.STATUS,
+                    r.PUNCH,
+                    r.DEVICE_IP,
+                    p.NIP,
+                    p.Nama AS NAMA,
+                    p.Gol AS GOL,
+                    p.UnitKerja AS UNIT_KERJA
+                FROM FINGER_HARVEST_RAW r
+                INNER JOIN PEGAWAI p
+                    ON CAST(r.USER_ID AS CHAR)
+                     = CAST(p.FingerID AS CHAR)
+                WHERE r.WAKTU >= :tgl_awal
+                  AND r.WAKTU < :tgl_akhir
+                ORDER BY CAST(p.UnitKerja AS UNSIGNED), r.FINGER_ID, r.WAKTU
+            """)
+
+        rows = db.session.execute(
+            sql,
+            params
+        ).mappings().all()
 
         data = []
         cache_rows = []
-        for i, (tr, peg, unit) in enumerate(results, 1):
-            gol_pangkat = f"{peg.GOL_ID or ''} - {peg.PANGKAT or ''}" if peg.PANGKAT else str(peg.GOL_ID or '')
+
+        for i, r in enumerate(rows, 1):
+            status = str(
+                r['STATUS'] or ''
+            ).strip().upper()
+
+            if status not in ('IN', 'OUT'):
+                if r['PUNCH'] == 1:
+                    status = 'IN'
+                elif r['PUNCH'] == 0:
+                    status = 'OUT'
+
             row = {
                 'no': i,
-                'nip': peg.NIP,
-                'nama': peg.NAMA,
-                'gol': gol_pangkat,
-                'unit_kerja': unit.NAMA_UNIT_KERJA if unit else '',
-                'waktu': tr.WAKTU.strftime('%Y-%m-%d %H:%M:%S') if tr.WAKTU else '',
-                'status': tr.STATUS or '',
-                'transaksi': tr.TRANSAKSI or '',
-                'finger_id': tr.FINGER_ID,
+                'finger_id': str(
+                    r['FINGER_ID'] or ''
+                ),
+                'nip': r['NIP'] or '',
+                'nama': r['NAMA'] or '',
+                'gol': r['GOL'] or '',
+                'unit_kerja': r['UNIT_KERJA'] or '',
+                'waktu': (
+                    r['WAKTU'].strftime(
+                        '%Y-%m-%d %H:%M:%S'
+                    )
+                    if r['WAKTU']
+                    else ''
+                ),
+                'status': status,
+                'punch': r['PUNCH'],
+                'device_ip': r['DEVICE_IP'] or '',
+                'transaksi': (
+                    r['STATUS'] or status
+                ),
             }
+
             data.append(row)
             cache_rows.append(row)
 
-        # simpan ke cache utk dipakai tahap normalisasi
         _NORMALISASI_CACHE['import'] = cache_rows
 
         if not data:
-            return jsonify({'success': True, 'data': [], 'message': 'Data Log Finger Print Kosong'})
+            return jsonify({
+                'success': True,
+                'data': [],
+                'total': 0,
+                'message': 'Data Log Finger Print Kosong'
+            })
 
-        return jsonify({'success': True, 'data': data, 'total': len(data)})
+        return jsonify({
+            'success': True,
+            'data': data,
+            'total': len(data)
+        })
 
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return jsonify({'error': str(e), 'data': []})
+
+        return jsonify({
+            'error': str(e),
+            'data': []
+        })
 
 
 def api_normalisasi_process():
@@ -1021,11 +1178,11 @@ def api_normalisasi_process():
                 p.Gol AS GOL,
                 p.UnitKerja AS UNIT_KERJA
             FROM FINGER_HARVEST_RAW r
-            LEFT JOIN PEGAWAI p
+            INNER JOIN PEGAWAI p
                 ON CAST(r.USER_ID AS CHAR) = CAST(p.FingerID AS CHAR)
             WHERE r.WAKTU >= :tgl_awal_raw
               AND r.WAKTU < :tgl_akhir_raw
-            ORDER BY r.FINGER_ID, r.WAKTU
+            ORDER BY CAST(p.UnitKerja AS UNSIGNED), r.FINGER_ID, r.WAKTU
         """)
 
         raw_rows = db.session.execute(
@@ -1786,13 +1943,35 @@ def api_normalisasi_process():
 
                 result.append(row)
 
-        result.sort(key=lambda r: (r['finger_id'], r['tgl_kerja']))
+        def _normalisasi_sort_key(r):
+            unit = str(
+                r.get('unit_kerja') or ''
+            ).strip()
+
+            try:
+                unit_num = int(unit)
+            except (TypeError, ValueError):
+                unit_num = 999999
+
+            return (
+                unit_num,
+                str(r.get('finger_id') or ''),
+                r.get('tgl_kerja') or ''
+            )
+
+        result.sort(key=_normalisasi_sort_key)
         for i, r in enumerate(result, 1):
             r['no'] = i
 
         _NORMALISASI_CACHE['normal'] = result
+        _NORMALISASI_CACHE['normal_tgl_awal'] = tgl_awal_str
+        _NORMALISASI_CACHE['normal_tgl_akhir'] = tgl_akhir_str
 
-        return jsonify({'success': True, 'data': result, 'total': len(result)})
+        return jsonify({
+            'success': True,
+            'data': result,
+            'total': len(result)
+        })
 
     except Exception as e:
         import traceback
@@ -1803,24 +1982,135 @@ def api_normalisasi_process():
 def api_normalisasi_export():
     """
     TAB 2 - tombol EXPORT.
-    Simpan hasil normalisasi (di cache) ke tabel ABSENSI (insert atau update).
+
+    Simpan hasil normalisasi ke tabel ABSENSI
+    dengan mekanisme INSERT / UPDATE.
+
+    Hanya pegawai yang memiliki NIP yang boleh
+    masuk ke ABSENSI.
     """
     try:
-        rows = _NORMALISASI_CACHE.get('normal', [])
-        if not rows:
-            return jsonify({'error': 'Tidak ada data hasil normalisasi. Jalankan Normalisasi dulu.'})
+        # --------------------------------------------------------
+        # EXPORT menggunakan hasil NORMALISASI yang dikirim
+        # langsung dari browser.
+        #
+        # Jangan bergantung pada _NORMALISASI_CACHE karena
+        # Gunicorn menggunakan lebih dari satu worker.
+        # --------------------------------------------------------
+
+        data = request.get_json(silent=True) or {}
+
+        tgl_awal_export = str(
+            data.get('tgl_awal') or ''
+        ).strip()
+
+        tgl_akhir_export = str(
+            data.get('tgl_akhir') or ''
+        ).strip()
+
+        rows = data.get('rows') or []
+
+        if not tgl_awal_export or not tgl_akhir_export:
+            return jsonify({
+                'error': 'Periode export kosong.'
+            })
+
+        if not isinstance(rows, list) or not rows:
+            return jsonify({
+                'error': (
+                    'Tidak ada hasil normalisasi untuk diekspor. '
+                    'Silakan lakukan NORMALISASI terlebih dahulu.'
+                )
+            })
+
+            return jsonify({
+                'error': (
+                    'Tidak ada data hasil normalisasi. '
+                    'Jalankan Normalisasi dulu.'
+                )
+            })
 
         saved = 0
+        skipped = 0
+        exported_rows = []
+
         for r in rows:
-            tgl_kerja = datetime.strptime(r['tgl_kerja'], '%Y-%m-%d')
-            tgl_jam_in = datetime.strptime(f"{r['tgl_kerja']} {r['jam_in']}", '%Y-%m-%d %H:%M:%S')
-            tgl_jam_out = datetime.strptime(f"{r['tgl_kerja']} {r['jam_out']}", '%Y-%m-%d %H:%M:%S')
-            tgl_jam_baku_in = datetime.strptime(f"{r['tgl_kerja']} {r['jam_baku_in']}", '%Y-%m-%d %H:%M')
-            tgl_jam_baku_out = datetime.strptime(f"{r['tgl_kerja']} {r['jam_baku_out']}", '%Y-%m-%d %H:%M')
+
+            # --------------------------------------------------------
+            # Pegawai tanpa NIP tidak boleh masuk ABSENSI.
+            # --------------------------------------------------------
+
+            nip = str(r.get('nip') or '').strip()
+
+            if not nip:
+                skipped += 1
+                continue
+
+            # --------------------------------------------------------
+            # Validasi tanggal kerja.
+            # --------------------------------------------------------
+
+            tgl_kerja_str = str(
+                r.get('tgl_kerja') or ''
+            ).strip()
+
+            if not tgl_kerja_str:
+                skipped += 1
+                continue
+
+            tgl_kerja = datetime.strptime(
+                tgl_kerja_str,
+                '%Y-%m-%d'
+            )
+
+            # --------------------------------------------------------
+            # Jam aktual.
+            #
+            # Normalisasi menggunakan 00:00:00 untuk fingerprint
+            # yang tidak ada. Tetap pertahankan perilaku lama.
+            # --------------------------------------------------------
+
+            jam_in = str(
+                r.get('jam_in') or '00:00:00'
+            )
+
+            jam_out = str(
+                r.get('jam_out') or '00:00:00'
+            )
+
+            tgl_jam_in = datetime.strptime(
+                f"{tgl_kerja_str} {jam_in}",
+                '%Y-%m-%d %H:%M:%S'
+            )
+
+            tgl_jam_out = datetime.strptime(
+                f"{tgl_kerja_str} {jam_out}",
+                '%Y-%m-%d %H:%M:%S'
+            )
+
+            # --------------------------------------------------------
+            # Jam baku.
+            # --------------------------------------------------------
+
+            tgl_jam_baku_in = datetime.strptime(
+                f"{tgl_kerja_str} {r['jam_baku_in']}",
+                '%Y-%m-%d %H:%M'
+            )
+
+            tgl_jam_baku_out = datetime.strptime(
+                f"{tgl_kerja_str} {r['jam_baku_out']}",
+                '%Y-%m-%d %H:%M'
+            )
+
+            # --------------------------------------------------------
+            # Cari ABSENSI existing berdasarkan FINGER_ID + tanggal.
+            # --------------------------------------------------------
 
             existing = Absensi.query.filter(
                 Absensi.FINGER_ID == r['finger_id'],
-                db.func.date(Absensi.TGL_KERJA) == tgl_kerja.date()
+                db.func.date(
+                    Absensi.TGL_KERJA
+                ) == tgl_kerja.date()
             ).first()
 
             if existing:
@@ -1835,16 +2125,20 @@ def api_normalisasi_export():
                 existing.TOTAL_PSW = r['total_psw']
                 existing.PERSEN_POT_PSW = r['persen_pot_psw']
                 existing.AWAL_TLM = r['awal_tlm']
-                existing.IS_INVALID = 'Y' if r['is_valid_in'] else 'N'
-                existing.IS_OUTVALID = 'Y' if r['is_valid_out'] else 'N'
+                existing.IS_INVALID = (
+                    'Y' if r['is_valid_in'] else 'N'
+                )
+                existing.IS_OUTVALID = (
+                    'Y' if r['is_valid_out'] else 'N'
+                )
                 existing.TGL_JAM_BAKU_IN = tgl_jam_baku_in
                 existing.TGL_JAM_BAKU_OUT = tgl_jam_baku_out
                 existing.UPDATE_IN_DATE = datetime.now()
                 existing.UPDATE_OUT_DATE = datetime.now()
+
             else:
                 absensi = Absensi(
                     FINGER_ID=r['finger_id'],
-                    NIP=r['nip'],
                     TGL_KERJA=tgl_kerja,
                     TGL_JAM_IN=tgl_jam_in,
                     TGL_JAM_OUT=tgl_jam_out,
@@ -1855,26 +2149,101 @@ def api_normalisasi_export():
                     PERSEN_POT_TLM=r['persen_pot_tlm'],
                     TINGKAT_PSW=r['tingkat_psw'],
                     TOTAL_PSW=r['total_psw'],
-                    PERSEN_POT_PSW=r['persen_pot_psw'],
                     AWAL_TLM=r['awal_tlm'],
-                    IS_INVALID='Y' if r['is_valid_in'] else 'N',
-                    IS_OUTVALID='Y' if r['is_valid_out'] else 'N',
+                    IS_INVALID=(
+                        'Y' if r['is_valid_in'] else 'N'
+                    ),
+                    IS_OUTVALID=(
+                        'Y' if r['is_valid_out'] else 'N'
+                    ),
                     TGL_JAM_BAKU_IN=tgl_jam_baku_in,
                     TGL_JAM_BAKU_OUT=tgl_jam_baku_out,
                     UPDATE_IN_DATE=datetime.now(),
                     UPDATE_OUT_DATE=datetime.now(),
                 )
+
                 db.session.add(absensi)
+
             saved += 1
 
+            # --------------------------------------------------------
+            # Simpan representasi hasil export untuk langsung
+            # dikirim kembali ke browser.
+            #
+            # Tidak perlu query ulang seluruh tabel ABSENSI.
+            # --------------------------------------------------------
+
+            exported_rows.append({
+                'no': saved,
+                'nama': r.get('nama') or '',
+                'finger_id': r.get('finger_id') or '',
+                'tgl_kerja': (
+                    tgl_kerja.strftime('%d %b %Y')
+                    if tgl_kerja
+                    else ''
+                ),
+                'hari': (
+                    tgl_kerja.strftime('%A')
+                    if tgl_kerja
+                    else ''
+                ),
+                'jam_baku_in': (
+                    tgl_jam_baku_in.strftime('%H:%M')
+                    if tgl_jam_baku_in
+                    else ''
+                ),
+                'jam_baku_out': (
+                    tgl_jam_baku_out.strftime('%H:%M')
+                    if tgl_jam_baku_out
+                    else ''
+                ),
+                'jam_in': (
+                    tgl_jam_in.strftime('%H:%M')
+                    if tgl_jam_in
+                    else ''
+                ),
+                'jam_out': (
+                    tgl_jam_out.strftime('%H:%M')
+                    if tgl_jam_out
+                    else ''
+                ),
+                'awal_tlm': r.get('awal_tlm'),
+                'total_tlm': r.get('total_tlm'),
+                'tingkat_tlm': r.get('tingkat_tlm'),
+                'persen_pot_tlm': r.get('persen_pot_tlm'),
+                'total_psw': r.get('total_psw'),
+                'tingkat_psw': r.get('tingkat_psw'),
+                'persen_pot_psw': r.get('persen_pot_psw'),
+                'transaksi_in': 'LogFP',
+                'transaksi_out': 'LogFP',
+            })
+
         db.session.commit()
-        return jsonify({'success': True, 'message': f'Export Sukses ({saved} data)'})
+
+        return jsonify({
+            'success': True,
+            'message': (
+                f'Export Sukses ({saved} data)'
+                + (
+                    f' | Dilewati tanpa NIP: {skipped}'
+                    if skipped
+                    else ''
+                )
+            ),
+            'saved': saved,
+            'skipped': skipped,
+            'data': exported_rows,
+        })
 
     except Exception as e:
         db.session.rollback()
+
         import traceback
         traceback.print_exc()
-        return jsonify({'error': str(e)})
+
+        return jsonify({
+            'error': str(e)
+        })
 
 
 def api_normalisasi_absensi_view():

@@ -71,7 +71,7 @@ from app.controllers.dashboard_1LaporanRekapController import (
     search_pegawai_by_name,
 )
 from app.controllers.dashboard_1DataAbsensiController import (
-    data_absensi_non_finger, data_absensi_normalisasi_finger, data_absensi_pegawai_manual,
+    data_absensi_non_finger, data_absensi_normalisasi_finger, data_absensi_impor_file, data_absensi_pegawai_manual,
     data_absensi_pegawai_lembur_manual, data_absensi_trace_tunjangan, data_absensi_trace, cari_absensi_non_finger,
     cari_absensi_normalisasi_finger, cari_absensi_pegawai_manual, cari_absensi_pegawai_lembur_manual,
     api_trace_absensi as data_absensi_api_trace_absensi, api_trace_tunjangan as data_absensi_api_trace_tunjangan,
@@ -944,6 +944,11 @@ def api_absensi_non_finger_search_pegawai():
 @login_required
 def view_data_absensi_normalisasi_finger():
     return data_absensi_normalisasi_finger()
+
+@main.route('/data-absensi/impor-file')
+@login_required
+def view_data_absensi_impor_file():
+    return data_absensi_impor_file()
 
 @main.route('/api/normalisasi/fields', methods=['GET'])
 @login_required

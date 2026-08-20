@@ -1,0 +1,403 @@
+<!-- pages/dashboard_1/Data Absensi Normalisasi Absensi Finger.html -->
+{% extends "layout/baseDashboard1.html" %}
+
+{% block title %}- Impor File{% endblock %}
+
+{% block content %}
+<div class="nxl-content">
+    <div class="page-header">
+        <div class="page-header-left d-flex align-items-center">
+            <div class="page-header-title">
+                <h5 class="m-b-10">Data Absensi</h5>
+            </div>
+            <ul class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.view_data_absensi_normalisasi_finger') }}">Impor File</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="main-content master-siaga">
+        <div class="container-fluid">
+            <div class="card mb-4 filter-card">
+                <div class="card-header-custom d-flex justify-content-between align-items-center" style="border-radius: 10px;">
+                    <h6 class="mb-0">
+                        <i class="bi bi-upload me-2"></i>Impor File
+                    </h6>
+                    <div class="header-actions">
+                        <a href="{{ url_for('main.view_cari_absensi_normalisasi_finger') }}" class="btn p-0 border-0 bg-transparent shadow-none text-decoration-none">
+                            <i class="bi bi-search" style="color: #333; font-size: 1.1rem;"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <!-- Filter Section -->
+
+
+                    <!-- Custom Style -->
+                    <style>
+                        .orange-tab-bar {
+                            background-color: #e66b30 !important;
+                            padding: 5px 10px;
+                            border-radius: 8px 8px 0 0;
+                            border-bottom: none !important;
+                            display: flex;
+                            flex-wrap: nowrap;
+                            gap: 5px;
+                            align-items: center;
+                            overflow-x: auto;
+                        }
+                        .orange-tab-bar::-webkit-scrollbar { display: none; }
+                        .orange-tab-bar .nav-item { flex-shrink: 0; }
+                        .orange-tab-bar .nav-link {
+                            color: #ffffff !important;
+                            font-weight: 500;
+                            border: none !important;
+                            background: transparent !important;
+                            padding: 6px 12px;
+                            font-size: 0.85rem;
+                            border-radius: 5px !important;
+                            transition: all 0.2s ease;
+                            white-space: nowrap;
+                        }
+                        .orange-tab-bar .nav-link.active {
+                            background-color: rgba(255, 255, 255, 0.25) !important;
+                            color: #ffffff !important;
+                        }
+                        .orange-tab-bar .nav-link:hover:not(.active) { background-color: rgba(255, 255, 255, 0.1); }
+                        .tab-action-bar { padding: 12px 5px; }
+                        .btn-pill-blue {
+                            background-color: #0000ff;
+                            color: white !important;
+                            border-radius: 50px;
+                            padding: 4px 18px;
+                            font-size: 0.8rem;
+                            border: none;
+                            font-weight: 500;
+                            cursor: pointer;
+                        }
+                        .btn-pill-blue:hover { background-color: #0000cc; }
+                        .table-custom-header th {
+                            background-color: #f1f3f5 !important;
+                            color: #495057 !important;
+                            font-size: 0.8rem;
+                            font-weight: 500;
+                            border-bottom: none;
+                            padding: 8px 10px;
+                        }
+                        .form-label-bold { font-weight: 600; font-size: 13px; }
+                        .filter-label-wide { min-width: 60px; font-weight: 600; font-size: 13px; }
+                        .text-dan { color: #EB6831; }
+                    </style>
+
+                    <!-- Navigasi Tab -->
+                    <ul class="nav nav-tabs orange-tab-bar" id="absensiTab" role="tablist">
+                        
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="impor-tab" data-bs-toggle="tab" data-bs-target="#impor-pane" type="button" role="tab">IMPOR</button>
+                        </li>
+                    </ul>
+
+                    <!-- Konten Tab -->
+                    <div class="tab-content border border-top-0 rounded-bottom p-2 bg-white" id="absensiTabContent">
+
+                        <!-- TAB 1: View Data -->
+                        <!-- TAB 1: IMPOR FILE -->
+                        <div class="tab-pane fade show active" id="impor-pane" role="tabpanel" aria-labelledby="impor-tab">
+                            <div class="tab-action-bar">
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <!-- NEW: IMPORT FILE .DAT -->
+                                    <input
+                                        type="file"
+                                        id="datFileInput"
+                                        accept=".dat"
+                                        multiple
+                                        hidden
+                                    >
+
+                                    <button
+                                        class="btn btn-pill-blue"
+                                        id="btnImporDat"
+                                        type="button"
+                                    >
+                                        1. PILIH FILE FINGER (.DAT)
+                                    </button>
+
+                                    <span
+                                        id="datFileSummary"
+                                        class="small text-muted"
+                                    >
+                                        Belum ada file .DAT dipilih
+                                    </span>
+                                </div>
+
+                                <div
+                                    id="datFileList"
+                                    class="mt-2 small"
+                                    style="display:none;"
+                                ></div>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table text-center align-middle">
+                                    <thead class="table-custom-header">
+                                        <tr>
+                                            <th>No</th>
+                                            <th>NIP</th>
+                                            <th>Nama</th>
+                                            <th>Gol-Pangkat</th>
+                                            <th>Unit Kerja</th>
+                                            <th>Waktu</th>
+                                            <th>Status</th>
+                                            <th>Transaksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td colspan="8"
+                                                style="padding: 25px;"
+                                                class="text-start text-muted ps-3">
+                                                Silakan pilih file .DAT kemudian klik UPLOAD.
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- TAB 2: Normalisasi -->
+                        
+
+                        <!-- TAB 4: Penentuan Tanggal Closing Absensi -->
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+<style>
+/* ============================================================
+   DATA HASIL EKSPOR
+   Nama dan Hari HARUS rata kiri.
+   !important digunakan karena tabel induk menggunakan
+   text-center.
+   ============================================================ */
+
+    text-align: left !important;
+}
+</style>
+
+<style id="export-data-final-alignment">
+#tableExportData tbody td:nth-child(2),
+#tableExportData tbody td:nth-child(5) {
+    text-align: left !important;
+}
+</style>
+
+{% block script %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // ============================================================
+    // FORMAT TANGGAL ABSENSI
+    // ============================================================
+
+    function formatDateTimeID(value) {
+        if (!value) return '-';
+
+        const m = String(value).match(
+            /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}:\d{2}:\d{2}))?$/
+        );
+
+        if (!m) return value;
+
+        return `${m[3]}-${m[2]}-${m[1]}${m[4] ? ' ' + m[4] : ''}`;
+    }
+
+    const hariIndonesia = {
+        Sunday: 'Minggu',
+        Monday: 'Senin',
+        Tuesday: 'Selasa',
+        Wednesday: 'Rabu',
+        Thursday: 'Kamis',
+        Friday: 'Jumat',
+        Saturday: 'Sabtu'
+    };
+
+    function formatHariIndonesia(value) {
+        if (!value) return '-';
+        return hariIndonesia[value] || value;
+    }
+
+    // ================= TAB 1: IMPOR =================
+
+    const btnImporDat =
+        document.getElementById('btnImporDat');
+
+    const datFileInput =
+        document.getElementById('datFileInput');
+
+    const datFileSummary =
+        document.getElementById('datFileSummary');
+
+    const datFileList =
+        document.getElementById('datFileList');
+
+    let selectedDatFiles = [];
+
+    btnImporDat.addEventListener('click', function () {
+        datFileInput.click();
+    });
+
+    datFileInput.addEventListener('change', function () {
+
+        selectedDatFiles = Array.from(
+            datFileInput.files || []
+        ).filter(file =>
+            file.name.toLowerCase().endsWith('.dat')
+        );
+
+        if (selectedDatFiles.length === 0) {
+            datFileSummary.textContent =
+                'Belum ada file .DAT dipilih';
+
+            datFileList.style.display = 'none';
+            datFileList.innerHTML = '';
+            return;
+        }
+
+        datFileSummary.textContent =
+            `${selectedDatFiles.length} file .DAT dipilih`;
+
+        datFileList.style.display = 'block';
+
+        datFileList.innerHTML =
+            selectedDatFiles.map((file, index) => `
+                <div class="border rounded px-2 py-1 mb-1">
+                    <strong>${index + 1}.</strong>
+                    ${file.name}
+                    <span class="text-muted">
+                        (${(file.size / 1024).toFixed(1)} KB)
+                    </span>
+                </div>
+            `).join('');
+
+        btnUploadDat.disabled = false;
+    });
+
+    async function uploadDatFiles() {
+
+        if (selectedDatFiles.length === 0) {
+            alert(
+                'Silakan pilih file .DAT terlebih dahulu.'
+            );
+            return;
+        }
+
+        const formData = new FormData();
+
+        selectedDatFiles.forEach(file => {
+            formData.append('files', file);
+        });
+
+        datFileSummary.textContent =
+            `Mengupload ${selectedDatFiles.length} file .DAT...`;
+
+        btnImporDat.disabled = true;
+        btnUploadDat.disabled = true;
+
+        try {
+
+            const response = await fetch(
+                '/api/normalisasi/upload-dat',
+                {
+                    method: 'POST',
+                    body: formData
+                }
+            );
+
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                throw new Error(
+                    result.error ||
+                    'Upload file .DAT gagal.'
+                );
+            }
+
+            datFileSummary.textContent =
+                `${result.inserted} record masuk RAW `
+                + `(${result.duplicate} duplicate, `
+                + `${result.invalid} invalid)`;
+
+            datFileList.style.display = 'block';
+
+            datFileList.innerHTML = `
+                <div class="border rounded p-3">
+                    <div>
+                        <strong>Import selesai</strong>
+                    </div>
+                    <div class="mt-2">
+                        Record masuk RAW :
+                        <strong>${result.inserted}</strong>
+                    </div>
+                    <div>
+                        Duplicate :
+                        <strong>${result.duplicate}</strong>
+                    </div>
+                    <div>
+                        Invalid :
+                        <strong>${result.invalid}</strong>
+                    </div>
+                </div>
+            `;
+
+            alert(
+                'UPLOAD file .DAT selesai.\n\n'
+                + `Record masuk RAW : ${result.inserted}\n`
+                + `Duplicate         : ${result.duplicate}\n`
+                + `Invalid            : ${result.invalid}`
+            );
+
+        } catch (err) {
+
+            datFileSummary.textContent =
+                'Upload file .DAT gagal';
+
+            alert(
+                'Gagal upload file .DAT: '
+                + err.message
+            );
+
+        } finally {
+
+            btnImporDat.disabled = false;
+
+            btnUploadDat.disabled =
+                selectedDatFiles.length === 0;
+        }
+    }
+
+    btnImporDat.insertAdjacentHTML(
+        'afterend',
+        '<button class="btn btn-pill-blue" '
+        + 'id="btnUploadDat" type="button" disabled>'
+        + 'UPLOAD'
+        + '</button>'
+    );
+
+    const btnUploadDat =
+        document.getElementById('btnUploadDat');
+
+    btnUploadDat.addEventListener(
+        'click',
+        uploadDatFiles
+    );
+
+
+
+});
+</script>
+{% endblock %}
