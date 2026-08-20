@@ -9,7 +9,7 @@ from app.controllers.dashboard_1HomeController import (
 from app.controllers.dashboard_1MasterFileController import (
     create_kalender_tahun, export_jam_finger_excel, export_tunjangan_excel, get_jabatan_list, get_jam_finger_list, get_jam_kerja_list, get_joblist_list, get_kalender_list,
     get_pegawai_vip_list, get_potongan_list, get_tunjangan_list, get_tunkin_class_detail, get_tunkin_class_list,
-    get_unit_kerja_list, get_user_account_detail, get_user_account_list, master_butir_kegiatan, master_jabatan, master_jam_finger, master_jam_kerja,
+    delete_user_account, get_unit_kerja_list, get_user_account_detail, get_user_account_list, master_butir_kegiatan, master_jabatan, master_jam_finger, master_jam_kerja,
     master_kalender, master_pegawai_vip, master_potongan, master_trt as master_file_trt, master_tunkin_class,
     master_unit_kerja, master_user, master_uang_makan, cari_master_jabatan, cari_master_jam_finger, cari_master_jam_kerja,
     cari_master_kalender, cari_master_potongan, cari_master_tunkin_class, cari_master_uang_makan, cari_master_unit_kerja,
@@ -90,6 +90,8 @@ from app.controllers.dashboard_1DataAbsensiController import (
     api_normalisasi_get_fields as data_absensi_api_normalisasi_fields,
     api_normalisasi_import_finger as data_absensi_api_normalisasi_import,
     api_normalisasi_process as data_absensi_api_normalisasi_process,
+    api_normalisasi_upload_dat as data_absensi_api_normalisasi_upload_dat,
+    api_normalisasi_commit_dat as data_absensi_api_normalisasi_commit_dat,
     api_normalisasi_export as data_absensi_api_normalisasi_export,
     api_normalisasi_absensi_view as data_absensi_api_normalisasi_absensi_view,
     api_closing_get as data_absensi_api_closing_get,
@@ -647,6 +649,11 @@ def api_user_account_detail():
 def api_user_account_save():
     return save_user_account()
 
+@main.route('/api/user-account/delete', methods=['POST'])
+@login_required
+def api_user_account_delete():
+    return delete_user_account()
+
 @main.route('/master/uang-makan')
 @login_required
 def view_master_uang_makan():
@@ -947,6 +954,16 @@ def api_normalisasi_fields():
 @login_required
 def api_normalisasi_import_finger():
     return data_absensi_api_normalisasi_import()
+
+@main.route('/api/normalisasi/upload-dat', methods=['POST'])
+@login_required
+def api_normalisasi_upload_dat():
+    return data_absensi_api_normalisasi_upload_dat()
+
+@main.route('/api/normalisasi/commit-dat', methods=['POST'])
+@login_required
+def api_normalisasi_commit_dat():
+    return data_absensi_api_normalisasi_commit_dat()
 
 @main.route('/api/normalisasi/process', methods=['POST'])
 @login_required

@@ -37,9 +37,6 @@
                                     class="btn p-0 border-0 bg-transparent shadow-none text-decoration-none">
                                     <i class="bi bi-search" style="color: #333; font-size: 1.1rem;"></i>
                                 </a>
-                                <button class="btn p-0 border-0 bg-transparent shadow-none" id="btnSimpanUser">
-                                    <i class="bi bi-save" style="color: #198754; font-size: 1.2rem;"></i>
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -128,6 +125,25 @@
                         </div>
                     </div>
 
+                    <!-- Tombol aksi form -->
+                    <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                        <button
+                            type="button"
+                            id="btnBatalUser"
+                            class="btn btn-secondary px-4"
+                            style="min-width: 110px;">
+                            <i class="bi bi-x-circle me-1"></i>BATAL
+                        </button>
+
+                        <button
+                            type="button"
+                            id="btnSimpanUser"
+                            class="btn text-white px-4"
+                            style="background-color:#e66b30; min-width:110px;">
+                            <i class="bi bi-save me-1"></i>SIMPAN
+                        </button>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -141,6 +157,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const inputNip = document.getElementById('inputNip');
     const btnCari = document.getElementById('btnCariPeg');
     const btnRefresh = document.getElementById('btnRefreshUser');
+    const btnBatal = document.getElementById('btnBatalUser');
     const btnSimpan = document.getElementById('btnSimpanUser');
     const displayNama = document.getElementById('displayNama');
     const selectLevel = document.getElementById('selectLevel');
@@ -243,7 +260,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            alert(json.message);
+            alert('Berhasil disimpan !');
             loadUserAccount(); // refresh tampilan supaya sinkron dengan DB
 
         } catch (err) {
@@ -254,9 +271,23 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    btnBatal.addEventListener('click', function () {
+        window.history.back();
+    });
+
     btnCari.addEventListener('click', loadUserAccount);
     btnRefresh.addEventListener('click', loadUserAccount);
     btnSimpan.addEventListener('click', saveUserAccount);
+
+    // Jika halaman dibuka dari tombol Edit pada daftar User Account,
+    // otomatis isi NIP dan load data account.
+    const urlParams = new URLSearchParams(window.location.search);
+    const editNip = urlParams.get('nip');
+
+    if (editNip) {
+        inputNip.value = editNip;
+        loadUserAccount();
+    }
 });
 </script>
 {% endblock %}

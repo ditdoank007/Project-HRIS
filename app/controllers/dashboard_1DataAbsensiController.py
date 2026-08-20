@@ -1,5 +1,6 @@
 # controllers/dashboard_1DataAbsensiController.py
 from flask import render_template, request, jsonify
+from pathlib import Path
 from datetime import datetime, timedelta
 from collections import defaultdict
 from sqlalchemy import func, text
@@ -20,6 +21,457 @@ from app.models.mediaInformasiModel import MediaInformasi
 import random
 
 _NORMALISASI_CACHE = {}
+
+_DAT_IMPORT_CACHE = {}
+
+
+def api_normalisasi_upload_dat():
+    """
+    IMPORT FILE .DAT - MULTI FILE.
+
+    Alur:
+    .DAT -> FINGER_HARVEST_RAW
+
+    Format .DAT:
+    FINGER_ID <TAB> WAKTU <TAB> STATUS <TAB> PUNCH <TAB> DEVICE_IP
+
+    Data raw disimpan apa adanya.
+    Filter administrator/operator mesin dilakukan pada tahap normalisasi.
+    """
+
+    try:
+        from datetime import datetime
+
+        files = request.files.getlist("files")
+
+        if not files:
+            return jsonify({
+                "success": False,
+                "error": "Tidak ada file .DAT yang dipilih."
+            }), 400
+
+        staging_dir = Path("/opt/hris/app/var/dat-import")
+        staging_dir.mkdir(parents=True, exist_ok=True)
+
+        inserted = 0
+        duplicate = 0
+        invalid = 0
+        admin_raw = 0
+        total_lines = 0
+        preview = []
+
+        connection = db.engine.raw_connection()
+
+        try:
+            cursor = connection.cursor()
+
+            for file in files:
+
+                filename = (file.filename or "").strip()
+
+                if not filename:
+                    continue
+
+                if not filename.lower().endswith(".dat"):
+                    invalid += 1
+                    continue
+
+                content = file.read()
+
+                # Simpan file asli ke staging.
+                staging_path = staging_dir / Path(filename).name
+                staging_path.write_bytes(content)
+
+                # DAT dari aplikasi HRIS 2013 menggunakan CRLF.
+                content_text = content.decode(
+                    "utf-8",
+                    errors="replace"
+                )
+
+                for line_number, raw_line in enumerate(
+                    content_text.splitlines(),
+                    start=1
+                ):
+
+                    line = raw_line.strip()
+
+                    if not line:
+                        continue
+
+                    total_lines += 1
+
+                    parts = line.split("\t")
+
+                    if len(parts) < 5:
+                        invalid += 1
+                        continue
+
+                    finger_id = parts[0].strip()
+                    waktu_text = parts[1].strip()
+                    status = parts[2].strip() or None
+                    punch_text = parts[3].strip()
+                    device_ip = parts[4].strip()
+
+                    if not finger_id or not waktu_text or not device_ip:
+                        invalid += 1
+                        continue
+
+                    try:
+                        waktu = datetime.strptime(
+                            waktu_text,
+                            "%Y-%m-%d %H:%M"
+                        )
+                    except ValueError:
+                        invalid += 1
+                        continue
+
+                    try:
+                        punch = int(punch_text)
+                    except ValueError:
+                        punch = None
+
+                    try:
+                        finger_id_int = int(finger_id)
+                    except ValueError:
+                        invalid += 1
+                        continue
+
+                    # Finger ID operator/admin tetap masuk RAW.
+                    # Filtering dilakukan saat normalisasi.
+                    if finger_id in {"1", "2", "4", "5"}:
+                        admin_raw += 1
+
+                    # Cegah file yang sama / record yang sama
+                    # masuk berulang kali.
+                    cursor.execute(
+                        """
+                        SELECT ID
+                        FROM FINGER_HARVEST_RAW
+                        WHERE DEVICE_IP = %s
+                          AND USER_ID = %s
+                          AND WAKTU = %s
+                          AND COALESCE(PUNCH, -1) = COALESCE(%s, -1)
+                        LIMIT 1
+                        """,
+                        (
+                            device_ip,
+                            finger_id,
+                            waktu,
+                            punch,
+                        )
+                    )
+
+                    exists = cursor.fetchone()
+
+                    if exists:
+                        duplicate += 1
+                        continue
+
+                    harvest_date = waktu.date()
+
+                    cursor.execute(
+                        """
+                        INSERT INTO FINGER_HARVEST_RAW
+                        (
+                            HARVEST_DATE,
+                            DEVICE_IP,
+                            DEVICE_SERIAL,
+                            DEVICE_NAME,
+                            FINGER_ID,
+                            UID_DEVICE,
+                            USER_ID,
+                            WAKTU,
+                            STATUS,
+                            PUNCH
+                        )
+                        VALUES
+                        (
+                            %s,
+                            %s,
+                            NULL,
+                            NULL,
+                            %s,
+                            NULL,
+                            %s,
+                            %s,
+                            %s,
+                            %s
+                        )
+                        """,
+                        (
+                            harvest_date,
+                            device_ip,
+                            finger_id_int,
+                            finger_id,
+                            waktu,
+                            status,
+                            punch,
+                        )
+                    )
+
+                    inserted += 1
+
+                    # Preview maksimum 200 record.
+                    if len(preview) < 200:
+                        preview.append({
+                            "finger_id": finger_id,
+                            "waktu": waktu.strftime(
+                                "%Y-%m-%d %H:%M:%S"
+                            ),
+                            "status": status or "",
+                            "punch": punch,
+                            "device_ip": device_ip,
+                            "filename": filename,
+                        })
+
+            connection.commit()
+
+        except Exception:
+            connection.rollback()
+            raise
+
+        finally:
+            cursor.close()
+            connection.close()
+
+        _DAT_IMPORT_CACHE["files"] = [
+            {
+                "filename": f.filename or "",
+                "valid": bool(
+                    f.filename
+                    and f.filename.lower().endswith(".dat")
+                )
+            }
+            for f in files
+        ]
+
+        return jsonify({
+            "success": True,
+            "total_files": len(files),
+            "total_lines": total_lines,
+            "inserted": inserted,
+            "duplicate": duplicate,
+            "invalid": invalid,
+            "admin_raw": admin_raw,
+            "preview": preview,
+            "message": (
+                f"Import .DAT selesai. "
+                f"{inserted} record masuk FINGER_HARVEST_RAW."
+            )
+        })
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+def api_normalisasi_commit_dat():
+    """
+    COMMIT FILE .DAT YANG SUDAH ADA DI STAGING
+    KE FINGER_HARVEST_RAW.
+
+    Tidak mengubah TIME_RECORDER atau ABSENSI.
+    Tahap ini hanya memasukkan raw fingerprint.
+    """
+
+    try:
+        from datetime import datetime
+
+        staging_dir = Path("/opt/hris/app/var/dat-import")
+
+        if not staging_dir.exists():
+            return jsonify({
+                "success": False,
+                "error": "Folder staging .DAT tidak ditemukan."
+            }), 400
+
+        dat_files = sorted(
+            staging_dir.glob("*.dat")
+        )
+
+        if not dat_files:
+            return jsonify({
+                "success": False,
+                "error": "Tidak ada file .DAT di staging."
+            }), 400
+
+        connection = db.engine.raw_connection()
+
+        inserted = 0
+        duplicate = 0
+        invalid = 0
+        total_lines = 0
+        files_processed = 0
+        admin_count = 0
+
+        try:
+            cursor = connection.cursor()
+
+            for dat_path in dat_files:
+
+                files_processed += 1
+
+                content = dat_path.read_bytes()
+
+                content_text = content.decode(
+                    "utf-8",
+                    errors="replace"
+                )
+
+                for raw_line in content_text.splitlines():
+
+                    line = raw_line.strip()
+
+                    if not line:
+                        continue
+
+                    total_lines += 1
+
+                    parts = line.split("\t")
+
+                    if len(parts) < 5:
+                        invalid += 1
+                        continue
+
+                    finger_id = parts[0].strip()
+                    waktu_text = parts[1].strip()
+                    status = parts[2].strip() or None
+                    punch_text = parts[3].strip()
+                    device_ip = parts[4].strip()
+
+                    if (
+                        not finger_id
+                        or not waktu_text
+                        or not device_ip
+                    ):
+                        invalid += 1
+                        continue
+
+                    try:
+                        waktu = datetime.strptime(
+                            waktu_text,
+                            "%Y-%m-%d %H:%M"
+                        )
+                    except ValueError:
+                        invalid += 1
+                        continue
+
+                    try:
+                        finger_id_int = int(finger_id)
+                    except ValueError:
+                        invalid += 1
+                        continue
+
+                    try:
+                        punch = int(punch_text)
+                    except ValueError:
+                        punch = None
+
+                    if finger_id in {"1", "2", "4", "5"}:
+                        admin_count += 1
+
+                    cursor.execute(
+                        """
+                        SELECT ID
+                        FROM FINGER_HARVEST_RAW
+                        WHERE DEVICE_IP = %s
+                          AND USER_ID = %s
+                          AND WAKTU = %s
+                          AND COALESCE(PUNCH, -1)
+                              = COALESCE(%s, -1)
+                        LIMIT 1
+                        """,
+                        (
+                            device_ip,
+                            finger_id,
+                            waktu,
+                            punch,
+                        )
+                    )
+
+                    if cursor.fetchone():
+                        duplicate += 1
+                        continue
+
+                    cursor.execute(
+                        """
+                        INSERT INTO FINGER_HARVEST_RAW
+                        (
+                            HARVEST_DATE,
+                            DEVICE_IP,
+                            DEVICE_SERIAL,
+                            DEVICE_NAME,
+                            FINGER_ID,
+                            UID_DEVICE,
+                            USER_ID,
+                            WAKTU,
+                            STATUS,
+                            PUNCH
+                        )
+                        VALUES
+                        (
+                            %s,
+                            %s,
+                            NULL,
+                            NULL,
+                            %s,
+                            NULL,
+                            %s,
+                            %s,
+                            %s,
+                            %s
+                        )
+                        """,
+                        (
+                            waktu.date(),
+                            device_ip,
+                            finger_id_int,
+                            finger_id,
+                            waktu,
+                            status,
+                            punch,
+                        )
+                    )
+
+                    inserted += 1
+
+            connection.commit()
+
+        except Exception:
+            connection.rollback()
+            raise
+
+        finally:
+            cursor.close()
+            connection.close()
+
+        return jsonify({
+            "success": True,
+            "files_processed": files_processed,
+            "total_lines": total_lines,
+            "inserted": inserted,
+            "duplicate": duplicate,
+            "invalid": invalid,
+            "admin_count": admin_count,
+            "message": (
+                "Import .DAT ke FINGER_HARVEST_RAW selesai."
+            )
+        })
+
+    except Exception as e:
+
+        import traceback
+        traceback.print_exc()
+
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 
 def data_absensi_non_finger():
     """
@@ -545,15 +997,210 @@ def api_normalisasi_process():
         tgl_awal = datetime.strptime(tgl_awal_str, '%Y-%m-%d')
         tgl_akhir = datetime.strptime(tgl_akhir_str, '%Y-%m-%d')
 
-        import_rows = _NORMALISASI_CACHE.get('import', [])
-        if not import_rows:
-            return jsonify({'error': 'Data Log Finger Print Kosong, silakan Impor dulu di tab View From Finger'})
+        # ============================================================
+        # SUMBER NORMALISASI:
+        # FINGER_HARVEST_RAW
+        #
+        # Jangan lagi bergantung pada _NORMALISASI_CACHE['import'].
+        # RAW adalah sumber permanen hasil import file .DAT.
+        # ============================================================
 
+        from sqlalchemy import text
+
+        raw_sql = text("""
+            SELECT
+                r.FINGER_ID,
+                r.USER_ID,
+                r.WAKTU,
+                r.STATUS,
+                r.PUNCH,
+                r.DEVICE_IP,
+                p.NIP,
+                p.Nama AS NAMA,
+                p.Gol AS GOL,
+                p.UnitKerja AS UNIT_KERJA
+            FROM FINGER_HARVEST_RAW r
+            LEFT JOIN PEGAWAI p
+                ON CAST(r.USER_ID AS CHAR) = CAST(p.FingerID AS CHAR)
+            WHERE r.WAKTU >= :tgl_awal_raw
+              AND r.WAKTU < :tgl_akhir_raw
+            ORDER BY r.FINGER_ID, r.WAKTU
+        """)
+
+        raw_rows = db.session.execute(
+            raw_sql,
+            {
+                # Shift 2 Siaga membutuhkan fingerprint
+                # mulai dari malam tanggal sebelumnya.
+                'tgl_awal_raw': tgl_awal - timedelta(days=1),
+                'tgl_akhir_raw': tgl_akhir + timedelta(days=1),
+            }
+        ).mappings().all()
+
+        if not raw_rows:
+            return jsonify({
+                'error': (
+                    'Data FINGER_HARVEST_RAW kosong '
+                    'untuk periode yang dipilih.'
+                )
+            })
+
+        # ============================================================
         # Kelompokkan log per (finger_id, tanggal)
+        # ============================================================
+
         grouped = defaultdict(list)
-        for r in import_rows:
-            tgl = r['waktu'][:10]
-            grouped[(r['finger_id'], tgl)].append(r)
+
+        for r in raw_rows:
+            waktu = r['WAKTU']
+
+            if not waktu:
+                continue
+
+            status = str(r['STATUS'] or '').strip().upper()
+
+            # Format RAW:
+            # STATUS = IN / OUT
+            # PUNCH   = 1 / 0
+            #
+            # Untuk sementara gunakan STATUS sebagai sumber utama.
+            if status not in ('IN', 'OUT'):
+                punch = r['PUNCH']
+
+                if punch == 1:
+                    status = 'IN'
+                elif punch == 0:
+                    status = 'OUT'
+
+            grouped[
+                (
+                    str(r['FINGER_ID']),
+                    waktu.strftime('%Y-%m-%d')
+                )
+            ].append({
+                'finger_id': str(r['FINGER_ID']),
+                'nip': r['NIP'] or '',
+                'nama': r['NAMA'] or '',
+                'gol': r['GOL'] or '',
+                'unit_kerja': r['UNIT_KERJA'] or '',
+                'waktu': waktu.strftime('%Y-%m-%d %H:%M:%S'),
+                'status': status,
+                'punch': r['PUNCH'],
+                'device_ip': r['DEVICE_IP'] or '',
+            })
+
+        if not grouped:
+            return jsonify({
+                'error': (
+                    'Tidak ada log fingerprint valid '
+                    'yang dapat dinormalisasi.'
+                )
+            })
+
+        # ============================================================
+        # SHIFT 2 SIAGA
+        #
+        # Penentuan Shift 2 TIDAK berasal dari MF_JAM_KERJA.
+        #
+        # Shift 2 ditentukan oleh:
+        #   LOG_ACTIVITIY
+        #   Activity = Piket Siaga
+        #   Shift = 2
+        #
+        # ActivityDate adalah tanggal SIAGA.
+        # Kehadiran fingerprint Shift 2 menjadi ABSENSI
+        # pada HARI BERIKUTNYA.
+        #
+        # StatusID = 3 / shift2 = 1
+        #     -> hadir dan boleh dinormalisasi
+        #
+        # Selain itu
+        #     -> fingerprint tetap berada di RAW,
+        #        tetapi TIDAK masuk ABSENSI.
+        # ============================================================
+
+        shift2_sql = text("""
+            SELECT
+                NIP,
+                ActivityDate,
+                StatusID,
+                shift2,
+                Shift,
+                GUIDTim,
+                Fungsional,
+                IDUnitKerja
+            FROM LOG_ACTIVITIY
+            WHERE Activity = 'Piket Siaga'
+              AND Shift = '2'
+              AND ActivityDate >= :activity_awal
+              AND ActivityDate <= :activity_akhir
+        """)
+
+        shift2_rows = db.session.execute(
+            shift2_sql,
+            {
+                'activity_awal': (tgl_awal - timedelta(days=1)).date(),
+                'activity_akhir': (tgl_akhir - timedelta(days=1)).date(),
+            }
+        ).mappings().all()
+
+        # key:
+        #   (NIP, tanggal_absensi)
+        #
+        # value:
+        #   {
+        #       hadir: True/False,
+        #       activity_date: tanggal siaga
+        #   }
+        shift2_map = {}
+
+        for sr in shift2_rows:
+            nip_siaga = str(sr['NIP'] or '').strip()
+
+            if not nip_siaga or not sr['ActivityDate']:
+                continue
+
+            activity_date = sr['ActivityDate']
+
+            if hasattr(activity_date, 'date'):
+                activity_date = activity_date.date()
+
+            target_date = activity_date + timedelta(days=1)
+
+            # Kehadiran Shift 2 ditentukan oleh checkbox lama:
+            #
+            # STATUS_ID = 3
+            # atau
+            # SHIFT_2 = 1
+            #
+            hadir_shift2 = (
+                int(sr['StatusID'] or 0) == 3
+                or int(sr['shift2'] or 0) == 1
+            )
+
+            shift2_map[
+                (nip_siaga, target_date.strftime('%Y-%m-%d'))
+            ] = {
+                'hadir': hadir_shift2,
+                'activity_date': activity_date,
+                'guid_tim': sr['GUIDTim'],
+                'fungsional': sr['Fungsional'],
+                'unit_kerja_id': sr['IDUnitKerja'],
+            }
+
+        # Index RAW berdasarkan NIP.
+        #
+        # Kita sengaja tidak memakai tanggal sebagai satu-satunya
+        # grouping karena Shift 2 mengambil IN dari H-1 dan OUT dari H.
+        raw_by_nip = defaultdict(list)
+
+        for r in raw_rows:
+            nip_raw = str(r['NIP'] or '').strip()
+
+            if not nip_raw:
+                continue
+
+            raw_by_nip[nip_raw].append(r)
 
         # Ambil kalender & jam kerja & MfPot sekali saja
         kalender_rows = MfKalender.query.filter(
@@ -602,64 +1249,169 @@ def api_normalisasi_process():
                 else: tk_psw, pot_psw = 'PSW-4', 1.5
             return tk_tlm, pot_tlm, tk_psw, pot_psw
 
+        # ============================================================
+        # ENGINE NORMALISASI
+        #
+        # JALUR 1 : ABSENSI REGULER
+        #   fingerprint tanggal H
+        #   -> ABSENSI tanggal H
+        #
+        # JALUR 2 : SHIFT 2 SIAGA
+        #   ActivityDate H
+        #   -> fingerprint IN H malam
+        #   -> fingerprint OUT H+1 pagi
+        #   -> ABSENSI tanggal H+1
+        #
+        # Shift 2 hanya boleh masuk apabila operator mencentang
+        # kehadiran Shift 2 pada menu Absensi Kehadiran Siaga.
+        #
+        # Fingerprint Shift 2 yang tidak dicentang:
+        #   tetap tersimpan di FINGER_HARVEST_RAW
+        #   tetapi tidak menghasilkan ABSENSI.
+        # ============================================================
+
         result = []
         no = 0
-        for (finger_id, tgl_str), logs in grouped.items():
-            tgl_dt = datetime.strptime(tgl_str, '%Y-%m-%d')
-            is_libur = kalender_map.get(tgl_str, 'N') == 'Y'
-            if kalender_map.get(tgl_str) is None and tgl_dt.weekday() >= 5:
-                is_libur = True
 
-            jk = get_jam_kerja(tgl_dt)
+        # ============================================================
+        # HELPER PEMBUAT ROW
+        # ============================================================
+
+        def build_normal_row(
+            nip,
+            finger_id,
+            nama,
+            gol,
+            unit_kerja,
+            tgl_kerja,
+            jam_in_dt,
+            jam_out_dt,
+            jk,
+            is_libur,
+        ):
+            nonlocal no
+
             if not jk:
-                continue
+                return None
 
-            baku_in_time = jk.STD_JAM_IN.time() if jk.STD_JAM_IN else None
-            baku_out_time = jk.STD_JAM_OUT.time() if jk.STD_JAM_OUT else None
-            baku_in = datetime.combine(tgl_dt, baku_in_time) if baku_in_time else tgl_dt
-            baku_out = datetime.combine(tgl_dt, baku_out_time) if baku_out_time else tgl_dt
+            baku_in_time = (
+                jk.STD_JAM_IN.time()
+                if jk.STD_JAM_IN
+                else None
+            )
 
-            logs_in = [l for l in logs if l['status'] == 'IN']
-            logs_out = [l for l in logs if l['status'] == 'OUT']
+            baku_out_time = (
+                jk.STD_JAM_OUT.time()
+                if jk.STD_JAM_OUT
+                else None
+            )
 
-            no += 1
-            row = {'no': no, 'finger_id': finger_id, 'nip': logs[0]['nip'], 'nama': logs[0]['nama'],
-                   'tgl_kerja': tgl_str, 'hari': tgl_dt.strftime('%A'),
-                   'jam_baku_in': baku_in.strftime('%H:%M'), 'jam_baku_out': baku_out.strftime('%H:%M'),
-                   'is_libur': 'LIBUR' if is_libur else 'TDKLIBUR'}
+            baku_in = (
+                datetime.combine(tgl_kerja, baku_in_time)
+                if baku_in_time
+                else tgl_kerja
+            )
 
-            # ----- JAM IN -----
-            if logs_in:
-                jam_in_dt = datetime.strptime(logs_in[0]['waktu'], '%Y-%m-%d %H:%M:%S')
-                awal_tlm = (jam_in_dt - baku_in).total_seconds() / 60
-                row['jam_in'] = jam_in_dt.strftime('%H:%M:%S')
-                row['is_valid_in'] = True
+            baku_out = (
+                datetime.combine(tgl_kerja, baku_out_time)
+                if baku_out_time
+                else tgl_kerja
+            )
+
+            # --------------------------------------------------------
+            # SHIFT MALAM
+            # --------------------------------------------------------
+
+            if (
+                baku_in_time
+                and baku_out_time
+                and baku_out_time <= baku_in_time
+            ):
+                baku_out += timedelta(days=1)
+
+            # --------------------------------------------------------
+            # TLM
+            # --------------------------------------------------------
+
+            if jam_in_dt:
+                awal_tlm = (
+                    jam_in_dt - baku_in
+                ).total_seconds() / 60
+                row_jam_in = jam_in_dt.strftime('%H:%M:%S')
+                is_valid_in = True
             else:
                 awal_tlm = xdefault
-                row['jam_in'] = '00:00:00'
-                row['is_valid_in'] = False
+                row_jam_in = '00:00:00'
+                is_valid_in = False
 
-            # ----- JAM OUT -----
-            if logs_out:
-                jam_out_dt = datetime.strptime(logs_out[-1]['waktu'], '%Y-%m-%d %H:%M:%S')
-                total_psw = (jam_out_dt - baku_out).total_seconds() / 60
-                row['jam_out'] = jam_out_dt.strftime('%H:%M:%S')
-                row['is_valid_out'] = True
+            # --------------------------------------------------------
+            # PSW
+            # --------------------------------------------------------
+
+            if jam_out_dt:
+                total_psw = (
+                    jam_out_dt - baku_out
+                ).total_seconds() / 60
+                row_jam_out = jam_out_dt.strftime('%H:%M:%S')
+                is_valid_out = True
             else:
                 total_psw = -1 * xdefault
-                row['jam_out'] = '00:00:00'
-                row['is_valid_out'] = False
+                row_jam_out = '00:00:00'
+                is_valid_out = False
 
-            # ----- TOTAL TLM (dengan aturan penggantian TLM1) -----
-            penggantian_ok = (jk.PENGGANTIAN_TLM1 or 'Y').upper() != 'N'
-            if not is_libur and 0 < awal_tlm <= 30 and penggantian_ok:
-                total_tlm = awal_tlm - total_psw if total_psw > 0 else awal_tlm
+            # --------------------------------------------------------
+            # PENGGANTIAN TLM-1
+            # --------------------------------------------------------
+
+            penggantian_ok = (
+                (jk.PENGGANTIAN_TLM1 or 'Y').upper() != 'N'
+            )
+
+            if (
+                not is_libur
+                and 0 < awal_tlm <= 30
+                and penggantian_ok
+            ):
+                total_tlm = (
+                    awal_tlm - total_psw
+                    if total_psw > 0
+                    else awal_tlm
+                )
+
+                total_tlm = max(0, total_tlm)
             else:
                 total_tlm = awal_tlm
 
-            tk_tlm, pot_tlm, tk_psw, pot_psw = ('', 0, '', 0) if is_libur else hitung_potongan(total_tlm, total_psw, tgl_dt)
+            tk_tlm, pot_tlm, tk_psw, pot_psw = (
+                ('', 0, '', 0)
+                if is_libur
+                else hitung_potongan(
+                    total_tlm,
+                    total_psw,
+                    tgl_kerja,
+                )
+            )
 
-            row.update({
+            no += 1
+
+            return {
+                'no': no,
+                'finger_id': finger_id,
+                'nip': nip,
+                'nama': nama,
+                'tgl_kerja': tgl_kerja.strftime('%Y-%m-%d'),
+                'hari': tgl_kerja.strftime('%A'),
+                'jam_baku_in': baku_in.strftime('%H:%M'),
+                'jam_baku_out': baku_out.strftime('%H:%M'),
+                'jam_in': row_jam_in,
+                'jam_out': row_jam_out,
+                'is_valid_in': is_valid_in,
+                'is_valid_out': is_valid_out,
+                'is_libur': (
+                    'LIBUR'
+                    if is_libur
+                    else 'TDKLIBUR'
+                ),
                 'awal_tlm': round(awal_tlm, 2),
                 'total_tlm': round(total_tlm, 2),
                 'tingkat_tlm': tk_tlm,
@@ -667,8 +1419,314 @@ def api_normalisasi_process():
                 'total_psw': round(total_psw, 2),
                 'tingkat_psw': tk_psw,
                 'persen_pot_psw': pot_psw,
-            })
-            result.append(row)
+                'gol': gol,
+                'unit_kerja': unit_kerja,
+            }
+
+        # ============================================================
+        # 1. SHIFT 2 SIAGA
+        # ============================================================
+
+        shift2_consumed = set()
+
+        for (nip_siaga, target_date_str), info in shift2_map.items():
+
+            # --------------------------------------------------------
+            # Hanya yang dicentang operator.
+            # --------------------------------------------------------
+
+            if not info['hadir']:
+                continue
+
+            target_date = datetime.strptime(
+                target_date_str,
+                '%Y-%m-%d'
+            )
+
+            activity_date = info['activity_date']
+
+            raw_person = raw_by_nip.get(
+                nip_siaga,
+                []
+            )
+
+            if not raw_person:
+                continue
+
+            # --------------------------------------------------------
+            # Shift 2:
+            #
+            # IN  = tanggal siaga, malam
+            # OUT = tanggal absensi, pagi
+            #
+            # Kita gunakan PUNCH sebagai sumber utama.
+            # --------------------------------------------------------
+
+            shift2_in = []
+            shift2_out = []
+
+            for raw in raw_person:
+
+                waktu = raw['WAKTU']
+
+                if not waktu:
+                    continue
+
+                # IN Shift 2:
+                # tanggal activity / siaga
+                if waktu.date() == activity_date:
+                    if raw['PUNCH'] == 1:
+                        shift2_in.append(raw)
+
+                # OUT Shift 2:
+                # tanggal target / hari berikutnya
+                elif waktu.date() == target_date.date():
+                    if raw['PUNCH'] == 0:
+                        shift2_out.append(raw)
+
+            shift2_in.sort(
+                key=lambda r: r['WAKTU']
+            )
+
+            shift2_out.sort(
+                key=lambda r: r['WAKTU']
+            )
+
+            jam_in_dt = (
+                shift2_in[0]['WAKTU']
+                if shift2_in
+                else None
+            )
+
+            jam_out_dt = (
+                shift2_out[-1]['WAKTU']
+                if shift2_out
+                else None
+            )
+
+            # --------------------------------------------------------
+            # Kalau tidak ada satupun fingerprint Shift 2,
+            # jangan membuat row.
+            # --------------------------------------------------------
+
+            if not jam_in_dt and not jam_out_dt:
+                continue
+
+            # --------------------------------------------------------
+            # Master pegawai
+            # --------------------------------------------------------
+
+            source_raw = (
+                shift2_in[0]
+                if shift2_in
+                else shift2_out[-1]
+            )
+
+            finger_id = str(
+                source_raw['FINGER_ID']
+            )
+
+            nama = source_raw['NAMA'] or ''
+            gol = source_raw['GOL'] or ''
+            unit_kerja = source_raw['UNIT_KERJA'] or ''
+
+            # --------------------------------------------------------
+            # Jam kerja Shift 2 Siaga selalu:
+            #
+            # standar IN  = 19:30
+            # standar OUT = 04:00 / 04:30
+            #
+            # Pemilihan ShiftKerja mengikuti data MF_JAM_KERJA.
+            #
+            # Untuk saat ini gunakan konfigurasi malam terbaru.
+            # --------------------------------------------------------
+
+            jam_malam = None
+
+            for kandidat in jam_kerja_list:
+                if str(kandidat.SHIFT_KERJA or '') == '2':
+                    if kandidat.TGL_MULAI_BERLAKU <= target_date:
+                        jam_malam = kandidat
+                        break
+
+            if not jam_malam:
+                for kandidat in jam_kerja_list:
+                    if kandidat.STD_JAM_IN:
+                        if kandidat.STD_JAM_IN.hour >= 18:
+                            jam_malam = kandidat
+                            break
+
+            if not jam_malam:
+                continue
+
+            # --------------------------------------------------------
+            # Jam kerja dihitung pada TANGGAL ABSENSI (H+1).
+            #
+            # IN aktual tetap berasal dari H malam.
+            # --------------------------------------------------------
+
+            row = build_normal_row(
+                nip=nip_siaga,
+                finger_id=finger_id,
+                nama=nama,
+                gol=gol,
+                unit_kerja=unit_kerja,
+                tgl_kerja=target_date,
+                jam_in_dt=jam_in_dt,
+                jam_out_dt=jam_out_dt,
+                jk=jam_malam,
+                is_libur=(
+                    kalender_map.get(
+                        target_date.strftime('%Y-%m-%d'),
+                        'N'
+                    ) == 'Y'
+                ),
+            )
+
+            if row:
+                row['shift'] = '2'
+                row['shift2_siaga'] = True
+                row['activity_date_siaga'] = (
+                    activity_date.strftime('%Y-%m-%d')
+                )
+
+                result.append(row)
+
+                # Tandai fingerprint yang sudah dipakai
+                for raw in shift2_in:
+                    shift2_consumed.add(
+                        id(raw)
+                    )
+
+                for raw in shift2_out:
+                    shift2_consumed.add(
+                        id(raw)
+                    )
+
+        # ============================================================
+        # 2. ABSENSI REGULER
+        #
+        # Shift 2 yang sudah dipakai di atas tidak boleh diproses lagi.
+        # ============================================================
+
+        for (finger_id, tgl_str), logs in grouped.items():
+
+            tgl_dt = datetime.strptime(
+                tgl_str,
+                '%Y-%m-%d'
+            )
+
+            # --------------------------------------------------------
+            # Jangan proses fingerprint yang sudah menjadi Shift 2.
+            # --------------------------------------------------------
+
+            filtered_logs = [
+                raw
+                for raw in logs
+                if id(raw) not in shift2_consumed
+            ]
+
+            if not filtered_logs:
+                continue
+
+            # --------------------------------------------------------
+            # Jika fingerprint berasal dari Shift 2 yang TIDAK
+            # dicentang, jangan tampilkan sebagai absensi reguler.
+            #
+            # Cari apakah NIP + tanggal ini memiliki konfigurasi
+            # Shift 2 siaga tetapi tidak hadir.
+            # --------------------------------------------------------
+
+            nip_reguler = str(
+                filtered_logs[0]['nip'] or ''
+            ).strip()
+
+            if (
+                nip_reguler,
+                tgl_str
+            ) in shift2_map:
+                info = shift2_map[
+                    (nip_reguler, tgl_str)
+                ]
+
+                if not info['hadir']:
+                    # Fingerprint tetap RAW, tetapi tidak masuk
+                    # normalisasi/ABSENSI.
+                    continue
+
+            is_libur = (
+                kalender_map.get(
+                    tgl_str,
+                    'N'
+                ) == 'Y'
+            )
+
+            if (
+                kalender_map.get(tgl_str) is None
+                and tgl_dt.weekday() >= 5
+            ):
+                is_libur = True
+
+            jk = get_jam_kerja(tgl_dt)
+
+            if not jk:
+                continue
+
+            logs_in = sorted(
+                [
+                    l for l in filtered_logs
+                    if l.get('punch') == 1
+                ],
+                key=lambda l: l['waktu']
+            )
+
+            logs_out = sorted(
+                [
+                    l for l in filtered_logs
+                    if l.get('punch') == 0
+                ],
+                key=lambda l: l['waktu']
+            )
+
+            jam_in_dt = (
+                datetime.strptime(
+                    logs_in[0]['waktu'],
+                    '%Y-%m-%d %H:%M:%S'
+                )
+                if logs_in
+                else None
+            )
+
+            jam_out_dt = (
+                datetime.strptime(
+                    logs_out[-1]['waktu'],
+                    '%Y-%m-%d %H:%M:%S'
+                )
+                if logs_out
+                else None
+            )
+
+            source_raw = filtered_logs[0]
+
+            row = build_normal_row(
+                nip=nip_reguler,
+                finger_id=finger_id,
+                nama=source_raw.get('nama') or source_raw.get('NAMA') or '',
+                gol=source_raw.get('gol') or source_raw.get('GOL') or '',
+                unit_kerja=source_raw.get('unit_kerja') or source_raw.get('UNIT_KERJA') or '',
+                tgl_kerja=tgl_dt,
+                jam_in_dt=jam_in_dt,
+                jam_out_dt=jam_out_dt,
+                jk=jk,
+                is_libur=is_libur,
+            )
+
+            if row:
+                row['shift'] = '1'
+                row['shift2_siaga'] = False
+                row['activity_date_siaga'] = None
+
+                result.append(row)
 
         result.sort(key=lambda r: (r['finger_id'], r['tgl_kerja']))
         for i, r in enumerate(result, 1):
@@ -1293,12 +2351,26 @@ def api_inject_lembur_save():
             if not jam_in and not jam_out:
                 continue
             
-            # Cek existing di tabel LEMBUR
+            # Resolve NIP -> FingerID karena LEMBUR legacy
+            # tidak menyimpan NIP.
+            pegawai = (
+                Pegawai.query
+                .filter(Pegawai.NIP == nip)
+                .first()
+            )
+
+            if not pegawai or not pegawai.FingerID:
+                continue
+
+            finger_id = pegawai.FingerID
+
+            # Cek existing berdasarkan natural key legacy:
+            # FingerID + TglKerja
             existing = Lembur.query.filter(
-                Lembur.NIP == nip,
-                db.func.date(Lembur.TGL_KERJA) == tgl_date.date()
+                Lembur.FINGER_ID == finger_id,
+                Lembur.TGL_KERJA == tgl_date.date()
             ).first()
-            
+
             tgl_jam_in = datetime.strptime(f"{tgl} {jam_in}", '%Y-%m-%d %H:%M') if jam_in else None
             tgl_jam_out = datetime.strptime(f"{tgl} {jam_out}", '%Y-%m-%d %H:%M') if jam_out else None
             tgl_jam_baku_in = datetime.strptime(f"{tgl} {jam_baku_in}", '%Y-%m-%d %H:%M') if jam_baku_in else None
@@ -1319,8 +2391,8 @@ def api_inject_lembur_save():
             else:
                 # Insert
                 lembur = Lembur(
-                    NIP=nip,
-                    TGL_KERJA=tgl_date,
+                    FINGER_ID=finger_id,
+                    TGL_KERJA=tgl_date.date(),
                     JAM_IN=tgl_jam_in,
                     JAM_OUT=tgl_jam_out,
                     JAM_BAKU_IN=tgl_jam_baku_in,
@@ -2091,7 +3163,7 @@ def api_cari_lembur_manual():
         # Query dari tabel LEMBUR join ke PEGAWAI via NIP
         query = (
             db.session.query(Lembur, Pegawai, MfUnitKerja)
-            .join(Pegawai, Lembur.NIP == Pegawai.NIP)
+            .join(Pegawai, Lembur.FINGER_ID == Pegawai.FINGER_ID)
             .join(MfUnitKerja, Pegawai.UNIT_KERJA_ID == MfUnitKerja.UNIT_KERJA_ID)
         )
         
@@ -2132,7 +3204,7 @@ def api_cari_lembur_manual():
         for i, (lembur, peg, unit) in enumerate(results, 1):
             data.append({
                 'no': i,
-                'id': lembur.id,
+                'id': f"{lembur.FINGER_ID}|{lembur.TGL_KERJA.strftime('%Y-%m-%d')}",
                 'nama': peg.NAMA or '',
                 'nip': peg.NIP or '',
                 'tgl_kerja': lembur.TGL_KERJA.strftime('%d %b %Y') if lembur.TGL_KERJA else '',
@@ -2168,7 +3240,16 @@ def api_cari_lembur_manual_delete():
         if not lembur_id:
             return jsonify({'error': 'ID tidak ditemukan'})
         
-        result = Lembur.query.filter(Lembur.id == int(lembur_id)).delete()
+        try:
+            finger_id, tgl_kerja = lembur_id.split('|', 1)
+        except ValueError:
+            return jsonify({'error': 'ID lembur tidak valid'})
+
+        result = Lembur.query.filter(
+            Lembur.FINGER_ID == finger_id,
+            Lembur.TGL_KERJA == tgl_kerja
+        ).delete()
+
         db.session.commit()
         
         return jsonify({
@@ -2194,7 +3275,16 @@ def api_cari_lembur_manual_update():
         if not lembur_id:
             return jsonify({'error': 'ID tidak ditemukan'})
         
-        lembur = Lembur.query.get(int(lembur_id))
+        try:
+            finger_id, tgl_kerja = lembur_id.split('|', 1)
+        except ValueError:
+            return jsonify({'error': 'ID lembur tidak valid'})
+
+        lembur = Lembur.query.filter(
+            Lembur.FINGER_ID == finger_id,
+            Lembur.TGL_KERJA == tgl_kerja
+        ).first()
+
         if not lembur:
             return jsonify({'error': 'Data tidak ditemukan'})
         

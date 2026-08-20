@@ -11,21 +11,21 @@ class MfForm(db.Model):
     """
     __tablename__ = 'MF_FORM'
 
-    FORM_ID = db.Column(db.String(50), primary_key=True, nullable=False)
+    FORM_ID = db.Column('FormID', db.String(50), primary_key=True, nullable=False)
 
-    FORM_NAME = db.Column(db.String(70))
-    FORM_TYPE = db.Column(db.String(20))
-    NO_URUT = db.Column(db.Integer)
-    BERKAS = db.Column(db.String(50))
-    PANEL_PAGE = db.Column(db.String(50))
-    IMG_URL = db.Column(db.String(50))
-    NO_URUT_PANEL = db.Column(db.Integer)
-    MODUL = db.Column(db.String(50))
-    PARENT_FORM = db.Column(db.String(50))
-    MODEL = db.Column(db.Integer)
-    ICON_FA = db.Column(db.String(50))          # FontAwesome icon class
-    HIRARKI_LV = db.Column(db.Integer)          # Level hirarki menu
-    TRANSAKSI_ID = db.Column(db.Integer)        # Referensi ID transaksi (bukan FK formal)
+    FORM_NAME = db.Column('Formname', db.String(70))
+    FORM_TYPE = db.Column('FormType', db.String(20))
+    NO_URUT = db.Column('Nourut', db.Integer)
+    BERKAS = db.Column('Berkas', db.String(50))
+    PANEL_PAGE = db.Column('PanelPage', db.String(50))
+    IMG_URL = db.Column('ImgUrl', db.String(50))
+    NO_URUT_PANEL = db.Column('NoUrutPanel', db.Integer)
+    MODUL = db.Column('Modul', db.String(50))
+    PARENT_FORM = db.Column('parentForm', db.String(50))
+    MODEL = db.Column('Model', db.Integer)
+    ICON_FA = db.Column('IconFA', db.String(50))          # FontAwesome icon class
+    HIRARKI_LV = db.Column('HirarkiLvl', db.Integer)          # Level hirarki menu
+    TRANSAKSI_ID = db.Column('TransacID', db.Integer)        # Referensi ID transaksi (bukan FK formal)
 
     def __repr__(self):
         return f'<MfForm {self.FORM_ID} - {self.FORM_NAME}>'

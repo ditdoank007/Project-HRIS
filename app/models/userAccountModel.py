@@ -4,50 +4,72 @@ from app import db
 
 class UserAccount(db.Model):
     """
-    Model untuk tabel USER_ACCOUNT.
-    Menyimpan data akun/hak akses sistem milik seorang pegawai.
+    Model tabel USER_ACCOUNT legacy HRIS.
 
-    Primary Key : NIP (sekaligus Foreign Key ke PEGAWAI)
-    Foreign Key : NIP -> PEGAWAI.NIP
+    Mapping database legacy:
+        UserID     -> NIP aplikasi
+        IntLevel   -> INIT_LEVEL aplikasi
+        Modul      -> MODUL
+        UpdateBy   -> UPDATE_BY
+        UpdateDate -> UPDATE_DATE
 
-    Catatan: Pada DDL asli, tabel USER_ACCOUNT tidak mendefinisikan
-    PRIMARY KEY terpisah. Karena setiap pegawai hanya memiliki satu
-    akun (relasi one-to-one dengan PEGAWAI), NIP dijadikan primary key
-    sekaligus foreign key di model ini.
+    Catatan:
+    Tabel legacy USER_ACCOUNT tidak memiliki PRIMARY KEY pada DDL.
+    Karena SQLAlchemy membutuhkan primary key untuk ORM, UserID
+    digunakan sebagai identity ORM sementara.
+
+    Jangan mengubah struktur database legacy.
     """
+
     __tablename__ = 'USER_ACCOUNT'
 
-    # Primary Key sekaligus Foreign Key ke PEGAWAI
+    # USER_ACCOUNT legacy tidak memiliki PRIMARY KEY fisik.
+    # Untuk identity ORM, kombinasi UserID + Modul digunakan sebagai
+    # composite identity karena satu UserID dapat memiliki beberapa
+    # account untuk modul yang berbeda (HRIS, eDoc, Esprin, Umum).
     NIP = db.Column(
+        'UserID',
         db.String(50),
-        db.ForeignKey('PEGAWAI.NIP', onupdate='RESTRICT', ondelete='RESTRICT'),
         primary_key=True
     )
 
-    # Data akun/hak akses
-    INIT_LEVEL = db.Column(db.Integer, nullable=True)
-    MODUL = db.Column(db.String(50), nullable=True)
-
-    # Metadata audit
-    UPDATE_BY = db.Column(db.String(50), nullable=True)
-    UPDATE_DATE = db.Column(db.DateTime, nullable=True)
-
-    # Relasi ke Pegawai (akses balik: pegawai.user_account)
-    pegawai = db.relationship(
-        'Pegawai',
-        backref=db.backref('user_account', uselist=False)
+    INIT_LEVEL = db.Column(
+        'IntLevel',
+        db.Integer,
+        nullable=True
     )
 
-    # Representasi objek (memudahkan debugging di console/log)
+    MODUL = db.Column(
+        'Modul',
+        db.String(50),
+        primary_key=True,
+        nullable=True
+    )
+
+    UPDATE_BY = db.Column(
+        'UpdateBy',
+        db.String(50),
+        nullable=True
+    )
+
+    UPDATE_DATE = db.Column(
+        'UpdateDate',
+        db.DateTime,
+        nullable=True
+    )
+
     def __repr__(self):
         return f'<UserAccount {self.NIP} - {self.MODUL}>'
 
-    # Helper: ubah objek jadi dict (berguna untuk response JSON/API)
     def to_dict(self):
         return {
             'nip': self.NIP,
             'init_level': self.INIT_LEVEL,
             'modul': self.MODUL,
             'update_by': self.UPDATE_BY,
-            'update_date': self.UPDATE_DATE.isoformat() if self.UPDATE_DATE else None,
+            'update_date': (
+                self.UPDATE_DATE.isoformat()
+                if self.UPDATE_DATE
+                else None
+            ),
         }

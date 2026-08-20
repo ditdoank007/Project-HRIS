@@ -85,11 +85,12 @@
                                         <th style="color:white; vertical-align: middle;">Jabatan</th>
                                         <th style="color:white; vertical-align: middle;">Level</th>
                                         <th style="color:white; vertical-align: middle;">UpdateBy</th>
+                                        <th style="color:white; vertical-align: middle;">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody id="userAccountTableBody">
                                     <tr>
-                                        <td colspan="6" style="vertical-align: middle; padding: 20px;">No records to
+                                        <td colspan="7" style="vertical-align: middle; padding: 20px;">No records to
                                             display.</td>
                                     </tr>
                                 </tbody>
@@ -148,7 +149,7 @@ document.addEventListener('DOMContentLoaded', function () {
         tbody.innerHTML = '';
 
         if (!data || data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="padding:20px;">No records to display.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="padding:20px;">No records to display.</td></tr>';
             return;
         }
 
@@ -161,10 +162,83 @@ document.addEventListener('DOMContentLoaded', function () {
                     <td>${row.jabatan}</td>
                     <td>${row.level}</td>
                     <td>${row.update_by}</td>
+                    <td style="white-space: nowrap;">
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-primary me-1"
+                            onclick="editUserAccount('${row.user_id}')"
+                            title="Edit User Account">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-danger"
+                            onclick="deleteUserAccount('${row.user_id}', '${row.nama.replace(/'/g, "\\'")}')"
+                            title="Hapus User Account">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
                 </tr>
             `;
         });
     }
+
+    window.editUserAccount = function (nip) {
+        if (!nip) {
+            alert('NIP tidak tersedia.');
+            return;
+        }
+
+        window.location.href = '/master/user?nip=' + encodeURIComponent(nip);
+    };
+
+    window.deleteUserAccount = async function (nip, nama) {
+        if (!nip) {
+            alert('NIP tidak tersedia.');
+            return;
+        }
+
+        const displayName = nama || nip;
+
+        const confirmed = confirm(
+            'Hapus User Account HRIS untuk:\n\n' +
+            displayName +
+            '\nNIP: ' + nip +
+            '\n\nAccount dan seluruh hak akses HRIS akan dihapus.\n' +
+            'Data PEGAWAI tidak akan dihapus.\n\nLanjutkan?'
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/user-account/delete', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    nip: nip
+                })
+            });
+
+            const json = await res.json();
+
+            if (!res.ok || json.status !== 'success') {
+                alert(json.message || 'Gagal menghapus User Account.');
+                return;
+            }
+
+            alert(json.message || 'User Account berhasil dihapus.');
+
+            await loadUserAccount();
+
+        } catch (err) {
+            console.error(err);
+            alert('Gagal menghubungi server, coba lagi.');
+        }
+    };
 
     document.getElementById('btnRefreshUser').addEventListener('click', loadUserAccount);
 
