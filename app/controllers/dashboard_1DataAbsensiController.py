@@ -16,6 +16,7 @@ from app.models.dinasLuarModel import DinasLuar
 from app.models.jabatanModel import MfJabatan
 from app.models.timeRecorderModel import TimeRecorder
 from app.models.jamKerjaModel import MfJamKerja
+from app.models.loadFingerModel import MfLoadFinger
 from app.models.dinasLuarModel import DinasLuar
 from app.models.mediaInformasiModel import MediaInformasi
 import random
@@ -1174,8 +1175,7 @@ def api_normalisasi_process():
             # SHIFT_2 = 1
             #
             hadir_shift2 = (
-                int(sr['StatusID'] or 0) == 3
-                or int(sr['shift2'] or 0) == 1
+                int(sr['shift2'] or 0) == 1
             )
 
             shift2_map[
@@ -1456,11 +1456,61 @@ def api_normalisasi_process():
             # --------------------------------------------------------
             # Shift 2:
             #
-            # IN  = tanggal siaga, malam
-            # OUT = tanggal absensi, pagi
+            # IN  = window fingerprint Shift 2 pada tanggal SIAGA
+            # OUT = window fingerprint Shift 2 pada tanggal BERIKUTNYA
             #
-            # Kita gunakan PUNCH sebagai sumber utama.
+            # Window mengikuti MF_LOAD_FINGER / SHIFT_KERJA = '2'.
             # --------------------------------------------------------
+
+            load_finger_rows = (
+                MfLoadFinger.query
+                .filter(
+                    MfLoadFinger.SHIFT_KERJA == '2',
+                    MfLoadFinger.TGL_MULAI_BERLAKU <= target_date.date(),
+                )
+                .order_by(
+                    MfLoadFinger.TGL_MULAI_BERLAKU.desc()
+                )
+                .all()
+            )
+
+            load_finger = (
+                load_finger_rows[0]
+                if load_finger_rows
+                else None
+            )
+
+            if not load_finger:
+                continue
+
+            def combine_config_time(base_date, value):
+                if value is None:
+                    return None
+
+                return datetime.combine(
+                    base_date,
+                    value.time()
+                )
+
+            start_in = combine_config_time(
+                activity_date,
+                load_finger.START_FINGER
+            )
+
+            end_in = combine_config_time(
+                activity_date,
+                load_finger.END_FINGER
+            )
+
+            start_out = combine_config_time(
+                target_date.date(),
+                load_finger.START_FINGER_OUT
+            )
+
+            end_out = combine_config_time(
+                target_date.date(),
+                load_finger.END_FINGER_OUT
+            )
 
             shift2_in = []
             shift2_out = []
@@ -1473,16 +1523,24 @@ def api_normalisasi_process():
                     continue
 
                 # IN Shift 2:
-                # tanggal activity / siaga
-                if waktu.date() == activity_date:
-                    if raw['PUNCH'] == 1:
-                        shift2_in.append(raw)
+                # tanggal siaga + window MF_LOAD_FINGER
+                if (
+                    raw['PUNCH'] == 1
+                    and start_in is not None
+                    and end_in is not None
+                    and start_in <= waktu <= end_in
+                ):
+                    shift2_in.append(raw)
 
                 # OUT Shift 2:
-                # tanggal target / hari berikutnya
-                elif waktu.date() == target_date.date():
-                    if raw['PUNCH'] == 0:
-                        shift2_out.append(raw)
+                # tanggal berikutnya + window MF_LOAD_FINGER
+                elif (
+                    raw['PUNCH'] == 0
+                    and start_out is not None
+                    and end_out is not None
+                    and start_out <= waktu <= end_out
+                ):
+                    shift2_out.append(raw)
 
             shift2_in.sort(
                 key=lambda r: r['WAKTU']
