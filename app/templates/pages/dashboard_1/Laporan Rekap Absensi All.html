@@ -280,6 +280,89 @@
         </div>
     </div>
 </div>
+
+<!-- HASIL PREVIEW REKAP ABSENSI -->
+
+<div class="card mt-4" id="hasilPreviewCard" style="display:none;">
+
+    <div class="card-header-custom">
+        <h6 class="mb-0">
+            <i class="ti ti-table"></i>
+            Hasil Rekap Absensi
+        </h6>
+    </div>
+
+
+    <div class="card-body">
+
+
+        <div class="mb-3">
+
+            <button
+                type="button"
+                id="btnExportExcel"
+                class="btn btn-success btn-sm me-2">
+
+                <i class="ti ti-file-spreadsheet"></i>
+                Export Excel
+
+            </button>
+
+
+            <button
+                type="button"
+                id="btnExportPdf"
+                class="btn btn-danger btn-sm">
+
+                <i class="ti ti-file-type-pdf"></i>
+                Export PDF
+
+            </button>
+
+        </div>
+
+
+
+        <div class="table-responsive">
+
+            <table class="table table-bordered table-sm">
+
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>NIP</th>
+                        <th>Nama</th>
+                        <th>TLM1</th>
+                        <th>TLM2</th>
+                        <th>PSW1</th>
+                        <th>PSW2</th>
+                        <th>Cuti</th>
+                        <th>Sakit</th>
+                        <th>Alpa</th>
+                        <th>DL</th>
+                        <th>DL OP</th>
+                        <th>DL SD</th>
+                        <th>Siaga</th>
+                    </tr>
+                </thead>
+
+
+                <tbody id="tbodyPreviewAbsensi">
+
+                </tbody>
+
+
+            </table>
+
+        </div>
+
+
+    </div>
+
+</div>
+
+
+
 {% endblock %}
 
 {% block script %}
@@ -307,28 +390,88 @@
         btnRunText.textContent = 'Memproses...';
 
         try {
-            const res = await fetch('/laporan/rekap-absensi-all/export', {
+            const res = await fetch('/laporan/rekap-absensi-all/preview', {
                 method: 'POST',
                 body: formData
             });
 
+
+            
+const hasil = await res.json();
+
+console.log(
+    "PREVIEW RESULT =",
+    hasil
+);
+
+
+
             if (!res.ok) {
-                const err = await res.json();
-                alert(err.error || 'Gagal membuat laporan');
+
+                alert(
+                    hasil.error || 
+                    'Gagal mengambil data'
+                );
+
                 return;
             }
 
-            const blob = await res.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            const tglAwal = document.getElementById('tglAwal').value.replace(/-/g, '');
-            const tglAkhir = document.getElementById('tglAkhir').value.replace(/-/g, '');
-            a.download = `Laporan_Rekap_Daftar_Hadir_${tglAwal}_${tglAkhir}.xlsx`;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            window.URL.revokeObjectURL(url);
+
+            const tbody = document.getElementById(
+                'tbodyPreviewAbsensi'
+            );
+
+
+            tbody.innerHTML = "";
+
+
+            hasil.report.forEach(
+                (row, index) => {
+
+
+                    tbody.innerHTML += `
+
+                    <tr>
+
+                        <td>${index + 1}</td>
+
+                        <td>${row.nip}</td>
+
+                        <td>${row.nama}</td>
+
+                        <td>${row.tlm1 || 0}</td>
+
+                        <td>${row.tlm2 || 0}</td>
+
+                        <td>${row.psw1 || 0}</td>
+
+                        <td>${row.psw2 || 0}</td>
+
+                        <td>${row.cuti || 0}</td>
+
+                        <td>${row.sakit || 0}</td>
+
+                        <td>${row.alpa || 0}</td>
+
+                        <td>${row.dl || 0}</td>
+
+                        <td>${row.dl_op || 0}</td>
+
+                        <td>${row.dl_sd || 0}</td>
+
+                        <td>${row.siaga || 0}</td>
+
+                    </tr>
+
+                    `;
+
+                }
+            );
+
+
+            document.getElementById(
+                'hasilPreviewCard'
+            ).style.display = 'block';
 
         } catch (err) {
             console.error('Gagal export laporan:', err);
@@ -338,6 +481,180 @@
             btnRunText.textContent = 'RUN';
         }
     });
+
+    // ============================================
+    // EXPORT EXCEL
+    // ============================================
+
+    async function exportRekapAbsensi(
+        url,
+        filename
+    ){
+
+        const formData = new FormData();
+
+
+        document.querySelectorAll(
+            '.check-unit-item:checked'
+        ).forEach(cb => {
+
+            formData.append(
+                'unit_kerja[]',
+                cb.value
+            );
+
+        });
+
+
+        formData.append(
+            'tgl_awal',
+            document.getElementById('tglAwal').value
+        );
+
+
+        formData.append(
+            'tgl_akhir',
+            document.getElementById('tglAkhir').value
+        );
+
+
+        formData.append(
+            'kolom_keterangan',
+            document.querySelector(
+                'input[name=kolomKeterangan]:checked'
+            ).value
+        );
+
+
+        formData.append(
+            'nama_eselon3',
+            document.getElementById('namaEselon3').value
+        );
+
+
+        formData.append(
+            'pangkat_eselon3',
+            document.getElementById('pangkatEselon3').value
+        );
+
+
+        formData.append(
+            'petugas1',
+            document.getElementById('petugas1').value
+        );
+
+
+        formData.append(
+            'petugas2',
+            document.getElementById('petugas2').value
+        );
+
+
+
+        try {
+
+
+            const res = await fetch(
+                url,
+                {
+                    method:'POST',
+                    body:formData
+                }
+            );
+
+
+            if(!res.ok){
+
+                const err = await res.json();
+
+                alert(
+                    err.error ||
+                    'Gagal export laporan'
+                );
+
+                return;
+
+            }
+
+
+            const blob = await res.blob();
+
+
+            const link =
+                document.createElement('a');
+
+
+            link.href =
+                window.URL.createObjectURL(
+                    blob
+                );
+
+
+            link.download =
+                filename;
+
+
+            document.body.appendChild(
+                link
+            );
+
+
+            link.click();
+
+
+            link.remove();
+
+
+        }
+        catch(err){
+
+            console.error(
+                err
+            );
+
+            alert(
+                'Terjadi kesalahan export'
+            );
+
+        }
+
+    }
+
+
+
+    document.getElementById(
+        'btnExportExcel'
+    ).addEventListener(
+        'click',
+        function(){
+
+            exportRekapAbsensi(
+                '/laporan/rekap-absensi-all/export',
+                'Laporan_Rekap_Absensi.xlsx'
+            );
+
+        }
+    );
+
+
+
+    document.getElementById(
+        'btnExportPdf'
+    ).addEventListener(
+        'click',
+        function(){
+
+            exportRekapAbsensi(
+                '/laporan/rekap-absensi-all/export-pdf',
+                'Laporan_Rekap_Absensi.pdf'
+            );
+
+        }
+    );
+
+
+
+
     // Update label dropdown saat checkbox berubah
     document.querySelectorAll('.check-unit-item').forEach(cb => {
         cb.addEventListener('change', updateUnitLabel);

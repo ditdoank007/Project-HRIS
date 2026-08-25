@@ -4,10 +4,14 @@ from flask import Blueprint, jsonify
 from app.utils.decorators import login_required
 from app.controllers.homeController import get_pelanggaran_disiplin, get_piket_siaga, home, search_buku_telp
 from app.controllers.loginController import login, logout
+from app.controllers.absenOnlineController import (
+    status_absen_online,
+    punch_absen_online,
+)
 from app.controllers.dashboard_1HomeController import (
     dashboard_kgb, dashboard_pangkat, dashboard_pelanggaran, dashboard_pensiun, dashboard_trt)
 from app.controllers.dashboard_1MasterFileController import (
-    create_kalender_tahun, export_jam_finger_excel, export_tunjangan_excel, get_jabatan_list, get_jam_finger_list, get_jam_kerja_list, get_joblist_list, get_kalender_list,
+    create_kalender_tahun, export_jam_finger_excel, export_tunjangan_excel, get_jabatan_list, get_jam_finger_list, get_jam_kerja_list, get_joblist_list, get_kalender_list, save_kalender_changes,
     get_pegawai_vip_list, get_potongan_list, get_tunjangan_list, get_tunkin_class_detail, get_tunkin_class_list,
     delete_user_account, get_unit_kerja_list, get_user_account_detail, get_user_account_list, master_butir_kegiatan, master_jabatan, master_jam_finger, master_jam_kerja,
     master_kalender, master_pegawai_vip, master_potongan, master_trt as master_file_trt, master_tunkin_class,
@@ -51,9 +55,11 @@ from app.controllers.dashboard_1MediaInformasiController import (
 from app.controllers.dashboard_1LaporanRekapController import (
     export_detail_jam_lembur_umum,
     export_rekap_absensi_all,
+    export_rekap_absensi_all_pdf,
     export_rekap_absensi_individu,
     export_rekap_absensi_log_finger,
     export_rekap_clock_exception,
+    preview_rekap_clock_exception,
     export_rekap_daftar_lembur_umum,
     export_rekap_ketidakhadiran_pegawai,
     export_rekap_pelanggaran_disiplin,
@@ -70,6 +76,16 @@ from app.controllers.dashboard_1LaporanRekapController import (
     laporan_rekap_tunjangan_kinerja,
     search_pegawai_by_name,
 )
+
+from app.controllers.calendarController import (
+    api_calendar_my_agenda,
+    api_calendar_conflict,
+    api_calendar_create_event,
+    api_calendar_feed,
+    api_calendar_user_agenda,
+    api_calendar_category,
+)
+
 from app.controllers.dashboard_1DataAbsensiController import (
     data_absensi_non_finger, data_absensi_normalisasi_finger, data_absensi_impor_file, data_absensi_pegawai_manual,
     data_absensi_pegawai_lembur_manual, data_absensi_trace_tunjangan, data_absensi_trace, cari_absensi_non_finger,
@@ -210,6 +226,16 @@ def api_login():
 @main.route('/api/logout', methods=['POST'])
 def api_logout():
     return logout()
+
+
+@main.route('/api/absen-online/status', methods=['GET'])
+def api_absen_online_status():
+    return status_absen_online()
+
+
+@main.route('/api/absen-online/punch', methods=['POST'])
+def api_absen_online_punch():
+    return punch_absen_online()
 
 @main.route('/api/pegawai/preview', methods=['GET'])
 def preview_pegawai():
@@ -579,6 +605,12 @@ def api_kalender_list():
 def api_kalender_generate():
     return create_kalender_tahun()
 
+
+@main.route('/api/kalender/save', methods=['POST'])
+@login_required
+def api_kalender_save():
+    return save_kalender_changes()
+
 @main.route('/master/pegawai-vip')
 @login_required
 def view_master_pegawai_vip():
@@ -829,10 +861,24 @@ def export_laporan_detail_jam_lembur_umum():
 def view_laporan_rekap_absensi_all():
     return laporan_rekap_absensi_all()
 
+@main.route('/laporan/rekap-absensi-all/preview', methods=['POST'])
+@login_required
+def preview_laporan_rekap_absensi_all():
+    return preview_rekap_absensi_all()
+
 @main.route('/laporan/rekap-absensi-all/export', methods=['POST'])
 @login_required
 def export_laporan_rekap_absensi_all():
     return export_rekap_absensi_all()
+
+
+@main.route(
+    '/laporan/rekap-absensi-all/export-pdf',
+    methods=['POST']
+)
+@login_required
+def export_laporan_rekap_absensi_all_pdf():
+    return export_rekap_absensi_all_pdf()
 
 @main.route('/laporan/rekap-absensi-individu')
 @login_required
@@ -863,6 +909,14 @@ def export_laporan_rekap_absensi_log_finger():
 @login_required
 def view_laporan_rekap_clock_exception():
     return laporan_rekap_clock_exception()
+
+
+@main.route(
+    '/laporan/rekap-clock-exception/preview',
+    methods=['POST']
+)
+def preview_laporan_rekap_clock_exception():
+    return preview_rekap_clock_exception()
 
 @main.route('/laporan/rekap-clock-exception/export', methods=['POST'])
 @login_required
@@ -1522,3 +1576,115 @@ def view_kirim_kritik_saran():
 @login_required
 def view_kirim_forum_media_informasi():
     return kirim_forum_media_informasi()
+
+# ============================================================
+# HRIS REBORN CALENDAR API
+#
+# Agenda Personal
+# Event
+# ICS Mobile Sync
+#
+# ============================================================
+
+
+@main.route(
+    '/api/calendar/my-agenda',
+    methods=['GET']
+)
+@login_required
+def api_calendar_my_agenda_route():
+
+    return api_calendar_my_agenda()
+
+
+
+@main.route(
+    '/api/calendar/event',
+    methods=['POST']
+)
+@login_required
+def api_calendar_create_event_route():
+
+    return api_calendar_create_event()
+
+
+
+@main.route(
+    '/api/calendar/feed/<token>.ics',
+    methods=['GET']
+)
+def api_calendar_feed_route(token):
+
+    return api_calendar_feed(token)
+
+
+
+# ============================================================
+# CALENDAR CATEGORY API
+# ============================================================
+
+
+@main.route(
+    '/api/calendar/category',
+    methods=['GET']
+)
+@login_required
+def api_calendar_category_route():
+
+    return api_calendar_category()
+
+
+
+# ============================================================
+# HRIS REBORN CALENDAR USER AGENDA
+#
+# Personal agenda lookup
+# Conflict checking foundation
+#
+# ============================================================
+
+
+@main.route(
+    '/api/calendar/user/<nip>',
+    methods=['GET']
+)
+@login_required
+def api_calendar_user_route(nip):
+
+    return api_calendar_user_agenda(
+        nip
+    )
+
+
+
+# ============================================================
+# HRIS REBORN CALENDAR CONFLICT API
+# ============================================================
+
+
+@main.route(
+    '/api/calendar/conflict/<nip>',
+    methods=['GET']
+)
+@login_required
+def api_calendar_conflict_route(nip):
+
+    return api_calendar_conflict(
+        nip
+    )
+
+
+# ============================================================
+# MASTER KALENDER V2 API
+# Khusus UI Master Kalender baru
+# ============================================================
+
+@main.route(
+    '/api/calendar/master',
+    methods=['GET']
+)
+@login_required
+def api_calendar_master_v2():
+
+    return get_kalender_list()
+

@@ -304,6 +304,51 @@
     padding: 60px 20px;
 }
 
+/* ============================================================
+   ABSEN ONLINE
+   Muncul hanya ketika hari ini ditetapkan sebagai WFH.
+   ============================================================ */
+
+.absen-online-wrapper{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.btn-absen-online{
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: 240px;
+    padding: 14px 32px;
+    border: none;
+    border-radius: 10px;
+    background-color: #EB6831;
+    color: #ffffff;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.18);
+    cursor: pointer;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        background-color 0.2s ease;
+}
+
+.btn-absen-online:hover{
+    background-color: #d95722;
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 18px rgba(0,0,0,0.22);
+}
+
+.btn-absen-online:active{
+    transform: translateY(0);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.18);
+}
+
 .judul-pengumuman{
     font-size: 36px;
     margin-bottom: 30px;
@@ -507,3 +552,61 @@
 }
 
 
+
+/* ============================================================
+   ABSEN ONLINE
+   ============================================================ */
+
+.absen-online-wrapper {
+    margin-bottom: 30px;
+}
+
+.btn-absen-online {
+    background-color: #EB6831;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    padding: 14px 40px;
+    font-size: 22px;
+    font-weight: 700;
+    box-shadow: 0 5px 10px rgba(0,0,0,0.15);
+    transition:
+        background-color 0.2s ease,
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.btn-absen-online:hover {
+    background-color: #198754;
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 7px 14px rgba(0,0,0,0.18);
+}
+
+.btn-absen-online:active {
+    background-color: #198754;
+    color: #ffffff;
+    transform: translateY(0);
+}
+
+#absenOnlineJenis {
+    font-weight: 700;
+}
+
+#absenOnlineBerhasil {
+    font-size: 22px;
+}
+
+
+/* ============================================================
+   ABSEN ONLINE - JAM PADA POPUP
+   ============================================================ */
+
+.absen-online-jam {
+    font-size: 34px;
+    line-height: 1.1;
+    font-weight: 700;
+    color: #555555;
+    margin-bottom: 10px;
+    letter-spacing: 1px;
+}

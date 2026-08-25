@@ -1073,9 +1073,9 @@ def api_normalisasi_import_finger():
             ).strip().upper()
 
             if status not in ('IN', 'OUT'):
-                if r['PUNCH'] == 1:
+                if r['PUNCH'] == 0:
                     status = 'IN'
-                elif r['PUNCH'] == 0:
+                elif r['PUNCH'] == 1:
                     status = 'OUT'
 
             row = {
@@ -1146,6 +1146,11 @@ def api_normalisasi_process():
         tgl_awal_str = data.get('tgl_awal', '')
         tgl_akhir_str = data.get('tgl_akhir', '')
 
+        filter_field1 = str(data.get('filter_field1') or '').strip()
+        filter_value1 = str(data.get('filter_value1') or '').strip()
+        filter_field2 = str(data.get('filter_field2') or '').strip()
+        filter_value2 = str(data.get('filter_value2') or '').strip()
+
         if not default_tdk_check:
             return jsonify({'error': 'Nilai default TLM/PSW tdk check in/out kosong'})
         if not tgl_awal_str or not tgl_akhir_str:
@@ -1165,7 +1170,50 @@ def api_normalisasi_process():
 
         from sqlalchemy import text
 
-        raw_sql = text("""
+        # ============================================================
+        # FILTER DARI TAB FROM DATABASE
+        #
+        # Filter yang dipilih user harus ikut terbawa ke NORMALISASI.
+        # Gunakan whitelist kolom agar nama field tidak menjadi SQL
+        # injection.
+        # ============================================================
+
+        filter_column_map = {
+            'NIP': 'p.NIP',
+            'Nama': 'p.Nama',
+            'NAMA': 'p.Nama',
+            'UnitKerja': 'p.UnitKerja',
+            'Unit Kerja': 'p.UnitKerja',
+            'Gol': 'p.Gol',
+            'Gol-Pangkat': 'p.Gol',
+        }
+
+        filter_clauses = []
+        filter_params = {}
+
+        for idx, (field, value) in enumerate(
+            (
+                (filter_field1, filter_value1),
+                (filter_field2, filter_value2),
+            ),
+            start=1
+        ):
+            column = filter_column_map.get(field)
+
+            if column and value:
+                param_name = f'filter_value{idx}'
+                filter_clauses.append(
+                    f"AND {column} LIKE :{param_name}"
+                )
+                filter_params[param_name] = f'%{value}%'
+
+        filter_sql = ''
+        if filter_clauses:
+            filter_sql = '\n              ' + '\n              '.join(
+                filter_clauses
+            )
+
+        raw_sql = text(f"""
             SELECT
                 r.FINGER_ID,
                 r.USER_ID,
@@ -1182,17 +1230,21 @@ def api_normalisasi_process():
                 ON CAST(r.USER_ID AS CHAR) = CAST(p.FingerID AS CHAR)
             WHERE r.WAKTU >= :tgl_awal_raw
               AND r.WAKTU < :tgl_akhir_raw
+              {filter_sql}
             ORDER BY CAST(p.UnitKerja AS UNSIGNED), r.FINGER_ID, r.WAKTU
         """)
 
+        query_params = {
+            # Shift 2 Siaga membutuhkan fingerprint
+            # mulai dari malam tanggal sebelumnya.
+            'tgl_awal_raw': tgl_awal - timedelta(days=1),
+            'tgl_akhir_raw': tgl_akhir + timedelta(days=1),
+            **filter_params,
+        }
+
         raw_rows = db.session.execute(
             raw_sql,
-            {
-                # Shift 2 Siaga membutuhkan fingerprint
-                # mulai dari malam tanggal sebelumnya.
-                'tgl_awal_raw': tgl_awal - timedelta(days=1),
-                'tgl_akhir_raw': tgl_akhir + timedelta(days=1),
-            }
+            query_params
         ).mappings().all()
 
         if not raw_rows:
@@ -1216,19 +1268,20 @@ def api_normalisasi_process():
                 continue
 
             status = str(r['STATUS'] or '').strip().upper()
+            punch = r['PUNCH']
 
-            # Format RAW:
-            # STATUS = IN / OUT
-            # PUNCH   = 1 / 0
+            # PUNCH adalah sumber utama arah fingerprint:
+            #   0 = IN / MASUK
+            #   1 = OUT / PULANG
             #
-            # Untuk sementara gunakan STATUS sebagai sumber utama.
-            if status not in ('IN', 'OUT'):
-                punch = r['PUNCH']
-
-                if punch == 1:
-                    status = 'IN'
-                elif punch == 0:
-                    status = 'OUT'
+            # STATUS pada RAW dapat berupa kode numerik dari mesin,
+            # sehingga jangan digunakan untuk menentukan arah.
+            if punch == 0:
+                status = 'IN'
+            elif punch == 1:
+                status = 'OUT'
+            elif status not in ('IN', 'OUT'):
+                status = None
 
             grouped[
                 (
@@ -1376,13 +1429,46 @@ def api_normalisasi_process():
             MfPot.TGL_MULAI <= tgl_akhir
         ).all()
 
-        def get_jam_kerja(tgl_dt):
-            hari_jumat = tgl_dt.weekday() == 4
-            shift_filter = '2' if hari_jumat else '1'
-            for jk in jam_kerja_list:
-                if jk.SHIFT == shift_filter and jk.TGL_MULAI_BERLAKU <= tgl_dt:
-                    return jk
-            return jam_kerja_list[0] if jam_kerja_list else None
+        def get_jam_kerja(tgl_dt, shift_kerja='1'):
+            # MF_JAM_KERJA:
+            #   Shift      = 1 -> Senin-Kamis
+            #   Shift      = 2 -> Jumat
+            #   ShiftKerja = 1 -> Shift 1 / pegawai umum
+            #   ShiftKerja = 2 -> Shift 2 / petugas siaga
+            #
+            # Ambil konfigurasi TERBARU yang sudah berlaku
+            # pada tanggal absensi.
+
+            shift_hari = (
+                '2'
+                if tgl_dt.weekday() == 4
+                else '1'
+            )
+
+            kandidat = [
+                jk
+                for jk in jam_kerja_list
+                if (
+                    str(jk.SHIFT or '') == shift_hari
+                    and str(jk.SHIFT_KERJA or '') == str(shift_kerja)
+                    and jk.TGL_MULAI_BERLAKU is not None
+                    and jk.TGL_MULAI_BERLAKU <= tgl_dt
+                )
+            ]
+
+            if not kandidat:
+                return None
+
+            # Konfigurasi paling akhir adalah yang berlaku.
+            kandidat.sort(
+                key=lambda jk: (
+                    jk.TGL_MULAI_BERLAKU,
+                    jk.IDJKERJA or 0
+                ),
+                reverse=True
+            )
+
+            return kandidat[0]
 
         def hitung_potongan(total_tlm, total_psw, tgl_dt):
             tk_tlm, pot_tlm, tk_psw, pot_psw = '', 0, '', 0
@@ -1488,12 +1574,21 @@ def api_normalisasi_process():
 
             # --------------------------------------------------------
             # TLM
+            #
+            # Datang lebih awal / tepat waktu:
+            #   TLM = 0
+            #
+            # Datang terlambat:
+            #   TLM = selisih menit positif
             # --------------------------------------------------------
 
             if jam_in_dt:
-                awal_tlm = (
+                selisih_in = (
                     jam_in_dt - baku_in
                 ).total_seconds() / 60
+
+                awal_tlm = max(0, selisih_in)
+
                 row_jam_in = jam_in_dt.strftime('%H:%M:%S')
                 is_valid_in = True
             else:
@@ -1503,21 +1598,41 @@ def api_normalisasi_process():
 
             # --------------------------------------------------------
             # PSW
+            #
+            # Pulang tepat / lebih lambat:
+            #   PSW = 0
+            #
+            # Pulang lebih awal:
+            #   PSW = selisih menit negatif
             # --------------------------------------------------------
 
             if jam_out_dt:
-                total_psw = (
+                selisih_out = (
                     jam_out_dt - baku_out
                 ).total_seconds() / 60
+
+                total_psw = min(0, selisih_out)
+
+                # Waktu pulang setelah jam baku adalah kelebihan
+                # waktu yang hanya boleh dipakai untuk kompensasi
+                # TLM-1.
+                tambahan_pulang = max(0, selisih_out)
+
                 row_jam_out = jam_out_dt.strftime('%H:%M:%S')
                 is_valid_out = True
             else:
                 total_psw = -1 * xdefault
+                tambahan_pulang = 0
                 row_jam_out = '00:00:00'
                 is_valid_out = False
 
             # --------------------------------------------------------
             # PENGGANTIAN TLM-1
+            #
+            # HANYA TLM-1 (<= 30 menit) yang boleh diganti
+            # dengan kelebihan waktu pulang.
+            #
+            # TLM-2 / TLM-3 / TLM-4 tidak boleh diganti.
             # --------------------------------------------------------
 
             penggantian_ok = (
@@ -1529,14 +1644,12 @@ def api_normalisasi_process():
                 and 0 < awal_tlm <= 30
                 and penggantian_ok
             ):
-                total_tlm = (
-                    awal_tlm - total_psw
-                    if total_psw > 0
-                    else awal_tlm
+                total_tlm = max(
+                    0,
+                    awal_tlm - tambahan_pulang
                 )
-
-                total_tlm = max(0, total_tlm)
             else:
+                total_tlm = awal_tlm
                 total_tlm = awal_tlm
 
             tk_tlm, pot_tlm, tk_psw, pot_psw = (
@@ -1682,7 +1795,7 @@ def api_normalisasi_process():
                 # IN Shift 2:
                 # tanggal siaga + window MF_LOAD_FINGER
                 if (
-                    raw['PUNCH'] == 1
+                    raw['PUNCH'] == 0
                     and start_in is not None
                     and end_in is not None
                     and start_in <= waktu <= end_in
@@ -1692,7 +1805,7 @@ def api_normalisasi_process():
                 # OUT Shift 2:
                 # tanggal berikutnya + window MF_LOAD_FINGER
                 elif (
-                    raw['PUNCH'] == 0
+                    raw['PUNCH'] == 1
                     and start_out is not None
                     and end_out is not None
                     and start_out <= waktu <= end_out
@@ -1882,7 +1995,7 @@ def api_normalisasi_process():
             ):
                 is_libur = True
 
-            jk = get_jam_kerja(tgl_dt)
+            jk = get_jam_kerja(tgl_dt, '1')
 
             if not jk:
                 continue
@@ -1890,7 +2003,7 @@ def api_normalisasi_process():
             logs_in = sorted(
                 [
                     l for l in filtered_logs
-                    if l.get('punch') == 1
+                    if l.get('punch') == 0
                 ],
                 key=lambda l: l['waktu']
             )
@@ -1898,7 +2011,7 @@ def api_normalisasi_process():
             logs_out = sorted(
                 [
                     l for l in filtered_logs
-                    if l.get('punch') == 0
+                    if l.get('punch') == 1
                 ],
                 key=lambda l: l['waktu']
             )

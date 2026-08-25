@@ -1,157 +1,1981 @@
-<!-- pages/dashboard_1/Master File Master Kalender.html -->
 {% extends "layout/baseDashboard1.html" %}
 
-{% block title %}- Kalender{% endblock %}
-
 {% block content %}
-<div class="nxl-content">
-    <div class="page-header">
-        <div class="page-header-left d-flex align-items-center">
-            <div class="page-header-title">
-                <h5 class="m-b-10">Master File</h5>
-            </div>
-            <ul class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url_for('main.view_master_kalender') }}">Create Master Kalender</a></li>
-            </ul>
-        </div>
-    </div>
 
-    <div class="main-content master-siaga">
-        <div class="container-fluid">
-            <div class="card mb-4 filter-card">
-                <div class="card-header-custom d-flex justify-content-between align-items-center"
-                    style="border-radius: 10px;">
-                    <h6 class="mb-0">
-                        <i class="ti ti-calendar-plus me-2"></i> Create Master Kalender
-                    </h6>
+<style>
+
+.calendar-page {
+    padding: 24px;
+}
+
+.calendar-card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 18px rgba(0,0,0,.08);
+    overflow: hidden;
+}
+
+.calendar-header {
+    padding: 22px 24px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.calendar-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.calendar-title-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff1eb;
+    color: #f36b2c;
+    font-size: 20px;
+}
+
+.calendar-title h3 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: #263238;
+}
+
+.calendar-title small {
+    color: #8a8f94;
+}
+
+.calendar-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.year-selector {
+    position: relative;
+}
+
+.year-button {
+    min-width: 130px;
+    height: 42px;
+    padding: 0 14px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    background: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #263238;
+}
+
+.year-button:hover {
+    border-color: #f36b2c;
+}
+
+.year-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 48px;
+    z-index: 100;
+    width: 150px;
+    max-height: 230px;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 12px;
+    box-shadow: 0 8px 28px rgba(0,0,0,.15);
+    padding: 6px;
+}
+
+.year-menu.show {
+    display: block;
+}
+
+.year-option {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: center;
+    font-size: 14px;
+}
+
+.year-option:hover {
+    background: #fff1eb;
+}
+
+.year-option.active {
+    background: #f36b2c;
+    color: #fff;
+    font-weight: 700;
+}
+
+.generate-button,
+.save-button {
+    height: 42px;
+    border: 0;
+    border-radius: 10px;
+    padding: 0 18px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.generate-button {
+    background: #f36b2c;
+    color: #fff;
+}
+
+.generate-button:hover {
+    background: #df5c21;
+}
+
+.save-button {
+    background: #263238;
+    color: #fff;
+    min-width: 190px;
+}
+
+.save-button:hover {
+    background: #11181c;
+}
+
+.save-button:disabled {
+    opacity: .45;
+    cursor: not-allowed;
+}
+
+.calendar-body {
+    padding: 22px 24px 28px;
+}
+
+.month-selector {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+    margin-bottom: 24px;
+}
+
+.month-button {
+    border: 1px solid #eee;
+    background: #fff;
+    border-radius: 10px;
+    padding: 11px 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: #697177;
+}
+
+.month-button:hover {
+    border-color: #f36b2c;
+    color: #f36b2c;
+}
+
+.month-button.active {
+    background: #f36b2c;
+    color: #fff;
+    border-color: #f36b2c;
+}
+
+.selected-month-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+}
+
+.selected-month-header h4 {
+    margin: 0;
+    font-size: 18px;
+    color: #263238;
+}
+
+.calendar-summary {
+    color: #8a8f94;
+    font-size: 13px;
+}
+
+.day-list {
+    border: 1px solid #eee;
+    border-radius: 12px;
+    overflow-y: auto;
+    max-height: 560px;
+}
+
+.day-row {
+    display: grid;
+    grid-template-columns: 65px 110px minmax(0,1fr) 52px;
+    min-height: 58px;
+    border-bottom: 1px solid #eee;
+    align-items: center;
+    background: #fff;
+}
+
+.day-row:last-child {
+    border-bottom: 0;
+}
+
+.day-number {
+    padding-left: 18px;
+    font-size: 17px;
+    font-weight: 700;
+    color: #263238;
+}
+
+.day-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #596168;
+}
+
+.day-info {
+    padding: 8px 18px;
+    font-size: 13px;
+    color: #596168;
+}
+
+.day-row.holiday {
+    background: #fff3f3;
+}
+
+.day-row.holiday .day-number,
+.day-row.holiday .day-name,
+.day-row.holiday .day-info {
+    color: #dc3545;
+}
+
+.day-row.wfh {
+    background: #e4e7e9;
+}
+
+.day-row.wfh .day-number,
+.day-row.wfh .day-name,
+.day-row.wfh .day-info {
+    color: #343a40;
+}
+
+.holiday-label,
+.wfh-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-weight: 600;
+}
+
+.holiday-dot,
+.wfh-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex: 0 0 auto;
+}
+
+.holiday-dot {
+    background: #dc3545;
+}
+
+.wfh-dot {
+    background: #343a40;
+}
+
+.edit-button {
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 8px;
+    background: #f5f5f5;
+    color: #596168;
+    cursor: pointer;
+}
+
+.edit-button:hover {
+    background: #fff1eb;
+    color: #f36b2c;
+}
+
+.edit-button.locked {
+    cursor: not-allowed;
+    opacity: .45;
+}
+
+.pending {
+    box-shadow: inset 4px 0 0 #f36b2c;
+}
+
+.legend {
+    display: flex;
+    gap: 18px;
+    margin-top: 14px;
+    color: #737b80;
+    font-size: 12px;
+    flex-wrap: wrap;
+}
+
+.legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.legend-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.legend-dot.work {
+    background: #adb5bd;
+}
+
+.legend-dot.holiday {
+    background: #dc3545;
+}
+
+.legend-dot.wfh {
+    background: #343a40;
+}
+
+.save-area {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 18px;
+}
+
+.modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(0,0,0,.45);
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.modal-backdrop.show {
+    display: flex;
+}
+
+.calendar-modal {
+    width: 100%;
+    max-width: 430px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 15px 50px rgba(0,0,0,.25);
+    overflow: hidden;
+}
+
+.modal-header {
+    padding: 18px 20px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h4 {
+    margin: 0;
+    font-size: 17px;
+    color: #263238;
+}
+
+.modal-close {
+    border: 0;
+    background: transparent;
+    font-size: 20px;
+    cursor: pointer;
+    color: #777;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.modal-date {
+    margin-bottom: 18px;
+    font-weight: 700;
+    color: #263238;
+}
+
+.status-options {
+    display: grid;
+    gap: 10px;
+}
+
+.status-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 12px;
+    cursor: pointer;
+}
+
+.status-option:hover {
+    border-color: #f36b2c;
+}
+
+.status-option input {
+    accent-color: #f36b2c;
+}
+
+.keterangan-wrapper {
+    margin-top: 16px;
+}
+
+.keterangan-wrapper label {
+    display: block;
+    margin-bottom: 7px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #596168;
+}
+
+.keterangan-input {
+    width: 100%;
+    box-sizing: border-box;
+    height: 40px;
+    border: 1px solid #ddd;
+    border-radius: 9px;
+    padding: 0 12px;
+}
+
+.modal-footer {
+    padding: 14px 20px;
+    border-top: 1px solid #eee;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.modal-cancel,
+.modal-save {
+    height: 38px;
+    padding: 0 15px;
+    border-radius: 9px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.modal-cancel {
+    border: 1px solid #ddd;
+    background: #fff;
+}
+
+.modal-save {
+    border: 0;
+    background: #f36b2c;
+    color: #fff;
+}
+
+.loading-state,
+.empty-state {
+    padding: 36px;
+    text-align: center;
+    color: #8a8f94;
+}
+
+@media (max-width: 800px) {
+
+    .month-selector {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .day-row {
+        grid-template-columns: 55px 95px minmax(0,1fr) 45px;
+    }
+}
+
+@media (max-width: 560px) {
+
+    .calendar-page {
+        padding: 12px;
+    }
+
+    .calendar-body {
+        padding: 16px;
+    }
+
+    .calendar-header {
+        align-items: flex-start;
+    }
+
+    .calendar-actions {
+        width: 100%;
+    }
+
+    .year-selector {
+        flex: 1;
+    }
+
+    .year-button {
+        width: 100%;
+    }
+
+    .generate-button {
+        flex: 1;
+    }
+
+    .month-selector {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .day-row {
+        grid-template-columns: 45px 80px minmax(0,1fr) 42px;
+    }
+
+    .day-info {
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+}
+
+</style>
+
+
+<div class="calendar-page">
+
+    <div class="calendar-card">
+
+        <div class="calendar-header">
+
+            <div class="calendar-title">
+
+                <div class="calendar-title-icon">
+                    <i class="fas fa-calendar-alt"></i>
                 </div>
 
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-12 d-md-flex align-items-center">
-                            <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Tahun</label>
-                            <div class="col-md-4">
-                                <input type="number" id="tahunInput" class="form-control-sm border w-100"
-                                       placeholder="Contoh: 2026" min="1900" max="2200" style="outline: none;">
-                            </div>
-                            <div class="col-md-5 d-flex gap-2 mt-2 mt-md-0 ps-md-3">
-                                <button type="button" id="btnBuatKalender" class="btn btn-orange-figma px-3">
-                                    <i class="bi bi-calendar-plus"></i> Buat
-                                </button>
-                                <button type="button" id="btnRefreshKalender" class="btn-refresh-custom">
-                                    <i class="bi bi-arrow-clockwise"></i> Refresh
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                <div>
+                    <h3>Master Kalender</h3>
+                    <small>Kalender kerja, hari libur dan WFH</small>
+                </div>
 
-                    <div class="table-responsive mt-4">
-                        <table class="table table-bordered table-striped text-center align-middle">
-                            <thead style="background:#EB6831;">
-                                <tr>
-                                    <th style="color:white;">No</th>
-                                    <th style="color:white;">Tanggal</th>
-                                    <th style="color:white;">Isi Libur</th>
-                                    <th style="color:white;">Keterangan</th>
-                                    <th style="color:white;">Updated</th>
-                                </tr>
-                            </thead>
-                            <tbody id="kalenderTableBody">
-                                <tr>
-                                    <td colspan="5" style="padding: 20px;">Isi tahun lalu klik Refresh.</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+            </div>
+
+            <div class="calendar-actions">
+
+                <div class="year-selector">
+
+                    <button
+                        type="button"
+                        class="year-button"
+                        id="yearButton"
+                    >
+                        <span id="selectedYear">2026</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+
+                    <div
+                        class="year-menu"
+                        id="yearMenu"
+                    ></div>
+
+                </div>
+
+                <button
+                    type="button"
+                    class="generate-button"
+                    id="generateCalendarButton"
+                >
+                    <i class="fas fa-calendar-plus"></i>
+                    Buat Kalender
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <div class="calendar-body">
+
+            <div
+                class="month-selector"
+                id="monthSelector"
+            ></div>
+
+
+            <div class="selected-month-header">
+
+                <h4 id="selectedMonthTitle">
+                    -
+                </h4>
+
+                <div
+                    class="calendar-summary"
+                    id="calendarSummary"
+                >
+                    -
+                </div>
+
+            </div>
+
+
+            <div
+                class="day-list"
+                id="dayList"
+            >
+                <div class="loading-state">
+                    Memuat kalender...
                 </div>
             </div>
+
+
+            <div class="legend">
+
+                <span class="legend-item">
+                    <span class="legend-dot work"></span>
+                    Hari Kerja
+                </span>
+
+                <span class="legend-item">
+                    <span class="legend-dot holiday"></span>
+                    Hari Libur
+                </span>
+
+                <span class="legend-item">
+                    <span class="legend-dot wfh"></span>
+                    WFH
+                </span>
+
+                <span class="legend-item">
+                    <i class="fas fa-lock"></i>
+                    Terkunci
+                </span>
+
+            </div>
+
+
+            <div class="save-area">
+
+                <button
+                    type="button"
+                    class="save-button"
+                    id="saveChangesButton"
+                    disabled
+                >
+                    <i class="fas fa-save"></i>
+                    Simpan Perubahan
+                </button>
+
+            </div>
+
         </div>
+
     </div>
+
 </div>
+
+
+<div
+    class="modal-backdrop"
+    id="editModal"
+>
+
+    <div class="calendar-modal">
+
+        <div class="modal-header">
+
+            <h4>Edit Kalender</h4>
+
+            <button
+                type="button"
+                class="modal-close"
+                id="modalCloseButton"
+            >
+                &times;
+            </button>
+
+        </div>
+
+        <div class="modal-body">
+
+            <div
+                class="modal-date"
+                id="modalDate"
+            >
+                -
+            </div>
+
+            <div class="status-options">
+
+                <label class="status-option">
+
+                    <input
+                        type="radio"
+                        name="calendarStatus"
+                        value="KERJA"
+                    >
+
+                    <span>
+                        <strong>Hari Kerja</strong>
+                    </span>
+
+                </label>
+
+
+                <label class="status-option">
+
+                    <input
+                        type="radio"
+                        name="calendarStatus"
+                        value="LIBUR"
+                    >
+
+                    <span>
+                        <strong>Hari Libur</strong>
+                    </span>
+
+                </label>
+
+
+                <label class="status-option">
+
+                    <input
+                        type="radio"
+                        name="calendarStatus"
+                        value="WFH"
+                    >
+
+                    <span>
+                        <strong>WFH</strong>
+                    </span>
+
+                </label>
+
+            </div>
+
+
+            <div
+                class="keterangan-wrapper"
+                id="keteranganWrapper"
+            >
+
+                <label for="keteranganInput">
+                    Keterangan
+                </label>
+
+                <input
+                    type="text"
+                    id="keteranganInput"
+                    class="keterangan-input"
+                    maxlength="50"
+                    placeholder="Contoh: Libur Khusus"
+                >
+
+            </div>
+
+        </div>
+
+
+        <div class="modal-footer">
+
+            <button
+                type="button"
+                class="modal-cancel"
+                id="modalCancelButton"
+            >
+                Batal
+            </button>
+
+            <button
+                type="button"
+                class="modal-save"
+                id="modalSaveButton"
+            >
+                Terapkan
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
 {% endblock %}
 
+
 {% block script %}
+
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    const tahunInput = document.getElementById('tahunInput');
-    const btnBuat = document.getElementById('btnBuatKalender');
-    const btnRefresh = document.getElementById('btnRefreshKalender');
-    const tbody = document.getElementById('kalenderTableBody');
 
-    function getTahunOrAlert() {
-        const tahun = tahunInput.value.trim();
-        if (!tahun) {
-            alert('Isi tahun terlebih dahulu');
-            return null;
+(function () {
+
+    "use strict";
+
+
+    const LIST_URL = "/api/kalender/list";
+    const SAVE_URL = "/api/kalender/save";
+    const GENERATE_URL = "/api/kalender/generate";
+
+
+    const monthNames = [
+        "Januari",
+        "Februari",
+        "Maret",
+        "April",
+        "Mei",
+        "Juni",
+        "Juli",
+        "Agustus",
+        "September",
+        "Oktober",
+        "November",
+        "Desember"
+    ];
+
+
+    const dayNames = [
+        "Minggu",
+        "Senin",
+        "Selasa",
+        "Rabu",
+        "Kamis",
+        "Jumat",
+        "Sabtu"
+    ];
+
+
+    let selectedYear = new Date().getFullYear();
+    let selectedMonth = new Date().getMonth();
+
+    let calendarData = [];
+
+    let pendingChanges = {};
+
+    let editingDate = null;
+
+
+    const yearButton =
+        document.getElementById("yearButton");
+
+    const yearMenu =
+        document.getElementById("yearMenu");
+
+    const selectedYearLabel =
+        document.getElementById("selectedYear");
+
+    const monthSelector =
+        document.getElementById("monthSelector");
+
+    const selectedMonthTitle =
+        document.getElementById("selectedMonthTitle");
+
+    const calendarSummary =
+        document.getElementById("calendarSummary");
+
+    const dayList =
+        document.getElementById("dayList");
+
+    const generateButton =
+        document.getElementById("generateCalendarButton");
+
+    const saveChangesButton =
+        document.getElementById("saveChangesButton");
+
+    const editModal =
+        document.getElementById("editModal");
+
+    const modalDate =
+        document.getElementById("modalDate");
+
+    const keteranganInput =
+        document.getElementById("keteranganInput");
+
+
+    function renderYears() {
+
+        yearMenu.innerHTML = "";
+
+        const start = selectedYear - 10;
+        const end = selectedYear + 10;
+
+
+        for (
+            let year = start;
+            year <= end;
+            year++
+        ) {
+
+            const button =
+                document.createElement("button");
+
+            button.type = "button";
+
+            button.className =
+                "year-option" +
+                (
+                    year === selectedYear
+                        ? " active"
+                        : ""
+                );
+
+            button.textContent = year;
+
+
+            button.addEventListener(
+                "click",
+                function () {
+
+                    if (
+                        Object.keys(
+                            pendingChanges
+                        ).length
+                    ) {
+
+                        if (
+                            !confirm(
+                                "Masih ada perubahan yang belum disimpan. Ganti tahun?"
+                            )
+                        ) {
+                            return;
+                        }
+
+                        pendingChanges = {};
+                        updateSaveButton();
+
+                    }
+
+
+                    selectedYear = year;
+
+                    selectedYearLabel.textContent =
+                        selectedYear;
+
+                    yearMenu.classList.remove(
+                        "show"
+                    );
+
+                    renderYears();
+
+                    loadCalendar();
+
+                }
+            );
+
+
+            yearMenu.appendChild(button);
+
         }
-        return tahun;
+
+
+        setTimeout(
+            function () {
+
+                const active =
+                    yearMenu.querySelector(
+                        ".active"
+                    );
+
+                if (active) {
+
+                    active.scrollIntoView({
+                        block: "center"
+                    });
+
+                }
+
+            },
+            0
+        );
+
     }
 
-    async function loadKalenderList() {
-        const tahun = getTahunOrAlert();
-        if (!tahun) return;
 
-        tbody.innerHTML = `<tr><td colspan="5" style="padding:20px;">Memuat data...</td></tr>`;
+    yearButton.addEventListener(
+        "click",
+        function () {
+
+            yearMenu.classList.toggle(
+                "show"
+            );
+
+        }
+    );
+
+
+    document.addEventListener(
+        "click",
+        function (event) {
+
+            if (
+                !event.target.closest(
+                    ".year-selector"
+                )
+            ) {
+
+                yearMenu.classList.remove(
+                    "show"
+                );
+
+            }
+
+        }
+    );
+
+
+    function renderMonths() {
+
+        monthSelector.innerHTML = "";
+
+        monthNames.forEach(
+            function (name, index) {
+
+                const button =
+                    document.createElement("button");
+
+                button.type = "button";
+
+                button.className =
+                    "month-button" +
+                    (
+                        index === selectedMonth
+                            ? " active"
+                            : ""
+                    );
+
+                button.textContent = name;
+
+
+                button.addEventListener(
+                    "click",
+                    function () {
+
+                        selectedMonth = index;
+
+                        renderMonths();
+                        renderDays();
+
+                    }
+                );
+
+
+                monthSelector.appendChild(button);
+
+            }
+        );
+
+    }
+
+
+    function getRowForDate(date) {
+
+        return calendarData.find(
+            function (row) {
+
+                return row.tanggal_iso === date;
+
+            }
+        );
+
+    }
+
+
+    function getEffectiveRow(row) {
+
+        const pending =
+            pendingChanges[
+                row.tanggal_iso
+            ];
+
+        if (!pending) {
+            return row;
+        }
+
+
+        return {
+            ...row,
+            is_libur:
+                pending.status === "LIBUR"
+                    ? "Y"
+                    : "N",
+            ket:
+                pending.status === "WFH"
+                    ? "WFH"
+                    : (
+                        pending.status === "LIBUR"
+                            ? (
+                                pending.keterangan ||
+                                "Libur"
+                            )
+                            : ""
+                    )
+        };
+
+    }
+
+
+    function isLocked(row) {
+
+        if (
+            row.ket === "Sabtu" ||
+            row.ket === "Minggu"
+        ) {
+            return true;
+        }
+
+
+        const nationalHoliday =
+            row.ket &&
+            ![
+                "Sabtu",
+                "Minggu",
+                "WFH",
+                "Hari Kerja"
+            ].includes(
+                row.ket
+            );
+
+
+        if (
+            row.is_libur === "Y" &&
+            nationalHoliday
+        ) {
+            return true;
+        }
+
+
+        return false;
+
+    }
+
+
+    function escapeHtml(value) {
+
+        return String(value ?? "")
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
+
+    }
+
+
+    function renderDays() {
+
+        selectedMonthTitle.textContent =
+            monthNames[selectedMonth] +
+            " " +
+            selectedYear;
+
+
+        const rows =
+            calendarData.filter(
+                function (row) {
+
+                    const parts =
+                        row.tanggal_iso.split("-");
+
+                    return (
+                        parseInt(parts[0], 10) === selectedYear &&
+                        parseInt(parts[1], 10) === selectedMonth + 1
+                    );
+
+                }
+            );
+
+
+        calendarSummary.textContent =
+            rows.length +
+            " hari";
+
+
+        if (!rows.length) {
+
+            dayList.innerHTML =
+                '<div class="empty-state">' +
+                'Tidak ada data kalender untuk bulan ini.' +
+                '</div>';
+
+            return;
+
+        }
+
+
+        dayList.innerHTML = "";
+
+
+        rows.forEach(
+            function (originalRow) {
+
+                const row =
+                    getEffectiveRow(
+                        originalRow
+                    );
+
+
+                const isWfh =
+                    row.ket === "WFH";
+
+
+                const isHoliday =
+                    row.is_libur === "Y";
+
+
+                const locked =
+                    isLocked(originalRow);
+
+
+                const pending =
+                    Boolean(
+                        pendingChanges[
+                            row.tanggal_iso
+                        ]
+                    );
+
+
+                const dateObject =
+                    new Date(
+                        row.tanggal_iso +
+                        "T00:00:00"
+                    );
+
+
+                const dayNumber =
+                    String(
+                        dateObject.getDate()
+                    ).padStart(
+                        2,
+                        "0"
+                    );
+
+
+                const dayName =
+                    dayNames[
+                        dateObject.getDay()
+                    ];
+
+
+                const rowElement =
+                    document.createElement("div");
+
+
+                rowElement.className =
+                    "day-row" +
+                    (
+                        isHoliday
+                            ? " holiday"
+                            : ""
+                    ) +
+                    (
+                        isWfh
+                            ? " wfh"
+                            : ""
+                    ) +
+                    (
+                        pending
+                            ? " pending"
+                            : ""
+                    );
+
+
+                let information = "Hari Kerja";
+
+
+                if (isWfh) {
+
+                    information =
+                        '<span class="wfh-label">' +
+                        '<span class="wfh-dot"></span>' +
+                        'WFH' +
+                        '</span>';
+
+                }
+                else if (isHoliday) {
+
+                    information =
+                        '<span class="holiday-label">' +
+                        '<span class="holiday-dot"></span>' +
+                        escapeHtml(
+                            row.ket ||
+                            "Hari Libur"
+                        ) +
+                        '</span>';
+
+                }
+                else {
+
+                    information =
+                        "Hari Kerja";
+
+                }
+
+
+                rowElement.innerHTML =
+
+                    '<div class="day-number">' +
+                        dayNumber +
+                    '</div>' +
+
+                    '<div class="day-name">' +
+                        dayName +
+                    '</div>' +
+
+                    '<div class="day-info">' +
+                        information +
+                    '</div>' +
+
+                    '<div>' +
+
+                        '<button ' +
+                            'type="button" ' +
+                            'class="edit-button ' +
+                            (
+                                locked
+                                    ? "locked"
+                                    : ""
+                            ) +
+                            '" ' +
+                            (
+                                locked
+                                    ? "disabled"
+                                    : ""
+                            ) +
+                            '>' +
+
+                            '<i class="fas ' +
+                            (
+                                locked
+                                    ? "fa-lock"
+                                    : "fa-pencil-alt"
+                            ) +
+                            '"></i>' +
+
+                        '</button>' +
+
+                    '</div>';
+
+
+                const editButton =
+                    rowElement.querySelector(
+                        ".edit-button"
+                    );
+
+
+                if (!locked) {
+
+                    editButton.addEventListener(
+                        "click",
+                        function () {
+
+                            openEditModal(
+                                originalRow
+                            );
+
+                        }
+                    );
+
+                }
+
+
+                dayList.appendChild(
+                    rowElement
+                );
+
+            }
+        );
+
+    }
+
+
+    function openEditModal(row) {
+
+        editingDate =
+            row.tanggal_iso;
+
+
+        const dateObject =
+            new Date(
+                row.tanggal_iso +
+                "T00:00:00"
+            );
+
+
+        modalDate.textContent =
+            dayNames[
+                dateObject.getDay()
+            ] +
+            ", " +
+            dateObject.getDate() +
+            " " +
+            monthNames[
+                dateObject.getMonth()
+            ] +
+            " " +
+            dateObject.getFullYear();
+
+
+        const pending =
+            pendingChanges[
+                editingDate
+            ];
+
+
+        let currentStatus =
+            "KERJA";
+
+
+        let currentKeterangan = "";
+
+
+        if (pending) {
+
+            currentStatus =
+                pending.status;
+
+            currentKeterangan =
+                pending.keterangan ||
+                "";
+
+        }
+        else if (
+            row.ket === "WFH"
+        ) {
+
+            currentStatus = "WFH";
+
+        }
+        else if (
+            row.is_libur === "Y"
+        ) {
+
+            currentStatus = "LIBUR";
+
+            currentKeterangan =
+                row.ket || "";
+
+        }
+
+
+        document
+            .querySelectorAll(
+                'input[name="calendarStatus"]'
+            )
+            .forEach(
+                function (input) {
+
+                    input.checked =
+                        input.value ===
+                        currentStatus;
+
+                }
+            );
+
+
+        keteranganInput.value =
+            currentKeterangan;
+
+
+        updateKeteranganVisibility();
+
+
+        editModal.classList.add(
+            "show"
+        );
+
+    }
+
+
+    function closeEditModal() {
+
+        editModal.classList.remove(
+            "show"
+        );
+
+        editingDate = null;
+
+    }
+
+
+    function updateKeteranganVisibility() {
+
+        const selected =
+            document.querySelector(
+                'input[name="calendarStatus"]:checked'
+            );
+
+
+        if (
+            selected &&
+            selected.value === "LIBUR"
+        ) {
+
+            keteranganInput.parentElement.style.display =
+                "block";
+
+        }
+        else {
+
+            keteranganInput.parentElement.style.display =
+                "none";
+
+        }
+
+    }
+
+
+    document
+        .querySelectorAll(
+            'input[name="calendarStatus"]'
+        )
+        .forEach(
+            function (input) {
+
+                input.addEventListener(
+                    "change",
+                    updateKeteranganVisibility
+                );
+
+            }
+        );
+
+
+    document
+        .getElementById(
+            "modalCloseButton"
+        )
+        .addEventListener(
+            "click",
+            closeEditModal
+        );
+
+
+    document
+        .getElementById(
+            "modalCancelButton"
+        )
+        .addEventListener(
+            "click",
+            closeEditModal
+        );
+
+
+    document
+        .getElementById(
+            "modalSaveButton"
+        )
+        .addEventListener(
+            "click",
+            function () {
+
+                if (!editingDate) {
+                    return;
+                }
+
+
+                const selected =
+                    document.querySelector(
+                        'input[name="calendarStatus"]:checked'
+                    );
+
+
+                if (!selected) {
+                    return;
+                }
+
+
+                const status =
+                    selected.value;
+
+
+                const keterangan =
+                    keteranganInput.value.trim();
+
+
+                pendingChanges[
+                    editingDate
+                ] = {
+
+                    tanggal:
+                        editingDate,
+
+                    status:
+                        status,
+
+                    keterangan:
+                        status === "LIBUR"
+                            ? (
+                                keterangan ||
+                                "Libur"
+                            )
+                            : null
+
+                };
+
+
+                closeEditModal();
+
+                updateSaveButton();
+
+                renderDays();
+
+            }
+        );
+
+
+    function updateSaveButton() {
+
+        const count =
+            Object.keys(
+                pendingChanges
+            ).length;
+
+
+        saveChangesButton.disabled =
+            count === 0;
+
+
+        saveChangesButton.innerHTML =
+            '<i class="fas fa-save"></i> ' +
+            'Simpan Perubahan' +
+            (
+                count
+                    ? " (" + count + ")"
+                    : ""
+            );
+
+    }
+
+
+    async function loadCalendar() {
+
+        dayList.innerHTML =
+            '<div class="loading-state">' +
+            'Memuat kalender ' +
+            selectedYear +
+            '...' +
+            '</div>';
+
 
         try {
-            const res = await fetch(`/api/kalender/list?tahun=${encodeURIComponent(tahun)}`);
-            const json = await res.json();
 
-            if (json.status !== 'success' || json.data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" style="padding:20px;">Belum ada data kalender untuk tahun ${tahun}.</td></tr>`;
+            const response =
+                await fetch(
+                    LIST_URL +
+                    "?tahun=" +
+                    encodeURIComponent(
+                        selectedYear
+                    ),
+                    {
+                        credentials: "same-origin"
+                    }
+                );
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "HTTP " +
+                    response.status
+                );
+
+            }
+
+
+            const result =
+                await response.json();
+
+
+            if (
+                result.status !== "success"
+            ) {
+
+                throw new Error(
+                    result.message ||
+                    "Gagal mengambil kalender"
+                );
+
+            }
+
+
+            calendarData =
+                result.data || [];
+
+
+            renderMonths();
+            renderDays();
+
+        }
+        catch (error) {
+
+            console.error(
+                "MASTER KALENDER LOAD ERROR:",
+                error,
+                error && error.stack
+            );
+
+            dayList.innerHTML =
+                '<div class="empty-state">' +
+                'Gagal memuat kalender.' +
+                '</div>';
+
+        }
+
+    }
+
+
+    saveChangesButton.addEventListener(
+        "click",
+        async function () {
+
+            const changes =
+                Object.values(
+                    pendingChanges
+                );
+
+
+            if (!changes.length) {
                 return;
             }
 
-            tbody.innerHTML = json.data.map(row => `
-                <tr>
-                    <td>${row.no}</td>
-                    <td>${row.tanggal}</td>
-                    <td>${row.is_libur}</td>
-                    <td>${row.ket}</td>
-                    <td>${row.updated}</td>
-                </tr>
-            `).join('');
 
-        } catch (err) {
-            console.error('Gagal memuat data kalender:', err);
-            tbody.innerHTML = `<tr><td colspan="5" style="padding:20px;">Gagal memuat data.</td></tr>`;
-        }
-    }
-
-    async function buatKalender() {
-        const tahun = getTahunOrAlert();
-        if (!tahun) return;
-
-        btnBuat.disabled = true;
-        btnBuat.innerHTML = '<i class="bi bi-hourglass-split"></i> Memproses...';
-
-        try {
-            const res = await fetch('/api/kalender/generate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tahun })
-            });
-            const json = await res.json();
-
-            if (json.status !== 'success') {
-                alert(json.message || 'Gagal membuat kalender');
+            if (
+                !confirm(
+                    "Simpan " +
+                    changes.length +
+                    " perubahan kalender?"
+                )
+            ) {
                 return;
             }
 
-            alert(`Kalender tahun ${json.tahun} berhasil dibuat (${json.inserted} baris baru, ${json.updated} diperbarui).`);
-            loadKalenderList(); // langsung tampilkan hasilnya
-        } catch (err) {
-            console.error('Gagal membuat kalender:', err);
-            alert('Terjadi kesalahan jaringan');
-        } finally {
-            btnBuat.disabled = false;
-            btnBuat.innerHTML = '<i class="bi bi-calendar-plus"></i> Buat';
-        }
-    }
 
-    btnRefresh.addEventListener('click', loadKalenderList);
-    btnBuat.addEventListener('click', buatKalender);
-});
+            saveChangesButton.disabled =
+                true;
+
+
+            saveChangesButton.innerHTML =
+                '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        SAVE_URL,
+                        {
+                            method: "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            credentials:
+                                "same-origin",
+
+                            body:
+                                JSON.stringify({
+                                    tahun:
+                                        selectedYear,
+
+                                    changes:
+                                        changes
+                                })
+                        }
+                    );
+
+
+                const result =
+                    await response.json();
+
+
+                if (
+                    !response.ok ||
+                    result.status !== "success"
+                ) {
+
+                    throw new Error(
+                        result.message ||
+                        "Gagal menyimpan kalender"
+                    );
+
+                }
+
+
+                pendingChanges = {};
+
+
+                alert(
+                    result.message ||
+                    "Perubahan kalender berhasil disimpan."
+                );
+
+
+                await loadCalendar();
+
+
+            }
+            catch (error) {
+
+                console.error(
+                    error
+                );
+
+
+                alert(
+                    error.message ||
+                    "Gagal menyimpan perubahan kalender."
+                );
+
+            }
+            finally {
+
+                updateSaveButton();
+
+            }
+
+        }
+    );
+
+
+    generateButton.addEventListener(
+        "click",
+        async function () {
+
+            if (
+                Object.keys(
+                    pendingChanges
+                ).length
+            ) {
+
+                alert(
+                    "Masih ada perubahan yang belum disimpan. Simpan terlebih dahulu."
+                );
+
+                return;
+
+            }
+
+
+            if (
+                !confirm(
+                    "Buat atau perbarui kalender tahun " +
+                    selectedYear +
+                    "?"
+                )
+            ) {
+                return;
+            }
+
+
+            generateButton.disabled =
+                true;
+
+
+            generateButton.innerHTML =
+                '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        GENERATE_URL,
+                        {
+                            method: "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            credentials:
+                                "same-origin",
+
+                            body:
+                                JSON.stringify({
+                                    tahun:
+                                        selectedYear
+                                })
+                        }
+                    );
+
+
+                const result =
+                    await response.json();
+
+
+                if (
+                    !response.ok ||
+                    result.status !== "success"
+                ) {
+
+                    throw new Error(
+                        result.message ||
+                        "Gagal membuat kalender"
+                    );
+
+                }
+
+
+                alert(
+                    "Kalender " +
+                    selectedYear +
+                    " berhasil dibuat/diperbarui."
+                );
+
+
+                await loadCalendar();
+
+            }
+            catch (error) {
+
+                console.error(
+                    error
+                );
+
+
+                alert(
+                    error.message ||
+                    "Gagal membuat kalender."
+                );
+
+            }
+            finally {
+
+                generateButton.disabled =
+                    false;
+
+                generateButton.innerHTML =
+                    '<i class="fas fa-calendar-plus"></i> Buat Kalender';
+
+            }
+
+        }
+    );
+
+
+    selectedYearLabel.textContent =
+        selectedYear;
+
+
+    renderYears();
+    renderMonths();
+    updateSaveButton();
+    loadCalendar();
+
+})();
+
 </script>
+
 {% endblock %}

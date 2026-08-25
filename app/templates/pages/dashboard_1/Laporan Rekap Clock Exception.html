@@ -1,7 +1,7 @@
 <!-- pages/dashboard_1/Laporan Rekap Clock Exception.html -->
 {% extends "layout/baseDashboard1.html" %}
 
-{% block title %}- Rekap Exception Clock{% endblock %}
+{% block title %}- Rekap Absensi Bulanan{% endblock %}
 
 {% block content %}
 <div class="nxl-content">
@@ -13,7 +13,7 @@
             </div>
             <ul class="breadcrumb">
                 <li class="breadcrumb-item"><a href="#">Rekap</a></li>
-                <li class="breadcrumb-item">Rekap Exception Clock</li>
+                <li class="breadcrumb-item">Rekap Absensi Bulanan</li>
             </ul>
         </div>
     </div>
@@ -27,7 +27,7 @@
                 <div class="card-header-custom d-flex justify-content-between align-items-center"
                     style="border-radius: 10px;">
                     <h6 class="mb-0">
-                        <i class="ti ti-checkbox me-2"></i> Rekap Exception Clock
+                        <i class="ti ti-checkbox me-2"></i> Rekap Absensi Bulanan
                     </h6>
                 </div>
 
@@ -212,7 +212,12 @@
                                     <!-- Tombol RUN -->
                                     <div class="row">
                                         <div class="col-12 d-flex justify-content-center mt-2">
-                                            <button type="submit" class="btn btn-pill-run shadow-sm">RUN</button>
+                                            <button
+    type="button"
+    id="btnRunClockException"
+    class="btn btn-pill-run shadow-sm">
+    RUN
+</button>
                                         </div>
                                     </div>
 
@@ -224,47 +229,523 @@
                 </div>
 
             </div>
+
+
+            <!-- HASIL PREVIEW REKAP ABSENSI BULANAN -->
+
+            <div class="card mt-4">
+
+                <div class="card-header-custom">
+                    <h6 class="mb-0">
+                        <i class="ti ti-table"></i>
+                        Preview Rekap Absensi Bulanan
+                    </h6>
+                </div>
+
+
+                <div class="card-body">
+
+                    <div
+                        class="table-responsive"
+                        id="previewClockExceptionContainer">
+
+                        <!-- tabel dibuat oleh Javascript -->
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
         </div>
     </div>
 </div>
 {% endblock %}
 
+<style>
+#previewClockExceptionContainer
+.clock-exception-name {
+    text-align: left !important;
+    vertical-align: middle !important;
+}
+
+#previewClockExceptionContainer .rekap-libur {
+    background-color: #fff1f2 !important;
+    color: #dc2626 !important;
+}
+
+#previewClockExceptionContainer .rekap-libur-header {
+    background-color: #fff1f2 !important;
+    color: #dc2626 !important;
+}
+
+#previewClockExceptionContainer .rekap-wfh {
+    background-color: #e5e7eb !important;
+    color: #1f2937 !important;
+}
+</style>
+
 {% block script %}
 <script>
-    // Tambahkan di bagian script (setelah updateLabel)
-    document.querySelector('.btn-pill-run').addEventListener('click', async function(e) {
-        e.preventDefault();
-        const unitChecked = document.querySelectorAll('.check-unit-item:checked');
-        const tglAwal = document.getElementById('tglAwal').value;
-        const tglAkhir = document.getElementById('tglAkhir').value;
-        
-        if (!unitChecked.length || !tglAwal || !tglAkhir) {
-            alert('Unit kosong atau format tanggal salah');
+
+function formatJamPreview(value){
+
+    if (!value){
+        return '';
+    }
+
+    const d = new Date(value);
+
+    if (isNaN(d)){
+        return '';
+    }
+
+    return String(d.getHours()).padStart(2,'0')
+        + '.'
+        + String(d.getMinutes()).padStart(2,'0');
+}
+
+
+
+
+function formatHariIndonesia(value){
+
+    const map = {
+        "Sun": "MIN",
+        "Mon": "SEN",
+        "Tue": "SEL",
+        "Wed": "RAB",
+        "Thu": "KAM",
+        "Fri": "JUM",
+        "Sat": "SAB"
+    };
+
+    return map[value] || value || '';
+}
+
+
+function renderPreviewClockException(hasil){
+
+    const container =
+        document.getElementById(
+            'previewClockExceptionContainer'
+        );
+
+
+    if (!container){
+        console.error(
+            'Container preview tidak ditemukan'
+        );
+        return;
+    }
+
+
+    let html = `
+    <table class="table table-bordered table-sm">
+
+    <thead>
+    <tr>
+
+        <th rowspan="2"
+            class="text-center align-middle">
+            No
+        </th>
+
+        <th rowspan="2"
+            style="text-align:left; white-space:nowrap;"
+            class="align-middle">
+            Nama
+        </th>
+    `;
+
+
+    hasil.tanggal.forEach(function(t){
+
+        const weekend =
+            t.hari === 'Sat' ||
+            t.hari === 'Sun';
+
+        const headerClass =
+            weekend
+                ? 'text-center align-middle rekap-libur-header'
+                : 'text-center align-middle';
+
+        html += `
+            <th
+                colspan="1"
+                class="${headerClass}">
+                ${t.tgl.substring(8,10)}
+            </th>
+        `;
+
+    });
+
+
+    html += `
+    </tr>
+
+    <tr>
+    `;
+
+
+    hasil.tanggal.forEach(function(t){
+
+        const weekend =
+            t.hari === 'Sat' ||
+            t.hari === 'Sun';
+
+        const headerClass =
+            weekend
+                ? 'text-center rekap-libur-header'
+                : 'text-center';
+
+        html += `
+            <th
+                class="${headerClass}"
+                style="font-size:10px;">
+                ${formatHariIndonesia(t.hari)}
+            </th>
+        `;
+
+    });
+
+
+    html += `
+    </tr>
+    </thead>
+
+    <tbody>
+    `;
+
+
+    hasil.pegawai.forEach(function(peg, index){
+
+        html += `
+        <tr>
+
+            <td rowspan="2"
+                class="text-center align-middle">
+                ${index + 1}
+            </td>
+
+            <td rowspan="2"
+                class="align-middle clock-exception-name"
+                style="
+                    text-align:left !important;
+                    white-space:nowrap;
+                ">
+                ${peg.nama}
+            </td>
+        `;
+
+
+        hasil.tanggal.forEach(function(t){
+
+            const row =
+                hasil.matrix[peg.nip]
+                    ? hasil.matrix[peg.nip][t.tgl]
+                    : null;
+
+
+            let atas = '';
+            let bawah = '';
+
+
+            if (row){
+
+                if (row.status === 'HADIR'){
+
+                    atas =
+                        formatJamPreview(
+                            row.jam_in
+                        );
+
+                    bawah =
+                        formatJamPreview(
+                            row.jam_out
+                        );
+
+                } else {
+
+                    /*
+                     * Semua status non HADIR
+                     * hanya ditampilkan di
+                     * baris pertama.
+                     */
+
+                    atas =
+                        row.status || '';
+
+                }
+
+            }
+
+
+            let cellClass =
+                'text-center';
+
+            if (row && row.status === 'LIBUR') {
+                cellClass += ' rekap-libur';
+            }
+
+            if (row && row.status === 'WFH') {
+                cellClass += ' rekap-wfh';
+            }
+
+            html += `
+                <td
+                    class="${cellClass}"
+                    style="height:24px;">
+                    ${atas}
+                </td>
+            `;
+
+        });
+
+
+        html += `
+        </tr>
+
+        <tr>
+        `;
+
+
+        hasil.tanggal.forEach(function(t){
+
+            const row =
+                hasil.matrix[peg.nip]
+                    ? hasil.matrix[peg.nip][t.tgl]
+                    : null;
+
+
+            let bawah = '';
+
+
+            if (
+                row &&
+                row.status === 'HADIR'
+            ){
+
+                bawah =
+                    formatJamPreview(
+                        row.jam_out
+                    );
+
+            }
+
+
+            let cellClass =
+                'text-center';
+
+            if (row && row.status === 'LIBUR') {
+                cellClass += ' rekap-libur';
+            }
+
+            if (row && row.status === 'WFH') {
+                cellClass += ' rekap-wfh';
+            }
+
+            html += `
+                <td
+                    class="${cellClass}"
+                    style="height:24px;">
+                    ${bawah}
+                </td>
+            `;
+
+        });
+
+
+        html += `
+        </tr>
+        `;
+
+    });
+
+
+    html += `
+    </tbody>
+    </table>
+    `;
+
+
+    container.innerHTML = html;
+
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    const btn = document.querySelector('.btn-pill-run');
+    const checkAll = document.getElementById('checkAllUnit');
+    const unitCheckboxes = document.querySelectorAll('.check-unit-item');
+    const unitLabel = document.getElementById('dropdownLabelUnit');
+
+    function updateUnitLabel() {
+        const checked = Array.from(
+            document.querySelectorAll('.check-unit-item:checked')
+        );
+
+        if (!checked.length) {
+            unitLabel.textContent = 'Pilih Unit Kerja';
             return;
         }
-        
+
+        const names = checked.map(function (cb) {
+            const label = document.querySelector(
+                'label[for="' + cb.id + '"]'
+            );
+
+            return label
+                ? label.textContent.trim()
+                : cb.value;
+        });
+
+        unitLabel.textContent = names.join(', ');
+    }
+
+    if (checkAll) {
+        checkAll.addEventListener('change', function () {
+            unitCheckboxes.forEach(function (cb) {
+                cb.checked = checkAll.checked;
+            });
+
+            updateUnitLabel();
+        });
+    }
+
+    unitCheckboxes.forEach(function (cb) {
+        cb.addEventListener('change', function () {
+
+            const total = unitCheckboxes.length;
+            const checked = document.querySelectorAll(
+                '.check-unit-item:checked'
+            ).length;
+
+            if (checkAll) {
+                checkAll.checked = total > 0 && checked === total;
+            }
+
+            updateUnitLabel();
+        });
+    });
+
+    updateUnitLabel();
+
+    if (!btn) {
+        console.error('RUN button tidak ditemukan.');
+        return;
+    }
+
+    btn.addEventListener('click', async function (e) {
+        e.preventDefault();
+
+        const unitChecked = document.querySelectorAll(
+            '.check-unit-item:checked'
+        );
+
+        const tglAwal =
+            document.getElementById('tglAwal')?.value || '';
+
+        const tglAkhir =
+            document.getElementById('tglAkhir')?.value || '';
+
+        if (!tglAwal || !tglAkhir) {
+            alert('Silakan isi tanggal awal dan tanggal akhir.');
+            return;
+        }
+
+        if (tglAwal > tglAkhir) {
+            alert('Tanggal awal tidak boleh lebih besar dari tanggal akhir.');
+            return;
+        }
+
+        if (!unitChecked.length) {
+            alert('Silakan pilih minimal satu Unit Kerja.');
+            return;
+        }
+
         const formData = new FormData();
-        unitChecked.forEach(cb => formData.append('unit_kerja[]', cb.value));
+
+        unitChecked.forEach(function (cb) {
+            formData.append('unit_kerja[]', cb.value);
+        });
+
         formData.append('tgl_awal', tglAwal);
         formData.append('tgl_akhir', tglAkhir);
-        
-        const btn = this;
+
         btn.disabled = true;
         btn.innerHTML = '<span>Memproses...</span>';
-        
+
         try {
-            const res = await fetch('/laporan/rekap-clock-exception/export', {
-                method: 'POST', body: formData
+            
+const endpoint =
+                "{{ url_for('main.preview_laporan_rekap_clock_exception') }}";
+
+
+            console.log('REKAP ABSENSI BULANAN');
+            console.log('Endpoint:', endpoint);
+            console.log('Tanggal:', tglAwal, 's/d', tglAkhir);
+            console.log(
+                'Unit:',
+                Array.from(unitChecked).map(cb => cb.value)
+            );
+
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                body: formData
             });
-            if (!res.ok) { const err = await res.json(); alert(err.error); return; }
-            const blob = await res.blob();
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Rekap_Exception_Clock_${tglAwal.replace(/-/g,'')}_${tglAkhir.replace(/-/g,'')}.xlsx`;
-            a.click(); URL.revokeObjectURL(url);
-        } catch(err) { alert('Gagal: ' + err.message); }
-        finally { btn.disabled = false; btn.innerHTML = 'RUN'; }
+
+            if (!res.ok) {
+                const contentType =
+                    res.headers.get('content-type') || '';
+
+                let errorMessage = '';
+
+                if (contentType.includes('application/json')) {
+                    const err = await res.json();
+                    errorMessage =
+                        err.error ||
+                        err.message ||
+                        'Server menolak permintaan.';
+                } else {
+                    errorMessage = await res.text();
+                }
+
+                throw new Error(
+                    'HTTP ' + res.status + ': ' +
+                    errorMessage.substring(0, 1000)
+                );
+            }
+
+            const hasil = await res.json();
+
+
+            console.log(
+                'HASIL PREVIEW REKAP BULANAN',
+                hasil
+            );
+
+
+            renderPreviewClockException(
+                hasil
+            );
+
+
+        } catch (err) {
+            console.error('Rekap Absensi Bulanan:', err);
+
+            alert(
+                'Gagal menjalankan Rekap Absensi Bulanan:\n\n' +
+                err.message
+            );
+
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = 'RUN';
+        }
     });
+});
 </script>
 {% endblock %}
+

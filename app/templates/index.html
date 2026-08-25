@@ -262,6 +262,19 @@
 
     <!-- Konten Pengumuman Start-->
     <div class="pengumuman-section text-center">
+
+        {% if is_wfh_today %}
+        <div class="absen-online-wrapper mb-4">
+            <button
+                type="button"
+                id="btnAbsenOnline"
+                class="btn btn-absen-online">
+                <i class="fas fa-fingerprint me-2"></i>
+                ABSEN ONLINE
+            </button>
+        </div>
+        {% endif %}
+
         <h2 class="judul-pengumuman">Pengumuman</h2>
 
         <div class="running-wrapper">
@@ -281,6 +294,69 @@
         </p>
     </div>
     <!-- Konten Pengumuman End -->
+
+    <!-- =========================================================
+         MODAL ABSEN ONLINE WFH
+         ========================================================= -->
+    <div class="modal fade" id="modalAbsenOnline" tabindex="-1"
+         aria-labelledby="modalAbsenOnlineLabel" aria-hidden="true">
+
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalAbsenOnlineLabel">
+                        ABSEN ONLINE
+                    </h5>
+
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Close">
+                    </button>
+                </div>
+
+                <div class="modal-body text-center">
+
+                    <div id="absenOnlineJam"
+                         class="absen-online-jam">
+                        --:--
+                    </div>
+
+                    <div id="absenOnlineNama"
+                         class="mb-2 fw-bold">
+                    </div>
+
+                    <div id="absenOnlineJenis"
+                         class="fs-4 mb-4">
+                    </div>
+
+                    <button type="button"
+                            id="btnPunchAbsenOnline"
+                            class="btn btn-primary px-5">
+                        ABSEN
+                    </button>
+
+                    <div id="absenOnlineBerhasil"
+                         class="mt-4 fw-bold text-success"
+                         style="display:none;">
+                        ABSEN BERHASIL
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal">
+                        CLOSE
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
 
     <!-- Konten Pencarian Telephone Start -->
     <div id="pencarian-telephone" class="container-fluid bg-light py-6 px-5">
@@ -838,6 +914,195 @@
         }
     });
     </script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const btnAbsenOnline =
+        document.getElementById('btnAbsenOnline');
+
+    const btnPunch =
+        document.getElementById('btnPunchAbsenOnline');
+
+    const nama =
+        document.getElementById('absenOnlineNama');
+
+    const jam =
+        document.getElementById('absenOnlineJam');
+
+    const jenis =
+        document.getElementById('absenOnlineJenis');
+
+    const berhasil =
+        document.getElementById('absenOnlineBerhasil');
+
+    const modalElement =
+        document.getElementById('modalAbsenOnline');
+
+    if (!btnAbsenOnline || !modalElement) {
+        return;
+    }
+
+    const modal =
+        new bootstrap.Modal(modalElement);
+
+    function updateJamAbsenOnline() {
+
+        if (!jam) {
+            return;
+        }
+
+        const now = new Date();
+
+        const hh =
+            String(now.getHours()).padStart(2, '0');
+
+        const mm =
+            String(now.getMinutes()).padStart(2, '0');
+
+        jam.textContent =
+            hh + ':' + mm;
+    }
+
+    updateJamAbsenOnline();
+
+    setInterval(
+        updateJamAbsenOnline,
+        1000
+    );
+
+    btnAbsenOnline.addEventListener('click', async function () {
+
+        updateJamAbsenOnline();
+
+        try {
+
+            const response =
+                await fetch('/api/absen-online/status');
+
+            const data =
+                await response.json();
+
+            if (!response.ok || !data.success) {
+                alert(
+                    data.message ||
+                    'Gagal mengecek status ABSEN ONLINE.'
+                );
+                return;
+            }
+
+            if (!data.available) {
+                alert(
+                    data.message ||
+                    'Hari ini bukan hari WFH.'
+                );
+                return;
+            }
+
+            nama.textContent =
+                data.nama || '';
+
+            jenis.textContent =
+                data.jenis || '';
+
+            berhasil.style.display = 'none';
+
+            btnPunch.style.display =
+                data.already_absen
+                    ? 'none'
+                    : 'inline-block';
+
+            if (data.already_absen) {
+
+                berhasil.textContent =
+                    'ANDA SUDAH ABSEN ' +
+                    (
+                        data.status === 'IN'
+                            ? 'MASUK'
+                            : 'PULANG'
+                    );
+
+                berhasil.style.display =
+                    'block';
+            }
+
+            modal.show();
+
+        } catch (error) {
+
+            console.error(error);
+
+            alert(
+                'Tidak dapat menghubungi server ABSEN ONLINE.'
+            );
+        }
+    });
+
+
+    btnPunch.addEventListener('click', async function () {
+
+        btnPunch.disabled = true;
+
+        try {
+
+            const response =
+                await fetch(
+                    '/api/absen-online/punch',
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type':
+                                'application/json'
+                        }
+                    }
+                );
+
+            const data =
+                await response.json();
+
+            if (!response.ok || !data.success) {
+
+                alert(
+                    data.message ||
+                    'ABSEN gagal.'
+                );
+
+                btnPunch.disabled = false;
+                return;
+            }
+
+            // ========================================================
+            // JAM FINAL DARI SERVER
+            // Harus sama dengan TIME_RECORDER.Waktu
+            // ========================================================
+            if (data.jam && jam) {
+                jam.textContent = data.jam;
+            }
+
+            berhasil.textContent =
+                'ABSEN BERHASIL';
+
+            berhasil.style.display =
+                'block';
+
+            btnPunch.style.display =
+                'none';
+
+        } catch (error) {
+
+            console.error(error);
+
+            alert(
+                'Tidak dapat menghubungi server ABSEN ONLINE.'
+            );
+
+            btnPunch.disabled = false;
+        }
+    });
+
+});
+</script>
+
 </body>
 
 </html>

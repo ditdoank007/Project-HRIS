@@ -1,8 +1,10 @@
 # app/controllers/homeController.py
 
 from flask import render_template, request, jsonify
+from datetime import datetime
 from app import db
 from app.models.pegawaiModel import Pegawai
+from app.models.kalenderModel import MfKalender
 from app.models.timSiagaModel import MfTimSiaga
 from app.models.timSiagaAnggotaModel import MfTimSiagaAnggota
 from app.models.absensiModel import Absensi
@@ -21,7 +23,45 @@ def home():
 
     hero_images = get_hero_images()
 
-    return render_template('index.html', running_text=running_text, hero_images=hero_images)
+    # ============================================================
+    # ABSEN ONLINE
+    # Tahap awal: tombol hanya aktif jika hari ini
+    # ditetapkan sebagai WFH pada MASTER KALENDER.
+    #
+    # Kode:
+    #   998 = WFH
+    #   997 = FWA (akan dikembangkan kemudian)
+    # ============================================================
+
+    today = datetime.now().date()
+
+    kalender_hari_ini = (
+        MfKalender.query
+        .filter(
+            MfKalender.TGL_KERJA >= datetime.combine(
+                today,
+                datetime.min.time()
+            ),
+            MfKalender.TGL_KERJA <= datetime.combine(
+                today,
+                datetime.max.time()
+            )
+        )
+        .first()
+    )
+
+    is_wfh_today = bool(
+        kalender_hari_ini
+        and (kalender_hari_ini.KET or '').strip().upper() == 'WFH'
+    )
+
+    return render_template(
+        'index.html',
+        running_text=running_text,
+        hero_images=hero_images,
+        is_wfh_today=is_wfh_today,
+        online_attendance_code='998' if is_wfh_today else None
+    )
 
 def search_buku_telp():
     q = request.args.get('q', '').strip()

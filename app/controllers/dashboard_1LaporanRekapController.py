@@ -8,6 +8,27 @@ from collections import defaultdict
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Side, Font, PatternFill
 from openpyxl.drawing.image import Image as XLImage
+
+
+from reportlab.platypus import (
+    SimpleDocTemplate,
+    Table,
+    TableStyle,
+    Paragraph,
+    Spacer
+)
+
+from reportlab.lib.pagesizes import (
+    A4,
+    landscape
+)
+
+from reportlab.lib.styles import (
+    getSampleStyleSheet,
+    ParagraphStyle
+)
+
+from reportlab.lib import colors
 from app import db
 from app.models.absensiModel import Absensi
 from app.models.pegawaiModel import Pegawai
@@ -18,7 +39,24 @@ from app.models.timeRecorderModel import TimeRecorder
 from app.models.tunjanganModel import MfTunjangan
 from app.models.potModel import MfPot
 from app.models.classModel import MfClass
+from app.models.jabatanModel import MfJabatan
+from app.models.eselonModel import MfEselon
+from app.models.golonganModel import MfGolongan
 from app.models.lemburModel import Lembur
+from app.models.logActivityModel import LogActivity
+from app.utils.pegawaiHelper import is_pegawai_aktif_periode
+from app.utils.rekapAbsensiHelper import generate_rekap_absensi_all_data
+from app.utils.rekapAbsensiMatrixHelper import generate_rekap_absensi_matrix
+
+from app.utils.rekapAbsensiReportHelper import (
+    generate_rekap_absensi_report
+)
+
+from app.utils.pegawaiSortHelper import sort_pegawai_rows
+
+from app.utils.absensiNormalisasiHelper import (
+    merge_absensi_dinas_luar
+)
 
 def laporan_cetak_daftar_lembur_umum():
     """Render halaman Cetak Daftar Lembur Umum."""
@@ -163,7 +201,25 @@ def export_rekap_daftar_lembur_umum():
     
     # Lebar kolom
     ws.column_dimensions['B'].width = 5
-    ws.column_dimensions['C'].width = 30
+
+    # ============================================================
+    # AUTO WIDTH KOLOM NAMA
+    # Mengikuti panjang nama pegawai.
+    # Maksimum dibatasi agar Excel tetap proporsional.
+    # ============================================================
+
+    max_nama = max(
+        [
+            len(str(p.NAMA or ''))
+            for p in pegawai_list
+        ],
+        default=20
+    )
+
+    ws.column_dimensions['C'].width = min(
+        max(max_nama + 5, 30),
+        45
+    )
     ws.column_dimensions['D'].width = 5
     for i in range(5, coltgl + 1):
         col_letter = chr(64 + i) if i <= 26 else 'A'
@@ -384,6 +440,106 @@ def laporan_rekap_absensi_all():
         unit_kerja_list=unit_kerja_list
     )
 
+
+def preview_rekap_absensi_all():
+    """
+    Preview Rekap Absensi All.
+
+    Sumber data:
+    generate_rekap_absensi_all_data()
+
+    Dipakai oleh:
+    VIEW DATA
+    """
+
+    unit_list = request.form.getlist(
+        'unit_kerja[]'
+    )
+
+    tgl_awal_str = request.form.get(
+        'tgl_awal'
+    )
+
+    tgl_akhir_str = request.form.get(
+        'tgl_akhir'
+    )
+
+
+    if not unit_list or not tgl_awal_str or not tgl_akhir_str:
+        return {
+            'error': 'Unit atau periode belum lengkap'
+        }, 400
+
+
+    try:
+        unit_ids = [
+            int(x)
+            for x in unit_list
+        ]
+
+        tgl_awal = datetime.strptime(
+            tgl_awal_str,
+            '%Y-%m-%d'
+        )
+
+        tgl_akhir = datetime.strptime(
+            tgl_akhir_str,
+            '%Y-%m-%d'
+        )
+
+    except Exception as e:
+        return {
+            'error': str(e)
+        },400
+
+
+    data = generate_rekap_absensi_all_data(
+        unit_ids,
+        tgl_awal,
+        tgl_akhir
+    )
+
+
+    report = generate_rekap_absensi_report(
+        data
+    )
+
+
+    return {
+        'success': True,
+        'periode': {
+            'awal': tgl_awal.strftime('%Y-%m-%d'),
+            'akhir': tgl_akhir.strftime('%Y-%m-%d')
+        },
+        'total_kalender': len(
+            data['kalender']
+        ),
+        'total_pegawai': len(
+            data['pegawai']
+        ),
+        'total_absensi': len(
+            data['absensi']
+        ),
+
+        'total_report': len(
+            report
+        ),
+
+        'report': report,
+
+        'pegawai': [
+            {
+                'nama': p.NAMA,
+                'nip': p.NIP,
+                'eselon': p.ESELON,
+                'class_id': p.CLASS_ID
+            }
+            for p in data['pegawai'][:100]
+        ]
+    }
+
+
+
 def export_rekap_absensi_all():
     unit_list = request.form.getlist('unit_kerja[]')
     tgl_awal_str = request.form.get('tgl_awal')
@@ -413,50 +569,133 @@ def export_rekap_absensi_all():
     if tgl_server.date() < tgl_akhir.date():
         tgl_akhir = tgl_server
 
-    # Query — JOIN VIA NIP, BUKAN FINGER_ID
+    # ================================================================
+    # HRIS 2013 BUSINESS FLOW
+    # ================================================================
+    # KALENDER = sumber penentu hari kerja/libur.
+    # PEGAWAI  = sumber daftar pegawai yang harus muncul di laporan.
+    # ABSENSI  = sumber transaksi aktual.
+    #
+    # ABSENSI -> PEGAWAI menggunakan FingerID.
+    #
+    # Penting:
+    # Jangan menjadikan ABSENSI sebagai sumber daftar pegawai.
+    # Pegawai tanpa record ABSENSI tetap harus dapat muncul di laporan.
+    # ================================================================
+
+    kalender_rows = (
+        MfKalender.query
+        .filter(MfKalender.TGL_KERJA >= tgl_awal)
+        .filter(MfKalender.TGL_KERJA <= tgl_akhir)
+        .order_by(MfKalender.TGL_KERJA.asc())
+        .all()
+    )
+
+    if not kalender_rows:
+        return {'error': 'Data KALENDER tidak tersedia untuk periode tersebut'}, 400
+
+    hari_kerja = {
+        k.TGL_KERJA.date()
+        for k in kalender_rows
+        if (k.IS_LIBUR or 'N').upper() != 'Y'
+    }
+
+    if not hari_kerja:
+        return {'error': 'Tidak ada hari kerja dalam periode tersebut'}, 400
+
+    # ------------------------------------------------
+    # 1. Ambil PEGAWAI aktif pada periode laporan.
+    # ------------------------------------------------
+    pegawai_rows = (
+        Pegawai.query
+        .filter(Pegawai.UNIT_KERJA_ID.in_(unit_ids))
+        .filter(Pegawai.TGL_MASUK <= tgl_akhir)
+        .filter(
+            db.or_(
+                Pegawai.IS_KELUAR == 'N',
+                db.and_(
+                    Pegawai.IS_KELUAR == 'Y',
+                    Pegawai.TGL_KELUAR >= tgl_awal
+                )
+            )
+        )
+        .order_by(Pegawai.NAMA)
+        .all()
+    )
+
+    if not pegawai_rows:
+        return {'error': 'Tidak ada pegawai aktif pada unit/periode tersebut'}, 400
+
+    # ------------------------------------------------
+    # 2. Ambil ABSENSI aktual.
+    #
+    # Connector resmi:
+    # ABSENSI.FINGER_ID -> PEGAWAI.FINGER_ID
+    # ------------------------------------------------
     q = (
         db.session.query(Absensi, Pegawai)
-        .join(Pegawai, Absensi.NIP == Pegawai.NIP)  # ✅ JOIN VIA NIP
-        .join(MfKalender, Absensi.TGL_KERJA == MfKalender.TGL_KERJA)
-        .filter(Absensi.TGL_KERJA.between(tgl_awal, tgl_akhir))
-        .filter(MfKalender.IS_LIBUR == 'N')
-        .filter(Pegawai.UNIT_KERJA_ID.in_(unit_ids))  # ✅ pakai integer
+        .join(Pegawai, Absensi.FINGER_ID == Pegawai.FINGER_ID)
+        .filter(Absensi.TGL_KERJA >= tgl_awal)
+        .filter(Absensi.TGL_KERJA <= tgl_akhir)
+        .filter(Pegawai.UNIT_KERJA_ID.in_(unit_ids))
     )
+
     rows = q.all()
-    df_absensi = pd.DataFrame([{**a.__dict__, **p.__dict__} for a, p in rows]) if rows else pd.DataFrame()
 
-    if df_absensi.empty:
-        return {'error': 'Record tidak ada atau kalender belum dibuat'}, 400
+    # ------------------------------------------------
+    # SIAGA diproses oleh:
+    #
+    # generate_rekap_absensi_all_data()
+    # +
+    # generate_rekap_absensi_report()
+    #
+    # Jangan query langsung di sini.
+    # ------------------------------------------------
 
-    # Agregasi — ganti 'tingkat_tlm' jadi 'TINGKAT_TLM' (sesuai kolom model)
-    hasil = []
-    for nip, grp in df_absensi.groupby('NIP'):
-        hasil.append({
-            'nip': nip,
-            'nama': grp['NAMA'].iloc[0],
-            'tlm1': (grp['TINGKAT_TLM'] == 'TLM-1').sum(),
-            'tlm2': (grp['TINGKAT_TLM'] == 'TLM-2').sum(),
-            'tlm3': (grp['TINGKAT_TLM'] == 'TLM-3').sum(),
-            'tlm4': (grp['TINGKAT_TLM'] == 'TLM-4').sum(),
-            'psw1': (grp['TINGKAT_PSW'] == 'PSW-1').sum(),
-            'psw2': (grp['TINGKAT_PSW'] == 'PSW-2').sum(),
-            'psw3': (grp['TINGKAT_PSW'] == 'PSW-3').sum(),
-            'psw4': (grp['TINGKAT_PSW'] == 'PSW-4').sum(),
-            'dl': (grp['TRANSAKSI_IN'] == 'DinasLuar').sum(),
-            'cuti': ((grp['TRANSAKSI_IN'] == 'Cuti') & (grp['TINGKAT_TLM'] == 'CT')).sum(),
-            'cb1': ((grp['TRANSAKSI_IN'] == 'Cuti') & (grp['TINGKAT_TLM'] == 'CB-1')).sum(),
-            'cb2': ((grp['TRANSAKSI_IN'] == 'Cuti') & (grp['TINGKAT_TLM'] == 'CB-2')).sum(),
-            'cb3': ((grp['TRANSAKSI_IN'] == 'Cuti') & (grp['TINGKAT_TLM'] == 'CB-3')).sum(),
-            'capm2': ((grp['TRANSAKSI_IN'] == 'Cuti') & (grp['TINGKAT_TLM'] == 'CAP-M2')).sum(),
-            'cap': ((grp['TRANSAKSI_IN'] == 'Cuti') & (grp['TINGKAT_TLM'] == 'CAP')).sum(),
-            'sakit': ((grp['TRANSAKSI_IN'] == 'Sakit') & (grp['TINGKAT_TLM'] == 'S-1')).sum(),
-            'sakit2': ((grp['TRANSAKSI_IN'] == 'Sakit') & (grp['TINGKAT_TLM'] == 'S-2')).sum(),
-            'sakit3': ((grp['TRANSAKSI_IN'] == 'Sakit') & (grp['TINGKAT_TLM'] == 'S-3')).sum(),
-            'sakit4': ((grp['TRANSAKSI_IN'] == 'Sakit') & (grp['TINGKAT_TLM'] == 'S-4')).sum(),
-            'sakit5': ((grp['TRANSAKSI_IN'] == 'Sakit') & (grp['TINGKAT_TLM'] == 'S-5')).sum(),
-            'alpa': ((grp['TRANSAKSI_IN'] == 'Alpa') & (grp['PENDUKUNG_IN'] == 'Y')).sum(),
-            'alpa_tanpa_ket': ((grp['TRANSAKSI_IN'] == 'Alpa') & (grp['PENDUKUNG_IN'] == 'N')).sum(),
-        })
+
+    # ------------------------------------------------
+    # 3. Index ABSENSI berdasarkan NIP.
+    #
+    # NIP hanya digunakan sebagai identifier laporan
+    # setelah connector FingerID berhasil dilakukan.
+    # ------------------------------------------------
+    absensi_by_nip = {}
+
+    for absensi, pegawai in rows:
+        nip = pegawai.NIP
+
+        if nip not in absensi_by_nip:
+            absensi_by_nip[nip] = []
+
+        absensi_by_nip[nip].append(absensi)
+
+    # ------------------------------------------------
+    # 4. Gunakan NORMALISASI ABSENSI HRIS Reborn.
+    #
+    # Sumber tunggal:
+    #
+    # PEGAWAI
+    # ABSENSI
+    # DINAS_LUAR
+    # SIAGA
+    #
+    # VIEW / EXCEL / PDF harus memakai sumber sama.
+    # ------------------------------------------------
+
+
+    data_normalisasi = generate_rekap_absensi_all_data(
+        unit_ids,
+        tgl_awal,
+        tgl_akhir
+    )
+
+
+    hasil = generate_rekap_absensi_report(
+        data_normalisasi
+    )
+
+
+
     df_hasil = pd.DataFrame(hasil)
 
     # 4. (Opsional) keterangan dinas luar/cuti kalau tampilkan_ket True
@@ -499,7 +738,7 @@ def export_rekap_absensi_all():
     border = Border(top=thin, left=thin, right=thin, bottom=thin)
 
     header_row = 5
-    headers = ['No', 'Nama', 'TLM1', 'TLM2', 'TLM3', 'TLM4', 'Cuti', 'Sakit', 'Alpa']  # lengkapi sesuai kebutuhan
+    headers = ['No', 'Nama', 'TLM1', 'TLM2', 'TLM3', 'TLM4', 'Cuti', 'Sakit', 'Alpa', 'Siaga']  # lengkapi sesuai kebutuhan
     for col, h in enumerate(headers, start=2):
         c = ws.cell(row=header_row, column=col, value=h)
         c.border = border
@@ -516,6 +755,7 @@ def export_rekap_absensi_all():
         ws.cell(row=row, column=8, value=r['cuti'] or None).border = border
         ws.cell(row=row, column=9, value=r['sakit'] or None).border = border
         ws.cell(row=row, column=10, value=r['alpa'] or None).border = border
+        ws.cell(row=row, column=11, value=r['siaga'] or None).border = border
         row += 1
 
     row += 2
@@ -540,6 +780,300 @@ def export_rekap_absensi_all():
         download_name=filename,
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
+
+
+
+def export_rekap_absensi_all_pdf():
+    """
+    Export Rekap Absensi All ke PDF.
+
+    Sumber data tunggal:
+
+    PEGAWAI
+    ABSENSI
+    DINAS_LUAR
+    SIAGA
+
+    melalui:
+
+    generate_rekap_absensi_all_data()
+    generate_rekap_absensi_report()
+    """
+
+
+    unit_list = request.form.getlist(
+        'unit_kerja[]'
+    )
+
+    tgl_awal_str = request.form.get(
+        'tgl_awal'
+    )
+
+    tgl_akhir_str = request.form.get(
+        'tgl_akhir'
+    )
+
+
+    if not unit_list or not tgl_awal_str or not tgl_akhir_str:
+
+        return {
+            'error':
+                'Unit atau tanggal kosong'
+        },400
+
+
+
+    unit_ids = [
+        int(x)
+        for x in unit_list
+    ]
+
+
+    tgl_awal = datetime.strptime(
+        tgl_awal_str,
+        '%Y-%m-%d'
+    )
+
+
+    tgl_akhir = datetime.strptime(
+        tgl_akhir_str,
+        '%Y-%m-%d'
+    )
+
+
+
+    data = generate_rekap_absensi_all_data(
+        unit_ids,
+        tgl_awal,
+        tgl_akhir
+    )
+
+
+    report = generate_rekap_absensi_report(
+        data
+    )
+
+
+
+    buffer = BytesIO()
+
+
+
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=landscape(A4),
+        rightMargin=25,
+        leftMargin=25,
+        topMargin=30,
+        bottomMargin=30
+    )
+
+
+
+    elements = []
+
+
+    styles = getSampleStyleSheet()
+
+
+    title_style = ParagraphStyle(
+        'RekapAbsensiTitle',
+        parent=styles['Heading1'],
+        fontSize=14,
+        alignment=1,
+        spaceAfter=15
+    )
+
+
+    elements.append(
+        Paragraph(
+            "Laporan Rekap Absensi Pegawai",
+            title_style
+        )
+    )
+
+
+    elements.append(
+        Paragraph(
+            f"Periode {tgl_awal:%d-%m-%Y} s/d {tgl_akhir:%d-%m-%Y}",
+            styles['Normal']
+        )
+    )
+
+
+    elements.append(
+        Spacer(
+            1,
+            15
+        )
+    )
+
+
+
+    table_data = [
+
+        [
+            'No',
+            'NIP',
+            'Nama',
+            'TLM1',
+            'TLM2',
+            'PSW1',
+            'PSW2',
+            'Cuti',
+            'Sakit',
+            'Alpa',
+            'DL',
+            'DL OP',
+            'DL SD',
+            'Siaga'
+        ]
+
+    ]
+
+
+
+    for no, row in enumerate(
+        report,
+        start=1
+    ):
+
+        table_data.append(
+
+            [
+
+                str(no),
+
+                row.get('nip',''),
+
+                row.get('nama',''),
+
+                str(row.get('tlm1',0)),
+
+                str(row.get('tlm2',0)),
+
+                str(row.get('psw1',0)),
+
+                str(row.get('psw2',0)),
+
+                str(row.get('cuti',0)),
+
+                str(row.get('sakit',0)),
+
+                str(row.get('alpa',0)),
+
+                str(row.get('dl',0)),
+
+                str(row.get('dl_op',0)),
+
+                str(row.get('dl_sd',0)),
+
+                str(row.get('siaga',0))
+
+            ]
+
+        )
+
+
+
+
+    table = Table(
+        table_data,
+        repeatRows=1
+    )
+
+
+    table.setStyle(
+
+        TableStyle(
+
+            [
+
+                (
+                    'BACKGROUND',
+                    (0,0),
+                    (-1,0),
+                    colors.HexColor('#EB6831')
+                ),
+
+                (
+                    'TEXTCOLOR',
+                    (0,0),
+                    (-1,0),
+                    colors.white
+                ),
+
+                (
+                    'FONTNAME',
+                    (0,0),
+                    (-1,0),
+                    'Helvetica-Bold'
+                ),
+
+                (
+                    'FONTSIZE',
+                    (0,0),
+                    (-1,-1),
+                    7
+                ),
+
+                (
+                    'GRID',
+                    (0,0),
+                    (-1,-1),
+                    0.5,
+                    colors.grey
+                ),
+
+                (
+                    'VALIGN',
+                    (0,0),
+                    (-1,-1),
+                    'MIDDLE'
+                )
+
+            ]
+
+        )
+
+    )
+
+
+    elements.append(
+        table
+    )
+
+
+    doc.build(
+        elements
+    )
+
+
+    buffer.seek(0)
+
+
+
+    filename = (
+        f"Rekap_Absensi_"
+        f"{tgl_awal:%Y%m%d}_"
+        f"{tgl_akhir:%Y%m%d}.pdf"
+    )
+
+
+
+    return send_file(
+
+        buffer,
+
+        mimetype='application/pdf',
+
+        as_attachment=True,
+
+        download_name=filename
+
+    )
+
+
 
 
 def laporan_rekap_absensi_individu():
@@ -571,23 +1105,35 @@ def export_rekap_absensi_individu():
         tgl_akhir = tgl_server
     
     # 1. Ambil data kalender (hari kerja saja)
+    # HRIS 2013:
+    # KALENDER adalah sumber penentu hari kerja/libur.
+    # Jangan menebak hari kerja dari weekday() jika data kalender tersedia.
     kalender_rows = (
         MfKalender.query
-        .filter(MfKalender.TGL_KERJA.between(tgl_awal, tgl_akhir))
-        .filter(MfKalender.IS_LIBUR == 'N')
+        .filter(MfKalender.TGL_KERJA >= tgl_awal)
+        .filter(MfKalender.TGL_KERJA <= tgl_akhir)
         .order_by(MfKalender.TGL_KERJA.asc())
         .all()
     )
-    
+
     if not kalender_rows:
+        return {'error': 'Data KALENDER tidak tersedia untuk periode tersebut'}, 400
+
+    kalender_hari_kerja = [
+        k for k in kalender_rows
+        if (k.IS_LIBUR or 'N').upper() != 'Y'
+    ]
+    
+    if not kalender_hari_kerja:
         return {'error': 'Tidak ada hari kerja dalam periode tersebut'}, 400
     
-    # 2. Ambil data absensi untuk NIP yang dipilih
+    # 2. Ambil data absensi untuk NIP yang dipilih.
+    # HRIS 2013 menghubungkan ABSENSI ke PEGAWAI melalui FingerID.
     absensi_rows = (
         db.session.query(Absensi, Pegawai)
-        .join(Pegawai, Absensi.NIP == Pegawai.NIP)
+        .join(Pegawai, Absensi.FINGER_ID == Pegawai.FINGER_ID)
         .filter(Absensi.TGL_KERJA.between(tgl_awal, tgl_akhir))
-        .filter(Absensi.NIP.in_(nip_list))
+        .filter(Pegawai.NIP.in_(nip_list))
         .order_by(Pegawai.NAMA, Absensi.TGL_KERJA)
         .all()
     )
@@ -608,9 +1154,9 @@ def export_rekap_absensi_individu():
     absensi_dict = {}
     for a, p in absensi_rows:
         tgl_key = a.TGL_KERJA.strftime('%Y-%m-%d') if a.TGL_KERJA else None
-        if a.NIP not in absensi_dict:
-            absensi_dict[a.NIP] = {}
-        absensi_dict[a.NIP][tgl_key] = a
+        if p.NIP not in absensi_dict:
+            absensi_dict[p.NIP] = {}
+        absensi_dict[p.NIP][tgl_key] = a
     
     # 5. Build Excel
     wb = Workbook()
@@ -676,7 +1222,7 @@ def export_rekap_absensi_individu():
         
         # Detail per hari
         no = 0
-        for kl in kalender_rows:
+        for kl in kalender_hari_kerja:
             no += 1
             tgl_str = kl.TGL_KERJA.strftime('%Y-%m-%d') if kl.TGL_KERJA else ''
             
@@ -831,22 +1377,12 @@ def export_rekap_absensi_log_finger():
     tgl_awal = datetime.strptime(tgl_awal_str, '%Y-%m-%d')
     tgl_akhir = datetime.strptime(tgl_akhir_str, '%Y-%m-%d') + timedelta(days=1)
     
-    # Subquery: ambil 1 NIP per FINGER_ID dari ABSENSI (hindari duplikat)
-    subquery = (
-        db.session.query(
-            Absensi.FINGER_ID,
-            func.min(Absensi.NIP).label('NIP')
-        )
-        .filter(Absensi.NIP.isnot(None))
-        .group_by(Absensi.FINGER_ID)
-        .subquery()
-    )
-    
-    # Query utama: TIME_RECORDER -> subquery -> PEGAWAI -> MF_UNIT_KERJA
+    # HRIS 2013 menggunakan FingerID sebagai connector absensi.
+    # TIME_RECORDER dan PEGAWAI sama-sama memiliki FingerID,
+    # sehingga tidak perlu mengambil NIP dari ABSENSI.
     rows = (
         db.session.query(TimeRecorder, Pegawai, MfUnitKerja)
-        .join(subquery, TimeRecorder.FINGER_ID == subquery.c.FINGER_ID)
-        .join(Pegawai, subquery.c.NIP == Pegawai.NIP)
+        .join(Pegawai, TimeRecorder.FINGER_ID == Pegawai.FINGER_ID)
         .join(MfUnitKerja, Pegawai.UNIT_KERJA_ID == MfUnitKerja.UNIT_KERJA_ID)
         .filter(TimeRecorder.WAKTU.between(tgl_awal, tgl_akhir))
         .filter(Pegawai.UNIT_KERJA_ID.in_(unit_ids))
@@ -967,6 +1503,95 @@ def laporan_rekap_clock_exception():
         unit_kerja_list=unit_kerja_list
     )
 
+
+def preview_rekap_clock_exception():
+
+    unit_list = request.form.getlist(
+        'unit_kerja[]'
+    )
+
+    tgl_awal_str = request.form.get(
+        'tgl_awal'
+    )
+
+    tgl_akhir_str = request.form.get(
+        'tgl_akhir'
+    )
+
+
+    if not unit_list or not tgl_awal_str or not tgl_akhir_str:
+
+        return {
+            "error": "Unit atau periode kosong"
+        },400
+
+
+    unit_ids = [
+        int(x)
+        for x in unit_list
+    ]
+
+
+    tgl_awal = datetime.strptime(
+        tgl_awal_str,
+        '%Y-%m-%d'
+    )
+
+    tgl_akhir = datetime.strptime(
+        tgl_akhir_str,
+        '%Y-%m-%d'
+    )
+
+
+    data = generate_rekap_absensi_matrix(
+        unit_ids,
+        tgl_awal,
+        tgl_akhir
+    )
+
+
+    return {
+
+        "success": True,
+
+
+        "tanggal": [
+
+            {
+                "tgl": x.TGL_KERJA.strftime(
+                    "%Y-%m-%d"
+                ),
+
+                "hari": x.TGL_KERJA.strftime(
+                    "%a"
+                )
+
+            }
+
+            for x in data["kalender"]
+
+        ],
+
+
+        "pegawai": [
+
+            {
+                "nip": p.NIP,
+                "nama": p.NAMA
+            }
+
+            for p in data["pegawai"]
+
+        ],
+
+
+        "matrix": data["matrix"]
+
+    }
+
+
+
+
 def export_rekap_clock_exception():
     """Export Rekap Exception Clock (matriks pegawai x tanggal)."""
     unit_list = request.form.getlist('unit_kerja[]')
@@ -1009,31 +1634,186 @@ def export_rekap_clock_exception():
     # 2. Ambil data absensi
     absensi_rows = (
         db.session.query(Absensi, Pegawai, MfUnitKerja)
-        .join(Pegawai, Absensi.NIP == Pegawai.NIP)
+        .join(Pegawai, Absensi.FINGER_ID == Pegawai.FINGER_ID)
         .join(MfUnitKerja, Pegawai.UNIT_KERJA_ID == MfUnitKerja.UNIT_KERJA_ID)
         .filter(Absensi.TGL_KERJA.between(tgl_awal, tgl_akhir + timedelta(days=1)))
         .filter(Pegawai.UNIT_KERJA_ID.in_(unit_ids))
         .all()
     )
     
+    # ============================================================
+    # 2B. Ambil DINAS LUAR untuk normalisasi absensi
+    #
+    # Prioritas normalisasi:
+    #
+    # DINAS_LUAR
+    #       >
+    # ABSENSI FINGER
+    #
+    # Digunakan oleh:
+    # merge_absensi_dinas_luar()
+    #
+    # ============================================================
+
+    dinas_luar_rows = (
+        db.session.query(
+            DinasLuar,
+            Pegawai
+        )
+        .join(
+            Pegawai,
+            DinasLuar.FINGER_ID == Pegawai.FINGER_ID
+        )
+        .filter(
+            DinasLuar.TGL_AKHIR_DINAS_LUAR >= tgl_awal
+        )
+        .filter(
+            DinasLuar.TGL_AWAL_DINAS_LUAR <= tgl_akhir
+        )
+        .filter(
+            Pegawai.UNIT_KERJA_ID.in_(unit_ids)
+        )
+        .all()
+    )
+
+
+
     # 3. Ambil data pegawai distinct
     pegawai_list = (
         Pegawai.query
-        .join(MfUnitKerja, Pegawai.UNIT_KERJA_ID == MfUnitKerja.UNIT_KERJA_ID)
+        .join(
+            MfUnitKerja,
+            Pegawai.UNIT_KERJA_ID == MfUnitKerja.UNIT_KERJA_ID
+        )
+        .outerjoin(
+            MfJabatan,
+            Pegawai.JABATAN_ID == MfJabatan.JABATAN_ID
+        )
+        .outerjoin(
+            MfEselon,
+            Pegawai.ESELON == MfEselon.ESELON
+        )
+        .outerjoin(
+            MfGolongan,
+            Pegawai.GOL == MfGolongan.GOL
+        )
         .filter(Pegawai.UNIT_KERJA_ID.in_(unit_ids))
         .filter(
-            db.or_(
-                db.and_(Pegawai.TGL_MASUK <= tgl_akhir, Pegawai.IS_KELUAR == 0),
-                db.and_(Pegawai.IS_KELUAR == 1, Pegawai.TGL_KELUAR >= tgl_awal)
-            )
+            Pegawai.TGL_MASUK <= tgl_akhir
         )
-        .order_by(Pegawai.NAMA)
         .all()
     )
+
+    # ============================================================
+    # HRIS REBORN BUSINESS RULE
+    #
+    # Hanya pegawai aktif pada periode laporan yang ditampilkan.
+    #
+    # Mendukung:
+    #   0 / N  = aktif
+    #   1 / Y  = keluar
+    #
+    # Pegawai yang keluar setelah periode laporan masih dihitung.
+    # ============================================================
+
+    pegawai_list = [
+        p for p in pegawai_list
+        if is_pegawai_aktif_periode(
+            p,
+            tgl_awal,
+            tgl_akhir
+        )
+    ]
     
+
+    # ============================================================
+    # SORTING TERPUSAT HRIS REBORN
+    #
+    # Single Source of Sorting:
+    #
+    # 1. Eselon
+    # 2. Urut Jabatan
+    # 3. Class Jabatan descending
+    # 4. NIP ascending
+    #
+    # Rule:
+    # app/utils/pegawaiSortHelper.py
+    # ============================================================
+
+    pegawai_list = sort_pegawai_rows(
+        pegawai_list
+    )
+
+
+    print("===== DEBUG EXPORT EXCEPTION CLOCK SORT =====")
+    print("TOTAL PEGAWAI =", len(pegawai_list))
+
+    for x in pegawai_list[:10]:
+        print(
+            "NAMA=",
+            x.NAMA,
+            "| JABATAN_ID=",
+            x.JABATAN_ID,
+            "| CLASS_ID=",
+            x.CLASS_ID
+        )
+
+    print("===== END DEBUG EXPORT EXCEPTION CLOCK SORT =====")
+
     if not pegawai_list:
         return {'error': 'Pegawai tidak ditemukan'}, 400
     
+    # ============================================================
+    # 3B. Generate ABSENSI NORMALISASI FINAL
+    #
+    # Sumber:
+    #
+    # PEGAWAI
+    # ABSENSI
+    # DINAS_LUAR
+    #
+    # Prioritas:
+    #
+    # DINAS_LUAR
+    #       >
+    # ABSENSI FINGER
+    #
+    # ============================================================
+
+    normalisasi_rows = merge_absensi_dinas_luar(
+        pegawai_list,
+        absensi_rows,
+        dinas_luar_rows,
+        tgl_awal,
+        tgl_akhir
+    )
+
+
+    # ============================================================
+    # INDEX NORMALISASI
+    #
+    # key:
+    #   (NIP, tanggal)
+    #
+    # value:
+    #   hasil merge:
+    #   ABSENSI + DINAS_LUAR
+    #
+    # ============================================================
+
+    normalisasi_dict = {}
+
+    for item in normalisasi_rows:
+
+        key = (
+            item["nip"],
+            item["tanggal"].date()
+        )
+
+        normalisasi_dict[key] = item
+
+
+
     # 4. Build dict absensi: {nip: {tgl_str: absensi_obj}}
     absensi_dict = {}
     for a, p, uk in absensi_rows:
@@ -1123,6 +1903,10 @@ def export_rekap_clock_exception():
     fill_blue = PatternFill(start_color='0000FF', end_color='0000FF', fill_type='solid')
     fill_orange = PatternFill(start_color='FFA500', end_color='FFA500', fill_type='solid')
     
+    print("========== DEBUG EXPORT SORT ==========")
+    for idx, x in enumerate(pegawai_list[:10], start=1):
+        print(idx, x.NAMA, x.JABATAN_ID, x.CLASS_ID)
+
     for peg in pegawai_list:
         for c in range(2, col_paraf + 1):
             ws.cell(row=row, column=c).border = border
@@ -1135,13 +1919,71 @@ def export_rekap_clock_exception():
             tgl_str = kl.TGL_KERJA.strftime('%Y-%m-%d') if hasattr(kl, 'TGL_KERJA') else ''
             is_libur = kl.IS_LIBUR == 'Y' if hasattr(kl, 'IS_LIBUR') else (kl.TGL_KERJA.weekday() >= 5)
             
-            absensi = absensi_dict.get(peg.NIP, {}).get(tgl_str)
+            normalisasi = normalisasi_dict.get(
+                (
+                    peg.NIP,
+                    kl.TGL_KERJA.date()
+                )
+            )
+
             cell = ws.cell(row=row, column=col)
+
+            # Format cell harian:
+            # - IN dan OUT ditampilkan dalam SATU cell
+            # - Jika keduanya ada, tampil dua baris
+            # - Jika hanya salah satu yang ada, tampil satu baris
+            # - wrap_text diperlukan agar \n benar-benar dirender Excel
+            cell.alignment = Alignment(
+                horizontal='center',
+                vertical='center',
+                wrap_text=True
+            )
             
-            if absensi:
+            if normalisasi and normalisasi.get("sumber") == "DINAS_LUAR":
+
+                cell.value = normalisasi.get(
+                    "label",
+                    "DL"
+                )
+
+
+                if normalisasi.get("warna") == "orange":
+
+                    cell.font = Font(
+                        color='FFA500'
+                    )
+
+
+                elif normalisasi.get("warna") == "blue":
+
+                    cell.font = Font(
+                        color='0000FF'
+                    )
+
+
+            elif normalisasi and normalisasi.get("sumber") == "ABSENSI":
+
+                absensi = absensi_dict.get(
+                    peg.NIP,
+                    {}
+                ).get(
+                    tgl_str
+                )
+
+
                 transaksi = (absensi.TRANSAKSI_IN or '').upper()
-                jam_in = absensi.TGL_JAM_IN.strftime('%H:%M') if absensi.TGL_JAM_IN else ''
-                jam_out = absensi.TGL_JAM_OUT.strftime('%H:%M') if absensi.TGL_JAM_OUT else ''
+                # HRIS legacy menggunakan 1900-01-01 00:00:00
+                # sebagai sentinel "tidak ada jam".
+                # Jangan tampilkan sentinel tersebut sebagai 00:00.
+                def format_jam_aktual(value):
+                    if not value:
+                        return ''
+                    if value.year == 1900 and value.month == 1 and value.day == 1:
+                        return ''
+                    return value.strftime('%H:%M')
+
+                jam_in = format_jam_aktual(absensi.TGL_JAM_IN)
+                jam_out = format_jam_aktual(absensi.TGL_JAM_OUT)
                 
                 if transaksi == 'WFH':
                     cell.value = 'WFH'
@@ -1161,14 +2003,69 @@ def export_rekap_clock_exception():
                     cell.value = 'i'
                     cell.font = Font(color='FFA500')
                 else:
-                    if absensi.IS_INVALID == 'Y':
+                    # Absensi normal:
+                    # IN dan OUT ditampilkan dua baris.
+                    # Warna exception ditentukan dari jam aktual
+                    # dibandingkan dengan jam baku, bukan IS_INVALID.
+                    if jam_in and jam_out:
                         cell.value = f"{jam_in}\n{jam_out}"
+                    elif jam_in:
+                        cell.value = jam_in
+                    elif jam_out:
+                        cell.value = jam_out
+
+                    # ------------------------------------------------
+                    # STATUS ABSENSI NORMAL / EXCEPTION
+                    #
+                    # Database legacy menunjukkan:
+                    #   LogFP / LogFP       = fingerprint normal
+                    #   LogFP / OUT NonFP   = OUT tidak fingerprint
+                    #   IN NonFP / LogFP   = IN tidak fingerprint
+                    #
+                    # IsInValid/isOutValid TIDAK dipakai sebagai
+                    # penentu warna karena record LogFP/LogFP normal
+                    # juga mempunyai flag Y/Y.
+                    #
+                    # Jam aktual TIDAK dibandingkan secara exact dengan
+                    # jam baku di sini. Contoh 07:31 vs 07:30 tidak
+                    # otomatis menjadi merah.
+                    # ------------------------------------------------
+
+                    transaksi_out = (
+                        getattr(absensi, 'TRANSAKSI_OUT', '') or ''
+                    ).upper()
+
+                    is_exception = False
+
+                    # Pasangan fingerprint lengkap = NORMAL.
+                    if transaksi == 'LOGFP' and transaksi_out == 'LOGFP':
+                        if not jam_in or not jam_out:
+                            is_exception = True
+
+                    # Salah satu sisi bukan fingerprint = EXCEPTION.
+                    elif transaksi == 'LOGFP' and transaksi_out == 'OUT NONFP':
+                        is_exception = True
+
+                    elif transaksi == 'IN NONFP' and transaksi_out == 'LOGFP':
+                        is_exception = True
+
+                    else:
+                        # Kombinasi transaksi lain yang bukan transaksi
+                        # khusus di atas dianggap exception.
+                        is_exception = True
+
+                    if is_exception:
+                        cell.font = Font(color='FF0000')
             else:
                 cell.value = ''
             
             if is_libur:
                 cell.font = Font(color='FF0000')
         
+        # Beri ruang untuk dua baris IN / OUT.
+        # Tetap satu baris secara visual jika hanya ada satu nilai.
+        ws.row_dimensions[row].height = 30
+
         no += 1
         row += 1
     
@@ -1359,7 +2256,7 @@ def export_rekap_pelanggaran_disiplin():
     # Ambil data absensi (join via NIP)
     absensi_rows = (
         db.session.query(Absensi, Pegawai)
-        .join(Pegawai, Absensi.NIP == Pegawai.NIP)
+        .join(Pegawai, Absensi.FINGER_ID == Pegawai.FINGER_ID)
         .join(MfKalender, Absensi.TGL_KERJA == MfKalender.TGL_KERJA)
         .filter(Absensi.TGL_KERJA.between(tgl_awal, tgl_akhir))
         .filter(MfKalender.IS_LIBUR == 'N')
@@ -1379,8 +2276,8 @@ def export_rekap_pelanggaran_disiplin():
         .filter(Pegawai.TGL_MASUK <= tgl_akhir)
         .filter(
             db.or_(
-                Pegawai.IS_KELUAR == 0,
-                db.and_(Pegawai.IS_KELUAR == 1, Pegawai.TGL_KELUAR >= tgl_awal)
+                Pegawai.IS_KELUAR == 'N',
+                db.and_(Pegawai.IS_KELUAR == 'Y', Pegawai.TGL_KELUAR >= tgl_awal)
             )
         )
         .order_by(Pegawai.NAMA)
@@ -1620,7 +2517,7 @@ def export_rekap_uang_makan():
     # Ambil data absensi (join via NIP)
     absensi_rows = (
         db.session.query(Absensi, Pegawai)
-        .join(Pegawai, Absensi.NIP == Pegawai.NIP)
+        .join(Pegawai, Absensi.FINGER_ID == Pegawai.FINGER_ID)
         .join(MfKalender, Absensi.TGL_KERJA == MfKalender.TGL_KERJA)
         .filter(Absensi.TGL_KERJA.between(tgl_awal, tgl_akhir))
         .filter(MfKalender.IS_LIBUR == 'N')
@@ -1634,8 +2531,8 @@ def export_rekap_uang_makan():
         .filter(Pegawai.UNIT_KERJA_ID.in_(unit_ids))
         .filter(
             db.or_(
-                db.and_(Pegawai.TGL_MASUK <= tgl_akhir, Pegawai.IS_KELUAR == 0),
-                db.and_(Pegawai.IS_KELUAR == 1, Pegawai.TGL_KELUAR >= tgl_awal)
+                db.and_(Pegawai.TGL_MASUK <= tgl_akhir, Pegawai.IS_KELUAR == 'N'),
+                db.and_(Pegawai.IS_KELUAR == 'Y', Pegawai.TGL_KELUAR >= tgl_awal)
             )
         )
         .order_by(Pegawai.NAMA)
@@ -1920,7 +2817,7 @@ def export_rekap_tunjangan_kinerja():
     # Ambil data absensi (join via NIP)
     absensi_rows = (
         db.session.query(Absensi, Pegawai)
-        .join(Pegawai, Absensi.NIP == Pegawai.NIP)
+        .join(Pegawai, Absensi.FINGER_ID == Pegawai.FINGER_ID)
         .join(MfKalender, Absensi.TGL_KERJA == MfKalender.TGL_KERJA)
         .filter(Absensi.TGL_KERJA.between(tgl_awal, tgl_akhir))
         .filter(MfKalender.IS_LIBUR == 'N')
@@ -1935,8 +2832,8 @@ def export_rekap_tunjangan_kinerja():
         .filter(Pegawai.TGL_MASUK <= tgl_akhir)
         .filter(
             db.or_(
-                Pegawai.IS_KELUAR == 0,
-                db.and_(Pegawai.IS_KELUAR == 1, Pegawai.TGL_KELUAR >= tgl_awal)
+                Pegawai.IS_KELUAR == 'N',
+                db.and_(Pegawai.IS_KELUAR == 'Y', Pegawai.TGL_KELUAR >= tgl_awal)
             )
         )
         .order_by(Pegawai.NAMA)

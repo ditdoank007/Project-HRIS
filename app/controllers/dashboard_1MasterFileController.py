@@ -4,6 +4,7 @@ from sqlite3 import IntegrityError
 import requests
 from datetime import date, datetime, timedelta
 from io import BytesIO
+from urllib.parse import quote
 from flask import render_template, request, jsonify, session, current_app, send_file
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
@@ -553,7 +554,15 @@ def _get_indonesian_holidays(tahun):
         # otomatis ditandai libur — tanggal merah nasional di-skip.
         return {}
 
-    url = f'https://www.googleapis.com/calendar/v3/calendars/{GOOGLE_ID_HOLIDAY_CALENDAR_ID}/events'
+    calendar_id = quote(
+        GOOGLE_ID_HOLIDAY_CALENDAR_ID,
+        safe=''
+    )
+
+    url = (
+        'https://www.googleapis.com/calendar/v3/calendars/'
+        f'{calendar_id}/events'
+    )
     params = {
         'key': api_key,
         'timeMin': f'{tahun}-01-01T00:00:00Z',
@@ -643,6 +652,174 @@ def create_kalender_tahun():
     })
 
 
+def save_kalender_changes():
+    """
+    Simpan perubahan status kalender dari halaman Master Kalender.
+
+    Payload:
+    {
+        "tahun": 2026,
+        "changes": [
+            {
+                "tanggal": "2026-08-24",
+                "status": "KERJA"
+            },
+            {
+                "tanggal": "2026-08-26",
+                "status": "LIBUR",
+                "keterangan": "Libur Khusus"
+            },
+            {
+                "tanggal": "2026-08-27",
+                "status": "WFH"
+            }
+        ]
+    }
+
+    Status yang diperbolehkan:
+    - KERJA
+    - LIBUR
+    - WFH
+    """
+
+    payload = request.get_json(silent=True) or {}
+
+    tahun_raw = payload.get('tahun')
+    changes = payload.get('changes')
+
+    if not tahun_raw or not str(tahun_raw).isdigit():
+        return jsonify({
+            'status': 'error',
+            'message': 'Tahun wajib diisi dan berupa angka'
+        }), 400
+
+    if not isinstance(changes, list):
+        return jsonify({
+            'status': 'error',
+            'message': 'Data perubahan kalender tidak valid'
+        }), 400
+
+    tahun = int(tahun_raw)
+
+    if tahun < 1900 or tahun > 2200:
+        return jsonify({
+            'status': 'error',
+            'message': 'Tahun tidak valid'
+        }), 400
+
+    current_nip = session.get('nip', 'system')
+    now = datetime.utcnow()
+
+    updated = 0
+
+    try:
+
+        for item in changes:
+
+            if not isinstance(item, dict):
+                continue
+
+            tanggal_raw = item.get('tanggal')
+            status = str(
+                item.get('status', '')
+            ).upper().strip()
+
+            if not tanggal_raw:
+                continue
+
+            try:
+                tanggal = date.fromisoformat(
+                    tanggal_raw
+                )
+            except ValueError:
+                return jsonify({
+                    'status': 'error',
+                    'message': f'Tanggal tidak valid: {tanggal_raw}'
+                }), 400
+
+            if tanggal.year != tahun:
+                return jsonify({
+                    'status': 'error',
+                    'message': (
+                        f'Tanggal {tanggal_raw} '
+                        f'tidak sesuai tahun {tahun}'
+                    )
+                }), 400
+
+            if status not in (
+                'KERJA',
+                'LIBUR',
+                'WFH'
+            ):
+                return jsonify({
+                    'status': 'error',
+                    'message': (
+                        f'Status kalender tidak valid: {status}'
+                    )
+                }), 400
+
+            tgl_kerja = datetime.combine(
+                tanggal,
+                datetime.min.time()
+            )
+
+            row = MfKalender.query.get(tgl_kerja)
+
+            if row is None:
+                return jsonify({
+                    'status': 'error',
+                    'message': (
+                        f'Data kalender {tanggal_raw} '
+                        'belum tersedia. Silakan buat kalender '
+                        'untuk tahun tersebut terlebih dahulu.'
+                    )
+                }), 404
+
+            if status == 'KERJA':
+
+                row.IS_LIBUR = 'N'
+                row.KET = None
+
+            elif status == 'WFH':
+
+                row.IS_LIBUR = 'N'
+                row.KET = 'WFH'
+
+            elif status == 'LIBUR':
+
+                row.IS_LIBUR = 'Y'
+
+                keterangan = (
+                    item.get('keterangan')
+                    or 'Libur'
+                )
+
+                row.KET = str(
+                    keterangan
+                )[:50]
+
+            row.UPDATE_BY = current_nip
+            row.UPDATE_DATE = now
+
+            updated += 1
+
+        db.session.commit()
+
+    except Exception:
+
+        db.session.rollback()
+        raise
+
+    return jsonify({
+        'status': 'success',
+        'tahun': tahun,
+        'updated': updated,
+        'message': (
+            f'{updated} perubahan kalender berhasil disimpan'
+        )
+    })
+
+
 def get_kalender_list():
     """
     Ambil data KALENDER untuk 1 tahun tertentu.
@@ -667,6 +844,7 @@ def get_kalender_list():
         {
             'no': idx + 1,
             'tanggal': row.TGL_KERJA.strftime('%d-%m-%Y'),
+            'tanggal_iso': row.TGL_KERJA.strftime('%Y-%m-%d'),
             'is_libur': row.IS_LIBUR,
             'ket': row.KET or '-',
             'updated': row.UPDATE_DATE.strftime('%d-%m-%Y %H:%M') if row.UPDATE_DATE else '-',
