@@ -40,6 +40,7 @@ from app.models.tunjanganModel import MfTunjangan
 from app.models.potModel import MfPot
 from app.models.classModel import MfClass
 from app.models.jabatanModel import MfJabatan
+from app.utils.pegawaiHelper import search_operational_pegawai
 from app.models.eselonModel import MfEselon
 from app.models.golonganModel import MfGolongan
 from app.models.lemburModel import Lembur
@@ -1305,30 +1306,86 @@ def export_rekap_absensi_individu():
 
 def search_pegawai_by_name():
     """
-    API untuk search pegawai berdasarkan nama (untuk dropdown autocomplete).
+    API untuk search pegawai berdasarkan nama
+    untuk dropdown autocomplete.
+
+    Standar HRIS Reborn:
+
+        - Minimal 1 karakter
+        - Hanya Pegawai Operasional
+        - IS_KELUAR = N
+        - Unit Kerja IS_USE = Y
+        - Maksimal 15 kandidat
+        - Nama jabatan berasal dari MF_JABATAN
     """
+
     keyword = request.args.get('keyword', '').strip()
-    if len(keyword) < 2:
+
+    if not keyword:
         return {'data': []}
-    
-    pegawai_list = (
-        Pegawai.query
-        .filter(Pegawai.NAMA.ilike(f'%{keyword}%'))
-        .order_by(Pegawai.NAMA.asc())
-        .limit(15)
-        .all()
+
+    # ============================================================
+    # AUTOCOMPLETE PEGAWAI TERPUSAT
+    #
+    # Business Rule berada di:
+    #
+    #   app/utils/pegawaiHelper.py
+    #
+    # Jangan melakukan query Pegawai langsung di endpoint ini.
+    # ============================================================
+
+    pegawai_list = search_operational_pegawai(
+        keyword,
+        limit=15
     )
-    
+
+    # ============================================================
+    # MASTER JABATAN
+    #
+    # Nama jabatan resmi berasal dari:
+    #
+    #   Pegawai.JABATAN_ID
+    #          ↓
+    #   MF_JABATAN.JABATAN_ID
+    #          ↓
+    #   MF_JABATAN.NAMA_JABATAN
+    # ============================================================
+
+    jabatan_ids = {
+        peg.JABATAN_ID
+        for peg in pegawai_list
+        if peg.JABATAN_ID not in (None, 0)
+    }
+
+    jabatan_map = {}
+
+    if jabatan_ids:
+        jabatan_rows = (
+            MfJabatan.query
+            .filter(
+                MfJabatan.JABATAN_ID.in_(jabatan_ids)
+            )
+            .all()
+        )
+
+        jabatan_map = {
+            jab.JABATAN_ID: jab.NAMA_JABATAN
+            for jab in jabatan_rows
+        }
+
     return {
         'data': [
             {
-                'nip': p.NIP,
-                'nama': p.NAMA,
-                'jabatan': p.JABATAN,
+                'nip': peg.NIP,
+                'nama': peg.NAMA or '',
+                'jabatan': jabatan_map.get(
+                    peg.JABATAN_ID
+                ),
             }
-            for p in pegawai_list
+            for peg in pegawai_list
         ]
     }
+
 
 def laporan_rekap_absensi_log_finger():
     """
@@ -1494,10 +1551,15 @@ def export_rekap_absensi_log_finger():
 
 def laporan_rekap_clock_exception():
     """Render halaman Laporan Rekap Clock Exception."""
-    unit_kerja_list = MfUnitKerja.query.order_by(
-        MfUnitKerja.URUT_REPORT.asc(),
-        MfUnitKerja.NAMA_UNIT_KERJA.asc()
-    ).all()
+    unit_kerja_list = (
+        MfUnitKerja.query
+        .filter(MfUnitKerja.IS_USE == 'Y')
+        .order_by(
+            MfUnitKerja.URUT_REPORT.asc(),
+            MfUnitKerja.NAMA_UNIT_KERJA.asc()
+        )
+        .all()
+    )
     return render_template(
         'pages/dashboard_1/Laporan Rekap Clock Exception.html',
         unit_kerja_list=unit_kerja_list
@@ -1564,7 +1626,13 @@ def preview_rekap_clock_exception():
 
                 "hari": x.TGL_KERJA.strftime(
                     "%a"
-                )
+                ),
+
+                "is_libur": (
+                    (x.IS_LIBUR or "N").upper() == "Y"
+                ),
+
+                "keterangan": x.KET or ""
 
             }
 

@@ -22,6 +22,11 @@ from app.models.absensiModel import Absensi
 from app.models.kalenderModel import MfKalender
 from app.models.mediaInformasiModel import MediaInformasi
 from app.models.emailSendModel import MfEmailSend
+from app.utils.unitKerjaHelper import get_active_unit_rows
+from app.utils.pegawaiHelper import (
+    get_operational_pegawai_query,
+    search_operational_pegawai,
+)
 
 
 def kepegawaian_cari_data_pegawai():
@@ -55,11 +60,26 @@ def api_pegawai_cari():
             .outerjoin(MfJabatan, Pegawai.JABATAN_ID == MfJabatan.JABATAN_ID)
         )
         
+        # ========================================================
+        # FILTER UNIT KERJA AKTIF
+        #
+        # Hanya pegawai yang berada pada Unit Kerja
+        # dengan MF_UNIT_KERJA.IS_USE = 'Y'.
+        #
+        # Pegawai tidak dihapus dari database ketika unit
+        # dinonaktifkan. Mereka hanya tidak ditampilkan
+        # pada operasional HRIS.
+        # ========================================================
+
+        query = query.filter(
+            MfUnitKerja.IS_USE == 'Y'
+        )
+
         # Filter status pegawai (aktif/keluar)
         if status_pegawai == 'aktif':
-            query = query.filter(Pegawai.IS_KELUAR == 0)
+            query = query.filter(Pegawai.IS_KELUAR == 'N')
         else:
-            query = query.filter(Pegawai.IS_KELUAR == 1)
+            query = query.filter(Pegawai.IS_KELUAR == 'Y')
         
         # Filter status jenis (PNS/NON PNS)
         if status_jenis == 'pns':
@@ -103,7 +123,7 @@ def api_pegawai_cari():
         for i, (peg, unit, gol, jab) in enumerate(results, 1):
             # Keterangan
             keterangan = ''
-            if peg.IS_KELUAR == 1:
+            if peg.IS_KELUAR == 'Y':
                 tgl = peg.TGL_KELUAR.strftime('%Y.%m.%d') if peg.TGL_KELUAR else ''
                 keterangan = f"Tanggal keluar {tgl} {peg.ALASAN_KELUAR or ''}"
             
@@ -113,8 +133,35 @@ def api_pegawai_cari():
                 'nama': peg.NAMA or '',
                 'gol_pangkat': f"{gol.NAMA_GOL or ''} - {gol.PANGKAT_GOL or ''}" if gol else '-',
                 'unit_kerja': unit.NAMA_UNIT_KERJA if unit else '-',
-                'jabatan': jab.NAMA_JABATAN if jab else '-',
-                'status_peg': 'PNS' if peg.STATUS_PEG == 1 else 'NON PNS',
+                # ====================================================
+                # SUMBER JABATAN HRIS REBORN
+                #
+                # Jangan menggunakan Pegawai.JABATAN karena merupakan
+                # teks legacy. Sumber utama adalah MF_JABATAN.
+                # ====================================================
+
+                'jabatan': (
+                    jab.NAMA_JABATAN
+                    if jab and jab.NAMA_JABATAN
+                    else '-'
+                ),
+
+                'jabatan_status': (
+                    'VALID'
+                    if jab and peg.JABATAN_ID not in (None, 0)
+                    else (
+                        'BELUM DIISI'
+                        if peg.JABATAN_ID in (None, 0)
+                        else 'MASTER TIDAK DITEMUKAN'
+                    )
+                ),
+
+                'status_peg': (
+                    'PNS'
+                    if peg.STATUS_PEG == 1
+                    else 'NON PNS'
+                ),
+
                 'keterangan': keterangan,
             })
         
@@ -337,7 +384,9 @@ def api_dinas_luar_get_filter_fields():
 
 def kepegawaian_data_pegawai():
     """Render halaman Kepegawaian Data Pegawai."""
-    unit_kerja_list = MfUnitKerja.query.order_by(MfUnitKerja.NAMA_UNIT_KERJA.asc()).all()
+    # Hanya Unit Kerja aktif (IS_USE = 'Y')
+    unit_kerja_list = get_active_unit_rows()
+
     jabatan_list = MfJabatan.query.filter(
         MfJabatan.NAMA_JABATAN.isnot(None)
     ).order_by(MfJabatan.URUT_JABATAN.asc()).all()
@@ -453,8 +502,14 @@ def api_pegawai_save():
         tmt_jabatan = _safe_date(data.get('tmt_jabatan'))
         gol_recruit = data.get('gol_recruit', '') or ''
         status_peg = _safe_int(data.get('status_peg'), 2)
-        is_keluar_val = data.get('is_keluar', 'N') or 'N'
-        is_keluar = 1 if is_keluar_val == 'Y' else 0
+        is_keluar_val = str(
+            data.get('is_keluar', 'N') or 'N'
+        ).strip().upper()
+
+        if is_keluar_val not in ('Y', 'N'):
+            is_keluar_val = 'N'
+
+        is_keluar = is_keluar_val
         tgl_keluar = _safe_date(data.get('tgl_keluar'))
         alasan_keluar = data.get('alasan_keluar', '') or ''
         
@@ -1155,14 +1210,58 @@ def kepegawaian_dinas_luar_umum():
 
 
 def api_dinas_luar_search_pegawai():
-    """API: Pencarian pegawai untuk autocomplete"""
+    """
+    API: Pencarian pegawai untuk autocomplete.
+
+    Standar HRIS Reborn:
+
+        - Minimal 1 karakter
+        - Hanya Pegawai Operasional
+        - IS_KELUAR = N
+        - Unit Kerja IS_USE = Y
+        - Maksimal 15 kandidat
+        - Pencarian sebagian nama
+    """
+
     try:
         keyword = request.args.get('keyword', '').strip()
-        if len(keyword) < 2: return jsonify({'data': []})
-        pegawai_list = Pegawai.query.filter(Pegawai.NAMA.ilike(f'%{keyword}%')).order_by(Pegawai.NAMA.asc()).limit(15).all()
-        return jsonify({'data': [{'nip': p.NIP, 'nama': p.NAMA} for p in pegawai_list]})
+
+        if not keyword:
+            return jsonify({
+                'data': []
+            })
+
+        # ========================================================
+        # AUTOCOMPLETE PEGAWAI TERPUSAT
+        #
+        # Business Rule:
+        #
+        #   app/utils/pegawaiHelper.py
+        #
+        # Jangan melakukan query Pegawai langsung di endpoint.
+        # ========================================================
+
+        pegawai_list = search_operational_pegawai(
+            keyword,
+            limit=15
+        )
+
+        return jsonify({
+            'data': [
+                {
+                    'nip': pegawai.NIP,
+                    'nama': pegawai.NAMA or ''
+                }
+                for pegawai in pegawai_list
+            ]
+        })
+
     except Exception as e:
-        return jsonify({'error': str(e), 'data': []})
+        return jsonify({
+            'error': str(e),
+            'data': []
+        })
+
 
 def api_sprin_header_save():
     """API: Simpan Header SPRIN saja"""

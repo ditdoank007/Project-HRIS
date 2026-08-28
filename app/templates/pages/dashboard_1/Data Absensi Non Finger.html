@@ -219,7 +219,7 @@
     document.getElementById('searchPegawai').addEventListener('input', function() {
         clearTimeout(searchTimeout);
         const kw = this.value.trim();
-        if (kw.length < 2) { 
+        if (kw.length < 1) { 
             document.getElementById('searchResults').style.display = 'none'; 
             return; 
         }

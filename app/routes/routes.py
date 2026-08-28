@@ -2,7 +2,13 @@
 
 from flask import Blueprint, jsonify
 from app.utils.decorators import login_required
-from app.controllers.homeController import get_pelanggaran_disiplin, get_piket_siaga, home, search_buku_telp
+from app.controllers.homeController import (
+    get_pelanggaran_disiplin,
+    get_piket_siaga,
+    home,
+    search_buku_telp,
+    search_pegawai_autocomplete,
+)
 from app.controllers.loginController import login, logout
 from app.controllers.absenOnlineController import (
     status_absen_online,
@@ -15,7 +21,7 @@ from app.controllers.dashboard_1MasterFileController import (
     get_pegawai_vip_list, get_potongan_list, get_tunjangan_list, get_tunkin_class_detail, get_tunkin_class_list,
     delete_user_account, get_unit_kerja_list, get_user_account_detail, get_user_account_list, master_butir_kegiatan, master_jabatan, master_jam_finger, master_jam_kerja,
     master_kalender, master_pegawai_vip, master_potongan, master_trt as master_file_trt, master_tunkin_class,
-    master_unit_kerja, master_user, master_uang_makan, cari_master_jabatan, cari_master_jam_finger, cari_master_jam_kerja,
+    master_unit_kerja, toggle_unit_kerja, master_user, master_uang_makan, cari_master_jabatan, cari_master_jam_finger, cari_master_jam_kerja,
     cari_master_kalender, cari_master_potongan, cari_master_tunkin_class, cari_master_uang_makan, cari_master_unit_kerja,
     cari_user_account, create_kalender, save_jabatan, save_jam_kerja, save_joblist, save_potongan, save_tunkin_class, save_uang_makan, save_unit_kerja, save_user_account,
     toggle_pegawai_vip, save_jam_finger,
@@ -119,6 +125,7 @@ from app.controllers.dashboard_2DataSiagaController import (
     data_siaga_cetak_uang_siaga, data_siaga_jadwal_ulang, data_siaga_membuat_jadwal_piket_siaga,
     api_absensi_kehadiran_get as data_siaga_api_absensi_kehadiran_get,
     api_absensi_kehadiran_update as data_siaga_api_absensi_kehadiran_update,
+    api_pembuatan_jadwal_siaga_save as data_siaga_api_pembuatan_jadwal_siaga_save,
 )
 from app.controllers.dashboard_2MasterDataController import (
     master_data_email_broadcast,
@@ -147,6 +154,9 @@ from app.controllers.dashboard_2MasterDataController import (
     api_kgr_get_filter_fields as master_data_api_kgr_get_filter_fields,
     api_email_broadcast_get as master_data_api_email_broadcast_get,
     api_email_broadcast_save as master_data_api_email_broadcast_save,
+    api_jabatan_siaga_get as master_data_api_jabatan_siaga_get,
+    api_jabatan_siaga_save as master_data_api_jabatan_siaga_save,
+    api_jabatan_siaga_deactivate as master_data_api_jabatan_siaga_deactivate
 )
 from app.controllers.dashboard_2OtoritasPersetujuanController import (
     api_otorisasi_kakansar_approve,
@@ -209,7 +219,7 @@ def index():
 
 @main.route('/api/search_pegawai')
 def api_search_pegawai():
-    return search_buku_telp()
+    return search_pegawai_autocomplete()
 
 @main.route('/api/piket_siaga')
 def api_piket_siaga():
@@ -665,6 +675,12 @@ def view_master_unit_kerja():
 @login_required
 def api_unit_kerja_save():
     return save_unit_kerja()
+
+@main.route('/api/unit-kerja/toggle', methods=['POST'])
+@login_required
+def api_unit_kerja_toggle():
+    return toggle_unit_kerja()
+
 
 @main.route('/master/user')
 @login_required
@@ -1260,6 +1276,80 @@ def api_rejadwal_siaga_add_personil():
 @login_required
 def view_data_siaga_membuat_jadwal_piket_siaga():
     return data_siaga_membuat_jadwal_piket_siaga()
+
+
+@main.route('/api/siaga/pembuatan-jadwal/save', methods=['POST'])
+@login_required
+def api_pembuatan_jadwal_siaga_save():
+    return data_siaga_api_pembuatan_jadwal_siaga_save()
+
+
+@main.route('/api/siaga/master-jabatan-aktif')
+@login_required
+def api_siaga_master_jabatan_aktif():
+    from app.controllers.dashboard_2DataSiagaController import (
+        api_siaga_master_jabatan_aktif
+    )
+    return api_siaga_master_jabatan_aktif()
+
+
+@main.route('/api/siaga/master-unit-aktif')
+@login_required
+def api_siaga_master_unit_aktif():
+    from app.controllers.dashboard_2DataSiagaController import (
+        api_siaga_master_unit_aktif
+    )
+    return api_siaga_master_unit_aktif()
+
+
+# ============================================================
+# MASTER JABATAN SIAGA
+# ============================================================
+
+@main.route('/siaga/master-data/jabatan-siaga')
+@login_required
+def view_master_data_jabatan_siaga():
+    from app.controllers.dashboard_2MasterDataController import (
+        master_data_jabatan_siaga
+    )
+    return master_data_jabatan_siaga()
+
+
+@main.route('/api/master-data/jabatan-siaga')
+@login_required
+def api_master_jabatan_siaga_get():
+    return master_data_api_jabatan_siaga_get()
+
+
+@main.route(
+    '/api/master-data/jabatan-siaga/save',
+    methods=['POST']
+)
+@login_required
+def api_master_jabatan_siaga_save():
+    return master_data_api_jabatan_siaga_save()
+
+
+@main.route(
+    '/api/master-data/jabatan-siaga/deactivate',
+    methods=['POST']
+)
+@login_required
+def api_master_jabatan_siaga_deactivate():
+    return master_data_api_jabatan_siaga_deactivate()
+
+
+@main.route(
+    '/api/master-data/jabatan-siaga/activate',
+    methods=['POST']
+)
+@login_required
+def api_master_jabatan_siaga_activate():
+    from app.controllers.dashboard_2MasterDataController import (
+        api_jabatan_siaga_activate
+    )
+    return api_jabatan_siaga_activate()
+
 
 # Master Data:
 @main.route('/siaga/master-data/email-broadcast')

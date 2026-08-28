@@ -99,6 +99,10 @@ class MfUnitKerja(db.Model):
 
     NAMA_UNIT_KERJA = synonym('UNIT_KERJA_NAME')
 
+    # Nama semantik HRIS Reborn.
+    # Tetap menggunakan kolom legacy database: isUse.
+    IS_AKTIF = synonym('IS_USE')
+
     # ============================================================
     # REPRESENTATION
     # ============================================================
@@ -119,6 +123,7 @@ class MfUnitKerja(db.Model):
             'unit_kerja_id': self.UNIT_KERJA_ID,
             'nama_unit_kerja': self.NAMA_UNIT_KERJA,
             'is_use': self.IS_USE,
+            'is_aktif': self.IS_AKTIF,
             'urut_report': self.URUT_REPORT,
             'is_pusat': self.IS_PUSAT,
             'transac_id': self.TRANSAC_ID,

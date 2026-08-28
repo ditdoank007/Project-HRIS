@@ -463,7 +463,7 @@ $(document).ready(function() {
     $('#searchPegawai').on('input', function() {
         clearTimeout(searchTimeout);
         const keyword = $(this).val().trim();
-        if (keyword.length < 2) { $('#pegawaiDropdown').hide(); return; }
+        if (keyword.length < 1) { $('#pegawaiDropdown').hide(); return; }
 
         searchTimeout = setTimeout(function() {
             $.get('/api/dinas-luar/search-pegawai', { keyword: keyword }, function(r) {

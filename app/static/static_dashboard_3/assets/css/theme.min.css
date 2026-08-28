@@ -10036,3 +10036,85 @@ html.app-font-family-roboto-slab body {
             color: #bdc3c7;
         }
         
+/* ============================================================
+   HRIS REBORN
+   STANDARD TABLE - DASHBOARD PELANGGARAN
+   ============================================================ */
+
+table.table-custom-v2.hris-table-pelanggaran {
+    width: 100% !important;
+    border-collapse: collapse !important;
+}
+
+/* Header */
+table.table-custom-v2.hris-table-pelanggaran thead th {
+    background-color: #EB6831 !important;
+    color: #ffffff !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+}
+
+/* Default body */
+table.table-custom-v2.hris-table-pelanggaran tbody td {
+    vertical-align: middle !important;
+}
+
+/* Nama */
+table.table-custom-v2.hris-table-pelanggaran tbody td:nth-child(2) {
+    text-align: left !important;
+}
+
+/* Jenis Hukuman */
+table.table-custom-v2.hris-table-pelanggaran tbody td:nth-child(5) {
+    text-align: left !important;
+}
+
+/* Kolom lainnya */
+table.table-custom-v2.hris-table-pelanggaran tbody td:nth-child(1),
+table.table-custom-v2.hris-table-pelanggaran tbody td:nth-child(3),
+table.table-custom-v2.hris-table-pelanggaran tbody td:nth-child(4),
+table.table-custom-v2.hris-table-pelanggaran tbody td:nth-child(6),
+table.table-custom-v2.hris-table-pelanggaran tbody td:nth-child(7) {
+    text-align: center !important;
+}
+
+/* ============================================================
+   KODE WARNA PELANGGARAN DISIPLIN
+   ============================================================ */
+
+table.table-custom-v2.hris-table-pelanggaran tbody tr.alert-error > td {
+    background-color: #e74c3c !important;
+    color: #000000 !important;
+}
+
+table.table-custom-v2.hris-table-pelanggaran tbody tr.bg-orange-active > td {
+    background-color: #ff7a00 !important;
+    color: #000000 !important;
+}
+
+table.table-custom-v2.hris-table-pelanggaran tbody tr.bg-yellow-gradient > td {
+    background: linear-gradient(
+        to bottom,
+        #ffd966 0%,
+        #f6a900 100%
+    ) !important;
+    color: #000000 !important;
+}
+
+/* Hover tidak boleh menghilangkan warna */
+table.table-custom-v2.hris-table-pelanggaran tbody tr.alert-error:hover > td {
+    background-color: #e74c3c !important;
+}
+
+table.table-custom-v2.hris-table-pelanggaran tbody tr.bg-orange-active:hover > td {
+    background-color: #ff7a00 !important;
+}
+
+table.table-custom-v2.hris-table-pelanggaran tbody tr.bg-yellow-gradient:hover > td {
+    background: linear-gradient(
+        to bottom,
+        #ffd966 0%,
+        #f6a900 100%
+    ) !important;
+}
+

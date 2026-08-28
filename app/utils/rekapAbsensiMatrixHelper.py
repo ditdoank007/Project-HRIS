@@ -323,41 +323,6 @@ def generate_rekap_absensi_matrix(
 
 
     # ==============================
-
-    pegawai_rows = sorted(
-        pegawai_rows,
-        key=lambda p: (
-
-            (
-                int(p.ESELON)
-                if str(p.ESELON).isdigit()
-                else 99
-            ),
-
-            (
-                getattr(
-                    p,
-                    'URUT_JABATAN',
-                    999999
-                )
-                if getattr(
-                    p,
-                    'URUT_JABATAN',
-                    None
-                )
-                else 999999
-            ),
-
-            -(
-                p.CLASS_ID or 0
-            ),
-
-            p.NIP or ''
-        )
-    )
-
-
-    # ==============================
     # ABSENSI FINGER
     # ==============================
 

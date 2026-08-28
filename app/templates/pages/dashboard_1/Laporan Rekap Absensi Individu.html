@@ -140,50 +140,102 @@
 
 {% block script %}
 <script>
-    // Search pegawai
-    document.getElementById('searchPegawai').addEventListener('input', async function() {
+    // ========================================================
+    // AUTOCOMPLETE PEGAWAI - STANDAR HRIS REBORN
+    // ========================================================
+
+    const searchPegawai = document.getElementById('searchPegawai');
+    const selectedNip = document.getElementById('selectedNip');
+    const searchResults = document.getElementById('searchResults');
+
+    let autocompleteRequestId = 0;
+
+    searchPegawai.addEventListener('input', async function() {
         const keyword = this.value.trim();
-        if (keyword.length < 2) {
-            document.getElementById('searchResults').style.display = 'none';
+        const requestId = ++autocompleteRequestId;
+
+        // Karena user mengetik ulang nama, pilihan NIP
+        // sebelumnya tidak lagi dianggap valid.
+        selectedNip.value = '';
+
+        // Standar HRIS Reborn:
+        // 1 karakter sudah mulai pencarian.
+        if (!keyword) {
+            searchResults.innerHTML = '';
+            searchResults.style.display = 'none';
             return;
         }
-        
+
         try {
-            // Gunakan API khusus untuk halaman ini
-            const res = await fetch(`/api/laporan/search-pegawai?keyword=${encodeURIComponent(keyword)}`);
+            const res = await fetch(
+                `/api/laporan/search-pegawai?keyword=${encodeURIComponent(keyword)}`
+            );
+
             const result = await res.json();
-            
-            const data = result.data || [];
-            const container = document.getElementById('searchResults');
-            container.innerHTML = '';
-            
-            if (data.length > 0) {
-                container.style.display = 'block';
-                data.forEach(p => {
-                    const div = document.createElement('div');
-                    div.className = 'p-2 border-bottom';
-                    div.style.cursor = 'pointer';
-                    div.textContent = `${p.nip} - ${p.nama}`;
-                    div.addEventListener('click', () => {
-                        document.getElementById('searchPegawai').value = p.nama;
-                        document.getElementById('selectedNip').value = p.nip;
-                        container.style.display = 'none';
-                    });
-                    container.appendChild(div);
-                });
-            } else {
-                container.innerHTML = '<div class="p-2 text-muted">Tidak ditemukan</div>';
-                container.style.display = 'block';
+
+            // Abaikan response lama jika user sudah mengetik
+            // karakter berikutnya.
+            if (requestId !== autocompleteRequestId) {
+                return;
             }
+
+            const data = result.data || [];
+
+            searchResults.innerHTML = '';
+
+            if (data.length === 0) {
+                searchResults.innerHTML = `
+                    <div class="p-2 text-muted">
+                        Tidak ditemukan
+                    </div>
+                `;
+                searchResults.style.display = 'block';
+                return;
+            }
+
+            data.forEach(p => {
+                const div = document.createElement('div');
+
+                div.className = 'p-2 border-bottom';
+                div.style.cursor = 'pointer';
+                div.textContent = `${p.nip} - ${p.nama}`;
+
+                div.addEventListener('click', function() {
+                    searchPegawai.value = p.nama;
+                    selectedNip.value = p.nip;
+
+                    searchResults.innerHTML = '';
+                    searchResults.style.display = 'none';
+                });
+
+                searchResults.appendChild(div);
+            });
+
+            searchResults.style.display = 'block';
+
         } catch (err) {
-            console.error('Search error:', err);
+            console.error('Autocomplete pegawai error:', err);
+
+            if (requestId !== autocompleteRequestId) {
+                return;
+            }
+
+            searchResults.innerHTML = `
+                <div class="p-2 text-danger">
+                    Gagal mengambil data pegawai
+                </div>
+            `;
+            searchResults.style.display = 'block';
         }
     });
 
     // Hide dropdown saat klik di luar
     document.addEventListener('click', function(e) {
-        if (!e.target.closest('#searchPegawai') && !e.target.closest('#searchResults')) {
-            document.getElementById('searchResults').style.display = 'none';
+        if (
+            !e.target.closest('#searchPegawai') &&
+            !e.target.closest('#searchResults')
+        ) {
+            searchResults.style.display = 'none';
         }
     });
 

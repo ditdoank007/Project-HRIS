@@ -50,33 +50,15 @@
                     </a>
                     <ul class="nxl-submenu">
                         <li class="nxl-item">
-                            <a class="nxl-link" href="{{ url_for('main.view_master_data_tim_siaga') }}">
-                                <span class="nxl-micon"><i class="bi bi-layout-text-window-reverse"></i></span>
-                                <span class="nxl-mtext">Tim Siaga</span>
-                            </a>
-                        </li>
-                        <li class="nxl-item">
-                            <a class="nxl-link" href="{{ url_for('main.view_master_data_user_account') }}">
-                                <span class="nxl-micon"><i class="bi bi-person"></i></span>
-                                <span class="nxl-mtext">User Account</span>
-                            </a>
-                        </li>
-                        <li class="nxl-item">
-                            <a class="nxl-link" href="{{ url_for('main.view_master_data_kgr') }}">
-                                <span class="nxl-micon"><i class="bi bi-layout-text-window-reverse"></i></span>
-                                <span class="nxl-mtext">KGR</span>
+                            <a class="nxl-link" href="{{ url_for('main.view_master_data_jabatan_siaga') }}">
+                                <span class="nxl-micon"><i class="bi bi-person-badge"></i></span>
+                                <span class="nxl-mtext">Jabatan Siaga</span>
                             </a>
                         </li>
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_master_data_email_broadcast') }}">
                                 <span class="nxl-micon"><i class="bi bi-envelope"></i></span>
                                 <span class="nxl-mtext">Email Broadcast</span>
-                            </a>
-                        </li>
-                        <li class="nxl-item">
-                            <a class="nxl-link" href="{{ url_for('main.view_master_data_nominal_ut_piket') }}">
-                                <span class="nxl-micon"><i class="bi bi-currency-dollar"></i></span>
-                                <span class="nxl-mtext">Nominal UT.Piket</span>
                             </a>
                         </li>
                     </ul>
@@ -91,12 +73,12 @@
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_data_siaga_absensi_kehadiran') }}">
                                 <span class="nxl-micon"><i class="bi bi-layout-text-window-reverse"></i></span>
-                                <span class="nxl-mtext">Absen Kehadiran Piket</span></a>
+                                <span class="nxl-mtext">Absen Hadir Siaga</span></a>
                         </li>
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_data_siaga_jadwal_ulang') }}">
                                 <span class="nxl-micon"><i class="bi bi-journal-text"></i></span>
-                                <span class="nxl-mtext">Ubah Jadwal Piket</span>
+                                <span class="nxl-mtext">Ubah Jadwal Siaga</span>
                             </a>
                         </li>
                         <li class="nxl-item">
@@ -108,49 +90,16 @@
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_data_siaga_membuat_jadwal_piket_siaga') }}">
                                 <span class="nxl-micon"><i class="bi bi-journal-text"></i></span>
-                                <span class="nxl-mtext">Membuat Jadwal Piket</span>
+                                <span class="nxl-mtext">Buat Jadwal Siaga</span>
                             </a>
                         </li>
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_data_siaga_cetak_rekap_siaga') }}">
                                 <span class="nxl-micon"><i class="bi bi-folder"></i></span>
-                                <span class="nxl-mtext">Rekap Piket Siaga</span>
-                            </a>
-                        </li>
-                        <li class="nxl-item">
-                            <a class="nxl-link" href="{{ url_for('main.view_data_siaga_cetak_daftar_lembur_siaga') }}">
-                                <span class="nxl-micon"><i class="bi bi-calendar"></i></span>
-                                <span class="nxl-mtext">Daftar Lembur</span>
+                                <span class="nxl-mtext">Rekap Hadir Siaga</span>
                             </a>
                         </li>
                     </ul>
-                </li>
-                <li class="nxl-item nxl-hasmenu">
-                    <a href="javascript:void(0);" class="nxl-link">
-                        <span class="nxl-micon"><i class="bi bi-pencil-square"></i></span>
-                        <span class="nxl-mtext">Otoritas</span><span class="nxl-arrow"><i
-                                class="feather-chevron-right"></i></span>
-                    </a>
-                    <ul class="nxl-submenu">
-                        <li class="nxl-item">
-                            <a class="nxl-link" href="{{ url_for('main.view_otorisasi_persetujuan_kepala_seksi_operasi') }}">
-                                <span class="nxl-micon"><i class="bi bi-person"></i></span>
-                                <span class="nxl-mtext">Otoritas Kasi OPS</span>
-                            </a>
-                        </li>
-                        <li class="nxl-item">
-                            <a class="nxl-link" href="{{ url_for('main.view_otorisasi_persetujuan_kepala_kantor') }}">
-                                <span class="nxl-micon"><i class="bi bi-person"></i></span>
-                                <span class="nxl-mtext">Otoritas KanKanSar</span>
-                            </a>
-                        </li>
-                    </ul>
-                </li>
-                <li class="nxl-item nxl-hasmenu">
-                    <a href="{{ url_for('main.index') }}" class="nxl-link">
-                        <span class="nxl-micon"><i class="bi bi-house-fill"></i></span>
-                        <span class="nxl-mtext">Portal</span>
-                    </a>
                 </li>
             </ul>
         </div>

@@ -85,31 +85,31 @@
                         </p>
 
                         <!-- TABLE -->
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-striped text-center align-middle">
-                                <thead style="background:#EB6831;">
+                        <div class="hris-table-wrapper">
+                            <table class="hris-table hris-table-pelanggaran">
+                                <thead>
                                     <tr>
-                                        <th style="color:white;">No</th>
-                                        <th style="color:white;">Nama</th>
-                                        <th style="color:white;">Jumlah Hari</th>
-                                        <th style="color:white;">Kategori Hukuman</th>
-                                        <th style="color:white;">Jenis Hukuman</th>
-                                        <th style="color:white;">Potongan (%)</th>
-                                        <th style="color:white;">Lama Pot</th>
+                                        <th>No</th>
+                                        <th>Nama</th>
+                                        <th>Jumlah Hari</th>
+                                        <th>Kategori Hukuman</th>
+                                        <th>Jenis Hukuman</th>
+                                        <th>Potongan (%)</th>
+                                        <th>Lama Pot</th>
                                     </tr>
                                 </thead>
 
                                 <tbody>
                                     {% if data_pelanggaran %}
                                         {% for row in data_pelanggaran %}
-                                        <tr>
-                                            <td>{{ row.no }}</td>
-                                            <td>{{ row.nama }}</td>
-                                            <td>{{ row.hari }}</td>
-                                            <td>{{ row.kategori }}</td>
-                                            <td>{{ row.jenis }}</td>
-                                            <td>{{ row.potongan }}</td>
-                                            <td>{{ row.lama_pot }}</td>
+                                        <tr class="{{ row.row_class|default('') }}">
+                                            <td class="hris-text-center">{{ row.no }}</td>
+                                            <td class="hris-text-left">{{ row.nama }}</td>
+                                            <td class="hris-text-center">{{ row.hari }}</td>
+                                            <td class="hris-text-center">{{ row.kategori }}</td>
+                                            <td class="hris-text-left">{{ row.jenis }}</td>
+                                            <td class="hris-text-center">{{ row.potongan }}</td>
+                                            <td class="hris-text-center">{{ row.lama_pot }}</td>
                                         </tr>
                                         {% endfor %}
                                     {% else %}
@@ -129,6 +129,18 @@
     </div>
 </div>
 {% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
 
 {% block script %}
 <script>

@@ -28,6 +28,7 @@ from app.models.tunjanganModel import MfTunjangan
 from app.models.userAccountModel import UserAccount
 from app.models.formModel import MfForm
 from app.models.hakAksesFormModel import HakAksesForm
+from app.utils.pegawaiSortHelper import sort_pegawai_rows
 
 JENIS_TUNJANGAN_OPTIONS = ['U.Makan', 'U.Transport', 'U.Lembur']
 
@@ -875,88 +876,262 @@ def get_pegawai_vip_list():
     """
     Ambil seluruh data pegawai untuk tabel VIP List.
 
-    Filter opsional (semua bisa kosong -> berlaku seperti klik Refresh biasa):
-      - unit_kerja_id : dari dropdown "Unit Kerja" (UNIT_KERJA_ID)
-      - field1/keyword1 dan field2/keyword2 : dari dua dropdown "Filter",
-        digabung dengan AND (sesuai label "Dan" di UI)
+    Sorting mengikuti Single Source of Sorting HRIS Reborn:
+        1. Eselon
+        2. Urut Jabatan
+        3. Class Jabatan descending
+        4. NIP ascending
+
+    Filter:
+        - unit_kerja_id
+        - field1 + keyword1
+        - field2 + keyword2
     """
+
     unit_kerja_id = request.args.get('unit_kerja_id', type=int)
+
     field1 = request.args.get('field1')
     keyword1 = request.args.get('keyword1', '').strip()
+
     field2 = request.args.get('field2')
     keyword2 = request.args.get('keyword2', '').strip()
 
-    # Map label dropdown -> kolom SQLAlchemy.
-    # 'Gol' dan 'No Finger' sengaja belum dimasukkan — butuh model master
-    # tambahan (MF_GOLONGAN, master no-finger) yang belum tersedia.
+    # ============================================================
+    # FIELD FILTER
+    # ============================================================
+
     field_map = {
+        'Gol': Pegawai.GOL,
+        'Jabatan': MfJabatan.NAMA_JABATAN,
+        'Jenis Kelamin': Pegawai.JENIS_KEL,
         'Nama Peg': Pegawai.NAMA,
         'NIP': Pegawai.NIP,
-        'Jabatan': Pegawai.JABATAN,
-        'Jenis Kelamin': Pegawai.JENIS_KEL,
+        'No Finger': Pegawai.FINGER_ID,
         'Unit Kerja': MfUnitKerja.NAMA_UNIT_KERJA,
     }
 
-    query = Pegawai.query
+    # ============================================================
+    # HRIS REBORN BUSINESS RULE
+    #
+    # Pegawai menggunakan JABATAN_ID sebagai referensi master.
+    #
+    # Sumber nama jabatan:
+    #   Pegawai.JABATAN_ID
+    #          ↓
+    #   MF_JABATAN.JABATAN_ID
+    #          ↓
+    #   MF_JABATAN.NAMA_JABATAN
+    #
+    # Pegawai.JABATAN adalah field legacy dan tidak digunakan
+    # untuk operasional HRIS Reborn.
+    # ============================================================
 
-    # Join ke MF_UNIT_KERJA hanya kalau memang dibutuhkan (salah satu filter
-    # field-nya "Unit Kerja") — supaya query tetap ringan untuk kasus umum.
-    needs_unit_kerja_join = 'Unit Kerja' in (field1, field2)
+    query = (
+        Pegawai.query
+        .outerjoin(
+            MfJabatan,
+            Pegawai.JABATAN_ID == MfJabatan.JABATAN_ID
+        )
+    )
+
+    # Join unit kerja hanya jika diperlukan.
+    needs_unit_kerja_join = (
+        unit_kerja_id is not None
+        or 'Unit Kerja' in (field1, field2)
+    )
+
     if needs_unit_kerja_join:
-        query = query.join(MfUnitKerja, Pegawai.UNIT_KERJA_ID == MfUnitKerja.UNIT_KERJA_ID)
+        query = query.join(
+            MfUnitKerja,
+            Pegawai.UNIT_KERJA_ID == MfUnitKerja.UNIT_KERJA_ID
+        )
 
     if unit_kerja_id:
-        query = query.filter(Pegawai.UNIT_KERJA_ID == unit_kerja_id)
+        query = query.filter(
+            Pegawai.UNIT_KERJA_ID == unit_kerja_id
+        )
 
-    for field, keyword in [(field1, keyword1), (field2, keyword2)]:
+    for field, keyword in (
+        (field1, keyword1),
+        (field2, keyword2),
+    ):
         if not field or not keyword:
-            continue  # filter ini tidak dipakai -> skip, tidak wajib diisi
-        column = field_map.get(field)
-        if column is not None:
-            query = query.filter(column.ilike(f'%{keyword}%'))
+            continue
 
-    pegawai_list = query.order_by(Pegawai.NAMA.asc()).all()
+        column = field_map.get(field)
+
+        if column is not None:
+            query = query.filter(
+                column.ilike(f'%{keyword}%')
+            )
+
+    # ============================================================
+    # HANYA PEGAWAI AKTIF
+    #
+    # Standar HRIS Reborn:
+    #   N = masih aktif
+    #   Y = sudah keluar / tidak aktif
+    #
+    # Master Pegawai VIP hanya menampilkan
+    # pegawai dengan IS_KELUAR = N.
+    # ============================================================
+
+    query = query.filter(
+        Pegawai.IS_KELUAR == 'N'
+    )
+
+    # ============================================================
+    # AMBIL DATA
+    # ============================================================
+
+    pegawai_list = query.all()
+
+    # ============================================================
+    # SORTING STANDARD HRIS REBORN
+    #
+    # Eselon
+    # -> Urut Jabatan
+    # -> Class Jabatan DESC
+    # -> NIP ASC
+    # ============================================================
+
+    pegawai_list = sort_pegawai_rows(
+        pegawai_list
+    )
+
+    # ============================================================
+    # SERIALIZE
+    #
+    # IS_VIP adalah VARCHAR/Y-N di database legacy.
+    # Jangan menggunakan bool("0") karena Python akan menghasilkan True.
+    # ============================================================
+
+    def is_vip_value(value):
+        return str(value or '').strip().upper() in (
+            'Y',
+            'YES',
+            'TRUE',
+            '1',
+        )
+
+    # ============================================================
+    # MASTER JABATAN
+    #
+    # Pegawai.JABATAN adalah field legacy.
+    # Nama jabatan resmi selalu diambil dari MF_JABATAN
+    # berdasarkan Pegawai.JABATAN_ID.
+    #
+    # Jika JABATAN_ID = 0 atau tidak memiliki master,
+    # jabatan dikosongkan.
+    # ============================================================
+
+    jabatan_ids = {
+        p.JABATAN_ID
+        for p in pegawai_list
+        if p.JABATAN_ID not in (None, 0)
+    }
+
+    jabatan_map = {}
+
+    if jabatan_ids:
+        jabatan_rows = (
+            MfJabatan.query
+            .filter(
+                MfJabatan.JABATAN_ID.in_(jabatan_ids)
+            )
+            .all()
+        )
+
+        jabatan_map = {
+            j.JABATAN_ID: j.NAMA_JABATAN
+            for j in jabatan_rows
+        }
 
     data = [
         {
             'no': idx + 1,
             'nip': p.NIP,
             'nama': p.NAMA,
-            'jabatan': p.JABATAN,
-            'is_vip': bool(p.IS_VIP),
+            'jabatan': jabatan_map.get(p.JABATAN_ID),
+            'is_vip': is_vip_value(p.IS_VIP),
         }
         for idx, p in enumerate(pegawai_list)
     ]
 
-    return jsonify({'status': 'success', 'data': data})
+    return jsonify({
+        'status': 'success',
+        'data': data
+    })
+
 
 
 def toggle_pegawai_vip():
     """
     Ubah status VIP satu pegawai.
-    Body JSON yang diharapkan: { "nip": "...", "is_vip": true|false }
+
+    Body JSON:
+        {
+            "nip": "...",
+            "is_vip": true|false
+        }
+
+    Database legacy menggunakan:
+        Y = VIP
+        N = bukan VIP
     """
+
     payload = request.get_json(silent=True) or {}
-    nip = payload.get('nip')
+
+    nip = str(
+        payload.get('nip') or ''
+    ).strip()
+
     is_vip = payload.get('is_vip')
 
-    # Validasi input dasar — jangan percaya data dari client mentah-mentah
+    # ============================================================
+    # VALIDASI
+    # ============================================================
+
     if not nip or is_vip is None:
-        return jsonify({'status': 'error', 'message': 'nip dan is_vip wajib diisi'}), 400
+        return jsonify({
+            'status': 'error',
+            'message': 'nip dan is_vip wajib diisi'
+        }), 400
 
-    pegawai = Pegawai.query.filter(Pegawai.NIP == nip).first()
+    pegawai = (
+        Pegawai.query
+        .filter(Pegawai.NIP == nip)
+        .first()
+    )
+
     if pegawai is None:
-        return jsonify({'status': 'error', 'message': 'Pegawai tidak ditemukan'}), 404
+        return jsonify({
+            'status': 'error',
+            'message': 'Pegawai tidak ditemukan'
+        }), 404
 
-    pegawai.IS_VIP = 1 if is_vip else 0
-    pegawai.UPDATE_IN_BY = session.get('nip', 'system')
+    # ============================================================
+    # SIMPAN Y / N
+    # ============================================================
+
+    pegawai.IS_VIP = 'Y' if bool(is_vip) else 'N'
+
+    pegawai.UPDATE_BY = (
+        session.get('nip')
+        or 'system'
+    )
+
+    pegawai.UPDATE_DATE = datetime.now()
+
     db.session.commit()
 
     return jsonify({
         'status': 'success',
         'nip': pegawai.NIP,
-        'is_vip': bool(pegawai.IS_VIP)
+        'is_vip': pegawai.IS_VIP == 'Y'
     })
+
+
 
 def master_potongan():
     """Render halaman Master File Master Potongan."""
@@ -1325,6 +1500,76 @@ def save_unit_kerja():
         'message': 'Data unit kerja berhasil disimpan',
         'data': unit_kerja.to_dict(),
     })
+
+
+def toggle_unit_kerja():
+    """
+    Mengubah status penggunaan Unit Kerja.
+
+    MF_UNIT_KERJA.isUse:
+        Y = Aktif / digunakan HRIS
+        N = Nonaktif / tidak digunakan HRIS
+
+    Tidak mengubah struktur database.
+    """
+
+    payload = request.get_json(silent=True) or {}
+
+    unit_kerja_id = str(
+        payload.get('unit_kerja_id') or ''
+    ).strip()
+
+    is_aktif = str(
+        payload.get('is_aktif')
+        if payload.get('is_aktif') is not None
+        else payload.get('is_use')
+        or ''
+    ).strip().upper()
+
+    if not unit_kerja_id:
+        return jsonify({
+            'status': 'error',
+            'message': 'Unit Kerja ID wajib diisi'
+        }), 400
+
+    if is_aktif not in ('Y', 'N'):
+        return jsonify({
+            'status': 'error',
+            'message': 'Status Unit Kerja hanya boleh Y atau N'
+        }), 400
+
+    unit = (
+        MfUnitKerja.query
+        .filter(MfUnitKerja.UNIT_KERJA_ID == unit_kerja_id)
+        .first()
+    )
+
+    if unit is None:
+        return jsonify({
+            'status': 'error',
+            'message': f'Unit Kerja {unit_kerja_id} tidak ditemukan'
+        }), 404
+
+    unit.IS_AKTIF = is_aktif
+    unit.UPDATE_BY = session.get('nip', 'system')
+    unit.UPDATE_DATE = datetime.utcnow()
+
+    db.session.commit()
+
+    return jsonify({
+        'status': 'success',
+        'message': (
+            f'Unit {unit.NAMA_UNIT_KERJA} '
+            f'berhasil di{"aktifkan" if is_aktif == "Y" else "nonaktifkan"}'
+        ),
+        'data': {
+            'unit_kerja_id': unit.UNIT_KERJA_ID,
+            'nama_unit_kerja': unit.NAMA_UNIT_KERJA,
+            'is_aktif': unit.IS_AKTIF,
+            'is_use': unit.IS_USE,
+        }
+    })
+
 
 def master_user():
     """Render halaman Master File Master User."""
@@ -2487,6 +2732,8 @@ def get_unit_kerja_list():
             'unit_kerja_id': row.UNIT_KERJA_ID,
             'nama_unit_kerja': row.NAMA_UNIT_KERJA or '-',
             'tipe': tipe_label.get(row.IS_PUSAT, '-'),
+            'is_aktif': row.IS_AKTIF,
+            'is_use': row.IS_USE,
             'urut_report': row.URUT_REPORT if row.URUT_REPORT is not None else '-',
             'updated': row.UPDATE_DATE.strftime('%d-%m-%Y %H:%M') if row.UPDATE_DATE else '-',
         }
@@ -2525,18 +2772,40 @@ def get_user_account_list():
     field_map = {
         'Nama Peg': Pegawai.NAMA,
         'NIP': Pegawai.NIP,
-        'Jabatan': Pegawai.JABATAN,
+        'Jabatan': MfJabatan.NAMA_JABATAN,
         'Jenis Kelamin': Pegawai.JENIS_KEL,
         'Unit Kerja': MfUnitKerja.NAMA_UNIT_KERJA,
     }
     not_yet_supported = ('Gol', 'No Finger')
 
+    # ============================================================
+    # HRIS REBORN BUSINESS RULE
+    #
+    # Jabatan resmi user berasal dari:
+    #
+    #   UserAccount.NIP
+    #        ↓
+    #   Pegawai.NIP
+    #        ↓
+    #   Pegawai.JABATAN_ID
+    #        ↓
+    #   MF_JABATAN.JABATAN_ID
+    #        ↓
+    #   MF_JABATAN.NAMA_JABATAN
+    #
+    # Pegawai.JABATAN adalah field legacy.
+    # ============================================================
+
     query = db.session.query(
         UserAccount,
-        Pegawai
+        Pegawai,
+        MfJabatan
     ).outerjoin(
         Pegawai,
         UserAccount.NIP == Pegawai.NIP
+    ).outerjoin(
+        MfJabatan,
+        Pegawai.JABATAN_ID == MfJabatan.JABATAN_ID
     ).filter(
         UserAccount.MODUL == 'HRIS'
     )
@@ -2566,11 +2835,15 @@ def get_user_account_list():
             'no': idx + 1,
             'user_id': user_account.NIP,
             'nama': pegawai.NAMA if pegawai else '-',
-            'jabatan': pegawai.JABATAN if pegawai else '-',
+            'jabatan': (
+                jabatan.NAMA_JABATAN
+                if jabatan and jabatan.NAMA_JABATAN
+                else '-'
+            ),
             'level': LEVEL_LABEL.get(user_account.INIT_LEVEL, '-'),
             'update_by': user_account.UPDATE_BY or '-',
         }
-        for idx, (user_account, pegawai) in enumerate(rows)
+        for idx, (user_account, pegawai, jabatan) in enumerate(rows)
     ]
 
     return jsonify({'status': 'success', 'data': data})

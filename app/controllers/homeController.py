@@ -9,6 +9,7 @@ from app.models.timSiagaModel import MfTimSiaga
 from app.models.timSiagaAnggotaModel import MfTimSiagaAnggota
 from app.models.absensiModel import Absensi
 from app.models.potModel import MfPot
+from app.utils.pegawaiHelper import search_operational_pegawai
 from sqlalchemy import func, or_
 
 
@@ -60,8 +61,43 @@ def home():
         running_text=running_text,
         hero_images=hero_images,
         is_wfh_today=is_wfh_today,
-        online_attendance_code='998' if is_wfh_today else None
+        online_attendance_code='998' if is_wfh_today else None,
+        server_year=today.year
     )
+
+def search_pegawai_autocomplete():
+    """
+    API autocomplete pegawai standar HRIS Reborn.
+
+    Business Rule:
+
+        - Minimal 1 karakter
+        - Hanya Pegawai Operasional
+        - Pegawai.IS_KELUAR = 'N'
+        - MF_UNIT_KERJA.IS_USE = 'Y'
+        - Maksimal 15 kandidat
+        - Pencarian sebagian nama
+    """
+
+    keyword = request.args.get('keyword', '').strip()
+
+    if not keyword:
+        return jsonify({
+            'data': []
+        })
+
+    pegawai_list = search_operational_pegawai(keyword)
+
+    return jsonify({
+        'data': [
+            {
+                'nip': p.NIP,
+                'nama': p.NAMA or ''
+            }
+            for p in pegawai_list
+        ]
+    })
+
 
 def search_buku_telp():
     q = request.args.get('q', '').strip()

@@ -1,8 +1,9 @@
 # controllers/dashboard_2DataSiagaController.py
-from flask import render_template, request, jsonify
+from flask import render_template, request, jsonify, g, current_app
 from datetime import datetime
 from app import db
 from app.models.otorisasiModel import Otorisasi
+from app.models.jabatanSiagaModel import MfJabatanSiaga
 from app.models.pegawaiModel import Pegawai
 from app.models.unitKerjaModel import MfUnitKerja
 from app.models.logActivityModel import LogActivity
@@ -27,115 +28,1077 @@ def data_siaga_absensi_kehadiran():
 
 def api_absensi_kehadiran_get():
     """
-    API: Get data absensi kehadiran (seperti lbRefesh_Click di VB.NET)
+    API VIEW DATA Absensi Kehadiran Piket Siaga.
+
+    Sumber:
+        LOG_ACTIVITIY
+
+    Aturan:
+        Activity     = Piket Siaga
+        ActivityDate = tanggal yang dipilih
+        Shift        = shift yang dipilih
+
+    Status:
+        STATUS_ID = 3  -> Hadir
+        STATUS_ID = -1 -> Tidak Hadir
+        lainnya          -> Belum
+
+    Catatan:
+        Untuk halaman kehadiran kita sengaja menggunakan SQL
+        terhadap kolom fisik LOG_ACTIVITIY agar tidak tergantung
+        pada ketidaksesuaian model lama.
     """
     try:
-        tgl = request.args.get('tgl', datetime.now().strftime('%Y-%m-%d'))
-        unit_kerja_id = request.args.get('unit_kerja_id', '')
-        shift = request.args.get('shift', '')
-        
-        # ✅ Query lebih sederhana tanpa MfStatus & MfOrgzSiaga (jika tabel kosong)
-        query = (
-            db.session.query(
-                LogActivity,
-                Pegawai,
-                MfUnitKerja
+        tgl = (
+            request.args.get(
+                'tgl',
+                datetime.now().strftime('%Y-%m-%d')
             )
-            .join(Pegawai, LogActivity.NIP == Pegawai.NIP)
-            .join(MfUnitKerja, LogActivity.UNIT_KERJA_ID == MfUnitKerja.UNIT_KERJA_ID)
-            .filter(LogActivity.ACTIVITY == 'Piket Siaga')
-            .filter(LogActivity.ACTIVITY_DATE == tgl)
-        )
-        
-        if shift:
-            query = query.filter(LogActivity.SHIFT == shift)
-        
+            or ''
+        ).strip()
+
+        unit_kerja_id = (
+            request.args.get('unit_kerja_id', '')
+            or ''
+        ).strip()
+
+        shift = (
+            request.args.get('shift', '')
+            or ''
+        ).strip()
+
+        if not tgl:
+            return jsonify({
+                'success': False,
+                'error': 'Tanggal harus diisi',
+                'data': []
+            })
+
+        sql = db.text("""
+            SELECT
+                l.GUIDLog,
+                l.NIP,
+                l.ActivityDate,
+                l.Fungsional,
+                l.Shift,
+                l.StatusID,
+                l.shift1,
+                l.shift2,
+                l.Pengganti,
+                l.StatusTrx,
+                l.UpdateBy,
+                l.UpdateDate,
+                l.IDUnitKerja,
+                p.Nama AS NAMA,
+                u.UnitKerjaName AS NAMA_UNIT_KERJA
+            FROM LOG_ACTIVITIY l
+            LEFT JOIN PEGAWAI p
+                ON p.NIP = l.NIP
+            LEFT JOIN MF_UNIT_KERJA u
+                ON u.IDUnitKerja = l.IDUnitKerja
+            WHERE l.Activity = 'Piket Siaga'
+              AND l.ActivityDate = :tgl
+        """)
+
+        params = {
+            'tgl': tgl
+        }
+
         if unit_kerja_id:
-            query = query.filter(LogActivity.UNIT_KERJA_ID == int(unit_kerja_id))
-        
-        query = query.order_by(LogActivity.ACTIVITY_DATE, LogActivity.SHIFT)
-        
-        results = query.all()
-        
-        # Format data
+            sql = db.text("""
+                SELECT
+                    l.GUIDLog,
+                    l.NIP,
+                    l.ActivityDate,
+                    l.Fungsional,
+                    l.Shift,
+                    l.StatusID,
+                    l.shift1,
+                    l.shift2,
+                    l.Pengganti,
+                    l.StatusTrx,
+                    l.UpdateBy,
+                    l.UpdateDate,
+                    l.IDUnitKerja,
+                    p.Nama AS NAMA,
+                    u.UnitKerjaName AS NAMA_UNIT_KERJA
+                FROM LOG_ACTIVITIY l
+                LEFT JOIN PEGAWAI p
+                    ON p.NIP = l.NIP
+                LEFT JOIN MF_UNIT_KERJA u
+                    ON u.IDUnitKerja = l.IDUnitKerja
+                WHERE l.Activity = 'Piket Siaga'
+                  AND l.ActivityDate = :tgl
+                  AND l.IDUnitKerja = :unit_kerja_id
+            """)
+            params['unit_kerja_id'] = int(unit_kerja_id)
+
+        if shift:
+            base = sql.text
+            # handled below by rebuilding query with shift
+            sql_string = str(sql)
+            sql_string = sql_string.replace(
+                "AND l.ActivityDate = :tgl",
+                "AND l.ActivityDate = :tgl\n"
+                "              AND l.Shift = :shift"
+            )
+            sql = db.text(sql_string)
+            params['shift'] = shift
+
+        rows = db.session.execute(
+            sql,
+            params
+        ).mappings().all()
+
         data = []
-        for i, (log, peg, unit) in enumerate(results, 1):
+
+        for i, row in enumerate(rows, 1):
+            status_id = row['StatusID']
+
+            if status_id == 3:
+                status = 'Hadir'
+            elif status_id == -1:
+                status = 'Tidak Hadir'
+            else:
+                status = 'Belum'
+
             data.append({
                 'no': i,
-                'nip': log.NIP,
-                'nama': peg.NAMA if peg else '-',
-                'activity_date': log.ACTIVITY_DATE.strftime('%d-%m-%Y') if log.ACTIVITY_DATE else '',
-                'fungsional': log.FUNGSIONAL or '',
-                'fungsional_ket': log.FUNGSIONAL or '',
-                'unit_kerja': unit.NAMA_UNIT_KERJA if unit else '',
-                'guid_log': log.GUID_LOG,
-                'status_id': log.STATUS_ID,
-                'status': 'Hadir' if log.STATUS_ID == 3 else ('Tidak Hadir' if log.STATUS_ID == -1 else 'Belum'),
-                'bg_status': '',
-                'shift': log.SHIFT or '',
-                'shift_1': log.SHIFT_1 or 0,
-                'shift_2': log.SHIFT_2 or 0,
-                'pengganti': log.PENGGANTI or 0,
-                'status_trx': log.STATUS_TRX or '-',
-                'update_by': log.UPDATE_BY or '',
-                'update_date': log.UPDATE_DATE.strftime('%d/%m/%Y %H:%M') if log.UPDATE_DATE else '',
+                'guid_log': row['GUIDLog'],
+                'nip': row['NIP'],
+                'nama': row['NAMA'] or '-',
+                'activity_date': (
+                    row['ActivityDate'].strftime('%d-%m-%Y')
+                    if row['ActivityDate']
+                    else ''
+                ),
+                'fungsional': row['Fungsional'] or '',
+                'fungsional_ket': row['Fungsional'] or '',
+                'unit_kerja': row['NAMA_UNIT_KERJA'] or '',
+                'shift': row['Shift'] or '',
+                'status_id': status_id,
+                'status': status,
+                'shift_1': row['shift1'] or 0,
+                'shift_2': row['shift2'] or 0,
+                'pengganti': row['Pengganti'] or 0,
+                'status_trx': row['StatusTrx'] or '-',
+                'update_by': row['UpdateBy'] or '',
+                'update_date': (
+                    row['UpdateDate'].strftime('%d/%m/%Y %H:%M')
+                    if row['UpdateDate']
+                    else ''
+                ),
             })
-        
+
         return jsonify({
             'success': True,
             'data': data,
             'total': len(data)
         })
-        
+
     except Exception as e:
+        db.session.rollback()
+
         import traceback
         traceback.print_exc()
-        return jsonify({'error': str(e), 'data': []})
+
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'data': []
+        })
 
 
 def api_absensi_kehadiran_update():
     """
-    API: Update kehadiran
+    API SIMPAN KEHADIRAN PIKET SIAGA.
+
+    Hadir Shift 1:
+        StatusID = 3
+        shift1   = 1
+        shift2   = 0
+
+    Hadir Shift 2:
+        StatusID = 3
+        shift1   = 0
+        shift2   = 1
+
+    Tidak hadir:
+        StatusID = -1
+        shift1   = 0
+        shift2   = 0
     """
     try:
-        data = request.get_json()
-        guid_log = data.get('guid_log', '')
-        shift1 = data.get('shift1', False)
-        shift2 = data.get('shift2', False)
-        nip = data.get('nip', '')
-        
-        if not guid_log:
-            return jsonify({'error': 'GUID Log tidak ditemukan'})
-        
-        # ✅ Untuk testing, skip cek otorisasi dulu
-        # Karena OTORISASI tidak terhubung langsung ke LOG_ACTIVITIY
-        
-        log = LogActivity.query.filter(LogActivity.GUID_LOG == guid_log).first()
-        
-        if log:
-            x_status = 3 if (shift1 or shift2) else -1
-            
-            log.STATUS_ID = x_status
-            log.SHIFT_1 = 1 if shift1 else 0
-            log.SHIFT_2 = 1 if shift2 else 0
-            log.TGL_CLOSING = log.ACTIVITY_DATE
-            log.UPDATE_BY = 'admin'
-            log.UPDATE_DATE = datetime.now()
-            
-            db.session.commit()
-            
+        data = request.get_json() or {}
+
+        guid_log = (
+            str(data.get('guid_log') or '')
+            .strip()
+        )
+
+        nip = (
+            str(data.get('nip') or '')
+            .strip()
+        )
+
+        shift1 = bool(data.get('shift1'))
+        shift2 = bool(data.get('shift2'))
+
+        if not guid_log or not nip:
             return jsonify({
-                'success': True,
-                'message': 'Update kehadiran berhasil'
+                'success': False,
+                'error': 'GUID Log dan NIP wajib diisi'
             })
-        
-        return jsonify({'error': 'Data tidak ditemukan'})
-        
+
+        # Tidak boleh dua shift sekaligus.
+        if shift1 and shift2:
+            return jsonify({
+                'success': False,
+                'error': 'Shift 1 dan Shift 2 tidak boleh aktif bersamaan'
+            })
+
+        status_id = 3 if (shift1 or shift2) else -1
+
+        update_sql = db.text("""
+            UPDATE LOG_ACTIVITIY
+            SET
+                StatusID = :status_id,
+                shift1 = :shift1,
+                shift2 = :shift2,
+                TglClosing = ActivityDate,
+                UpdateBy = :update_by,
+                UpdateDate = :update_date
+            WHERE GUIDLog = :guid_log
+              AND NIP = :nip
+              AND Activity = 'Piket Siaga'
+        """)
+
+        result = db.session.execute(
+            update_sql,
+            {
+                'status_id': status_id,
+                'shift1': 1 if shift1 else 0,
+                'shift2': 1 if shift2 else 0,
+                'update_by': 'admin',
+                'update_date': datetime.now(),
+                'guid_log': guid_log,
+                'nip': nip,
+            }
+        )
+
+        if result.rowcount == 0:
+            db.session.rollback()
+
+            return jsonify({
+                'success': False,
+                'error': 'Data piket siaga tidak ditemukan'
+            })
+
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': (
+                'Kehadiran Shift 1 berhasil disimpan'
+                if shift1
+                else
+                'Kehadiran Shift 2 berhasil disimpan'
+                if shift2
+                else
+                'Status Tidak Hadir berhasil disimpan'
+            )
+        })
+
     except Exception as e:
         db.session.rollback()
+
         import traceback
         traceback.print_exc()
-        return jsonify({'error': str(e)})
+
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
+
+
+
+
+# ============================================================
+# HRIS REBORN - MASTER DROPDOWN BUAT JADWAL SIAGA
+# ============================================================
+
+def api_siaga_master_jabatan_aktif():
+    """
+    Mengambil Master Jabatan Siaga aktif.
+
+    Single Source:
+        MF_JABATAN_SIAGA
+
+    Business Rule:
+        IsAktif = Y
+        ORDER BY NoUrut ASC
+    """
+
+    try:
+
+        rows = (
+            MfJabatanSiaga.query
+            .filter(
+                MfJabatanSiaga.IS_AKTIF == 'Y'
+            )
+            .order_by(
+                MfJabatanSiaga.NO_URUT.asc()
+            )
+            .all()
+        )
+
+        return jsonify({
+            'success': True,
+            'data': [
+                {
+                    'id_jabatan_siaga':
+                        row.ID_JABATAN_SIAGA,
+
+                    'no_urut':
+                        row.NO_URUT,
+
+                    'nama_jabatan':
+                        row.NAMA_JABATAN,
+
+                    'keterangan':
+                        row.KETERANGAN or ''
+                }
+                for row in rows
+            ]
+        })
+
+    except Exception:
+
+        current_app.logger.exception(
+            'Gagal mengambil Master Jabatan Siaga aktif'
+        )
+
+        return jsonify({
+            'success': False,
+            'error': 'Gagal mengambil Master Jabatan Siaga.'
+        }), 500
+
+
+def api_siaga_master_unit_aktif():
+    """
+    Mengambil Master Unit Kerja aktif.
+
+    Single Source:
+        MF_UNIT_KERJA
+
+    Business Rule:
+        IS_USE = Y
+
+    Unit nonaktif tidak boleh muncul pada
+    dropdown Buat Jadwal Siaga.
+    """
+
+    try:
+
+        rows = (
+            MfUnitKerja.query
+            .filter(
+                MfUnitKerja.IS_USE == 'Y'
+            )
+            .order_by(
+                MfUnitKerja.URUT_REPORT.asc()
+            )
+            .all()
+        )
+
+        return jsonify({
+            'success': True,
+            'data': [
+                {
+                    'id_unit_kerja':
+                        row.UNIT_KERJA_ID,
+
+                    'nama_unit_kerja':
+                        row.NAMA_UNIT_KERJA
+                }
+                for row in rows
+            ]
+        })
+
+    except Exception:
+
+        current_app.logger.exception(
+            'Gagal mengambil Master Unit Kerja aktif'
+        )
+
+        return jsonify({
+            'success': False,
+            'error': 'Gagal mengambil Master Unit Kerja.'
+        }), 500
+
+
+
+def api_pembuatan_jadwal_siaga_save():
+    """
+    API SAVE PEMBUATAN JADWAL PIKET SIAGA.
+
+    Business Rule:
+
+        1. Satu SAVE = satu roster.
+        2. Urutan roster otomatis mengikuti roster terakhir
+           pada bulan + tahun + unit + fungsional + shift.
+        3. Satu roster boleh berisi lebih dari satu pegawai.
+        4. Satu pegawai tidak boleh berada pada roster berbeda
+           dalam periode yang sama untuk unit + fungsional + shift.
+        5. Duplicate NIP dalam satu input ditolak.
+        6. Shift 1 = Shift 2 membuat pasangan roster otomatis.
+        7. Pasangan otomatis Shift 2 tidak dianggap duplicate.
+        8. Pengganti bukan bagian dari master roster dan akan
+           ditangani pada proses jadwal harian/rejadwal.
+        9. Database legacy tidak diubah struktur.
+
+    Identifier pegawai:
+        NIP pada tabel PEGAWAI adalah identifier resmi HRIS.
+        Untuk pegawai non-ASN/PPPK, nilai NIP mengikuti ID/FingerID
+        yang tersimpan pada master PEGAWAI.
+    """
+
+    try:
+        data = request.get_json(silent=True) or {}
+
+        bulan = str(
+            data.get('bulan') or ''
+        ).strip().zfill(2)
+
+        tahun = str(
+            data.get('tahun') or ''
+        ).strip()
+
+        shift = str(
+            data.get('shift') or ''
+        ).strip()
+
+        unit_id = str(
+            data.get('unit_kerja_id') or ''
+        ).strip()
+
+        fungsional = str(
+            data.get('fungsional') or ''
+        ).strip()
+
+        pegawai = data.get('pegawai') or []
+
+        shift1_sama_shift2 = bool(
+            data.get('shift1_sama_shift2')
+        )
+
+        # ============================================================
+        # VALIDASI INPUT DASAR
+        # ============================================================
+
+        if bulan not in {
+            '01', '02', '03', '04', '05', '06',
+            '07', '08', '09', '10', '11', '12'
+        }:
+            return jsonify({
+                'success': False,
+                'error': 'Bulan tidak valid.'
+            }), 400
+
+        if (
+            len(tahun) != 4
+            or not tahun.isdigit()
+        ):
+            return jsonify({
+                'success': False,
+                'error': 'Tahun tidak valid.'
+            }), 400
+
+        if shift not in ('1', '2'):
+            return jsonify({
+                'success': False,
+                'error': 'Shift harus 1 atau 2.'
+            }), 400
+
+        if not unit_id:
+            return jsonify({
+                'success': False,
+                'error': 'Unit kerja wajib dipilih.'
+            }), 400
+
+        if not fungsional:
+            return jsonify({
+                'success': False,
+                'error': 'Jabatan siaga wajib dipilih.'
+            }), 400
+
+        if not isinstance(pegawai, list):
+            return jsonify({
+                'success': False,
+                'error': 'Daftar pegawai tidak valid.'
+            }), 400
+
+        # ============================================================
+        # NORMALISASI NIP INPUT
+        # ============================================================
+
+        nip_list = []
+
+        for item in pegawai:
+
+            if isinstance(item, dict):
+                nip = str(
+                    item.get('nip') or ''
+                ).strip()
+            else:
+                nip = str(
+                    item or ''
+                ).strip()
+
+            if not nip:
+                continue
+
+            if nip in nip_list:
+                return jsonify({
+                    'success': False,
+                    'error': (
+                        'Pegawai duplicate dalam roster: '
+                        + nip
+                    )
+                }), 400
+
+            nip_list.append(nip)
+
+        if not nip_list:
+            return jsonify({
+                'success': False,
+                'error': 'Minimal satu pegawai harus dipilih.'
+            }), 400
+
+        # ============================================================
+        # VALIDASI PEGAWAI
+        # ============================================================
+
+        placeholders = ','.join(
+            f':nip_{i}'
+            for i in range(len(nip_list))
+        )
+
+        params = {
+            f'nip_{i}': nip
+            for i, nip in enumerate(nip_list)
+        }
+
+        rows = db.session.execute(
+            db.text(f"""
+                SELECT
+                    NIP,
+                    Nama,
+                    UnitKerja,
+                    FingerID
+                FROM PEGAWAI
+                WHERE NIP IN ({placeholders})
+            """),
+            params,
+        ).mappings().all()
+
+        pegawai_map = {
+            str(r['NIP']).strip(): r
+            for r in rows
+        }
+
+        tidak_ditemukan = [
+            nip
+            for nip in nip_list
+            if nip not in pegawai_map
+        ]
+
+        if tidak_ditemukan:
+            return jsonify({
+                'success': False,
+                'error': (
+                    'Pegawai tidak ditemukan: '
+                    + ', '.join(tidak_ditemukan)
+                )
+            }), 400
+
+        # ============================================================
+        # VALIDASI UNIT
+        # ============================================================
+
+        unit = db.session.execute(
+            db.text("""
+                SELECT
+                    IDUnitKerja,
+                    UnitKerjaName
+                FROM MF_UNIT_KERJA
+                WHERE IDUnitKerja = :unit_id
+                LIMIT 1
+            """),
+            {
+                'unit_id': unit_id
+            },
+        ).mappings().first()
+
+        if not unit:
+            return jsonify({
+                'success': False,
+                'error': 'Unit kerja tidak ditemukan.'
+            }), 400
+
+        # ============================================================
+        # CEK PEGAWAI SUDAH ADA DI ROSTER LAIN
+        #
+        # Khusus pasangan Shift 1 = Shift 2:
+        #   Shift target dianggap bagian dari pasangan roster
+        #   yang sedang dibuat.
+        #
+        # Jadi duplicate dicek terhadap roster yang sudah ada,
+        # bukan terhadap roster pasangan yang baru akan dibuat.
+        # ============================================================
+
+        existing_rows = db.session.execute(
+            db.text("""
+                SELECT
+                    a.NIP,
+                    a.GUIDTim,
+                    t.NoUrutTim,
+                    t.NamaTim,
+                    t.IDUnitKerja,
+                    t.FungsionalTIM,
+                    t.Shift
+                FROM MF_TIM_SIAGA_ANGGOTA a
+                INNER JOIN MF_TIM_SIAGA t
+                    ON t.GUIDTim = a.GUIDTim
+                WHERE a.NIP IN (
+                    SELECT NIP
+                    FROM MF_TIM_SIAGA_ANGGOTA
+                    WHERE NIP IN ("""
+                    + placeholders
+                    + """)
+                )
+                  AND a.BulanPeriode = :bulan
+                  AND a.TahunPeriode = :tahun
+                  AND a.IsAktif = 'Y'
+                  AND t.BulanPeriode = :bulan
+                  AND t.TahunPeriode = :tahun
+                  AND t.IsAktif = 'Y'
+            """),
+            {
+                **params,
+                'bulan': bulan,
+                'tahun': tahun,
+            },
+        ).mappings().all()
+
+        if existing_rows:
+
+            duplicate_messages = []
+
+            for row in existing_rows:
+
+                duplicate_messages.append(
+                    (
+                        f"{row['NIP']} sudah berada di "
+                        f"roster {row['NoUrutTim']} "
+                        f"({row['FungsionalTIM']} / "
+                        f"Shift {row['Shift']})"
+                    )
+                )
+
+            return jsonify({
+                'success': False,
+                'error': (
+                    'Pegawai sudah memiliki roster: '
+                    + '; '.join(
+                        duplicate_messages
+                    )
+                ),
+                'duplicates': [
+                    dict(row)
+                    for row in existing_rows
+                ]
+            }), 409
+
+        # ============================================================
+        # TENTUKAN NOMOR URUT BERIKUTNYA
+        #
+        # Nomor urut adalah urutan roster dalam kombinasi:
+        #   bulan + tahun + unit + fungsional + shift
+        #
+        # Operator dapat melihat informasi roster terakhir
+        # yang tersimpan.
+        # ============================================================
+
+        last_roster = db.session.execute(
+            db.text("""
+                SELECT
+                    NoUrutTim,
+                    NamaTim,
+                    IDUnitKerja,
+                    FungsionalTIM,
+                    Shift
+                FROM MF_TIM_SIAGA
+                WHERE BulanPeriode = :bulan
+                  AND TahunPeriode = :tahun
+                  AND IDUnitKerja = :unit_id
+                  AND FungsionalTIM = :fungsional
+                  AND Shift = :shift
+                  AND IsAktif = 'Y'
+                ORDER BY NoUrutTim DESC
+                LIMIT 1
+            """),
+            {
+                'bulan': bulan,
+                'tahun': tahun,
+                'unit_id': unit_id,
+                'fungsional': fungsional,
+                'shift': shift,
+            },
+        ).mappings().first()
+
+        if last_roster:
+            no_urut = (
+                int(last_roster['NoUrutTim'] or 0)
+                + 1
+            )
+        else:
+            no_urut = 1
+
+        # ============================================================
+        # INFORMASI DATA TERAKHIR UNTUK OPERATOR
+        # ============================================================
+
+        last_saved = db.session.execute(
+            db.text("""
+                SELECT
+                    t.NoUrutTim,
+                    t.NamaTim,
+                    t.IDUnitKerja,
+                    u.UnitKerjaName,
+                    t.FungsionalTIM,
+                    t.Shift,
+                    t.BulanPeriode,
+                    t.TahunPeriode
+                FROM MF_TIM_SIAGA t
+                LEFT JOIN MF_UNIT_KERJA u
+                    ON u.IDUnitKerja = t.IDUnitKerja
+                WHERE t.BulanPeriode = :bulan
+                  AND t.TahunPeriode = :tahun
+                  AND t.IsAktif = 'Y'
+                ORDER BY
+                    t.UpdateDate DESC,
+                    t.NoUrutTim DESC
+                LIMIT 1
+            """),
+            {
+                'bulan': bulan,
+                'tahun': tahun,
+            },
+        ).mappings().first()
+
+        # ============================================================
+        # BUAT GUID
+        # ============================================================
+
+        import uuid
+
+        guid_tim = str(
+            uuid.uuid4()
+        )
+
+        nama_tim = (
+            f"{fungsional} "
+            f"{unit['UnitKerjaName']} "
+            f"#{no_urut} "
+            f"{bulan}/{tahun}"
+        )[:50]
+
+        now = datetime.now()
+
+        update_by = (
+            getattr(
+                getattr(g, 'user', None),
+                'NIP',
+                None,
+            )
+            or 'HRIS'
+        )
+
+        # ============================================================
+        # INSERT ROSTER
+        # ============================================================
+
+        db.session.execute(
+            db.text("""
+                INSERT INTO MF_TIM_SIAGA (
+                    NoUrutTim,
+                    GUIDTim,
+                    NamaTim,
+                    IDUnitKerja,
+                    IsAktif,
+                    UpdateBy,
+                    UpdateDate,
+                    BulanPeriode,
+                    TahunPeriode,
+                    FungsionalTIM,
+                    Shift
+                )
+                VALUES (
+                    :no_urut,
+                    :guid_tim,
+                    :nama_tim,
+                    :unit_id,
+                    'Y',
+                    :update_by,
+                    :update_date,
+                    :bulan,
+                    :tahun,
+                    :fungsional,
+                    :shift
+                )
+            """),
+            {
+                'no_urut': no_urut,
+                'guid_tim': guid_tim,
+                'nama_tim': nama_tim,
+                'unit_id': unit_id,
+                'update_by': update_by,
+                'update_date': now,
+                'bulan': bulan,
+                'tahun': tahun,
+                'fungsional': fungsional,
+                'shift': shift,
+            },
+        )
+
+        # ============================================================
+        # INSERT ANGGOTA
+        # ============================================================
+
+        for nomor, nip in enumerate(
+            nip_list,
+            start=1
+        ):
+
+            db.session.execute(
+                db.text("""
+                    INSERT INTO MF_TIM_SIAGA_ANGGOTA (
+                        GUIDTim,
+                        NIP,
+                        Fungsional,
+                        IsAktif,
+                        IDUnitKerja,
+                        Nourut,
+                        UpdateDate,
+                        UpdateBy,
+                        BulanPeriode,
+                        TahunPeriode,
+                        Shift
+                    )
+                    VALUES (
+                        :guid_tim,
+                        :nip,
+                        :fungsional,
+                        'Y',
+                        :unit_id,
+                        :nomor,
+                        :update_date,
+                        :update_by,
+                        :bulan,
+                        :tahun,
+                        :shift
+                    )
+                """),
+                {
+                    'guid_tim': guid_tim,
+                    'nip': nip,
+                    'fungsional': fungsional,
+                    'unit_id': unit_id,
+                    'nomor': nomor,
+                    'update_date': now,
+                    'update_by': update_by,
+                    'bulan': bulan,
+                    'tahun': tahun,
+                    'shift': shift,
+                },
+            )
+
+        # ============================================================
+        # SHIFT 1 = SHIFT 2
+        # ============================================================
+
+        pasangan_guid = None
+
+        if (
+            shift == '1'
+            and shift1_sama_shift2
+        ):
+
+            pasangan_guid = str(
+                uuid.uuid4()
+            )
+
+            pasangan_nama_tim = (
+                f"{fungsional} "
+                f"{unit['UnitKerjaName']} "
+                f"#{no_urut} "
+                f"{bulan}/{tahun}"
+            )[:50]
+
+            db.session.execute(
+                db.text("""
+                    INSERT INTO MF_TIM_SIAGA (
+                        NoUrutTim,
+                        GUIDTim,
+                        NamaTim,
+                        IDUnitKerja,
+                        IsAktif,
+                        UpdateBy,
+                        UpdateDate,
+                        BulanPeriode,
+                        TahunPeriode,
+                        FungsionalTIM,
+                        Shift
+                    )
+                    VALUES (
+                        :no_urut,
+                        :guid_tim,
+                        :nama_tim,
+                        :unit_id,
+                        'Y',
+                        :update_by,
+                        :update_date,
+                        :bulan,
+                        :tahun,
+                        :fungsional,
+                        '2'
+                    )
+                """),
+                {
+                    'no_urut': no_urut,
+                    'guid_tim': pasangan_guid,
+                    'nama_tim': pasangan_nama_tim,
+                    'unit_id': unit_id,
+                    'update_by': update_by,
+                    'update_date': now,
+                    'bulan': bulan,
+                    'tahun': tahun,
+                    'fungsional': fungsional,
+                },
+            )
+
+            for nomor, nip in enumerate(
+                nip_list,
+                start=1
+            ):
+
+                db.session.execute(
+                    db.text("""
+                        INSERT INTO MF_TIM_SIAGA_ANGGOTA (
+                            GUIDTim,
+                            NIP,
+                            Fungsional,
+                            IsAktif,
+                            IDUnitKerja,
+                            Nourut,
+                            UpdateDate,
+                            UpdateBy,
+                            BulanPeriode,
+                            TahunPeriode,
+                            Shift
+                        )
+                        VALUES (
+                            :guid_tim,
+                            :nip,
+                            :fungsional,
+                            'Y',
+                            :unit_id,
+                            :nomor,
+                            :update_date,
+                            :update_by,
+                            :bulan,
+                            :tahun,
+                            '2'
+                        )
+                    """),
+                    {
+                        'guid_tim': pasangan_guid,
+                        'nip': nip,
+                        'fungsional': fungsional,
+                        'unit_id': unit_id,
+                        'nomor': nomor,
+                        'update_date': now,
+                        'update_by': update_by,
+                        'bulan': bulan,
+                        'tahun': tahun,
+                    },
+                )
+
+        # ============================================================
+        # COMMIT
+        # ============================================================
+
+        db.session.commit()
+
+        # ============================================================
+        # RESPONSE
+        # ============================================================
+
+        response = {
+            'success': True,
+            'message': (
+                f"Roster #{no_urut} berhasil disimpan."
+            ),
+            'roster': {
+                'guid_tim': guid_tim,
+                'no_urut': no_urut,
+                'bulan': bulan,
+                'tahun': tahun,
+                'shift': shift,
+                'unit_kerja_id': unit_id,
+                'unit_kerja': unit['UnitKerjaName'],
+                'fungsional': fungsional,
+                'jumlah_pegawai': len(nip_list),
+                'pegawai': [
+                    {
+                        'nip': nip,
+                        'nama': (
+                            pegawai_map[nip]['Nama']
+                            or ''
+                        ),
+                    }
+                    for nip in nip_list
+                ],
+            },
+            'shift2_created': bool(
+                pasangan_guid
+            ),
+            'last_saved_before': (
+                dict(last_saved)
+                if last_saved
+                else None
+            ),
+        }
+
+        return jsonify(response), 200
+
+    except Exception as exc:
+
+        db.session.rollback()
+
+        current_app.logger.exception(
+            "Gagal menyimpan jadwal piket siaga"
+        )
+
+        return jsonify({
+            'success': False,
+            'error': (
+                'Gagal menyimpan jadwal piket siaga: '
+                + str(exc)
+            )
+        }), 500
+
 
 def data_siaga_cetak_daftar_lembur_siaga():
     """Render halaman Data Siaga Cetak Daftar Lembur Siaga."""

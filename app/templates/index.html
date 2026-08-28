@@ -358,98 +358,7 @@
     </div>
 
 
-    <!-- Konten Pencarian Telephone Start -->
-    <div id="pencarian-telephone" class="container-fluid bg-light py-6 px-5">
-        <div class="row g-5 align-items-start">
-            <div class="col-lg-7">
-                <h1 class="mb-4">Buku Telephone Kantor</h1>
 
-                <div class="search-box mb-4">
-                    <input type="text" class="form-control search-input" placeholder="Cari nomor Telephone">
-                    <i class="bi bi-search search-icon"></i>
-                </div>
-
-                <div class="table-responsive mb-5">
-                    <table class="table table-bordered text-center">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Nama</th>
-                                <th>Instansi</th>
-                                <th>No. Telp</th>
-                                <th>Alamat</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td colspan="4" class="text-start">No records to display.</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <h2>Kantor Pencarian dan Pertolongan Surabaya</h2>
-
-                <p>
-                    Jl. Raya Bandara Juanda <br>
-                    Surabaya 61253-A <br>
-                    INDONESIA <br>
-                    Badan Nasional Pencarian dan Pertolongan <br>
-                    Email : sar.surabaya@basarnas.go.id
-                </p>
-
-                <a href="https://wa.me/6285852725967" class="btn btn-wa mt-3">
-                    WhatsApp Petugas Siaga: 085852725967
-                </a>
-
-            </div>
-            <div class="col-lg-5 pb-5" style="height: 400px;">
-                <div class="position-relative bg-dark-radial h-100 ms-5">
-                    <img class="position-absolute w-100 h-100 mt-5 ms-n5" src="{{ url_for('static', filename='static_home/img/konten1.jpg') }}"
-                        style="object-fit: cover;">
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- Konten Pencarian Telephone End -->
-
-    <!-- Konten Portal Kantor Start -->
-    <div class="container py-5">
-        <div class="text-center mb-5">
-            <h1 class="portal-title">PORTAL KANTOR PENCARIAN DAN PERTOLONGAN SURABAYA</h1>
-        </div>
-
-        <div class="row align-items-center">
-            <div class="col-lg-6 position-relative portal-image">
-                <img src="{{ url_for('static', filename='static_home/img/konten3.jpg') }}" class="img-fluid main-img">
-                <img src="{{ url_for('static', filename='static_home/img/konten2.jpg') }}" class="img-fluid center overlay-img">
-            </div>
-
-            <div class="col-lg-6 portal-text">
-                <p>Copyright (c) 2024 (Creative Tim)</p>
-                <p>
-                    Delapan penjuru mata angin dengan warna merah putih mengandung arti dan makna bahwa
-                    Badan Nasional Pencarian dan Pertolongan dalam mengemban tugas di bidang kemanusiaan
-                    senantiasa menitikberatkan pada kecepatan dan ketepatan serta dilaksanakan dengan penuh
-                    ketulusan (warna putih) dan keberanian (warna merah).
-                </p>
-                <p>
-                    Awan, gunung dan 5 ombak di laut mengandung arti dan makna bahwa dalam menjalankan
-                    tugasnya Badan Nasional Pencarian dan Pertolongan melingkupi segala medan tugas;
-                    Awan menggambarkan lingkup medan tugas udara, gunung menggambarkan lingkup medan
-                    tugas darat, ombak di laut menggambarkan lingkup medan tugas di air yang dilandasi
-                    dengan kelima sila dalam Pancasila.
-                </p>
-                <p>
-                    Pita bertuliskan "INDONESIA" mempunyai arti bahwa Badan Nasional Pencarian dan
-                    Pertolongan merupakan lembaga pemerintah Indonesia yang melaksanakan tugas
-                    pencarian dan pertolongan. Profile
-                </p>
-                <h5 class="mt-5">SARAN MASUK KE KANTOR PENCARIAN DAN PERTOLONGAN SURABAYA</h5>
-                <p>Periode 2026.01.01 s.d 2026.02.10</p>
-            </div>
-        </div>
-    </div>
-    <!-- Konten Portal Kantor End -->
 
     <!-- Konten Profil Basarnas Start -->
     <div class="container-fluid bg-light py-6 px-5">
@@ -543,15 +452,35 @@
     </div>
     <!-- Konten Profil Basarnas End -->
 
+    <!-- Kontak Kantor Start -->
+    <section class="office-contact-section text-center">
+        <div class="container">
+            <h2 class="office-contact-title">
+                Kantor Pencarian dan Pertolongan Surabaya
+            </h2>
+
+            <p class="office-contact-address">
+                Jl. Raya Bandara Juanda<br>
+                Surabaya 61253-A<br>
+                INDONESIA<br>
+                Badan Nasional Pencarian dan Pertolongan<br>
+                Email : sar.surabaya@basarnas.go.id
+            </p>
+        </div>
+    </section>
+    <!-- Kontak Kantor End -->
+
     <!-- Footer Start -->
-    <div class="container-fluid text-white text-center py-4" style="background-color: #EB6831;">
+    <footer class="container-fluid footer-custom text-center py-4">
         <p class="mb-1">
-            © 2026 Kantor Pencarian dan Pertolongan Surabaya
+            Badan Nasional Pencarian dan Pertolongan Republik Indonesia.
+            Seluruh Hak Cipta Dilindungi.
         </p>
-        <small>
-            Badan Nasional Pencarian dan Pertolongan Republik Indonesia. Seluruh Hak Cipta Dilindungi.
-        </small>
-    </div>
+
+        <p class="mb-0">
+            © {{ server_year }} Creative DM, made with love 198008292010121001
+        </p>
+    </footer>
     <!-- Footer End -->
 
     <!-- JavaScript Libraries -->
@@ -571,59 +500,6 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-        // =============================================
-        // 1. Pencarian Buku Telepon
-        // =============================================
-        const searchInput = document.querySelector('.search-input');
-        const tableBody = document.querySelector('.table tbody');
-
-        function renderTable(data) {
-            tableBody.innerHTML = '';
-            if (!data || data.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="4" class="text-start">No records to display.</td></tr>`;
-                return;
-            }
-            data.forEach(item => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${escapeHtml(item.nama)}</td>
-                    <td>${escapeHtml(item.instansi)}</td>
-                    <td>${escapeHtml(item.no_telp)}</td>
-                    <td>${escapeHtml(item.alamat)}</td>
-                `;
-                tableBody.appendChild(row);
-            });
-        }
-
-        function escapeHtml(text) {
-            const map = {
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#039;'
-            };
-            return String(text).replace(/[&<>"']/g, m => map[m]);
-        }
-
-        async function fetchData(query) {
-            try {
-                const url = `/api/search_pegawai?q=${encodeURIComponent(query)}`;
-                const response = await fetch(url);
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                const data = await response.json();
-                renderTable(data);
-            } catch (err) {
-                console.error('Gagal memuat data:', err);
-                tableBody.innerHTML = `<tr><td colspan="4" class="text-start text-danger">Gagal memuat data.</td></tr>`;
-            }
-        }
-
-        searchInput.addEventListener('keyup', function() {
-            const query = this.value.trim();
-            fetchData(query);
-        });
-
         // =============================================
         // 2. Login & Logout
         // =============================================

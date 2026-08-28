@@ -246,7 +246,7 @@
         
         console.log('🔍 Mencari pegawai:', kw);
         
-        if (kw.length < 2) { 
+        if (kw.length < 1) { 
             searchResults.style.display = 'none'; 
             return; 
         }
@@ -334,8 +334,8 @@
     // ===================== INSERT ANGGOTA VIA TOMBOL =====================
     document.getElementById('btnInsertAnggota').addEventListener('click', function() {
         const kw = searchInput.value.trim();
-        if (kw.length < 2) { 
-            alert('Ketik minimal 2 huruf nama pegawai, lalu pilih dari dropdown!'); 
+        if (kw.length < 1) { 
+            alert('Ketik minimal 1 huruf nama pegawai, lalu pilih dari dropdown!'); 
             searchInput.focus();
             return; 
         }

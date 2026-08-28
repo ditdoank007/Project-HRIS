@@ -20,3 +20,5 @@ from app.models.tunjanganModel import MfTunjangan
 from app.models.userAccountModel import UserAccount
 from app.models.formModel import MfForm
 from app.models.hakAksesFormModel import HakAksesForm
+# HRIS Reborn - Master Jabatan Siaga
+from app.models.jabatanSiagaModel import MfJabatanSiaga

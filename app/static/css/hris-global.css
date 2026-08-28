@@ -1,0 +1,564 @@
+/* ============================================================
+   HRIS REBORN
+   GLOBAL UI STANDARD
+   ============================================================
+
+   File:
+   app/static/css/hris-global.css
+
+   Prinsip:
+   1. Theme/vendor tetap dipertahankan.
+   2. CSS khusus HRIS berada di sini.
+   3. Jangan membuat CSS bisnis berulang di setiap halaman.
+   4. Gunakan semantic class.
+   5. Status/warna harus konsisten di seluruh HRIS.
+   ============================================================ */
+
+
+/* ============================================================
+   01. DESIGN TOKENS
+   ============================================================ */
+
+:root {
+
+    /* BRAND */
+    --hris-orange: #EB6831;
+    --hris-orange-dark: #D95722;
+    --hris-orange-light: #FDE8DD;
+
+    /* STATUS */
+    --hris-danger: #E74C3C;
+    --hris-danger-dark: #C0392B;
+
+    --hris-warning: #FF7A00;
+    --hris-warning-dark: #E56700;
+
+    --hris-success: #1F8A4C;
+    --hris-success-dark: #176B3A;
+
+    --hris-info: #337AB7;
+    --hris-info-dark: #245B8A;
+
+    /* NEUTRAL */
+    --hris-text: #5B6B7A;
+    --hris-text-dark: #343A40;
+    --hris-muted: #7A8793;
+
+    --hris-border: #DEE2E6;
+    --hris-border-dark: #C8CED4;
+
+    --hris-white: #FFFFFF;
+    --hris-light: #F8F9FA;
+
+    /* TABLE */
+    --hris-table-header: var(--hris-orange);
+    --hris-table-border: var(--hris-border);
+
+    /* TYPOGRAPHY */
+    --hris-font-size: 0.85rem;
+    --hris-font-size-small: 0.78rem;
+}
+
+
+/* ============================================================
+   02. GLOBAL TYPOGRAPHY
+   ============================================================ */
+
+.hris-ui,
+.hris-ui table,
+.hris-ui input,
+.hris-ui select,
+.hris-ui textarea,
+.hris-ui button {
+
+    font-family: inherit !important;
+}
+
+.hris-text {
+    color: var(--hris-text) !important;
+}
+
+.hris-text-dark {
+    color: var(--hris-text-dark) !important;
+}
+
+.hris-text-muted {
+    color: var(--hris-muted) !important;
+}
+
+
+/* ============================================================
+   03. GLOBAL STATUS — TEXT
+   ============================================================ */
+
+/*
+   Gunakan class ini jika kita hanya ingin warna teks.
+   Ini penting untuk halaman seperti Dashboard Pelanggaran.
+*/
+
+.hris-text-danger {
+    color: var(--hris-danger) !important;
+}
+
+.hris-text-warning {
+    color: var(--hris-warning) !important;
+}
+
+.hris-text-success {
+    color: var(--hris-success) !important;
+}
+
+.hris-text-info {
+    color: var(--hris-info) !important;
+}
+
+
+/* ============================================================
+   04. GLOBAL STATUS — BACKGROUND
+   ============================================================ */
+
+.hris-bg-danger {
+    background-color: var(--hris-danger) !important;
+    color: #000000 !important;
+}
+
+.hris-bg-warning {
+    background-color: var(--hris-warning) !important;
+    color: #000000 !important;
+}
+
+.hris-bg-success {
+    background-color: var(--hris-success) !important;
+    color: #FFFFFF !important;
+}
+
+.hris-bg-info {
+    background-color: var(--hris-info) !important;
+    color: #FFFFFF !important;
+}
+
+
+/* ============================================================
+   05. SEMANTIC STATUS
+   ============================================================ */
+
+.hris-status-danger {
+    color: var(--hris-danger) !important;
+}
+
+.hris-status-warning {
+    color: var(--hris-warning) !important;
+}
+
+.hris-status-success {
+    color: var(--hris-success) !important;
+}
+
+.hris-status-info {
+    color: var(--hris-info) !important;
+}
+
+
+/* ============================================================
+   06. GLOBAL TABLE
+   ============================================================ */
+
+.hris-table-wrapper {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.hris-table {
+    width: 100%;
+    max-width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
+    table-layout: auto;
+
+    font-family: inherit;
+    font-size: var(--hris-font-size);
+    color: var(--hris-text);
+}
+
+.hris-table thead th {
+    background: var(--hris-table-header);
+    color: #FFFFFF;
+
+    border: 1px solid var(--hris-orange-dark);
+
+    text-align: center;
+    vertical-align: middle;
+
+    font-weight: 600;
+    padding: 8px 6px;
+
+    white-space: normal;
+}
+
+.hris-table tbody td {
+    background: transparent;
+
+    border: 1px solid var(--hris-table-border);
+
+    vertical-align: middle;
+    padding: 7px 6px;
+
+    font-family: inherit;
+    font-size: var(--hris-font-size);
+}
+
+.hris-table tbody tr:hover > td {
+    background: transparent;
+}
+
+
+/* ============================================================
+   07. TABLE ALIGNMENT
+   ============================================================ */
+
+.hris-table .text-left {
+    text-align: left;
+}
+
+.hris-table .text-center {
+    text-align: center;
+}
+
+.hris-table .text-right {
+    text-align: right;
+}
+
+
+/*
+   Semantic alignment.
+   Kolom teks secara default kiri.
+   Kolom angka/status dapat menggunakan .text-center.
+*/
+
+.hris-table th.hris-text-left,
+.hris-table td.hris-text-left {
+    text-align: left;
+}
+
+.hris-table th.hris-text-center,
+.hris-table td.hris-text-center {
+    text-align: center;
+}
+
+.hris-table th.hris-text-right,
+.hris-table td.hris-text-right {
+    text-align: right;
+}
+
+
+/* ============================================================
+   08. TABLE STATUS — TEXT ONLY
+   ============================================================ */
+
+.hris-table tbody tr.hris-status-danger > td {
+    color: var(--hris-danger);
+}
+
+.hris-table tbody tr.hris-status-warning > td {
+    color: var(--hris-warning);
+}
+
+.hris-table tbody tr.hris-status-success > td {
+    color: var(--hris-success);
+}
+
+.hris-table tbody tr.hris-status-info > td {
+    color: var(--hris-info);
+}
+
+
+/* ============================================================
+   09. TABLE STATUS — BACKGROUND
+   Dipakai hanya jika sebuah halaman memang membutuhkan
+   blok warna penuh.
+   ============================================================ */
+
+.hris-table tbody tr.hris-bg-danger > td {
+    background-color: var(--hris-danger);
+    color: #000000;
+}
+
+.hris-table tbody tr.hris-bg-warning > td {
+    background-color: var(--hris-warning);
+    color: #000000;
+}
+
+.hris-table tbody tr.hris-bg-success > td {
+    background-color: var(--hris-success);
+    color: #FFFFFF;
+}
+
+.hris-table tbody tr.hris-bg-info > td {
+    background-color: var(--hris-info);
+    color: #FFFFFF;
+}
+
+
+/* ============================================================
+   10. ABSENSI — SEMANTIC STATUS
+   ============================================================ */
+
+.hris-absen-dl {
+    color: var(--hris-info);
+    font-weight: 600;
+}
+
+.hris-absen-s {
+    color: var(--hris-danger);
+    font-weight: 600;
+}
+
+.hris-absen-i {
+    color: var(--hris-warning);
+    font-weight: 600;
+}
+
+.hris-absen-ct {
+    color: var(--hris-success);
+    font-weight: 600;
+}
+
+.hris-absen-a {
+    color: var(--hris-danger-dark);
+    font-weight: 700;
+}
+
+.hris-absen-tlm {
+    color: var(--hris-warning-dark);
+    font-weight: 600;
+}
+
+.hris-absen-psw {
+    color: var(--hris-info-dark);
+    font-weight: 600;
+}
+
+
+/* ============================================================
+   11. ABSENSI — BACKGROUND VERSION
+   ============================================================ */
+
+.hris-absen-dl-bg {
+    background-color: #D9EAF7;
+    color: var(--hris-info-dark);
+    font-weight: 600;
+}
+
+.hris-absen-s-bg {
+    background-color: #F9D7D4;
+    color: var(--hris-danger-dark);
+    font-weight: 600;
+}
+
+.hris-absen-i-bg {
+    background-color: #FFE1C7;
+    color: var(--hris-warning-dark);
+    font-weight: 600;
+}
+
+.hris-absen-ct-bg {
+    background-color: #D9F0E1;
+    color: var(--hris-success-dark);
+    font-weight: 600;
+}
+
+
+/* ============================================================
+   LEGACY COMPATIBILITY
+   Jangan digunakan untuk halaman baru.
+   ============================================================ */
+
+.hris-table tbody tr.alert-error > td {
+    color: var(--hris-danger);
+}
+
+.hris-table tbody tr.bg-orange-active > td {
+    color: var(--hris-warning);
+}
+
+/* ============================================================
+   11B. GLOBAL TOGGLE
+   ============================================================ */
+
+.hris-toggle {
+    position: relative;
+    display: inline-block;
+    width: 38px;
+    height: 20px;
+    vertical-align: middle;
+}
+
+.hris-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.hris-toggle-slider {
+    position: absolute;
+    inset: 0;
+
+    cursor: pointer;
+
+    background-color: #D1D5DB;
+
+    border-radius: 20px;
+
+    transition: 0.2s;
+}
+
+.hris-toggle-slider::before {
+    content: "";
+
+    position: absolute;
+
+    width: 16px;
+    height: 16px;
+
+    left: 2px;
+    top: 2px;
+
+    background-color: #FFFFFF;
+
+    border-radius: 50%;
+
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.20);
+
+    transition: 0.2s;
+}
+
+.hris-toggle input:checked + .hris-toggle-slider {
+    background-color: #3B5BDB;
+}
+
+.hris-toggle input:checked + .hris-toggle-slider::before {
+    transform: translateX(18px);
+}
+
+.hris-toggle input:disabled + .hris-toggle-slider {
+    opacity: 0.60;
+    cursor: wait;
+}
+
+.hris-toggle-label {
+    display: block;
+
+    margin-top: 3px;
+
+    font-size: 11px;
+    line-height: 1.2;
+
+    color: var(--hris-text-muted);
+
+    text-align: center;
+}
+ 
+ 
+/* ============================================================
+   12. BADGE
+   ============================================================ */
+
+.hris-badge {
+    display: inline-block;
+    padding: 0.25rem 0.55rem;
+    border-radius: 0.25rem;
+    font-size: var(--hris-font-size-small);
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.hris-badge-danger {
+    background-color: var(--hris-danger) !important;
+    color: #FFFFFF !important;
+}
+
+.hris-badge-warning {
+    background-color: var(--hris-warning) !important;
+    color: #000000 !important;
+}
+
+.hris-badge-success {
+    background-color: var(--hris-success) !important;
+    color: #FFFFFF !important;
+}
+
+.hris-badge-info {
+    background-color: var(--hris-info) !important;
+    color: #FFFFFF !important;
+}
+
+
+/* ============================================================
+   13. HRIS BUTTON
+   ============================================================ */
+
+.hris-btn {
+    border-radius: 0.25rem !important;
+    font-family: inherit !important;
+    font-weight: 500 !important;
+}
+
+.hris-btn-orange {
+    background-color: var(--hris-orange) !important;
+    border-color: var(--hris-orange-dark) !important;
+    color: #FFFFFF !important;
+}
+
+.hris-btn-orange:hover {
+    background-color: var(--hris-orange-dark) !important;
+    color: #FFFFFF !important;
+}
+
+
+/* ============================================================
+   14. RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 768px) {
+
+    .hris-table-wrapper {
+        overflow-x: auto !important;
+    }
+
+    .hris-table {
+        min-width: 700px;
+    }
+}
+
+
+/* ============================================================
+   END HRIS REBORN GLOBAL UI
+   ============================================================ */
+
+
+/* ============================================================
+   11. KALENDER — SEMANTIC STATUS
+   ============================================================ */
+
+.hris-calendar-holiday {
+    background-color: #fff1f2 !important;
+    color: var(--hris-danger) !important;
+}
+
+.hris-calendar-holiday-header {
+    background-color: #fff1f2 !important;
+    color: var(--hris-danger) !important;
+}
+
+
+/* ============================================================
+   ABSENSI — WFH
+   ============================================================ */
+
+.hris-absen-wfh {
+    background-color: #e5e7eb !important;
+    color: var(--hris-text-dark) !important;
+}
+

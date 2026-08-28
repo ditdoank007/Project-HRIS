@@ -100,12 +100,44 @@
             </div>
         </div>
     </div>
+
+                <div class="card mb-4">
+                    <div class="card-header-custom">
+                        <h6 class="mb-0">
+                            <i class="ti ti-list me-2"></i> Daftar Unit Kerja
+                        </h6>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped align-middle">
+                                <thead style="background:#EB6831;">
+                                    <tr>
+                                        <th style="color:white; text-align:center;">No</th>
+                                        <th style="color:white; text-align:center;">Unit Kerja ID</th>
+                                        <th style="color:white; text-align:left;">Nama Unit Kerja</th>
+                                        <th style="color:white; text-align:center;">Tipe</th>
+                                        <th style="color:white; text-align:center;">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="unitKerjaTableBody">
+                                    <tr>
+                                        <td colspan="5" class="text-center">
+                                            Memuat data...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
 </div>
 {% endblock %}
 
 {% block script %}
 <script>
-document.addEventListener('DOMContentLoaded', function () {
+(function () {
     const btnSave = document.getElementById('btnSimpanUnitKerja');
 
     const el = {
@@ -170,6 +202,203 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     btnSave.addEventListener('click', saveUnitKerja);
-});
+
+    // ============================================================
+    // DAFTAR UNIT KERJA
+    // ============================================================
+
+    async function loadUnitKerja() {
+        const tbody = document.getElementById('unitKerjaTableBody');
+
+        try {
+            const res = await fetch('/api/unit-kerja/list');
+            const json = await res.json();
+
+            if (json.status !== 'success') {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="text-center">
+                            Gagal memuat data unit kerja.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            if (!json.data || json.data.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="text-center">
+                            Tidak ada data unit kerja.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = json.data.map((u, index) => {
+                const aktif = String(
+                    u.is_aktif ?? u.is_use ?? ''
+                ).toUpperCase() === 'Y';
+
+                return `
+                    <tr>
+                        <td class="hris-text-center">
+                            ${index + 1}
+                        </td>
+
+                        <td class="hris-text-center">
+                            ${u.unit_kerja_id ?? '-'}
+                        </td>
+
+                        <td class="hris-text-left">
+                            ${u.nama_unit_kerja ?? '-'}
+                        </td>
+
+                        <td class="hris-text-center">
+                            ${Number(u.is_pusat) === 1 ? 'Pusat' : 'Pos'}
+                        </td>
+
+                        <td class="hris-text-center">
+                            <label class="hris-toggle">
+                                <input
+                                    type="checkbox"
+                                    class="unit-use-toggle"
+                                    data-unit-id="${u.unit_kerja_id}"
+                                    ${aktif ? 'checked' : ''}
+                                    aria-label="Status ${u.nama_unit_kerja ?? ''}"
+                                >
+                                <span class="hris-toggle-slider"></span>
+                            </label>
+
+                            <span class="hris-toggle-label unit-status-label">
+                                ${aktif ? 'Aktif' : 'Nonaktif'}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            document
+                .querySelectorAll('.unit-use-toggle')
+                .forEach(toggle => {
+                    toggle.addEventListener('change', toggleUnitKerja);
+                });
+
+        } catch (err) {
+            console.error('Gagal memuat unit kerja:', err);
+
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center">
+                        Gagal memuat data unit kerja.
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    async function toggleUnitKerja(event) {
+        const checkbox = event.target;
+
+        const unitKerjaId = checkbox.dataset.unitId;
+        const isAktif = checkbox.checked ? 'Y' : 'N';
+
+        // Simpan keadaan sebelum request
+        const previousState = !checkbox.checked;
+
+        checkbox.disabled = true;
+
+        try {
+            const res = await fetch('/api/unit-kerja/toggle', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    unit_kerja_id: unitKerjaId,
+                    is_aktif: isAktif
+                })
+            });
+
+            // Jangan langsung json() jika server mengembalikan HTML
+            const contentType = res.headers.get('content-type') || '';
+
+            if (!contentType.includes('application/json')) {
+                throw new Error(
+                    `Response bukan JSON (HTTP ${res.status})`
+                );
+            }
+
+            const json = await res.json();
+
+            if (!res.ok || json.status !== 'success') {
+                throw new Error(
+                    json.message ||
+                    `Gagal mengubah status unit kerja (HTTP ${res.status})`
+                );
+            }
+
+            // Pastikan checkbox mengikuti nilai yang benar-benar
+            // diterima backend.
+            const savedStatus =
+                json.data?.is_aktif ||
+                json.data?.is_use ||
+                isAktif;
+
+            checkbox.checked = savedStatus === 'Y';
+
+            const cell = checkbox.closest('td');
+            const label = cell
+                ? cell.querySelector('.unit-status-label')
+                : null;
+
+            if (label) {
+                label.textContent =
+                    checkbox.checked ? 'Aktif' : 'Nonaktif';
+            }
+
+            console.log(
+                'Unit Kerja berhasil diubah:',
+                unitKerjaId,
+                savedStatus
+            );
+
+        } catch (err) {
+
+            // Kembalikan checkbox ke keadaan sebelum klik
+            checkbox.checked = previousState;
+
+            const cell = checkbox.closest('td');
+            const label = cell
+                ? cell.querySelector('.unit-status-label')
+                : null;
+
+            if (label) {
+                label.textContent =
+                    checkbox.checked ? 'Aktif' : 'Nonaktif';
+            }
+
+            console.error(
+                'Gagal mengubah status Unit Kerja:',
+                err
+            );
+
+            alert(
+                err.message ||
+                'Gagal mengubah status unit kerja'
+            );
+
+        } finally {
+            checkbox.disabled = false;
+        }
+    }
+
+    // Muat daftar Unit Kerja saat halaman dibuka.
+    loadUnitKerja();
+
+})();
 </script>
 {% endblock %}

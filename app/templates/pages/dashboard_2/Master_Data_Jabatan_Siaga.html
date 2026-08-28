@@ -1,0 +1,888 @@
+{% extends "layout/baseDashboard2.html" %}
+
+{% block title %}
+Master Jabatan Siaga
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+    <div class="row">
+        <div class="col-12">
+
+            <div class="card hris-card">
+
+                <div class="card-header hris-card-header">
+                    <div>
+                        <h5 class="mb-1">
+                            Master Jabatan Siaga
+                        </h5>
+
+                        <div class="text-muted small">
+                            Pengaturan urutan dan status jabatan
+                            petugas siaga.
+                        </div>
+                    </div>
+
+                    <button
+                        type="button"
+                        id="btnTambahJabatanSiaga"
+                        class="btn hris-btn-primary"
+                    >
+                        <i class="bi bi-plus-lg"></i>
+                        Jabatan Baru
+                    </button>
+                </div>
+
+                <div class="card-body">
+
+                    <div
+                        id="jabatanSiagaAlert"
+                        class="alert d-none"
+                        role="alert"
+                    ></div>
+
+                    <div class="table-responsive">
+
+                        <table
+                            class="table hris-table align-middle"
+                            id="tableJabatanSiaga"
+                        >
+
+                            <thead>
+                                <tr>
+                                    <th class="text-center">
+                                        No Urut
+                                    </th>
+
+                                    <th>
+                                        Jabatan
+                                    </th>
+
+                                    <th>
+                                        Keterangan
+                                    </th>
+
+                                    <th class="text-center">
+                                        Status
+                                    </th>
+
+                                    <th
+                                        class="text-center"
+                                        style="width: 180px;"
+                                    >
+                                        Aksi
+                                    </th>
+                                </tr>
+                            </thead>
+
+                            <tbody
+                                id="jabatanSiagaTbody"
+                            >
+                                <tr>
+                                    <td
+                                        colspan="5"
+                                        class="text-center text-muted"
+                                    >
+                                        Memuat data...
+                                    </td>
+                                </tr>
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+
+<!-- ========================================================
+     MODAL FORM
+========================================================= -->
+
+<div
+    class="modal fade"
+    id="modalJabatanSiaga"
+    tabindex="-1"
+    aria-hidden="true"
+>
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+
+                <h5
+                    class="modal-title"
+                    id="modalJabatanSiagaTitle"
+                >
+                    Jabatan Siaga
+                </h5>
+
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close"
+                ></button>
+
+            </div>
+
+            <div class="modal-body">
+
+                <input
+                    type="hidden"
+                    id="jabatanSiagaId"
+                >
+
+                <div class="mb-3">
+
+                    <label
+                        for="jabatanSiagaNoUrut"
+                        class="form-label"
+                    >
+                        No Urut
+                    </label>
+
+                    <input
+                        type="number"
+                        min="1"
+                        id="jabatanSiagaNoUrut"
+                        class="form-control"
+                        required
+                    >
+
+                    <div class="form-text">
+                        Urutan menentukan posisi jabatan
+                        dari tertinggi ke terendah.
+                    </div>
+
+                </div>
+
+                <div class="mb-3">
+
+                    <label
+                        for="jabatanSiagaNama"
+                        class="form-label"
+                    >
+                        Jabatan
+                    </label>
+
+                    <input
+                        type="text"
+                        id="jabatanSiagaNama"
+                        class="form-control"
+                        maxlength="50"
+                        required
+                    >
+
+                </div>
+
+                <div class="mb-3">
+
+                    <label
+                        for="jabatanSiagaKeterangan"
+                        class="form-label"
+                    >
+                        Keterangan
+                    </label>
+
+                    <textarea
+                        id="jabatanSiagaKeterangan"
+                        class="form-control"
+                        maxlength="250"
+                        rows="3"
+                    ></textarea>
+
+                </div>
+
+                <div class="form-check form-switch">
+
+                    <input
+                        class="form-check-input"
+                        type="checkbox"
+                        id="jabatanSiagaAktif"
+                        checked
+                    >
+
+                    <label
+                        class="form-check-label"
+                        for="jabatanSiagaAktif"
+                    >
+                        Aktif
+                    </label>
+
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    data-bs-dismiss="modal"
+                >
+                    Batal
+                </button>
+
+                <button
+                    type="button"
+                    id="btnSimpanJabatanSiaga"
+                    class="btn hris-btn-primary"
+                >
+                    Simpan
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+
+{% block script %}
+<script>
+
+(function () {
+
+    "use strict";
+
+    const tbody =
+        document.getElementById(
+            "jabatanSiagaTbody"
+        );
+
+    const alertBox =
+        document.getElementById(
+            "jabatanSiagaAlert"
+        );
+
+    const modalElement =
+        document.getElementById(
+            "modalJabatanSiaga"
+        );
+
+    const modal =
+        new bootstrap.Modal(
+            modalElement
+        );
+
+    const idInput =
+        document.getElementById(
+            "jabatanSiagaId"
+        );
+
+    const noUrutInput =
+        document.getElementById(
+            "jabatanSiagaNoUrut"
+        );
+
+    const namaInput =
+        document.getElementById(
+            "jabatanSiagaNama"
+        );
+
+    const keteranganInput =
+        document.getElementById(
+            "jabatanSiagaKeterangan"
+        );
+
+    const aktifInput =
+        document.getElementById(
+            "jabatanSiagaAktif"
+        );
+
+    const title =
+        document.getElementById(
+            "modalJabatanSiagaTitle"
+        );
+
+    const btnTambah =
+        document.getElementById(
+            "btnTambahJabatanSiaga"
+        );
+
+    const btnSimpan =
+        document.getElementById(
+            "btnSimpanJabatanSiaga"
+        );
+
+
+    function escapeHtml(value) {
+
+        return String(value ?? "")
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
+
+    }
+
+
+    function showAlert(message, type) {
+
+        alertBox.className =
+            "alert alert-" + type;
+
+        alertBox.textContent =
+            message;
+
+        alertBox.classList.remove(
+            "d-none"
+        );
+
+    }
+
+
+    function hideAlert() {
+
+        alertBox.className =
+            "alert d-none";
+
+        alertBox.textContent = "";
+
+    }
+
+
+    async function loadData() {
+
+        tbody.innerHTML = `
+            <tr>
+                <td
+                    colspan="5"
+                    class="text-center text-muted"
+                >
+                    Memuat data...
+                </td>
+            </tr>
+        `;
+
+        try {
+
+            const response =
+                await fetch(
+                    "{{ url_for(
+                        'main.api_master_jabatan_siaga_get',
+                        all=1
+                    ) }}"
+                );
+
+            const result =
+                await response.json();
+
+            if (!response.ok || !result.success) {
+                throw new Error(
+                    result.error ||
+                    "Gagal mengambil data."
+                );
+            }
+
+            renderRows(
+                result.data || []
+            );
+
+        } catch (error) {
+
+            console.error(error);
+
+            tbody.innerHTML = `
+                <tr>
+                    <td
+                        colspan="5"
+                        class="text-center text-danger"
+                    >
+                        Gagal mengambil data
+                        Master Jabatan Siaga.
+                    </td>
+                </tr>
+            `;
+
+        }
+
+    }
+
+
+    function renderRows(rows) {
+
+        tbody.innerHTML = "";
+
+        if (!rows.length) {
+
+            tbody.innerHTML = `
+                <tr>
+                    <td
+                        colspan="5"
+                        class="text-center text-muted"
+                    >
+                        Belum ada data.
+                    </td>
+                </tr>
+            `;
+
+            return;
+        }
+
+
+        rows.forEach(row => {
+
+            const tr =
+                document.createElement("tr");
+
+            const aktif =
+                row.is_aktif === "Y";
+
+            tr.innerHTML = `
+
+                <td class="text-center fw-semibold">
+                    ${escapeHtml(row.no_urut)}
+                </td>
+
+                <td class="fw-semibold">
+                    ${escapeHtml(
+                        row.nama_jabatan
+                    )}
+                </td>
+
+                <td>
+                    ${escapeHtml(
+                        row.keterangan || "-"
+                    )}
+                </td>
+
+                <td class="text-center">
+
+                    ${
+                        aktif
+                        ? `
+                            <span
+                                class="badge text-bg-success"
+                            >
+                                Aktif
+                            </span>
+                        `
+                        : `
+                            <span
+                                class="badge text-bg-secondary"
+                            >
+                                Tidak Aktif
+                            </span>
+                        `
+                    }
+
+                </td>
+
+                <td class="text-center">
+
+                    <button
+                        type="button"
+                        class="btn btn-sm btn-outline-primary me-1"
+                        data-action="edit"
+                    >
+                        <i class="bi bi-pencil"></i>
+                        Edit
+                    </button>
+
+                    ${
+                        aktif
+                        ? `
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-danger"
+                                data-action="deactivate"
+                            >
+                                <i class="bi bi-x-circle"></i>
+                                Nonaktifkan
+                            </button>
+                        `
+                        : `
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-success"
+                                data-action="activate"
+                            >
+                                <i class="bi bi-check-circle"></i>
+                                Aktifkan
+                            </button>
+                        `
+                    }
+
+                </td>
+            `;
+
+
+            tr.querySelector(
+                '[data-action="edit"]'
+            ).addEventListener(
+                "click",
+                () => openEdit(row)
+            );
+
+
+            const deactivateButton =
+                tr.querySelector(
+                    '[data-action="deactivate"]'
+                );
+
+            if (deactivateButton) {
+
+                deactivateButton.addEventListener(
+                    "click",
+                    () => deactivate(row)
+                );
+
+            }
+
+
+            const activateButton =
+                tr.querySelector(
+                    '[data-action="activate"]'
+                );
+
+            if (activateButton) {
+
+                activateButton.addEventListener(
+                    "click",
+                    () => activate(row)
+                );
+
+            }
+
+
+            tbody.appendChild(tr);
+
+        });
+
+    }
+
+
+    function openNew() {
+
+        hideAlert();
+
+        idInput.value = "";
+
+        noUrutInput.value = "";
+
+        namaInput.value = "";
+
+        keteranganInput.value = "";
+
+        aktifInput.checked = true;
+
+        title.textContent =
+            "Tambah Jabatan Siaga";
+
+        modal.show();
+
+    }
+
+
+    function openEdit(row) {
+
+        hideAlert();
+
+        idInput.value =
+            row.id;
+
+        noUrutInput.value =
+            row.no_urut;
+
+        namaInput.value =
+            row.nama_jabatan || "";
+
+        keteranganInput.value =
+            row.keterangan || "";
+
+        aktifInput.checked =
+            row.is_aktif === "Y";
+
+        title.textContent =
+            "Edit Jabatan Siaga";
+
+        modal.show();
+
+    }
+
+
+    async function save() {
+
+        const nama =
+            namaInput.value.trim();
+
+        const noUrut =
+            Number(
+                noUrutInput.value
+            );
+
+        if (!nama) {
+
+            showAlert(
+                "Nama jabatan wajib diisi.",
+                "warning"
+            );
+
+            return;
+
+        }
+
+        if (!Number.isInteger(noUrut) || noUrut <= 0) {
+
+            showAlert(
+                "No urut harus berupa angka lebih dari 0.",
+                "warning"
+            );
+
+            return;
+
+        }
+
+
+        btnSimpan.disabled = true;
+
+
+        try {
+
+            const response =
+                await fetch(
+                    "{{ url_for(
+                        'main.api_master_jabatan_siaga_save'
+                    ) }}",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+                        body: JSON.stringify({
+
+                            id:
+                                idInput.value,
+
+                            no_urut:
+                                noUrut,
+
+                            nama_jabatan:
+                                nama,
+
+                            keterangan:
+                                keteranganInput.value.trim(),
+
+                            is_aktif:
+                                aktifInput.checked
+                                    ? "Y"
+                                    : "N"
+
+                        })
+                    }
+                );
+
+
+            const result =
+                await response.json();
+
+
+            if (!response.ok || !result.success) {
+
+                throw new Error(
+                    result.error ||
+                    "Gagal menyimpan data."
+                );
+
+            }
+
+
+            modal.hide();
+
+            showAlert(
+                "Master Jabatan Siaga berhasil disimpan.",
+                "success"
+            );
+
+            await loadData();
+
+        } catch (error) {
+
+            console.error(error);
+
+            showAlert(
+                error.message ||
+                "Gagal menyimpan data.",
+                "danger"
+            );
+
+        } finally {
+
+            btnSimpan.disabled = false;
+
+        }
+
+    }
+
+
+
+    async function activate(row) {
+
+        const confirmed =
+            window.confirm(
+                `Aktifkan kembali jabatan "${row.nama_jabatan}"?`
+            );
+
+        if (!confirmed) {
+            return;
+        }
+
+
+        try {
+
+            const response =
+                await fetch(
+                    "{{ url_for(
+                        'main.api_master_jabatan_siaga_activate'
+                    ) }}",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+                        body: JSON.stringify({
+                            id:
+                                row.id
+                        })
+                    }
+                );
+
+
+            const result =
+                await response.json();
+
+
+            if (!response.ok || !result.success) {
+
+                throw new Error(
+                    result.error ||
+                    "Gagal mengaktifkan jabatan."
+                );
+
+            }
+
+
+            showAlert(
+                "Jabatan berhasil diaktifkan kembali.",
+                "success"
+            );
+
+            await loadData();
+
+
+        } catch (error) {
+
+            console.error(error);
+
+            showAlert(
+                error.message ||
+                "Gagal mengaktifkan jabatan.",
+                "danger"
+            );
+
+        }
+
+    }
+
+
+    async function deactivate(row) {
+
+        const confirmed =
+            window.confirm(
+                `Nonaktifkan jabatan "${row.nama_jabatan}"?`
+            );
+
+        if (!confirmed) {
+            return;
+        }
+
+
+        try {
+
+            const response =
+                await fetch(
+                    "{{ url_for(
+                        'main.api_master_jabatan_siaga_deactivate'
+                    ) }}",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+                        body: JSON.stringify({
+                            id:
+                                row.id
+                        })
+                    }
+                );
+
+
+            const result =
+                await response.json();
+
+
+            if (!response.ok || !result.success) {
+
+                throw new Error(
+                    result.error ||
+                    "Gagal menonaktifkan jabatan."
+                );
+
+            }
+
+
+            showAlert(
+                "Jabatan berhasil dinonaktifkan.",
+                "success"
+            );
+
+            await loadData();
+
+        } catch (error) {
+
+            console.error(error);
+
+            showAlert(
+                error.message ||
+                "Gagal menonaktifkan jabatan.",
+                "danger"
+            );
+
+        }
+
+    }
+
+
+    btnTambah.addEventListener(
+        "click",
+        openNew
+    );
+
+    btnSimpan.addEventListener(
+        "click",
+        save
+    );
+
+    loadData();
+
+})();
+
+</script>
+{% endblock %}

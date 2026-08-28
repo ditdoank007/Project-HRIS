@@ -263,28 +263,6 @@
 </div>
 {% endblock %}
 
-<style>
-#previewClockExceptionContainer
-.clock-exception-name {
-    text-align: left !important;
-    vertical-align: middle !important;
-}
-
-#previewClockExceptionContainer .rekap-libur {
-    background-color: #fff1f2 !important;
-    color: #dc2626 !important;
-}
-
-#previewClockExceptionContainer .rekap-libur-header {
-    background-color: #fff1f2 !important;
-    color: #dc2626 !important;
-}
-
-#previewClockExceptionContainer .rekap-wfh {
-    background-color: #e5e7eb !important;
-    color: #1f2937 !important;
-}
-</style>
 
 {% block script %}
 <script>
@@ -362,13 +340,11 @@ function renderPreviewClockException(hasil){
 
     hasil.tanggal.forEach(function(t){
 
-        const weekend =
-            t.hari === 'Sat' ||
-            t.hari === 'Sun';
+        const isLibur = t.is_libur === true;
 
         const headerClass =
-            weekend
-                ? 'text-center align-middle rekap-libur-header'
+            isLibur
+                ? 'text-center align-middle hris-calendar-holiday-header'
                 : 'text-center align-middle';
 
         html += `
@@ -391,13 +367,11 @@ function renderPreviewClockException(hasil){
 
     hasil.tanggal.forEach(function(t){
 
-        const weekend =
-            t.hari === 'Sat' ||
-            t.hari === 'Sun';
+        const isLibur = t.is_libur === true;
 
         const headerClass =
-            weekend
-                ? 'text-center rekap-libur-header'
+            isLibur
+                ? 'text-center hris-calendar-holiday-header'
                 : 'text-center';
 
         html += `
@@ -430,7 +404,7 @@ function renderPreviewClockException(hasil){
             </td>
 
             <td rowspan="2"
-                class="align-middle clock-exception-name"
+                class="align-middle hris-text-left"
                 style="
                     text-align:left !important;
                     white-space:nowrap;
@@ -485,12 +459,10 @@ function renderPreviewClockException(hasil){
             let cellClass =
                 'text-center';
 
-            if (row && row.status === 'LIBUR') {
-                cellClass += ' rekap-libur';
-            }
-
-            if (row && row.status === 'WFH') {
-                cellClass += ' rekap-wfh';
+            if (t.is_libur === true) {
+                cellClass += ' hris-calendar-holiday';
+            } else if (row && row.status === 'WFH') {
+                cellClass += ' hris-absen-wfh';
             }
 
             html += `
@@ -538,12 +510,10 @@ function renderPreviewClockException(hasil){
             let cellClass =
                 'text-center';
 
-            if (row && row.status === 'LIBUR') {
-                cellClass += ' rekap-libur';
-            }
-
-            if (row && row.status === 'WFH') {
-                cellClass += ' rekap-wfh';
+            if (t.is_libur === true) {
+                cellClass += ' hris-calendar-holiday';
+            } else if (row && row.status === 'WFH') {
+                cellClass += ' hris-absen-wfh';
             }
 
             html += `

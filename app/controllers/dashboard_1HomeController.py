@@ -9,6 +9,8 @@ from app.models.pegawaiModel import Pegawai
 from app.models.golonganModel import MfGolongan
 from app.models.absensiModel import Absensi
 from app.models.potModel import MfPot
+from app.models.unitKerjaModel import MfUnitKerja
+from app.utils.jabatanHelper import pegawai_sort_key
 from sqlalchemy import or_
 
 
@@ -67,7 +69,7 @@ def _get_data_pelanggaran(tahun=None):
         # 2. Ambil data absensi (✅ JOIN via NIP, bukan FINGER_ID)
         absensi_rows = (
             db.session.query(Absensi, Pegawai)
-            .join(Pegawai, Absensi.NIP == Pegawai.NIP)  # ✅ PAKAI NIP
+            .join(Pegawai, Absensi.FINGER_ID == Pegawai.FINGER_ID)
             .join(MfKalender, Absensi.TGL_KERJA == MfKalender.TGL_KERJA)
             .filter(Absensi.TGL_KERJA.between(
                 datetime.combine(xTglawal, datetime.min.time()),
@@ -79,12 +81,32 @@ def _get_data_pelanggaran(tahun=None):
             .all()
         )
         
+        # 3. Unit Kerja aktif HRIS Reborn
+        #
+        # Hanya pegawai dari Unit Kerja dengan IS_AKTIF = 'Y'
+        # yang masuk perhitungan Dashboard Pelanggaran.
+        active_unit_ids = (
+            MfUnitKerja.query
+            .filter(MfUnitKerja.IS_AKTIF == 'Y')
+            .with_entities(MfUnitKerja.UNIT_KERJA_ID)
+            .all()
+        )
+
+        active_unit_ids = {
+            str(row[0]).strip()
+            for row in active_unit_ids
+            if row[0] is not None
+        }
+
         # 3. Ambil pegawai distinct
         pegawai_list = (
             Pegawai.query
             .filter(Pegawai.IS_VIP == 'N')
             .filter(Pegawai.STATUS_PEG == '1')
             .filter(Pegawai.GOL_ID != '-')
+            .filter(
+                Pegawai.UNIT_KERJA_ID.in_(active_unit_ids)
+            )
             .filter(
                 db.or_(
                     db.and_(Pegawai.TGL_MASUK <= xTglAkhir, Pegawai.IS_KELUAR == 'N'),
@@ -102,17 +124,20 @@ def _get_data_pelanggaran(tahun=None):
             .all()
         )
         
-        # ✅ Build dict absensi per NIP (bukan FingerID)
+        # Build dict absensi berdasarkan FingerID.
+        # ABSENSI legacy tidak memiliki NIP.
+        # Relasi ABSENSI -> PEGAWAI menggunakan FingerID.
         absensi_dict = defaultdict(list)
         for a, p in absensi_rows:
-            if a.NIP:
-                absensi_dict[a.NIP.strip()].append(a)
+            if a.FINGER_ID:
+                absensi_dict[str(a.FINGER_ID).strip()].append(a)
         
         # 5. Hitung per pegawai
         dtresult = []
         for peg in pegawai_list:
-            nip = (peg.NIP or '').strip()  # ✅ Pakai NIP
-            abs_list = absensi_dict.get(nip, [])
+            nip = (peg.NIP or '').strip()
+            finger_id = str(peg.FINGER_ID or '').strip()
+            abs_list = absensi_dict.get(finger_id, [])
             
             # TLM tanpa keterangan
             tot_tlma = sum(a.AWAL_TLM or 0 for a in abs_list 
@@ -158,13 +183,34 @@ def _get_data_pelanggaran(tahun=None):
             # Hanya tampilkan jika > 4 hari
             if tot_hr > 4:
                 dtresult.append({
+                    'pegawai': peg,
                     'nip': peg.NIP,
                     'nama': peg.NAMA,
                     'hari': int(tot_hr)
                 })
         
-        # Sort descending by hari
-        dtresult.sort(key=lambda x: x['hari'], reverse=True)
+        # =========================================================
+        # STANDARD SORT DASHBOARD PELANGGARAN
+        #
+        # Prioritas:
+        # 1. Jumlah hari pelanggaran DESC
+        # 2. Senioritas pegawai
+        #    - Eselon
+        #    - Class Jabatan
+        #    - Golongan
+        #    - Tahun Penerimaan
+        #    - Tahun Lahir
+        #    - Tanggal Lahir
+        #    - Nama
+        #    - NIP
+        # =========================================================
+
+        dtresult.sort(
+            key=lambda x: (
+                -x['hari'],
+                pegawai_sort_key(x['pegawai'])
+            )
+        )
         
         # 6. Cocokkan dengan MFPot untuk dapat hukuman
         data = []

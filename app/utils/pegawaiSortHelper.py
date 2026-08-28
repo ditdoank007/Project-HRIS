@@ -1,127 +1,82 @@
 """
 HRIS REBORN
-Central Employee Sorting Rule
+Central Employee Sorting Entry Point
 
-Urutan final:
+File ini adalah SINGLE ENTRY POINT untuk sorting pegawai.
 
-1. Eselon
-2. Urut Jabatan
-3. Class Jabatan descending
-4. NIP ascending
+Business Rule sorting sebenarnya berada di:
 
-Rule ini menjadi Single Source of Sorting
-untuk laporan HRIS Reborn.
+    app.utils.jabatanHelper.pegawai_sort_key
+
+Jangan membuat aturan sorting baru di controller.
+
+Semua modul HRIS yang membutuhkan daftar pegawai
+harus menggunakan:
+
+    sort_pegawai_rows(pegawai_rows)
 """
 
-from app.models.eselonModel import MfEselon
-from app.models.jabatanModel import MfJabatan
+from app.models.golonganModel import MfGolongan
+from app.utils.jabatanHelper import pegawai_sort_key
 
 
-def _safe_int(value, default=999999):
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        return default
+def _build_golongan_map():
+    """
+    Membuat mapping:
+
+        kode golongan -> URUTAN
+
+    Contoh:
+
+        IV/e -> 0
+        IV/d -> 1
+        ...
+        III/d -> 5
+        ...
+        I/a -> 16
+
+    Semakin kecil URUTAN = semakin tinggi golongan.
+    """
+
+    rows = MfGolongan.query.all()
+
+    return {
+        str(row.GOL or '').strip(): (
+            row.URUTAN
+            if row.URUTAN is not None
+            else 999999
+        )
+        for row in rows
+    }
 
 
 def sort_pegawai_rows(pegawai_rows):
     """
-    Sort pegawai berdasarkan rule HRIS Reborn.
+    STANDARD SORTING PEGAWAI HRIS REBORN.
 
-    Prioritas:
+    Seluruh modul HRIS menggunakan fungsi ini.
 
-    Eselon:
-        1 -> 2 -> 3 -> 4
+    Rule:
 
-    Jabatan:
-        menggunakan URUT_JABATAN dari MF_JABATAN
-
-    Class:
-        tertinggi -> terendah
-
-    NIP:
-        ascending
+    1. Eselon
+    2. Class Jabatan
+    3. Golongan
+    4. Tahun Penerimaan
+    5. Tahun Lahir
+    6. Tanggal Lahir
+    7. Nama
+    8. NIP
     """
 
-    # =========================================================
-    # MASTER ESELON
-    # =========================================================
+    if not pegawai_rows:
+        return []
 
-    eselon_map = {}
-
-    for row in MfEselon.query.all():
-
-        key = str(row.ESELON).strip()
-
-        eselon_map[key] = (
-            row.URUT_ESELON
-            if row.URUT_ESELON is not None
-            else _safe_int(row.ESELON)
-        )
-
-
-    # =========================================================
-    # MASTER JABATAN
-    # =========================================================
-
-    jabatan_map = {}
-
-    for row in MfJabatan.query.all():
-
-        jabatan_map[row.JABATAN_ID] = (
-            row.URUT_JABATAN
-            if row.URUT_JABATAN is not None
-            else 999999
-        )
-
-
-    # =========================================================
-    # SORT FINAL
-    # =========================================================
-
-    def sort_key(p):
-
-        eselon_key = str(
-            p.ESELON
-            if p.ESELON is not None
-            else ''
-        ).strip()
-
-        urut_eselon = eselon_map.get(
-            eselon_key,
-            _safe_int(eselon_key)
-        )
-
-
-        urut_jabatan = jabatan_map.get(
-            p.JABATAN_ID,
-            999999
-        )
-
-
-        class_id = (
-            p.CLASS_ID
-            if p.CLASS_ID is not None
-            else 0
-        )
-
-
-        nip = str(
-            p.NIP
-            if p.NIP is not None
-            else ''
-        ).strip()
-
-
-        return (
-            urut_eselon,
-            urut_jabatan,
-            -_safe_int(class_id, 0),
-            nip
-        )
-
+    golongan_map = _build_golongan_map()
 
     return sorted(
         pegawai_rows,
-        key=sort_key
+        key=lambda pegawai: pegawai_sort_key(
+            pegawai,
+            golongan_map=golongan_map
+        )
     )

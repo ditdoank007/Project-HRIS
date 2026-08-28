@@ -1,9 +1,10 @@
 # controllers/dashboard_2MasterDataController.py
-from flask import render_template, request, jsonify
+from flask import render_template, request, jsonify, g, current_app
 from datetime import datetime
 import uuid
 from app import db
 from app.models.pegawaiModel import Pegawai
+from app.utils.pegawaiHelper import search_operational_pegawai
 from app.models.unitKerjaModel import MfUnitKerja
 from app.models.timSiagaModel import MfTimSiaga
 from app.models.timSiagaAnggotaModel import MfTimSiagaAnggota
@@ -11,6 +12,7 @@ from app.models.logActivityModel import LogActivity
 from app.models.otorisasiModel import Otorisasi
 from app.models.shiftModel import MfShift
 from app.models.emailSendModel import MfEmailSend
+from app.models.jabatanSiagaModel import MfJabatanSiaga
 
 def master_data_email_broadcast():
     """Render halaman Master Data Email Broadcast."""
@@ -114,7 +116,12 @@ def api_email_broadcast_save():
 
 def master_data_kgr():
     """Render halaman Master Data KGR."""
-    unit_kerja_list = MfUnitKerja.query.order_by(MfUnitKerja.NAMA_UNIT_KERJA.asc()).all()
+    unit_kerja_list = (
+        MfUnitKerja.query
+        .filter(MfUnitKerja.IS_AKTIF == 'Y')
+        .order_by(MfUnitKerja.NAMA_UNIT_KERJA.asc())
+        .all()
+    )
     return render_template(
         'pages/dashboard_2/Master_Data_KGR.html',
         unit_kerja_list=unit_kerja_list
@@ -122,26 +129,50 @@ def master_data_kgr():
 
 def api_kgr_search_pegawai():
     """
-    API pencarian pegawai untuk form KGR (seperti AutoComPeg di VB.NET)
-    """
-    keyword = request.args.get('keyword', '').strip()
-    if len(keyword) < 2:
-        return jsonify({'data': []})
+    API pencarian pegawai untuk form KGR.
 
-    pegawai_list = (
-        Pegawai.query
-        .filter(Pegawai.NAMA.ilike(f'%{keyword}%'))
-        .order_by(Pegawai.NAMA.asc())
-        .limit(15)
-        .all()
+    Standar HRIS Reborn:
+
+        - Minimal 1 karakter
+        - Hanya Pegawai Operasional
+        - IS_KELUAR = N
+        - Unit Kerja IS_USE = Y
+        - Maksimal 15 kandidat
+        - Pencarian sebagian nama
+    """
+
+    keyword = request.args.get('keyword', '').strip()
+
+    if not keyword:
+        return jsonify({
+            'data': []
+        })
+
+    # ========================================================
+    # AUTOCOMPLETE PEGAWAI TERPUSAT
+    #
+    # Business Rule:
+    #
+    #   search_operational_pegawai()
+    #
+    # memastikan seluruh pencarian pegawai menggunakan
+    # populasi operasional HRIS Reborn.
+    # ========================================================
+
+    pegawai_list = search_operational_pegawai(
+        keyword
     )
 
     return jsonify({
         'data': [
-            {'nip': p.NIP, 'nama': p.NAMA}
+            {
+                'nip': p.NIP,
+                'nama': p.NAMA
+            }
             for p in pegawai_list
         ]
     })
+
 
 def api_kgr_get_shift():
     """API: Get list shift untuk dropdown"""
@@ -591,9 +622,492 @@ def master_data_nominal_ut_piket():
     """Render halaman Master Data Nominal UT Piket."""
     return render_template('pages/dashboard_2/Master_Data_Nominal_UT_Piket.html')
 
+
+# ============================================================
+# MASTER JABATAN SIAGA
+# ============================================================
+
+
+def master_data_jabatan_siaga():
+    """
+    Render halaman Master Jabatan Siaga.
+
+    Sumber data:
+        MF_JABATAN_SIAGA
+
+    Urutan:
+        NoUrut ASC
+    """
+
+    jabatan_siaga_list = (
+        MfJabatanSiaga.query
+        .order_by(
+            MfJabatanSiaga.NO_URUT.asc()
+        )
+        .all()
+    )
+
+    return render_template(
+        'pages/dashboard_2/Master_Data_Jabatan_Siaga.html',
+        jabatan_siaga_list=jabatan_siaga_list
+    )
+
+def api_jabatan_siaga_get():
+    """
+    Mengambil Master Jabatan Siaga.
+
+    Default:
+        hanya data aktif.
+
+    all=1:
+        tampilkan seluruh data termasuk nonaktif.
+    """
+
+    try:
+        tampil_semua = (
+            str(request.args.get('all', '')).strip()
+            == '1'
+        )
+
+        query = MfJabatanSiaga.query
+
+        if not tampil_semua:
+            query = query.filter(
+                MfJabatanSiaga.IS_AKTIF == 'Y'
+            )
+
+        rows = (
+            query
+            .order_by(
+                MfJabatanSiaga.NO_URUT.asc()
+            )
+            .all()
+        )
+
+        return jsonify({
+            'success': True,
+            'data': [
+                row.to_dict()
+                for row in rows
+            ],
+            'total': len(rows)
+        })
+
+    except Exception as exc:
+
+        current_app.logger.exception(
+            'Gagal mengambil Master Jabatan Siaga'
+        )
+
+        return jsonify({
+            'success': False,
+            'error': str(exc),
+            'data': []
+        }), 500
+
+
+def api_jabatan_siaga_save():
+    """
+    Tambah / Edit Master Jabatan Siaga.
+    """
+
+    try:
+        data = request.get_json(
+            silent=True
+        ) or {}
+
+        raw_id = (
+            data.get('id')
+            or data.get('id_jabatan_siaga')
+            or ''
+        )
+
+        nama = str(
+            data.get('nama_jabatan')
+            or ''
+        ).strip().upper()
+
+        keterangan = str(
+            data.get('keterangan')
+            or ''
+        ).strip()
+
+        raw_no_urut = (
+            data.get('no_urut')
+            or ''
+        )
+
+        is_aktif = str(
+            data.get('is_aktif')
+            or 'Y'
+        ).strip().upper()
+
+        if not nama:
+            return jsonify({
+                'success': False,
+                'error': 'Nama jabatan wajib diisi.'
+            }), 400
+
+        try:
+            no_urut = int(raw_no_urut)
+        except (TypeError, ValueError):
+            return jsonify({
+                'success': False,
+                'error': 'No urut harus berupa angka.'
+            }), 400
+
+        if no_urut <= 0:
+            return jsonify({
+                'success': False,
+                'error': (
+                    'No urut harus lebih besar dari 0.'
+                )
+            }), 400
+
+        if is_aktif not in ('Y', 'N'):
+            return jsonify({
+                'success': False,
+                'error': 'Status aktif tidak valid.'
+            }), 400
+
+        try:
+            id_jabatan = (
+                int(raw_id)
+                if raw_id
+                else None
+            )
+        except (TypeError, ValueError):
+            return jsonify({
+                'success': False,
+                'error': 'ID jabatan tidak valid.'
+            }), 400
+
+        # ----------------------------------------------------
+        # CEK DUPLIKAT NAMA
+        # ----------------------------------------------------
+
+        nama_query = (
+            MfJabatanSiaga.query
+            .filter(
+                MfJabatanSiaga.NAMA_JABATAN == nama
+            )
+        )
+
+        if id_jabatan:
+            nama_query = nama_query.filter(
+                MfJabatanSiaga.ID_JABATAN_SIAGA
+                != id_jabatan
+            )
+
+        if nama_query.first():
+            return jsonify({
+                'success': False,
+                'error': (
+                    f'Jabatan "{nama}" sudah ada.'
+                )
+            }), 409
+
+        update_by = 'HRIS'
+        user = getattr(
+            g,
+            'user',
+            None
+        )
+
+        if user:
+            update_by = (
+                getattr(user, 'NIP', None)
+                or getattr(user, 'username', None)
+                or 'HRIS'
+            )
+
+        now = datetime.now()
+
+        # ====================================================
+        # INSERT
+        # ====================================================
+
+        if not id_jabatan:
+
+            existing = (
+                MfJabatanSiaga.query
+                .filter(
+                    MfJabatanSiaga.NO_URUT
+                    == no_urut
+                )
+                .first()
+            )
+
+            if existing:
+
+                # Geser seluruh urutan >= posisi baru.
+                #
+                # Temporary range dipakai agar UNIQUE
+                # NoUrut tidak bentrok.
+                db.session.execute(
+                    db.text("""
+                        UPDATE MF_JABATAN_SIAGA
+                        SET NoUrut = NoUrut + 100000
+                        WHERE NoUrut >= :no
+                    """),
+                    {'no': no_urut}
+                )
+
+                db.session.execute(
+                    db.text("""
+                        UPDATE MF_JABATAN_SIAGA
+                        SET NoUrut = NoUrut - 99999
+                        WHERE NoUrut >= :temporary
+                    """),
+                    {
+                        'temporary':
+                            no_urut + 100000
+                    }
+                )
+
+            row = MfJabatanSiaga(
+                NO_URUT=no_urut,
+                NAMA_JABATAN=nama,
+                KETERANGAN=keterangan or None,
+                IS_AKTIF=is_aktif,
+                UPDATE_BY=update_by,
+                UPDATE_DATE=now
+            )
+
+            db.session.add(row)
+
+        # ====================================================
+        # UPDATE
+        # ====================================================
+
+        else:
+
+            row = (
+                MfJabatanSiaga.query
+                .filter(
+                    MfJabatanSiaga.ID_JABATAN_SIAGA
+                    == id_jabatan
+                )
+                .first()
+            )
+
+            if not row:
+                return jsonify({
+                    'success': False,
+                    'error': (
+                        'Jabatan tidak ditemukan.'
+                    )
+                }), 404
+
+            old_no_urut = row.NO_URUT
+
+            # ------------------------------------------------
+            # NOMOR URUT BERUBAH
+            # ------------------------------------------------
+
+            if old_no_urut != no_urut:
+
+                # Pindahkan row yang sedang diedit
+                # ke nomor sementara.
+                db.session.execute(
+                    db.text("""
+                        UPDATE MF_JABATAN_SIAGA
+                        SET NoUrut = NoUrut + 100000
+                        WHERE IDJabatanSiaga = :id
+                    """),
+                    {
+                        'id': id_jabatan
+                    }
+                )
+
+                if no_urut < old_no_urut:
+
+                    # Contoh:
+                    # 6 -> 4
+                    #
+                    # 4 -> 5
+                    # 5 -> 6
+
+                    db.session.execute(
+                        db.text("""
+                            UPDATE MF_JABATAN_SIAGA
+                            SET NoUrut = NoUrut + 1
+                            WHERE NoUrut >= :new_no
+                              AND NoUrut < :old_no
+                        """),
+                        {
+                            'new_no': no_urut,
+                            'old_no': old_no_urut
+                        }
+                    )
+
+                else:
+
+                    # Contoh:
+                    # 6 -> 7
+                    #
+                    # 7 -> 6
+
+                    db.session.execute(
+                        db.text("""
+                            UPDATE MF_JABATAN_SIAGA
+                            SET NoUrut = NoUrut - 1
+                            WHERE NoUrut > :old_no
+                              AND NoUrut <= :new_no
+                        """),
+                        {
+                            'old_no': old_no_urut,
+                            'new_no': no_urut
+                        }
+                    )
+
+                db.session.execute(
+                    db.text("""
+                        UPDATE MF_JABATAN_SIAGA
+                        SET NoUrut = :new_no
+                        WHERE IDJabatanSiaga = :id
+                    """),
+                    {
+                        'new_no': no_urut,
+                        'id': id_jabatan
+                    }
+                )
+
+                db.session.flush()
+
+                row = (
+                    MfJabatanSiaga.query
+                    .filter(
+                        MfJabatanSiaga.ID_JABATAN_SIAGA
+                        == id_jabatan
+                    )
+                    .first()
+                )
+
+            row.NAMA_JABATAN = nama
+            row.KETERANGAN = (
+                keterangan or None
+            )
+            row.IS_AKTIF = is_aktif
+            row.UPDATE_BY = update_by
+            row.UPDATE_DATE = now
+
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': (
+                'Master Jabatan Siaga '
+                'berhasil disimpan.'
+            ),
+            'data': row.to_dict()
+        })
+
+    except Exception as exc:
+
+        db.session.rollback()
+
+        current_app.logger.exception(
+            'Gagal menyimpan Master Jabatan Siaga'
+        )
+
+        return jsonify({
+            'success': False,
+            'error': str(exc)
+        }), 500
+
+
+def api_jabatan_siaga_deactivate():
+    """
+    Deaktivasi jabatan.
+    Record tidak dihapus secara fisik.
+    """
+
+    try:
+        data = request.get_json(
+            silent=True
+        ) or {}
+
+        raw_id = (
+            data.get('id')
+            or data.get('id_jabatan_siaga')
+            or ''
+        )
+
+        try:
+            id_jabatan = int(raw_id)
+        except (TypeError, ValueError):
+            return jsonify({
+                'success': False,
+                'error': 'ID jabatan tidak valid.'
+            }), 400
+
+        row = (
+            MfJabatanSiaga.query
+            .filter(
+                MfJabatanSiaga.ID_JABATAN_SIAGA
+                == id_jabatan
+            )
+            .first()
+        )
+
+        if not row:
+            return jsonify({
+                'success': False,
+                'error': (
+                    'Jabatan tidak ditemukan.'
+                )
+            }), 404
+
+        row.IS_AKTIF = 'N'
+        row.UPDATE_BY = 'HRIS'
+        row.UPDATE_DATE = datetime.now()
+
+        user = getattr(
+            g,
+            'user',
+            None
+        )
+
+        if user:
+            row.UPDATE_BY = (
+                getattr(user, 'NIP', None)
+                or getattr(user, 'username', None)
+                or 'HRIS'
+            )
+
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': (
+                f'Jabatan "{row.NAMA_JABATAN}" '
+                'berhasil dinonaktifkan.'
+            ),
+            'data': row.to_dict()
+        })
+
+    except Exception as exc:
+
+        db.session.rollback()
+
+        current_app.logger.exception(
+            'Gagal menonaktifkan Master Jabatan Siaga'
+        )
+
+        return jsonify({
+            'success': False,
+            'error': str(exc)
+        }), 500
+
 def master_data_tim_siaga():
     """Render halaman Master Data Tim Siaga."""
-    unit_kerja_list = MfUnitKerja.query.order_by(MfUnitKerja.NAMA_UNIT_KERJA.asc()).all()
+    unit_kerja_list = (
+        MfUnitKerja.query
+        .filter(MfUnitKerja.IS_AKTIF == 'Y')
+        .order_by(MfUnitKerja.NAMA_UNIT_KERJA.asc())
+        .all()
+    )
     return render_template(
         'pages/dashboard_2/Master_Data_Tim_Siaga.html',
         unit_kerja_list=unit_kerja_list
@@ -601,26 +1115,46 @@ def master_data_tim_siaga():
 
 def api_search_pegawai_tim():
     """
-    API pencarian pegawai KHUSUS untuk form Tim Siaga.
-    """
-    keyword = request.args.get('keyword', '').strip()
-    if len(keyword) < 2:
-        return jsonify({'data': []})
+    API pencarian pegawai untuk form Tim Siaga.
 
-    pegawai_list = (
-        Pegawai.query
-        .filter(Pegawai.NAMA.ilike(f'%{keyword}%'))
-        .order_by(Pegawai.NAMA.asc())
-        .limit(15)
-        .all()
+    Standar HRIS Reborn:
+
+        - Minimal 1 karakter
+        - Hanya Pegawai Operasional
+        - IS_KELUAR = N
+        - Unit Kerja IS_USE = Y
+        - Maksimal 15 kandidat
+        - Pencarian sebagian nama
+    """
+
+    keyword = request.args.get('keyword', '').strip()
+
+    if not keyword:
+        return jsonify({
+            'data': []
+        })
+
+    # ========================================================
+    # AUTOCOMPLETE PEGAWAI TERPUSAT
+    #
+    # Seluruh pencarian pegawai menggunakan Business Rule
+    # yang sama melalui search_operational_pegawai().
+    # ========================================================
+
+    pegawai_list = search_operational_pegawai(
+        keyword
     )
 
     return jsonify({
         'data': [
-            {'nip': p.NIP, 'nama': p.NAMA}
+            {
+                'nip': p.NIP,
+                'nama': p.NAMA
+            }
             for p in pegawai_list
         ]
     })
+
 
 def api_tim_siaga_save():
     """API: Simpan/Update Tim Siaga"""
@@ -904,7 +1438,12 @@ def master_data_user_account():
 # View tampilan Cari
 def cari_data_kgr():
     """Render halaman Cari Data KGR."""
-    unit_kerja_list = MfUnitKerja.query.order_by(MfUnitKerja.NAMA_UNIT_KERJA.asc()).all()
+    unit_kerja_list = (
+        MfUnitKerja.query
+        .filter(MfUnitKerja.IS_AKTIF == 'Y')
+        .order_by(MfUnitKerja.NAMA_UNIT_KERJA.asc())
+        .all()
+    )
     return render_template(
         'pages/dashboard_2/Cari_Data_KGR.html',
         unit_kerja_list=unit_kerja_list
@@ -930,7 +1469,12 @@ def api_kgr_get_filter_fields():
 
 def cari_data_piket_siaga():
     """Render halaman Cari Data Piket Siaga."""
-    unit_kerja_list = MfUnitKerja.query.order_by(MfUnitKerja.NAMA_UNIT_KERJA.asc()).all()
+    unit_kerja_list = (
+        MfUnitKerja.query
+        .filter(MfUnitKerja.IS_AKTIF == 'Y')
+        .order_by(MfUnitKerja.NAMA_UNIT_KERJA.asc())
+        .all()
+    )
     return render_template(
         'pages/dashboard_2/Cari_Data_Piket_Siaga.html',
         unit_kerja_list=unit_kerja_list
@@ -939,7 +1483,12 @@ def cari_data_piket_siaga():
 
 def cari_data_piket_tim_siaga():
     """Render halaman Cari Data Piket Tim Siaga."""
-    unit_kerja_list = MfUnitKerja.query.order_by(MfUnitKerja.NAMA_UNIT_KERJA.asc()).all()
+    unit_kerja_list = (
+        MfUnitKerja.query
+        .filter(MfUnitKerja.IS_AKTIF == 'Y')
+        .order_by(MfUnitKerja.NAMA_UNIT_KERJA.asc())
+        .all()
+    )
     return render_template(
         'pages/dashboard_2/Cari_Data_Piket_Tim_Siaga.html',
         unit_kerja_list=unit_kerja_list
@@ -1090,8 +1639,114 @@ def api_cari_tim_siaga_get():
 
 def cari_data_tim_siaga():
     """Render halaman Cari Data Tim Siaga."""
-    unit_kerja_list = MfUnitKerja.query.order_by(MfUnitKerja.NAMA_UNIT_KERJA.asc()).all()
+    unit_kerja_list = (
+        MfUnitKerja.query
+        .filter(MfUnitKerja.IS_AKTIF == 'Y')
+        .order_by(MfUnitKerja.NAMA_UNIT_KERJA.asc())
+        .all()
+    )
     return render_template(
         'pages/dashboard_2/Cari_Data_Tim_Siaga.html',
         unit_kerja_list=unit_kerja_list
     )
+
+
+# ============================================================
+# ACTIVATE MASTER JABATAN SIAGA
+# ============================================================
+
+def api_jabatan_siaga_activate():
+    """
+    Mengaktifkan kembali Master Jabatan Siaga.
+
+    Record tidak dibuat ulang.
+    Record existing hanya diubah:
+        IS_AKTIF = 'Y'
+    """
+
+    try:
+
+        data = request.get_json(
+            silent=True
+        ) or {}
+
+        raw_id = (
+            data.get('id')
+            or data.get('id_jabatan_siaga')
+            or ''
+        )
+
+        try:
+            id_jabatan = int(raw_id)
+        except (TypeError, ValueError):
+
+            return jsonify({
+                'success': False,
+                'error': 'ID jabatan tidak valid.'
+            }), 400
+
+
+        row = (
+            MfJabatanSiaga.query
+            .filter(
+                MfJabatanSiaga.ID_JABATAN_SIAGA
+                == id_jabatan
+            )
+            .first()
+        )
+
+
+        if not row:
+
+            return jsonify({
+                'success': False,
+                'error': 'Jabatan tidak ditemukan.'
+            }), 404
+
+
+        row.IS_AKTIF = 'Y'
+
+        user = getattr(
+            g,
+            'user',
+            None
+        )
+
+        row.UPDATE_BY = 'HRIS'
+
+        if user:
+
+            row.UPDATE_BY = (
+                getattr(user, 'NIP', None)
+                or getattr(user, 'username', None)
+                or 'HRIS'
+            )
+
+        row.UPDATE_DATE = datetime.now()
+
+
+        db.session.commit()
+
+
+        return jsonify({
+            'success': True,
+            'message': (
+                'Jabatan berhasil diaktifkan kembali.'
+            ),
+            'data': row.to_dict()
+        })
+
+
+    except Exception as exc:
+
+        db.session.rollback()
+
+        current_app.logger.exception(
+            'Gagal mengaktifkan Master Jabatan Siaga'
+        )
+
+        return jsonify({
+            'success': False,
+            'error': str(exc)
+        }), 500
+

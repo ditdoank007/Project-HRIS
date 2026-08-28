@@ -610,3 +610,74 @@
     margin-bottom: 10px;
     letter-spacing: 1px;
 }
+
+/* ============================================================
+   HOMEPAGE MINIMALIS
+   Kontak Kantor
+   ============================================================ */
+
+.office-contact-section {
+    background-color: #f4f6f8;
+    padding: 60px 20px 55px;
+}
+
+.office-contact-title {
+    margin-bottom: 24px;
+    font-size: 28px;
+    font-weight: 700;
+    color: #040f28;
+}
+
+.office-contact-address {
+    margin: 0;
+    line-height: 1.8;
+    font-size: 17px;
+    color: #666666;
+}
+
+.office-contact-section + .footer-custom {
+    background-color: #EB6831;
+    color: #ffffff;
+}
+
+.footer-custom p {
+    line-height: 1.7;
+}
+
+/* ============================================================
+   HOMEPAGE MINIMALIS
+   KONTAK KANTOR
+   ============================================================ */
+
+.office-contact-section {
+    background-color: #f4f6f8;
+    padding: 45px 20px 40px;
+}
+
+.office-contact-title {
+    margin-bottom: 20px;
+    font-size: 27px;
+    font-weight: 700;
+    color: #040f28;
+}
+
+.office-contact-address {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.75;
+    color: #666666;
+}
+
+/* ============================================================
+   FOOTER HOMEPAGE
+   ============================================================ */
+
+.footer-custom {
+    background-color: #EB6831;
+    color: #ffffff;
+}
+
+.footer-custom p {
+    margin-bottom: 4px;
+    line-height: 1.6;
+}

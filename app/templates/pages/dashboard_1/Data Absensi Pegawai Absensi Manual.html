@@ -373,7 +373,7 @@
     document.getElementById('searchPegawai').addEventListener('input', function() {
         clearTimeout(searchTimeout);
         const keyword = this.value.trim();
-        if (keyword.length < 2) {
+        if (keyword.length < 1) {
             document.getElementById('searchResults').style.display = 'none';
             return;
         }

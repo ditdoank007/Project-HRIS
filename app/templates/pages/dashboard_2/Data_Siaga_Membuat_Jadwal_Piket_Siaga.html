@@ -1,287 +1,1232 @@
-<!-- pages/dashboard_2/Data_Siaga_Membuat_Jadwal_Piket_Siaga.html -->
 {% extends "layout/baseDashboard2.html" %}
 
-{% block title %}- Membuat Jadwal Piket{% endblock %}
+{% block title %}- Membuat Jadwal Piket Siaga{% endblock %}
 
 {% block content %}
+
 <div class="nxl-content">
+
     <div class="page-header">
         <div class="page-header-left d-flex align-items-center">
             <div class="page-header-title">
                 <h5 class="m-b-10">Data Siaga</h5>
             </div>
+
             <ul class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url_for('main.view_data_siaga_membuat_jadwal_piket_siaga') }}">Membuat Jadwal Piket</a></li>
+                <li class="breadcrumb-item">
+                    <a href="{{ url_for('main.view_data_siaga_membuat_jadwal_piket_siaga') }}">
+                        Membuat Jadwal Piket
+                    </a>
+                </li>
             </ul>
         </div>
     </div>
 
-    <div class="main-content master-siaga">
-        <div class="container-fluid">
-            <div class="card mb-4 filter-card">
-                <div class="card-header-custom d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0">
-                        <i class="bi bi-people me-2"></i>Membuat Jadwal Piket Siaga
+    <div class="main-content">
+
+        <div class="card mb-4 hris-card">
+
+            <div class="card-header hris-card-header">
+                <div>
+                    <h6 class="mb-1">
+                        <i class="bi bi-calendar-plus me-2"></i>
+                        Pembuatan Jadwal Piket Siaga
                     </h6>
 
-                    <div class="header-actions">
-                        <button class="btn p-0 border-0 bg-transparent shadow-none d-md-none" type="button"
-                            data-bs-toggle="collapse" data-bs-target="#headerIconsCollapse">
-                            <i class="bi bi-three-dots-vertical" style="font-size: 1.5rem; color: #333;"></i>
-                        </button>
-
-                        <div class="collapse d-md-flex align-items-center" id="headerIconsCollapse">
-                            <div class="header-icons-wrapper d-flex gap-3 p-2 p-md-0 mt-2 mt-md-0">
-                                <a href="Cari_Data_Piket_TIM_Siaga.html"
-                                    class="btn p-0 border-0 bg-transparent shadow-none text-decoration-none">
-                                    <i class="bi bi-search" style="color: #333; font-size: 1.1rem;"></i>
-                                </a>
-
-                                <button href="Cari_Data_Piket_TIM_Siaga.html"
-                                    class="btn p-0 border-0 bg-transparent shadow-none text-decoration-none">
-                                    <i class="bi bi-save" style="color: #198754; font-size: 1.2rem;"></i>
-                                </button>
-
-                                <a href="Email_Daftar_Piket_Siaga.html"
-                                    class="btn p-0 border-0 bg-transparent shadow-none text-decoration-none">
-                                    <i class="bi bi-envelope" style="color: #0dcaf0; font-size: 1.2rem;"></i>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-12 d-md-flex align-items-center">
-                            <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Periode</label>
-                            <div class="col-md-7">
-                                <div class="input-group-custom w-100">
-                                    <input type="text" class="form-control-sm border w-100">
-                                    <span class="icon-append"><i class="bi bi-calendar3"></i></span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-12 d-md-flex align-items-center">
-                            <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Shift</label>
-                            <div class="col-md-7">
-                                <select class="form-select-sm border custom-select w-100">
-                                    <option value="">Pilih Shift</option>
-                                    <option>Shift 1</option>
-                                    <option>Shift 2</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="col-12 d-md-flex align-items-center mb-2">
-                            <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Unit Kerja</label>
-                            <div class="col-md-7">
-                                <select class="form-select-sm border custom-select w-100">
-                                    <option value="">Pilih Unit Kerja</option>
-                                    <option>Surabaya</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="col-12 d-md-flex align-items-center">
-                            <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Start KGR/PW</label>
-                            <div class="col-md-7">
-                                <div class="input-group-custom w-100">
-                                    <input type="text" class="form-control-sm border w-100">
-                                    <span class="icon-append"><i class="bi bi-pencil-fill"></i></span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-12 d-md-flex align-items-center">
-                            <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Start Tim Kom</label>
-                            <div class="col-md-7">
-                                <div class="input-group-custom w-100">
-                                    <input type="text" class="form-control-sm border w-100">
-                                    <span class="icon-append"><i class="bi bi-pencil-fill"></i></span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-12 d-md-flex align-items-center">
-                            <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Start Tim Kom (P)</label>
-                            <div class="col-md-7">
-                                <div class="input-group-custom w-100">
-                                    <input type="text" class="form-control-sm border w-100">
-                                    <span class="icon-append"><i class="bi bi-pencil-fill"></i></span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-12 d-md-flex align-items-center">
-                            <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Start Tim Medis</label>
-                            <div class="col-md-7">
-                                <div class="input-group-custom w-100">
-                                    <input type="text" class="form-control-sm border w-100">
-                                    <span class="icon-append"><i class="bi bi-pencil-fill"></i></span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-12 d-md-flex align-items-center">
-                            <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Start Tim Humas</label>
-                            <div class="col-md-7">
-                                <div class="input-group-custom w-100">
-                                    <input type="text" class="form-control-sm border w-100">
-                                    <span class="icon-append"><i class="bi bi-pencil-fill"></i></span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-12 d-md-flex align-items-center">
-                            <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Start Tim
-                                Rescuer/ABK</label>
-                            <div class="col-md-7">
-                                <div class="input-group-custom w-100">
-                                    <input type="text" class="form-control-sm border w-100">
-                                    <span class="icon-append"><i class="bi bi-pencil-fill"></i></span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-12 d-md-flex align-items-center">
-                            <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Start Tim Rescuer/ABK
-                                (P)</label>
-                            <div class="col-md-7">
-                                <div class="input-group-custom w-100">
-                                    <input type="text" class="form-control-sm border w-100">
-                                    <span class="icon-append"><i class="bi bi-pencil-fill"></i></span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <small class="text-muted">
+                        Buat roster personel siaga berdasarkan periode, shift,
+                        unit kerja dan jabatan.
+                    </small>
                 </div>
             </div>
 
-            <div class="card mb-4 filter-card">
-                <div class="card-header-customm">
-                    <h6 class="mb-0">Pengajuan Otorisasi</h6>
+            <div class="card-body">
+
+                <div
+                    id="siagaAlert"
+                    class="alert d-none"
+                    role="alert">
                 </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-12 d-md-flex">
-                            <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">List Jadwal</label>
-                            <div class="col-md-7">
-                                <div class="table-responsive">
-                                    <table class="table table-bordered table-sm w-100">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>No</th>
-                                                <th>Unit</th>
-                                                <th>Activity</th>
-                                                <th>Periode</th>
-                                                <th>Shift</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td colspan="5" class="text-center py-4">No records to display.</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
 
-                        <div class="col-12 d-md-flex align-items-center">
-                            <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Jabatan-1</label>
-                            <div class="col-md-7">
-                                <div class="input-group-custom w-100">
-                                    <input type="text" class="form-control-sm border w-100">
-                                    <span class="icon-append"><i class="bi bi-pencil-fill"></i></span>
-                                </div>
-                            </div>
-                        </div>
+                <!-- ================================================== -->
+                <!-- INFORMASI ROSTER -->
+                <!-- ================================================== -->
 
-                        <div class="col-12 d-md-flex align-items-center">
-                            <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Personil-1</label>
-                            <div class="col-md-7">
-                                <div class="input-group-custom w-100">
-                                    <input type="text" class="form-control-sm border w-100">
-                                    <span class="icon-append"><i class="bi bi-pencil-fill"></i></span>
-                                </div>
-                            </div>
-                        </div>
+                <div class="hris-section-title">
+                    Informasi Roster
+                </div>
 
-                        <div class="col-12 d-md-flex align-items-center">
-                            <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Jabatan-2</label>
-                            <div class="col-md-7">
-                                <div class="input-group-custom w-100">
-                                    <input type="text" class="form-control-sm border w-100">
-                                    <span class="icon-append"><i class="bi bi-pencil-fill"></i></span>
-                                </div>
-                            </div>
-                        </div>
+                <div class="row g-3">
 
-                        <div class="col-12 d-md-flex align-items-center">
-                            <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Personil-2</label>
-                            <div class="col-md-7">
-                                <div class="input-group-custom w-100">
-                                    <input type="text" class="form-control-sm border w-100">
-                                    <span class="icon-append"><i class="bi bi-pencil-fill"></i></span>
-                                </div>
-                            </div>
-                        </div>
+                    <!-- BULAN -->
+                    <div class="col-md-6">
+                        <label
+                            for="siagaBulan"
+                            class="form-label">
+                            Bulan
+                        </label>
 
-                        <div class="col-12 d-md-flex align-items-center">
-                            <div class="col-md-1"></div>
-                            <div class="col-md-2">
-                                <label class="form-label label-master">Otorisasi</label>
-                            </div>
-                            <div class="col-md-7 d-flex align-items-center gap-4">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="otorisasi" id="needApproved"
-                                        value="need">
-                                    <label class="form-check-label text-black" for="needApproved">
-                                        Need Approved
-                                    </label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="otorisasi" id="bypass"
-                                        value="bypass" checked>
-                                    <label class="form-check-label text-black" for="bypass">
-                                        Bypass
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
+                        <select
+                            id="siagaBulan"
+                            class="form-select hris-form-control">
 
-                        <div class="col-12 d-md-flex">
-                            <div class="col-md-3"></div>
-                            <div class="col-md-1">
-                                <button class="btn btn-primary w-100 py-2"><i
-                                        class="bi bi-arrow-clockwise me-2"></i>Process</button>
-                            </div>
-                        </div>
+                            <option value="">Pilih Bulan</option>
+
+                            <option value="01">Januari</option>
+                            <option value="02">Februari</option>
+                            <option value="03">Maret</option>
+                            <option value="04">April</option>
+                            <option value="05">Mei</option>
+                            <option value="06">Juni</option>
+                            <option value="07">Juli</option>
+                            <option value="08">Agustus</option>
+                            <option value="09">September</option>
+                            <option value="10">Oktober</option>
+                            <option value="11">November</option>
+                            <option value="12">Desember</option>
+
+                        </select>
                     </div>
+
+                    <!-- TAHUN -->
+                    <div class="col-md-6">
+
+                        <label
+                            for="siagaTahun"
+                            class="form-label">
+                            Tahun
+                        </label>
+
+                        <select
+                            id="siagaTahun"
+                            class="form-select hris-form-control">
+
+                            {% for tahun in range(2025, 2031) %}
+                            <option value="{{ tahun }}">
+                                {{ tahun }}
+                            </option>
+                            {% endfor %}
+
+                        </select>
+
+                    </div>
+
+                    <!-- SHIFT -->
+                    <div class="col-md-6">
+
+                        <label
+                            for="siagaShift"
+                            class="form-label">
+                            Shift
+                        </label>
+
+                        <select
+                            id="siagaShift"
+                            class="form-select hris-form-control">
+
+                            <option value="">Pilih Shift</option>
+                            <option value="1">Shift 1</option>
+                            <option value="2">Shift 2</option>
+
+                        </select>
+
+                    </div>
+
+                    <!-- UNIT -->
+                    <div class="col-md-6">
+
+                        <label
+                            for="siagaUnit"
+                            class="form-label">
+                            Unit
+                        </label>
+
+                        <select
+                            id="siagaUnit"
+                            class="form-select hris-form-control">
+
+                            <option value="">
+                                Pilih Unit
+                            </option>
+
+                            {% if unit_kerja_list is defined %}
+                                {% for unit in unit_kerja_list %}
+                                <option
+                                    value="{{ unit.IDUnitKerja }}">
+                                    {{ unit.UnitKerjaName }}
+                                </option>
+                                {% endfor %}
+                            {% endif %}
+
+                        </select>
+
+                    </div>
+
+                    <!-- JABATAN -->
+                    <div class="col-md-6">
+
+                        <label
+                            for="siagaFungsional"
+                            class="form-label">
+                            Jabatan Siaga
+                        </label>
+
+                        <select
+                            id="siagaFungsional"
+                            class="form-select hris-form-control">
+
+                            <option value="">
+                                Pilih Jabatan Siaga
+                            </option>
+
+                            <option value="KAGAHAR">
+                                KAGAHAR
+                            </option>
+
+                            <option value="PERWIRA">
+                                PERWIRA
+                            </option>
+
+                            <option value="KOMUNIKASI">
+                                KOMUNIKASI
+                            </option>
+
+                            <option value="RESCUER">
+                                RESCUER
+                            </option>
+
+                        </select>
+
+                    </div>
+
                 </div>
+
+
+                <!-- ================================================== -->
+                <!-- PERSONEL -->
+                <!-- ================================================== -->
+
+                <div class="hris-section-title mt-4">
+                    Personel Piket
+                </div>
+
+                <div class="row">
+
+                    <div class="col-12">
+
+                        <label
+                            for="siagaPegawaiInput"
+                            class="form-label">
+                            Nama Pegawai
+                        </label>
+
+                        <div class="position-relative">
+
+                            <input
+                                type="text"
+                                id="siagaPegawaiInput"
+                                class="form-control hris-form-control"
+                                autocomplete="off"
+                                placeholder="Ketik nama pegawai..."
+                                aria-label="Cari pegawai">
+
+                            <div
+                                id="siagaPegawaiAutocomplete"
+                                class="hris-autocomplete-list d-none">
+                            </div>
+
+                        </div>
+
+                        <div class="form-text">
+                            Ketik nama minimal satu karakter.
+                            Pilih pegawai dari hasil autocomplete.
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- DAFTAR PERSONEL -->
+
+                <div class="mt-3">
+
+                    <div
+                        id="siagaPegawaiList"
+                        class="hris-selected-list">
+
+                        <div
+                            id="siagaPegawaiEmpty"
+                            class="hris-empty-state">
+                            Belum ada pegawai dipilih.
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ================================================== -->
+                <!-- SHIFT 1 = SHIFT 2 -->
+                <!-- ================================================== -->
+
+                <div class="hris-option-box mt-4">
+
+                    <div class="form-check">
+
+                        <input
+                            class="form-check-input"
+                            type="checkbox"
+                            id="siagaShiftSama">
+
+                        <label
+                            class="form-check-label"
+                            for="siagaShiftSama">
+
+                            <strong>
+                                Shift 1 = Shift 2
+                            </strong>
+
+                            <div class="text-muted small">
+                                Gunakan personel roster ini juga untuk
+                                Shift 2 pada tanggal yang sama.
+                            </div>
+
+                        </label>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ================================================== -->
+                <!-- ACTION -->
+                <!-- ================================================== -->
+
+                <div
+                    class="d-flex justify-content-end gap-2 mt-4">
+
+                    <button
+                        type="button"
+                        id="btnSiagaReset"
+                        class="btn hris-btn-secondary">
+
+                        <i class="bi bi-arrow-counterclockwise me-1"></i>
+                        Reset
+
+                    </button>
+
+                    <button
+                        type="button"
+                        id="btnSiagaSave"
+                        class="btn hris-btn-primary">
+
+                        <i class="bi bi-save me-1"></i>
+                        SAVE
+
+                    </button>
+
+                </div>
+
             </div>
+
         </div>
-    </div>
-</div>
-{% endblock %}
 
-{% block script %}
+
+        <!-- ======================================================== -->
+        <!-- DATA TERAKHIR -->
+        <!-- ======================================================== -->
+
+        <div
+            id="siagaLastSavedCard"
+            class="card mb-4 hris-card d-none">
+
+            <div class="card-header hris-card-header">
+
+                <h6 class="mb-0">
+                    <i class="bi bi-check-circle me-2"></i>
+                    Data Terakhir Disimpan
+                </h6>
+
+            </div>
+
+            <div class="card-body">
+
+                <div class="row g-3">
+
+                    <div class="col-md-3">
+                        <div class="hris-summary-label">
+                            Unit
+                        </div>
+
+                        <div
+                            id="lastUnit"
+                            class="hris-summary-value">
+                            -
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class="hris-summary-label">
+                            Jabatan
+                        </div>
+
+                        <div
+                            id="lastFungsional"
+                            class="hris-summary-value">
+                            -
+                        </div>
+                    </div>
+
+                    <div class="col-md-2">
+                        <div class="hris-summary-label">
+                            Shift
+                        </div>
+
+                        <div
+                            id="lastShift"
+                            class="hris-summary-value">
+                            -
+                        </div>
+                    </div>
+
+                    <div class="col-md-2">
+                        <div class="hris-summary-label">
+                            Urut
+                        </div>
+
+                        <div
+                            id="lastUrut"
+                            class="hris-summary-value">
+                            -
+                        </div>
+                    </div>
+
+                    <div class="col-md-12">
+
+                        <div class="hris-summary-label">
+                            Personel
+                        </div>
+
+                        <div
+                            id="lastPegawai"
+                            class="hris-summary-value">
+                            -
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+(function () {
+
+    "use strict";
+
+    const state = {
+        pegawai: []
+    };
+
+    const el = (id) => document.getElementById(id);
+
+    const bulan = el("siagaBulan");
+    const tahun = el("siagaTahun");
+    const shift = el("siagaShift");
+    const unit = el("siagaUnit");
+    const fungsional = el("siagaFungsional");
+
+    const inputPegawai = el("siagaPegawaiInput");
+    const autocomplete = el("siagaPegawaiAutocomplete");
+    const pegawaiList = el("siagaPegawaiList");
+    const emptyState = el("siagaPegawaiEmpty");
+
+    const alertBox = el("siagaAlert");
+
+    const shiftSama = el("siagaShiftSama");
+
+    const btnSave = el("btnSiagaSave");
+    const btnReset = el("btnSiagaReset");
+
+    function showAlert(message, type) {
+
+        alertBox.className =
+            "alert alert-" + type;
+
+        alertBox.textContent = message;
+
+        alertBox.classList.remove("d-none");
+
+    }
+
+    function hideAlert() {
+
+        alertBox.classList.add("d-none");
+
+    }
+
+
+    function renderPegawai() {
+
+        pegawaiList
+            .querySelectorAll(".hris-selected-person")
+            .forEach((node) => node.remove());
+
+        if (!state.pegawai.length) {
+
+            emptyState.classList.remove("d-none");
+
+            return;
+
+        }
+
+        emptyState.classList.add("d-none");
+
+        state.pegawai.forEach((pegawai, index) => {
+
+            const row =
+                document.createElement("div");
+
+            row.className =
+                "hris-selected-person";
+
+            row.innerHTML = `
+                <div class="hris-selected-person-info">
+                    <strong>${escapeHtml(pegawai.nama)}</strong>
+                    <small>
+                        ID Pegawai: ${escapeHtml(pegawai.nip)}
+                        &nbsp; | &nbsp;
+                        FingerID: ${escapeHtml(pegawai.finger_id || "-")}
+                    </small>
+                </div>
+
+                <button
+                    type="button"
+                    class="btn hris-btn-icon"
+                    data-index="${index}"
+                    title="Hapus pegawai">
+
+                    <i class="bi bi-x-lg"></i>
+
+                </button>
+            `;
+
+            pegawaiList.appendChild(row);
+
+        });
+
+    }
+
+
+    function escapeHtml(value) {
+
+        return String(value ?? "")
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
+
+    }
+
+
+    function closeAutocomplete() {
+
+        autocomplete.classList.add("d-none");
+
+        autocomplete.innerHTML = "";
+
+    }
+
+
+    function addPegawai(pegawai) {
+
+        const nip =
+            String(pegawai.nip || "").trim();
+
+        if (!nip) {
+            return;
+        }
+
+        if (
+            state.pegawai.some(
+                item => String(item.nip) === nip
+            )
+        ) {
+
+            showAlert(
+                "Pegawai tersebut sudah dipilih dalam roster ini.",
+                "warning"
+            );
+
+            return;
+
+        }
+
+        state.pegawai.push({
+            nip: nip,
+            nama: pegawai.nama || nip,
+            finger_id: pegawai.finger_id || ""
+        });
+
+        inputPegawai.value = "";
+
+        closeAutocomplete();
+
+        renderPegawai();
+
+        hideAlert();
+
+    }
+
+
+    async function searchPegawai(keyword) {
+
+        keyword = keyword.trim();
+
+        if (!keyword) {
+
+            closeAutocomplete();
+
+            return;
+
+        }
+
+        try {
+
+            const response = await fetch(
+                `/api/laporan/search-pegawai?keyword=${encodeURIComponent(keyword)}`
+            );
+
+            if (!response.ok) {
+                throw new Error("Autocomplete gagal.");
+            }
+
+            const result = await response.json();
+
+            const rows =
+                result.data ||
+                result.results ||
+                result.pegawai ||
+                [];
+
+            autocomplete.innerHTML = "";
+
+            if (!rows.length) {
+
+                autocomplete.innerHTML =
+                    `<div class="hris-autocomplete-empty">
+                        Pegawai tidak ditemukan.
+                    </div>`;
+
+                autocomplete.classList.remove("d-none");
+
+                return;
+
+            }
+
+            rows.forEach((pegawai) => {
+
+                const item =
+                    document.createElement("button");
+
+                item.type = "button";
+
+                item.className =
+                    "hris-autocomplete-item";
+
+                item.innerHTML = `
+                    <strong>
+                        ${escapeHtml(
+                            pegawai.nama ||
+                            pegawai.Nama ||
+                            ""
+                        )}
+                    </strong>
+
+                    <small>
+                        ID Pegawai:
+                        ${escapeHtml(
+                            pegawai.nip ||
+                            pegawai.NIP ||
+                            ""
+                        )}
+                        &nbsp; | &nbsp;
+                        FingerID:
+                        ${escapeHtml(
+                            pegawai.finger_id ||
+                            pegawai.FingerID ||
+                            "-"
+                        )}
+                    </small>
+                `;
+
+                item.addEventListener(
+                    "click",
+                    () => {
+
+                        addPegawai({
+                            nip:
+                                pegawai.nip ||
+                                pegawai.NIP,
+
+                            nama:
+                                pegawai.nama ||
+                                pegawai.Nama,
+
+                            finger_id:
+                                pegawai.finger_id ||
+                                pegawai.FingerID
+                        });
+
+                    }
+                );
+
+                autocomplete.appendChild(item);
+
+            });
+
+            autocomplete.classList.remove("d-none");
+
+        } catch (error) {
+
+            console.error(error);
+
+            showAlert(
+                "Autocomplete pegawai gagal dimuat.",
+                "danger"
+            );
+
+        }
+
+    }
+
+
+    let searchTimer = null;
+
+    inputPegawai.addEventListener(
+        "input",
+        function () {
+
+            clearTimeout(searchTimer);
+
+            searchTimer = setTimeout(
+                () => searchPegawai(this.value),
+                250
+            );
+
+        }
+    );
+
+
+    pegawaiList.addEventListener(
+        "click",
+        function (event) {
+
+            const button =
+                event.target.closest(
+                    "[data-index]"
+                );
+
+            if (!button) {
+                return;
+            }
+
+            const index =
+                Number(button.dataset.index);
+
+            state.pegawai.splice(index, 1);
+
+            renderPegawai();
+
+        }
+    );
+
+
+    document.addEventListener(
+        "click",
+        function (event) {
+
+            if (
+                !autocomplete.contains(event.target) &&
+                event.target !== inputPegawai
+            ) {
+
+                closeAutocomplete();
+
+            }
+
+        }
+    );
+
+
+    btnReset.addEventListener(
+        "click",
+        function () {
+
+            bulan.value = "";
+            tahun.value =
+                String(new Date().getFullYear());
+
+            shift.value = "";
+            unit.value = "";
+            fungsional.value = "";
+
+            shiftSama.checked = false;
+
+            state.pegawai = [];
+
+            inputPegawai.value = "";
+
+            renderPegawai();
+
+            closeAutocomplete();
+
+            hideAlert();
+
+        }
+    );
+
+
+    async function saveRoster() {
+
+        hideAlert();
+
+        if (!bulan.value) {
+            showAlert(
+                "Bulan wajib dipilih.",
+                "warning"
+            );
+            return;
+        }
+
+        if (!tahun.value) {
+            showAlert(
+                "Tahun wajib dipilih.",
+                "warning"
+            );
+            return;
+        }
+
+        if (!shift.value) {
+            showAlert(
+                "Shift wajib dipilih.",
+                "warning"
+            );
+            return;
+        }
+
+        if (!unit.value) {
+            showAlert(
+                "Unit kerja wajib dipilih.",
+                "warning"
+            );
+            return;
+        }
+
+        if (!fungsional.value) {
+            showAlert(
+                "Jabatan siaga wajib dipilih.",
+                "warning"
+            );
+            return;
+        }
+
+        if (!state.pegawai.length) {
+            showAlert(
+                "Minimal satu pegawai harus dipilih.",
+                "warning"
+            );
+            return;
+        }
+
+        btnSave.disabled = true;
+
+        btnSave.innerHTML =
+            `<span class="spinner-border spinner-border-sm me-1"></span>
+             Menyimpan...`;
+
+        try {
+
+            const response = await fetch(
+                "{{ url_for('main.api_pembuatan_jadwal_siaga_save') }}",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+
+                        bulan: bulan.value,
+
+                        tahun: tahun.value,
+
+                        shift: shift.value,
+
+                        unit_kerja_id:
+                            unit.value,
+
+                        fungsional:
+                            fungsional.value,
+
+                        pegawai:
+                            state.pegawai.map(
+                                item => ({
+                                    nip: item.nip
+                                })
+                            ),
+
+                        shift1_sama_shift2:
+                            shiftSama.checked
+
+                    })
+
+                }
+            );
+
+            const result =
+                await response.json();
+
+            if (!response.ok || !result.success) {
+
+                throw new Error(
+                    result.error ||
+                    "Gagal menyimpan jadwal."
+                );
+
+            }
+
+            showAlert(
+                result.message ||
+                "Jadwal berhasil disimpan.",
+                "success"
+            );
+
+            const saved =
+                result.data ||
+                result.roster ||
+                result;
+
+            el("siagaLastSavedCard")
+                .classList.remove("d-none");
+
+            el("lastUnit").textContent =
+                saved.unit_name ||
+                unit.options[
+                    unit.selectedIndex
+                ]?.text ||
+                unit.value;
+
+            el("lastFungsional").textContent =
+                saved.fungsional ||
+                fungsional.value;
+
+            el("lastShift").textContent =
+                saved.shift ||
+                shift.value;
+
+            el("lastUrut").textContent =
+                saved.no_urut ??
+                saved.urut ??
+                "-";
+
+            el("lastPegawai").textContent =
+                state.pegawai
+                    .map(item => item.nama)
+                    .join(", ");
+
+            state.pegawai = [];
+
+            inputPegawai.value = "";
+
+            renderPegawai();
+
+            shiftSama.checked = false;
+
+        } catch (error) {
+
+            console.error(error);
+
+            showAlert(
+                error.message ||
+                "Gagal menyimpan jadwal.",
+                "danger"
+            );
+
+        } finally {
+
+            btnSave.disabled = false;
+
+            btnSave.innerHTML =
+                `<i class="bi bi-save me-1"></i>
+                 SAVE`;
+
+        }
+
+    }
+
+
+    btnSave.addEventListener(
+        "click",
+        saveRoster
+    );
+
+
+    tahun.value =
+        String(new Date().getFullYear());
+
+    renderPegawai();
+
+})();
+
+
+
+    // ========================================================
+    // MASTER DROPDOWN - HRIS REBORN
+    //
+    // Unit:
+    //     MF_UNIT_KERJA
+    //     IS_USE = Y
+    //
+    // Jabatan:
+    //     MF_JABATAN_SIAGA
+    //     IsAktif = Y
+    //     ORDER BY NoUrut
+    // ========================================================
+
+    async function loadMasterJabatanSiaga() {
+
+        const select =
+            document.getElementById(
+                "siagaFungsional"
+            );
+
+        if (!select) {
+            return;
+        }
+
+        select.innerHTML = `
+            <option value="">
+                Memuat jabatan...
+            </option>
+        `;
+
+        try {
+
+            const response =
+                await fetch(
+                    "/api/siaga/master-jabatan-aktif"
+                );
+
+            const result =
+                await response.json();
+
+            if (
+                !response.ok ||
+                !result.success
+            ) {
+                throw new Error(
+                    result.error ||
+                    "Gagal mengambil jabatan siaga."
+                );
+            }
+
+            select.innerHTML = `
+                <option value="">
+                    Pilih Jabatan
+                </option>
+            `;
+
+            (result.data || []).forEach(
+                function (row) {
+
+                    const option =
+                        document.createElement(
+                            "option"
+                        );
+
+                    option.value =
+                        row.nama_jabatan;
+
+                    option.textContent =
+                        row.nama_jabatan;
+
+                    option.dataset.noUrut =
+                        row.no_urut;
+
+                    option.dataset.id =
+                        row.id_jabatan_siaga;
+
+                    select.appendChild(
+                        option
+                    );
+
+                }
+            );
+
+        } catch (error) {
+
+            console.error(
+                "Master Jabatan Siaga:",
+                error
+            );
+
+            select.innerHTML = `
+                <option value="">
+                    Gagal memuat jabatan
+                </option>
+            `;
+
+            if (
+                typeof showAlert ===
+                "function"
+            ) {
+
+                showAlert(
+                    "Master Jabatan Siaga gagal dimuat.",
+                    "danger"
+                );
+
+            }
+
+        }
+
+    }
+
+
+    async function loadMasterUnitAktif() {
+
+        const select =
+            document.getElementById(
+                "siagaUnit"
+            );
+
+        if (!select) {
+            return;
+        }
+
+        select.innerHTML = `
+            <option value="">
+                Memuat unit...
+            </option>
+        `;
+
+        try {
+
+            const response =
+                await fetch(
+                    "/api/siaga/master-unit-aktif"
+                );
+
+            const result =
+                await response.json();
+
+            if (
+                !response.ok ||
+                !result.success
+            ) {
+                throw new Error(
+                    result.error ||
+                    "Gagal mengambil unit."
+                );
+            }
+
+            select.innerHTML = `
+                <option value="">
+                    Pilih Unit
+                </option>
+            `;
+
+            (result.data || []).forEach(
+                function (row) {
+
+                    const option =
+                        document.createElement(
+                            "option"
+                        );
+
+                    option.value =
+                        row.id_unit_kerja;
+
+                    option.textContent =
+                        row.nama_unit_kerja;
+
+                    select.appendChild(
+                        option
+                    );
+
+                }
+            );
+
+        } catch (error) {
+
+            console.error(
+                "Master Unit:",
+                error
+            );
+
+            select.innerHTML = `
+                <option value="">
+                    Gagal memuat unit
+                </option>
+            `;
+
+            if (
+                typeof showAlert ===
+                "function"
+            ) {
+
+                showAlert(
+                    "Master Unit Kerja gagal dimuat.",
+                    "danger"
+                );
+
+            }
+
+        }
+
+    }
+
+
+    async function loadMasterDropdownSiaga() {
+
+        await Promise.all([
+            loadMasterUnitAktif(),
+            loadMasterJabatanSiaga()
+        ]);
+
+    }
+
+
+    if (
+        document.readyState ===
+        "loading"
+    ) {
+
+        document.addEventListener(
+            "DOMContentLoaded",
+            loadMasterDropdownSiaga
+        );
+
+    } else {
+
+        loadMasterDropdownSiaga();
+
+    }
+
+
+</script>
 
 {% endblock %}

@@ -378,7 +378,7 @@ $(document).ready(function() {
         const keyword = $(this).val().trim();
         clearTimeout(searchTimeout);
         
-        if (keyword.length < 2) { 
+        if (keyword.length < 1) { 
             $('#pegawaiDropdown').hide(); 
             return; 
         }

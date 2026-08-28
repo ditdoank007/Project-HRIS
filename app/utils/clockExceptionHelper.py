@@ -34,6 +34,7 @@ def generate_clock_exception_data(
     from app.models.eselonModel import MfEselon
     from app.models.golonganModel import MfGolongan
     from app.utils.pegawaiHelper import is_pegawai_aktif_periode
+    from app.utils.pegawaiSortHelper import sort_pegawai_rows
 
 
     kalender_rows = (
@@ -99,30 +100,6 @@ def generate_clock_exception_data(
         .filter(
             Pegawai.TGL_MASUK <= tgl_akhir
         )
-        .order_by(
-            # 1. Urut jabatan
-            db.case(
-                (MfJabatan.URUT_JABATAN.is_(None), 1),
-                else_=0
-            ).asc(),
-
-            MfJabatan.URUT_JABATAN.asc(),
-
-            # 2. Class terbesar dahulu
-            Pegawai.CLASS_ID.desc(),
-
-            # 3. Eselon
-            MfEselon.URUT_ESELON.asc(),
-
-            # 4. Golongan
-            MfGolongan.URUTAN.asc(),
-
-            # 5. NIP
-            Pegawai.NIP.asc(),
-
-            # 6. Nama
-            Pegawai.NAMA.asc()
-        )
         .all()
     )
 
@@ -135,6 +112,18 @@ def generate_clock_exception_data(
             tgl_akhir
         )
     ]
+
+
+    # ============================================================
+    # STANDARD SORTING HRIS REBORN
+    #
+    # Jangan membuat rule sorting lokal di modul.
+    # Seluruh laporan menggunakan pegawaiSortHelper.
+    # ============================================================
+
+    pegawai_list = sort_pegawai_rows(
+        pegawai_list
+    )
 
 
     return {

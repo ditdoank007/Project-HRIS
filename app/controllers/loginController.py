@@ -1,5 +1,6 @@
 from flask import request, jsonify, session
 from app.models.pegawaiModel import Pegawai
+from app.models.jabatanModel import MfJabatan
 
 def login():
     data = request.get_json()
@@ -10,7 +11,17 @@ def login():
     if not nip or not password:
         return jsonify({'success': False, 'message': 'NIP dan Password wajib diisi.'}), 400
 
-    pegawai = Pegawai.query.filter_by(NIP=nip).first()
+    pegawai = (
+        Pegawai.query
+        .outerjoin(
+            MfJabatan,
+            Pegawai.JABATAN_ID == MfJabatan.JABATAN_ID
+        )
+        .filter(
+            Pegawai.NIP == nip
+        )
+        .first()
+    )
     if not pegawai:
         return jsonify({'success': False, 'message': 'NIP tidak ditemukan.'}), 401
 
@@ -33,7 +44,17 @@ def login():
         'data': {
             'nip': pegawai.NIP,
             'nama': pegawai.NAMA,
-            'jabatan': pegawai.JABATAN
+            'jabatan': (
+                MfJabatan.query
+                .filter(
+                    MfJabatan.JABATAN_ID == pegawai.JABATAN_ID
+                )
+                .with_entities(
+                    MfJabatan.NAMA_JABATAN
+                )
+                .scalar()
+                or '-'
+            )
         }
     })
 
