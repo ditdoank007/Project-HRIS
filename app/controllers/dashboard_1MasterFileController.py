@@ -1596,9 +1596,36 @@ def _get_operator_forms(nip):
         ).all()
     }
 
+    # ============================================================
+    # HRIS REBORN
+    #
+    # Account User di Bagian Umum menjadi pusat otorisasi seluruh
+    # menu HRIS Reborn.
+    #
+    # Menu Siaga legacy masih tercatat pada MODUL='eDoc', sehingga
+    # ikut ditampilkan di Account User tanpa mengubah database.
+    # ============================================================
+    SIAGA_FORM_IDS = {
+        'KehadiranPiket.aspx',
+        'InJadwalSiaga.aspx',
+        'ReJadwalSiaga.aspx',
+        'Rekapsiaga.aspx',
+        'TTUPiket.aspx',
+        'MFTimSiaga.aspx',
+        'MFTunjPiket.aspx',
+        'MFKGR.aspx',
+        'MFEmail.aspx',
+        'DaftarLemburSiaga.aspx',
+    }
+
     all_forms = MfForm.query.filter(
-        MfForm.MODUL == 'HRIS',
-        MfForm.MODEL == 2
+        db.or_(
+            db.and_(
+                MfForm.MODUL == 'HRIS',
+                MfForm.MODEL == 2
+            ),
+            MfForm.FORM_ID.in_(SIAGA_FORM_IDS)
+        )
     ).all()
 
     result = []
@@ -1627,8 +1654,40 @@ def _get_operator_forms(nip):
         # Form lain (bukan Transaksi/Report, belum punya akses) -> di-skip,
         # sesuai logic VB.NET yang tidak menampilkannya sama sekali.
 
-    # Urutkan: is_akses True duluan, lalu berdasarkan nama form
-    result.sort(key=lambda x: (not x['is_akses'], x['form_name']))
+    # ============================================================
+    # Urutan Account User:
+    #
+    # 1. UMUM / HRIS        -> paling atas
+    # 2. OPERASI / SIAGA    -> di bawah
+    #
+    # Di dalam kelompok:
+    #   - akses aktif lebih dahulu
+    #   - kemudian berdasarkan nama form
+    #
+    # Menu Siaga legacy berada pada MODUL='eDoc', tetapi tetap
+    # dikelola dari Account User HRIS.
+    # ============================================================
+    operasi_siaga_ids = {
+        'KehadiranPiket.aspx',
+        'InJadwalSiaga.aspx',
+        'ReJadwalSiaga.aspx',
+        'Rekapsiaga.aspx',
+        'TTUPiket.aspx',
+        'MFTimSiaga.aspx',
+        'MFTunjPiket.aspx',
+        'MFKGR.aspx',
+        'MFEmail.aspx',
+        'DaftarLemburSiaga.aspx',
+    }
+
+    result.sort(
+        key=lambda x: (
+            1 if x['form_id'] in operasi_siaga_ids else 0,
+            not x['is_akses'],
+            x['form_name'].lower(),
+        )
+    )
+
     return result
 
 def get_user_account_detail():
@@ -1647,9 +1706,26 @@ def get_user_account_detail():
     if not nip:
         return jsonify({'status': 'error', 'message': 'NIP wajib diisi'}), 400
 
-    pegawai = Pegawai.query.filter(Pegawai.NIP == nip).first()
+    # Account User HRIS hanya berlaku untuk pegawai yang berada
+    # pada Unit Kerja yang masih aktif.
+    pegawai = (
+        db.session.query(Pegawai)
+        .join(
+            MfUnitKerja,
+            Pegawai.UNIT_KERJA_ID == MfUnitKerja.UNIT_KERJA_ID
+        )
+        .filter(
+            Pegawai.NIP == nip,
+            MfUnitKerja.IS_AKTIF == 'Y'
+        )
+        .first()
+    )
+
     if pegawai is None:
-        return jsonify({'status': 'error', 'message': f'Pegawai dengan NIP {nip} tidak ditemukan'}), 404
+        return jsonify({
+            'status': 'error',
+            'message': f'Pegawai dengan NIP {nip} tidak ditemukan atau Unit Kerjanya tidak aktif'
+        }), 404
 
     user_account = UserAccount.query.filter(
         UserAccount.NIP == nip,
@@ -1766,11 +1842,35 @@ def save_user_account():
             continue
 
         # Permission baru wajib mempunyai definisi menu HRIS Model 2.
-        form = MfForm.query.filter(
-            MfForm.FORM_ID == form_id,
-            MfForm.MODUL == 'HRIS',
-            MfForm.MODEL == 2
-        ).first()
+        # Form HRIS Model 2 adalah menu utama HRIS.
+        # Form Siaga legacy tertentu tetap boleh dikelola dari
+        # Account User Umum walaupun MODUL legacy-nya adalah eDoc.
+        SIAGA_FORM_IDS = {
+            'KehadiranPiket.aspx',
+            'InJadwalSiaga.aspx',
+            'ReJadwalSiaga.aspx',
+            'Rekapsiaga.aspx',
+            'TTUPiket.aspx',
+            'MFTimSiaga.aspx',
+            'MFTunjPiket.aspx',
+            'MFKGR.aspx',
+            'MFEmail.aspx',
+            'DaftarLemburSiaga.aspx',
+        }
+
+        form_query = MfForm.query.filter(
+            MfForm.FORM_ID == form_id
+        )
+
+        if form_id in SIAGA_FORM_IDS:
+            form = form_query.filter(
+                MfForm.MODUL == 'eDoc'
+            ).first()
+        else:
+            form = form_query.filter(
+                MfForm.MODUL == 'HRIS',
+                MfForm.MODEL == 2
+            ).first()
 
         if form is None:
             return jsonify({
@@ -2800,19 +2900,19 @@ def get_user_account_list():
         UserAccount,
         Pegawai,
         MfJabatan
-    ).outerjoin(
+    ).join(
         Pegawai,
         UserAccount.NIP == Pegawai.NIP
+    ).join(
+        MfUnitKerja,
+        Pegawai.UNIT_KERJA_ID == MfUnitKerja.UNIT_KERJA_ID
     ).outerjoin(
         MfJabatan,
         Pegawai.JABATAN_ID == MfJabatan.JABATAN_ID
     ).filter(
-        UserAccount.MODUL == 'HRIS'
+        UserAccount.MODUL == 'HRIS',
+        MfUnitKerja.IS_AKTIF == 'Y'
     )
-
-    needs_unit_kerja_join = 'Unit Kerja' in (field1, field2)
-    if needs_unit_kerja_join:
-        query = query.join(MfUnitKerja, Pegawai.UNIT_KERJA_ID == MfUnitKerja.UNIT_KERJA_ID)
 
     for field, keyword in [(field1, keyword1), (field2, keyword2)]:
         if not field or not keyword:

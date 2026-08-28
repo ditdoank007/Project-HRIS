@@ -47,6 +47,26 @@ def create_app():
 
     db.init_app(app)
 
+    # ============================================================
+    # AUTHORIZATION GLOBAL UNTUK TEMPLATE
+    # User Account + Hak Akses Form mengendalikan seluruh HRIS.
+    # ============================================================
+    from app.utils.authorization import (
+        has_form_access,
+        can_read,
+        can_modify,
+        is_administrator,
+    )
+
+    @app.context_processor
+    def inject_authorization():
+        return {
+            'has_form_access': has_form_access,
+            'can_read': can_read,
+            'can_modify': can_modify,
+            'is_administrator': is_administrator,
+        }
+
     from app.routes.routes import main
     app.register_blueprint(main)
 

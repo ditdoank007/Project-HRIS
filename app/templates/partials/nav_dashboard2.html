@@ -82,6 +82,12 @@
                             </a>
                         </li>
                         <li class="nxl-item">
+                            <a class="nxl-link" href="{{ url_for('main.view_data_siaga_view_jadwal') }}">
+                                <span class="nxl-micon"><i class="bi bi-calendar3"></i></span>
+                                <span class="nxl-mtext">View Jadwal Siaga</span>
+                            </a>
+                        </li>
+                        <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_data_siaga_cetak_uang_siaga') }}">
                                 <span class="nxl-micon"><i class="bi bi-currency-dollar"></i></span>
                                 <span class="nxl-mtext">Cetak Uang Siaga</span>
@@ -100,6 +106,12 @@
                             </a>
                         </li>
                     </ul>
+                </li>
+                <li class="nxl-item nxl-hasmenu">
+                    <a href="{{ url_for('main.index') }}" class="nxl-link">
+                        <span class="nxl-micon"><i class="bi bi-house-fill"></i></span>
+                        <span class="nxl-mtext">Portal</span>
+                    </a>
                 </li>
             </ul>
         </div>

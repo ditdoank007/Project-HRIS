@@ -53,12 +53,14 @@
                     </a>
                     <ul class="nxl-submenu">
 
+                        {% if has_form_access('Mfuser.aspx') %}
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_master_user') }}">
                                 <span class="nxl-micon"><i class="feather-user"></i></span>
                                 <span class="nxl-mtext">User Account</span>
                             </a>
                         </li>
+                        {% endif %}
 
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_master_pegawai_vip') }}">

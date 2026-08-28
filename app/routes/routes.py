@@ -123,9 +123,13 @@ from app.controllers.dashboard_1DataAbsensiController import (
 from app.controllers.dashboard_2DataSiagaController import (
     data_siaga_absensi_kehadiran, data_siaga_cetak_daftar_lembur_siaga, data_siaga_cetak_rekap_siaga,
     data_siaga_cetak_uang_siaga, data_siaga_jadwal_ulang, data_siaga_membuat_jadwal_piket_siaga,
+    data_siaga_view_jadwal,
     api_absensi_kehadiran_get as data_siaga_api_absensi_kehadiran_get,
     api_absensi_kehadiran_update as data_siaga_api_absensi_kehadiran_update,
     api_pembuatan_jadwal_siaga_save as data_siaga_api_pembuatan_jadwal_siaga_save,
+    api_siaga_view_jadwal_edit as data_siaga_api_view_jadwal_edit,
+    api_siaga_view_jadwal_lengkapi_shift2 as data_siaga_api_view_jadwal_lengkapi_shift2,
+    api_siaga_view_jadwal_get as data_siaga_api_view_jadwal_get,
 )
 from app.controllers.dashboard_2MasterDataController import (
     master_data_email_broadcast,
@@ -1268,9 +1272,16 @@ def api_rejadwal_siaga_get_shift():
     return api_rejadwal_siaga_get_shift()
 
 @main.route('/api/rejadwal-siaga/add-personil', methods=['POST'])
+@login_required
 def api_rejadwal_siaga_add_personil():
     from app.controllers.dashboard_2DataSiagaController import api_rejadwal_siaga_add_personil
     return api_rejadwal_siaga_add_personil()
+
+@main.route('/siaga/view-jadwal')
+@login_required
+def view_data_siaga_view_jadwal():
+    return data_siaga_view_jadwal()
+
 
 @main.route('/siaga/buat-jadwal-piket')
 @login_required
@@ -1283,6 +1294,26 @@ def view_data_siaga_membuat_jadwal_piket_siaga():
 def api_pembuatan_jadwal_siaga_save():
     return data_siaga_api_pembuatan_jadwal_siaga_save()
 
+
+@main.route('/api/siaga/view-jadwal')
+@login_required
+def api_siaga_view_jadwal_get():
+    return data_siaga_api_view_jadwal_get()
+
+
+
+@main.route(
+    '/api/siaga/view-jadwal/lengkapi-shift2',
+    methods=['POST']
+)
+@login_required
+def api_siaga_view_jadwal_lengkapi_shift2():
+    return data_siaga_api_view_jadwal_lengkapi_shift2()
+
+@main.route('/api/siaga/view-jadwal/edit', methods=['POST'])
+@login_required
+def api_siaga_view_jadwal_edit():
+    return data_siaga_api_view_jadwal_edit()
 
 @main.route('/api/siaga/master-jabatan-aktif')
 @login_required
