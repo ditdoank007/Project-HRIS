@@ -372,6 +372,87 @@ $(document).ready(function() {
         $('#alertContainer').addClass('d-none').hide();
     }
 
+    // ============================================
+    // AUTO LOAD EDIT DARI URL
+    //
+    // Digunakan oleh halaman:
+    // Kepegawaian Cari Pegawai Cuti
+    //
+    // URL:
+    // /kepegawaian/pegawai-cuti?transaksi_id=...
+    // ============================================
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlTransaksiId = urlParams.get('transaksi_id');
+
+    if (urlTransaksiId) {
+        console.log(
+            '✏️ Auto load Transaksi ID dari URL:',
+            urlTransaksiId
+        );
+
+        $.get(
+            '/api/cuti/get',
+            {
+                transaksi_id: urlTransaksiId
+            },
+            function(r) {
+
+                if (!r.success) {
+                    showAlert(
+                        'warning',
+                        r.error || 'Data Cuti tidak ditemukan'
+                    );
+                    return;
+                }
+
+                const d = r.data;
+
+                transaksiId = d.transaksi_id;
+                isEdit = true;
+
+                $('#transaksiId').val(d.transaksi_id);
+                $('#isEdit').val('true');
+
+                $('#selectedNIP').val(d.nip);
+                $('#pegawaiTerpilih').val(
+                    `${d.nama} (${d.nip})`
+                );
+
+                $('#searchPegawai').hide();
+                $('#rowPegawaiTerpilih').show();
+
+                $('#tglAwal').val(d.tgl_awal);
+                $('#tglAkhir').val(d.tgl_akhir);
+                $('#jenisCuti').val(d.jenis_cuti);
+                $('#keterangan').val(d.keterangan);
+
+                $('#btnDelete').show();
+
+                showAlert(
+                    'success',
+                    'Data Cuti berhasil dimuat'
+                );
+
+                console.log(
+                    '✅ Data Cuti loaded:',
+                    d.transaksi_id
+                );
+
+            }
+        ).fail(function(xhr) {
+
+            console.error(
+                '❌ Gagal load Cuti:',
+                xhr.responseText
+            );
+
+            showAlert(
+                'danger',
+                'Gagal memuat data Cuti'
+            );
+        });
+    }
+
     console.log('✅ Pegawai Cuti - Halaman siap');
 });
 </script>

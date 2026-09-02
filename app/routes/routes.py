@@ -447,6 +447,15 @@ def api_dinas_luar_pelatihan_delete():
 def view_kepegawaian_pegawai_cuti():
     return kepegawaian_pegawai_cuti()
 
+@main.route('/kepegawaian/cari/pegawai-cuti')
+@login_required
+def view_kepegawaian_cari_pegawai_cuti():
+    from app.controllers.dashboard_1KepegawaianController import (
+        kepegawaian_cari_pegawai_cuti
+    )
+    return kepegawaian_cari_pegawai_cuti()
+
+
 @main.route('/api/cuti/save', methods=['POST'])
 @login_required
 def api_cuti_save():

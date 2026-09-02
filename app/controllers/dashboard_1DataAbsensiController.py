@@ -718,10 +718,25 @@ def api_absensi_non_finger_koreksi():
             total_psw = total_psw * -1
         
         # Hitung Total TLM
+        #
+        # Keterlambatan dapat dikompensasi oleh kelebihan
+        # waktu pulang.
+        #
+        # Contoh:
+        #   terlambat 7 menit
+        #   pulang 10 menit lebih lambat
+        #   TLM bersih = 7 - 10 = -3
+        #
+        # Jika seluruh keterlambatan sudah terkompensasi,
+        # TOTAL TLM harus menjadi 0.
+        #
         if awal_tlm > 0 and awal_tlm <= 30:
             total_tlm = awal_tlm - total_psw
         else:
             total_tlm = awal_tlm
+
+        if total_tlm <= 0:
+            total_tlm = 0
         
         # Cek libur
         kalender = MfKalender.query.filter(
@@ -1505,6 +1520,44 @@ def api_normalisasi_process():
         #   - kategori/potongan
         # ============================================================
 
+        # ============================================================
+        # IDENTITAS RAW FINGERPRINT
+        #
+        # Jangan menggunakan id(raw).
+        #
+        # RAW yang dipakai pada proses Shift 2 berasal dari raw_rows,
+        # sedangkan proses reguler memakai dictionary baru hasil
+        # grouping. Object Python-nya berbeda walaupun record-nya sama.
+        #
+        # Karena itu identitas RAW harus berbasis nilai record:
+        #
+        #     FINGER_ID + WAKTU
+        #
+        # sehingga record yang sama tetap dikenali lintas proses.
+        # ============================================================
+
+        def _raw_consumed_key(raw):
+            finger_id = (
+                raw.get('FINGER_ID')
+                or raw.get('finger_id')
+                or ''
+            )
+
+            waktu = (
+                raw.get('WAKTU')
+                or raw.get('waktu')
+            )
+
+            if hasattr(waktu, 'strftime'):
+                waktu = waktu.strftime(
+                    '%Y-%m-%d %H:%M:%S'
+                )
+
+            return (
+                str(finger_id),
+                str(waktu or '')
+            )
+
         shift2_consumed = set()
 
         for (nip_siaga, target_date_str), info in shift2_map.items():
@@ -1544,7 +1597,7 @@ def api_normalisasi_process():
             # Ini hanya untuk metadata pegawai dan penandaan
             # fingerprint agar tidak diproses ulang sebagai reguler.
             load_finger = normalization_engine.resolve_load_finger(
-                target_date.date(),
+                activity_date,
                 '2',
             )
 
@@ -1606,8 +1659,20 @@ def api_normalisasi_process():
                     if not waktu:
                         continue
 
+                    # RAW dari FINGER_HARVEST_RAW menggunakan
+                    # nama kolom SQL uppercase: PUNCH.
+                    #
+                    # Engine juga mendukung lowercase 'punch',
+                    # tetapi blok controller ini menerima raw_rows
+                    # langsung sehingga harus membaca keduanya.
+                    punch = (
+                        raw.get('punch')
+                        if raw.get('punch') is not None
+                        else raw.get('PUNCH')
+                    )
+
                     if (
-                        raw.get('punch') == 0
+                        punch == 0
                         and start_in
                         and end_in
                         and start_in <= waktu <= end_in
@@ -1615,7 +1680,7 @@ def api_normalisasi_process():
                         shift2_in.append(raw)
 
                     elif (
-                        raw.get('punch') == 1
+                        punch == 1
                         and start_out
                         and end_out
                         and start_out <= waktu <= end_out
@@ -1636,10 +1701,14 @@ def api_normalisasi_process():
                     source_raw = shift2_out[-1]
 
                 for raw in shift2_in:
-                    shift2_consumed.add(id(raw))
+                    shift2_consumed.add(
+                        _raw_consumed_key(raw)
+                    )
 
                 for raw in shift2_out:
-                    shift2_consumed.add(id(raw))
+                    shift2_consumed.add(
+                        _raw_consumed_key(raw)
+                    )
 
             if not source_raw:
                 source_raw = raw_person[0]
@@ -1664,6 +1733,7 @@ def api_normalisasi_process():
                 jam_out=jam_out_dt,
                 shift_kerja='2',
                 is_libur=is_libur,
+                tgl_jam_baku=activity_date,
             )
 
             if not row:
@@ -1699,7 +1769,8 @@ def api_normalisasi_process():
             filtered_logs = [
                 raw
                 for raw in logs
-                if id(raw) not in shift2_consumed
+                if _raw_consumed_key(raw)
+                not in shift2_consumed
             ]
 
             if not filtered_logs:
@@ -1772,365 +1843,6 @@ def api_normalisasi_process():
         # 1. SHIFT 2 SIAGA
         # ============================================================
 
-        shift2_consumed = set()
-
-        for (nip_siaga, target_date_str), info in shift2_map.items():
-
-            # --------------------------------------------------------
-            # Hanya yang dicentang operator.
-            # --------------------------------------------------------
-
-            if not info['hadir']:
-                continue
-
-            target_date = datetime.strptime(
-                target_date_str,
-                '%Y-%m-%d'
-            )
-
-            activity_date = info['activity_date']
-
-            raw_person = raw_by_nip.get(
-                nip_siaga,
-                []
-            )
-
-            if not raw_person:
-                continue
-
-            # --------------------------------------------------------
-            # Shift 2:
-            #
-            # IN  = window fingerprint Shift 2 pada tanggal SIAGA
-            # OUT = window fingerprint Shift 2 pada tanggal BERIKUTNYA
-            #
-            # Window mengikuti MF_LOAD_FINGER / SHIFT_KERJA = '2'.
-            # --------------------------------------------------------
-
-            load_finger_rows = (
-                MfLoadFinger.query
-                .filter(
-                    MfLoadFinger.SHIFT_KERJA == '2',
-                    MfLoadFinger.TGL_MULAI_BERLAKU <= target_date.date(),
-                )
-                .order_by(
-                    MfLoadFinger.TGL_MULAI_BERLAKU.desc()
-                )
-                .all()
-            )
-
-            load_finger = (
-                load_finger_rows[0]
-                if load_finger_rows
-                else None
-            )
-
-            if not load_finger:
-                continue
-
-            def combine_config_time(base_date, value):
-                if value is None:
-                    return None
-
-                return datetime.combine(
-                    base_date,
-                    value.time()
-                )
-
-            start_in = combine_config_time(
-                activity_date,
-                load_finger.START_FINGER
-            )
-
-            end_in = combine_config_time(
-                activity_date,
-                load_finger.END_FINGER
-            )
-
-            start_out = combine_config_time(
-                target_date.date(),
-                load_finger.START_FINGER_OUT
-            )
-
-            end_out = combine_config_time(
-                target_date.date(),
-                load_finger.END_FINGER_OUT
-            )
-
-            shift2_in = []
-            shift2_out = []
-
-            for raw in raw_person:
-
-                waktu = raw['WAKTU']
-
-                if not waktu:
-                    continue
-
-                # IN Shift 2:
-                # tanggal siaga + window MF_LOAD_FINGER
-                if (
-                    raw['PUNCH'] == 0
-                    and start_in is not None
-                    and end_in is not None
-                    and start_in <= waktu <= end_in
-                ):
-                    shift2_in.append(raw)
-
-                # OUT Shift 2:
-                # tanggal berikutnya + window MF_LOAD_FINGER
-                elif (
-                    raw['PUNCH'] == 1
-                    and start_out is not None
-                    and end_out is not None
-                    and start_out <= waktu <= end_out
-                ):
-                    shift2_out.append(raw)
-
-            shift2_in.sort(
-                key=lambda r: r['WAKTU']
-            )
-
-            shift2_out.sort(
-                key=lambda r: r['WAKTU']
-            )
-
-            jam_in_dt = (
-                shift2_in[0]['WAKTU']
-                if shift2_in
-                else None
-            )
-
-            jam_out_dt = (
-                shift2_out[-1]['WAKTU']
-                if shift2_out
-                else None
-            )
-
-            # --------------------------------------------------------
-            # Kalau tidak ada satupun fingerprint Shift 2,
-            # jangan membuat row.
-            # --------------------------------------------------------
-
-            if not jam_in_dt and not jam_out_dt:
-                continue
-
-            # --------------------------------------------------------
-            # Master pegawai
-            # --------------------------------------------------------
-
-            source_raw = (
-                shift2_in[0]
-                if shift2_in
-                else shift2_out[-1]
-            )
-
-            finger_id = str(
-                source_raw['FINGER_ID']
-            )
-
-            nama = source_raw['NAMA'] or ''
-            gol = source_raw['GOL'] or ''
-            unit_kerja = source_raw['UNIT_KERJA'] or ''
-
-            # --------------------------------------------------------
-            # Jam kerja Shift 2 Siaga selalu:
-            #
-            # standar IN  = 19:30
-            # standar OUT = 04:00 / 04:30
-            #
-            # Pemilihan ShiftKerja mengikuti data MF_JAM_KERJA.
-            #
-            # Untuk saat ini gunakan konfigurasi malam terbaru.
-            # --------------------------------------------------------
-
-            jam_malam = None
-
-            for kandidat in jam_kerja_list:
-                if str(kandidat.SHIFT_KERJA or '') == '2':
-                    if kandidat.TGL_MULAI_BERLAKU <= target_date:
-                        jam_malam = kandidat
-                        break
-
-            if not jam_malam:
-                for kandidat in jam_kerja_list:
-                    if kandidat.STD_JAM_IN:
-                        if kandidat.STD_JAM_IN.hour >= 18:
-                            jam_malam = kandidat
-                            break
-
-            if not jam_malam:
-                continue
-
-            # --------------------------------------------------------
-            # Jam kerja dihitung pada TANGGAL ABSENSI (H+1).
-            #
-            # IN aktual tetap berasal dari H malam.
-            # --------------------------------------------------------
-
-            row = build_normal_row(
-                nip=nip_siaga,
-                finger_id=finger_id,
-                nama=nama,
-                gol=gol,
-                unit_kerja=unit_kerja,
-                tgl_kerja=target_date,
-                jam_in_dt=jam_in_dt,
-                jam_out_dt=jam_out_dt,
-                jk=jam_malam,
-                is_libur=(
-                    kalender_map.get(
-                        target_date.strftime('%Y-%m-%d'),
-                        'N'
-                    ) == 'Y'
-                ),
-            )
-
-            if row:
-                row['shift'] = '2'
-                row['shift2_siaga'] = True
-                row['activity_date_siaga'] = (
-                    activity_date.strftime('%Y-%m-%d')
-                )
-
-                result.append(row)
-
-                # Tandai fingerprint yang sudah dipakai
-                for raw in shift2_in:
-                    shift2_consumed.add(
-                        id(raw)
-                    )
-
-                for raw in shift2_out:
-                    shift2_consumed.add(
-                        id(raw)
-                    )
-
-        # ============================================================
-        # 2. ABSENSI REGULER
-        #
-        # Shift 2 yang sudah dipakai di atas tidak boleh diproses lagi.
-        # ============================================================
-
-        for (finger_id, tgl_str), logs in grouped.items():
-
-            tgl_dt = datetime.strptime(
-                tgl_str,
-                '%Y-%m-%d'
-            )
-
-            # --------------------------------------------------------
-            # Jangan proses fingerprint yang sudah menjadi Shift 2.
-            # --------------------------------------------------------
-
-            filtered_logs = [
-                raw
-                for raw in logs
-                if id(raw) not in shift2_consumed
-            ]
-
-            if not filtered_logs:
-                continue
-
-            # --------------------------------------------------------
-            # Jika fingerprint berasal dari Shift 2 yang TIDAK
-            # dicentang, jangan tampilkan sebagai absensi reguler.
-            #
-            # Cari apakah NIP + tanggal ini memiliki konfigurasi
-            # Shift 2 siaga tetapi tidak hadir.
-            # --------------------------------------------------------
-
-            nip_reguler = str(
-                filtered_logs[0]['nip'] or ''
-            ).strip()
-
-            if (
-                nip_reguler,
-                tgl_str
-            ) in shift2_map:
-                info = shift2_map[
-                    (nip_reguler, tgl_str)
-                ]
-
-                if not info['hadir']:
-                    # Fingerprint tetap RAW, tetapi tidak masuk
-                    # normalisasi/ABSENSI.
-                    continue
-
-            is_libur = (
-                kalender_map.get(
-                    tgl_str,
-                    'N'
-                ) == 'Y'
-            )
-
-            if (
-                kalender_map.get(tgl_str) is None
-                and tgl_dt.weekday() >= 5
-            ):
-                is_libur = True
-
-            jk = get_jam_kerja(tgl_dt, '1')
-
-            if not jk:
-                continue
-
-            logs_in = sorted(
-                [
-                    l for l in filtered_logs
-                    if l.get('punch') == 0
-                ],
-                key=lambda l: l['waktu']
-            )
-
-            logs_out = sorted(
-                [
-                    l for l in filtered_logs
-                    if l.get('punch') == 1
-                ],
-                key=lambda l: l['waktu']
-            )
-
-            jam_in_dt = (
-                datetime.strptime(
-                    logs_in[0]['waktu'],
-                    '%Y-%m-%d %H:%M:%S'
-                )
-                if logs_in
-                else None
-            )
-
-            jam_out_dt = (
-                datetime.strptime(
-                    logs_out[-1]['waktu'],
-                    '%Y-%m-%d %H:%M:%S'
-                )
-                if logs_out
-                else None
-            )
-
-            source_raw = filtered_logs[0]
-
-            row = build_normal_row(
-                nip=nip_reguler,
-                finger_id=finger_id,
-                nama=source_raw.get('nama') or source_raw.get('NAMA') or '',
-                gol=source_raw.get('gol') or source_raw.get('GOL') or '',
-                unit_kerja=source_raw.get('unit_kerja') or source_raw.get('UNIT_KERJA') or '',
-                tgl_kerja=tgl_dt,
-                jam_in_dt=jam_in_dt,
-                jam_out_dt=jam_out_dt,
-                jk=jk,
-                is_libur=is_libur,
-            )
-
-            if row:
-                row['shift'] = '1'
-                row['shift2_siaga'] = False
-                row['activity_date_siaga'] = None
-
-                result.append(row)
-
         def _normalisasi_sort_key(r):
             unit = str(
                 r.get('unit_kerja') or ''
@@ -2196,25 +1908,89 @@ def api_normalisasi_export():
             data.get('tgl_akhir') or ''
         ).strip()
 
-        rows = data.get('rows') or []
-
         if not tgl_awal_export or not tgl_akhir_export:
             return jsonify({
                 'error': 'Periode export kosong.'
             })
+
+        # --------------------------------------------------------
+        # EXPORT SERVER-SIDE
+        #
+        # Browser TIDAK lagi mengirim seluruh hasil normalisasi.
+        #
+        # Sebelumnya:
+        #   rows = normalisasiRows
+        #
+        # Hal tersebut menyebabkan request sangat besar dan
+        # menghasilkan HTTP 413 Request Entity Too Large.
+        #
+        # Sekarang EXPORT menggunakan business pipeline yang sama
+        # dengan tombol NORMALISASI.
+        #
+        # api_normalisasi_process() membaca:
+        #   - periode
+        #   - default TLM/PSW
+        #   - filter
+        #   - FINGER_HARVEST_RAW
+        #   - LOG_ACTIVITIY
+        #   - jam kerja
+        #   - kalender
+        #
+        # sehingga tidak ada duplikasi logic normalisasi.
+        # --------------------------------------------------------
+
+        normalisasi_response = api_normalisasi_process()
+
+        if isinstance(normalisasi_response, tuple):
+            normalisasi_response = normalisasi_response[0]
+
+        normalisasi_data = (
+            normalisasi_response.get_json(
+                silent=True
+            )
+            if normalisasi_response
+            else None
+        )
+
+        if not normalisasi_data:
+            return jsonify({
+                'error': (
+                    'Gagal memperoleh hasil normalisasi '
+                    'dari server.'
+                )
+            })
+
+        if normalisasi_data.get('error'):
+            return jsonify({
+                'error': normalisasi_data.get('error')
+            })
+
+        rows = normalisasi_data.get('data') or []
+
+        if not isinstance(rows, list) or not rows:
+            return jsonify({
+                'error': (
+                    'Tidak ada hasil normalisasi untuk diekspor.'
+                )
+            })
+
+        if not normalisasi_data:
+            return jsonify({
+                'error': 'Gagal memperoleh hasil normalisasi.'
+            })
+
+        if normalisasi_data.get('error'):
+            return jsonify({
+                'error': normalisasi_data.get('error')
+            })
+
+        rows = normalisasi_data.get('data') or []
 
         if not isinstance(rows, list) or not rows:
             return jsonify({
                 'error': (
                     'Tidak ada hasil normalisasi untuk diekspor. '
                     'Silakan lakukan NORMALISASI terlebih dahulu.'
-                )
-            })
-
-            return jsonify({
-                'error': (
-                    'Tidak ada data hasil normalisasi. '
-                    'Jalankan Normalisasi dulu.'
                 )
             })
 
@@ -2266,27 +2042,70 @@ def api_normalisasi_export():
                 r.get('jam_out') or '00:00:00'
             )
 
+            # --------------------------------------------------------
+            # Tanggal timestamp aktual.
+            #
+            # Normal:
+            #   IN  = tanggal kerja
+            #   OUT = tanggal kerja
+            #
+            # Shift 2:
+            #   IN  = ActivityDate / H
+            #   OUT = TglKerja / H+1
+            #
+            # Hasil normalisasi menyimpan activity_date_siaga
+            # untuk membedakan tanggal mulai siaga.
+            # --------------------------------------------------------
+
+            activity_date_str = str(
+                r.get('activity_date_siaga') or ''
+            ).strip()
+
+            is_shift2 = (
+                str(r.get('shift_kerja') or '') == '2'
+                or str(r.get('shift') or '') == '2'
+                or bool(r.get('shift2_siaga'))
+            )
+
+            if is_shift2 and activity_date_str:
+                tanggal_in = activity_date_str
+            else:
+                tanggal_in = tgl_kerja_str
+
+            tanggal_out = tgl_kerja_str
+
             tgl_jam_in = datetime.strptime(
-                f"{tgl_kerja_str} {jam_in}",
+                f"{tanggal_in} {jam_in}",
                 '%Y-%m-%d %H:%M:%S'
             )
 
             tgl_jam_out = datetime.strptime(
-                f"{tgl_kerja_str} {jam_out}",
+                f"{tanggal_out} {jam_out}",
                 '%Y-%m-%d %H:%M:%S'
             )
 
             # --------------------------------------------------------
             # Jam baku.
+            #
+            # Shift 2:
+            #   Baku IN  = H
+            #   Baku OUT = H+1
             # --------------------------------------------------------
 
+            if is_shift2 and activity_date_str:
+                tanggal_baku_in = activity_date_str
+                tanggal_baku_out = tgl_kerja_str
+            else:
+                tanggal_baku_in = tgl_kerja_str
+                tanggal_baku_out = tgl_kerja_str
+
             tgl_jam_baku_in = datetime.strptime(
-                f"{tgl_kerja_str} {r['jam_baku_in']}",
+                f"{tanggal_baku_in} {r['jam_baku_in']}",
                 '%Y-%m-%d %H:%M'
             )
 
             tgl_jam_baku_out = datetime.strptime(
-                f"{tgl_kerja_str} {r['jam_baku_out']}",
+                f"{tanggal_baku_out} {r['jam_baku_out']}",
                 '%Y-%m-%d %H:%M'
             )
 
@@ -2436,55 +2255,257 @@ def api_normalisasi_export():
 
 def api_normalisasi_absensi_view():
     """
-    TAB 3 - View Data Absensi (Hasil Export). Tombol Refresh.
+    TAB 3 - Data Hasil Ekspor.
+
+    READ ONLY dari ABSENSI.
+
+    Alur:
+        NORMALISASI -> EXPORT -> ABSENSI
+
+    View tidak menjalankan NORMALISASI ulang.
+    View hanya membaca data ABSENSI berdasarkan:
+        - periode
+        - filter NIP
+        - filter Nama
+        - filter Unit Kerja
+        - filter Finger ID
     """
+
     try:
-        tgl_awal_str = request.args.get('tgl_awal', '')
-        tgl_akhir_str = request.args.get('tgl_akhir', '')
+        tgl_awal_str = str(
+            request.args.get('tgl_awal') or ''
+        ).strip()
+
+        tgl_akhir_str = str(
+            request.args.get('tgl_akhir') or ''
+        ).strip()
+
+        filter_field1 = str(
+            request.args.get('filter_field1') or ''
+        ).strip()
+
+        filter_value1 = str(
+            request.args.get('filter_value1') or ''
+        ).strip()
+
+        filter_field2 = str(
+            request.args.get('filter_field2') or ''
+        ).strip()
+
+        filter_value2 = str(
+            request.args.get('filter_value2') or ''
+        ).strip()
 
         if not tgl_awal_str or not tgl_akhir_str:
-            return jsonify({'error': 'Tanggal periode kosong', 'data': []})
+            return jsonify({
+                'error': 'Tanggal periode kosong',
+                'data': []
+            })
 
-        tgl_awal = datetime.strptime(tgl_awal_str, '%Y-%m-%d')
-        tgl_akhir = datetime.strptime(tgl_akhir_str, '%Y-%m-%d') + timedelta(days=1)
+        tgl_awal = datetime.strptime(
+            tgl_awal_str,
+            '%Y-%m-%d'
+        )
+
+        tgl_akhir = (
+            datetime.strptime(
+                tgl_akhir_str,
+                '%Y-%m-%d'
+            )
+            + timedelta(days=1)
+        )
+
+        # ========================================================
+        # QUERY ABSENSI
+        #
+        # ABSENSI adalah sumber hasil normalisasi.
+        # Tidak memanggil api_normalisasi_process().
+        # ========================================================
 
         query = (
-            db.session.query(Absensi, Pegawai)
-            .outerjoin(Pegawai, Absensi.NIP == Pegawai.NIP)
-            .filter(Absensi.TGL_KERJA >= tgl_awal, Absensi.TGL_KERJA < tgl_akhir)
-            .order_by(Absensi.FINGER_ID, Absensi.TGL_KERJA)
+            db.session.query(
+                Absensi,
+                Pegawai,
+                MfUnitKerja
+            )
+            .outerjoin(
+                Pegawai,
+                Absensi.FINGER_ID == Pegawai.FINGER_ID
+            )
+            .outerjoin(
+                MfUnitKerja,
+                Pegawai.UNIT_KERJA_ID
+                == MfUnitKerja.UNIT_KERJA_ID
+            )
+            .filter(
+                Absensi.TGL_KERJA >= tgl_awal,
+                Absensi.TGL_KERJA < tgl_akhir
+            )
         )
-        results = query.all()
+
+        # ========================================================
+        # FILTER
+        #
+        # Hanya kolom yang memang diketahui ada.
+        # ========================================================
+
+        filter_column_map = {
+            'NIP': Pegawai.NIP,
+            'Nama': Pegawai.NAMA,
+            'NAMA': Pegawai.NAMA,
+            'UnitKerja': MfUnitKerja.NAMA_UNIT_KERJA,
+            'Unit Kerja': MfUnitKerja.NAMA_UNIT_KERJA,
+            'Finger ID': Absensi.FINGER_ID,
+            'Fingerid': Absensi.FINGER_ID,
+            'FINGER_ID': Absensi.FINGER_ID,
+        }
+
+        for field, value in (
+            (filter_field1, filter_value1),
+            (filter_field2, filter_value2),
+        ):
+            column = filter_column_map.get(field)
+
+            if column is not None and value:
+                query = query.filter(
+                    column.like(f'%{value}%')
+                )
+
+        # ========================================================
+        # URUTAN
+        #
+        # Untuk sementara mengikuti urutan database berdasarkan
+        # Finger ID + tanggal.
+        #
+        # Sorting laporan berdasarkan pegawaiSortHelper akan kita
+        # gunakan pada menu Rekap Absen Bulanan.
+        # ========================================================
+
+        results = (
+            query
+            .order_by(
+                Absensi.FINGER_ID,
+                Absensi.TGL_KERJA
+            )
+            .all()
+        )
+
+        # ========================================================
+        # SERIALISASI
+        # ========================================================
 
         data = []
-        for i, (a, peg) in enumerate(results, 1):
+
+        for i, (a, peg, unit) in enumerate(
+            results,
+            1
+        ):
+
             data.append({
                 'no': i,
-                'nama': peg.NAMA if peg else '',
-                'finger_id': a.FINGER_ID,
-                'tgl_kerja': a.TGL_KERJA.strftime('%d %b %Y') if a.TGL_KERJA else '',
-                'hari': a.TGL_KERJA.strftime('%A') if a.TGL_KERJA else '',
-                'jam_baku_in': a.TGL_JAM_BAKU_IN.strftime('%H:%M') if a.TGL_JAM_BAKU_IN else '',
-                'jam_baku_out': a.TGL_JAM_BAKU_OUT.strftime('%H:%M') if a.TGL_JAM_BAKU_OUT else '',
-                'jam_in': a.TGL_JAM_IN.strftime('%H:%M') if a.TGL_JAM_IN else '',
-                'jam_out': a.TGL_JAM_OUT.strftime('%H:%M') if a.TGL_JAM_OUT else '',
+
+                'nip': (
+                    peg.NIP
+                    if peg
+                    else ''
+                ),
+
+                'nama': (
+                    peg.NAMA
+                    if peg
+                    else ''
+                ),
+
+                'finger_id': (
+                    a.FINGER_ID
+                    if a.FINGER_ID is not None
+                    else ''
+                ),
+
+                'unit_kerja': (
+                    unit.NAMA_UNIT_KERJA
+                    if unit
+                    else ''
+                ),
+
+                'tgl_kerja': (
+                    a.TGL_KERJA.strftime(
+                        '%d %b %Y'
+                    )
+                    if a.TGL_KERJA
+                    else ''
+                ),
+
+                'hari': (
+                    a.TGL_KERJA.strftime(
+                        '%A'
+                    )
+                    if a.TGL_KERJA
+                    else ''
+                ),
+
+                'jam_baku_in': (
+                    a.TGL_JAM_BAKU_IN.strftime(
+                        '%H:%M'
+                    )
+                    if a.TGL_JAM_BAKU_IN
+                    else ''
+                ),
+
+                'jam_baku_out': (
+                    a.TGL_JAM_BAKU_OUT.strftime(
+                        '%H:%M'
+                    )
+                    if a.TGL_JAM_BAKU_OUT
+                    else ''
+                ),
+
+                'jam_in': (
+                    a.TGL_JAM_IN.strftime(
+                        '%H:%M'
+                    )
+                    if a.TGL_JAM_IN
+                    else ''
+                ),
+
+                'jam_out': (
+                    a.TGL_JAM_OUT.strftime(
+                        '%H:%M'
+                    )
+                    if a.TGL_JAM_OUT
+                    else ''
+                ),
+
                 'awal_tlm': a.AWAL_TLM,
                 'total_tlm': a.TOTAL_TLM,
                 'tingkat_tlm': a.TINGKAT_TLM,
                 'persen_pot_tlm': a.PERSEN_POT_TLM,
+
                 'total_psw': a.TOTAL_PSW,
                 'tingkat_psw': a.TINGKAT_PSW,
                 'persen_pot_psw': a.PERSEN_POT_PSW,
+
+                'is_invalid': a.IS_INVALID,
+                'is_outvalid': a.IS_OUTVALID,
+
                 'transaksi_in': a.TRANSAKSI_IN,
                 'transaksi_out': a.TRANSAKSI_OUT,
             })
 
-        return jsonify({'success': True, 'data': data, 'total': len(data)})
+        return jsonify({
+            'success': True,
+            'data': data,
+            'total': len(data)
+        })
 
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return jsonify({'error': str(e), 'data': []})
+
+        return jsonify({
+            'error': str(e),
+            'data': []
+        })
 
 
 def api_closing_get():

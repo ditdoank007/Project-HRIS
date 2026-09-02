@@ -26,6 +26,7 @@ from app.utils.unitKerjaHelper import get_active_unit_rows
 from app.utils.pegawaiHelper import (
     get_operational_pegawai_query,
     search_operational_pegawai,
+    is_operational_pegawai,
 )
 
 
@@ -1794,6 +1795,55 @@ def api_cuti_save():
         if not jenis_cuti:
             return jsonify({'success': False, 'error': 'Jenis Cuti tidak boleh kosong'})
         
+        # ====================================================
+        # HRIS REBORN:
+        # Absensi tidak menyimpan NIP.
+        # Relasi Pegawai -> Absensi menggunakan FingerID.
+        # ====================================================
+        pegawai = Pegawai.query.filter(
+            Pegawai.NIP == nip
+        ).first()
+
+        if not pegawai:
+            return jsonify({
+                'success': False,
+                'error': f'Pegawai dengan NIP {nip} tidak ditemukan'
+            })
+
+        # ====================================================
+        # HRIS REBORN BUSINESS RULE — SINGLE SOURCE OF TRUTH
+        #
+        # Pegawai aktif untuk kebutuhan operasional HRIS
+        # harus melewati satu pintu:
+        #
+        #     is_operational_pegawai()
+        #
+        # Rule:
+        #
+        #     Pegawai.IS_KELUAR = 'N'
+        #     AND
+        #     MfUnitKerja.IS_USE = 'Y'
+        #
+        # Jangan membuat definisi status aktif sendiri
+        # di modul Cuti.
+        # ====================================================
+        if not is_operational_pegawai(pegawai):
+            return jsonify({
+                'success': False,
+                'error': (
+                    f'Pegawai dengan NIP {nip} tidak termasuk '
+                    f'Pegawai Operasional HRIS'
+                )
+            })
+
+        if pegawai.FINGER_ID is None:
+            return jsonify({
+                'success': False,
+                'error': f'Pegawai dengan NIP {nip} belum memiliki FingerID'
+            })
+
+        finger_id = pegawai.FINGER_ID
+
         # Generate atau gunakan TransaksiID existing
         if transaksi_id_existing:
             transaksi_id = transaksi_id_existing
@@ -1802,7 +1852,7 @@ def api_cuti_save():
         
         # Delete existing data dulu
         DinasLuar.query.filter(
-            DinasLuar.DINAS_TRANSAKSI_ID == transaksi_id
+            DinasLuar.TRANSAKSI_ID == transaksi_id
         ).delete()
         
         Absensi.query.filter(
@@ -1810,26 +1860,17 @@ def api_cuti_save():
         ).delete()
         db.session.flush()
         
-        # ✅ Cari atau buat GUID_SPRIN khusus untuk Cuti
-        guid_sprin_cuti = "CUTI_DUMMY_HEADER"
-        existing_header = SprinHeader.query.get(guid_sprin_cuti)
-        if not existing_header:
-            # Buat dummy header untuk Cuti
-            dummy_header = SprinHeader(
-                GUID_SPRIN=guid_sprin_cuti,
-                TYPE_SPRIN_ID='CUTI',  # Type khusus
-                NO_SPRIN='CUTI-HEADER',
-                TGL_SPRIN=datetime.now(),
-                TGL_AWAL_SPRIN=datetime.now(),
-                TGL_AKHIR_SPRIN='2099-12-31',
-                PERIHAL_SPRIN='Header Dummy untuk Transaksi Cuti',
-                PENEMPATAN='-',
-                UPDATE_BY='admin',
-                UPDATE_DATE=datetime.now()
-            )
-            db.session.add(dummy_header)
-            db.session.flush()
-        
+        # ====================================================
+        # CUTI TIDAK MEMBUTUHKAN SPRIN_HEADER
+        #
+        # Data Cuti HRIS Reborn disimpan langsung pada:
+        #
+        #     DINAS_LUAR
+        #     ABSENSI
+        #
+        # Data Cuti existing menggunakan GUIDSprin kosong ('').
+        # Jangan membuat dummy SPRIN_HEADER.
+        # ====================================================
         # Cek kalender
         tgl_awal_date = datetime.strptime(tgl_awal, '%Y-%m-%d')
         tgl_akhir_date = datetime.strptime(tgl_akhir, '%Y-%m-%d')
@@ -1848,9 +1889,9 @@ def api_cuti_save():
         
         # ✅ Simpan ke DINAS_LUAR dengan GUID_SPRIN dummy
         new_dl = DinasLuar(
-            DINAS_TRANSAKSI_ID=transaksi_id,
-            GUID_SPRIN=guid_sprin_cuti,  # ✅ Pakai GUID dummy
-            NIP=nip,
+            TRANSAKSI_ID=transaksi_id,
+            GUID_SPRIN='',
+            FINGER_ID=finger_id,
             TGL_AWAL_DINAS_LUAR=tgl_awal_date,
             TGL_AKHIR_DINAS_LUAR=tgl_akhir_date,
             KETERANGAN_DINAS_LUAR=keterangan,
@@ -1894,16 +1935,12 @@ def api_cuti_save():
             
             if not is_libur:
                 Absensi.query.filter(
-                    Absensi.NIP == nip,
+                    Absensi.FINGER_ID == finger_id,
                     Absensi.TGL_KERJA == current_date
                 ).delete()
                 
                 new_absensi = Absensi(
-                    NIP=nip,
-                    FINGER_ID=0,
-                    POTONGAN_ID=1,
-                    ABSENSI_BACKUP_ID=0,
-                    ABSENSI_TEMP_ID=0,
+                    FINGER_ID=finger_id,
                     TGL_KERJA=current_date,
                     TGL_JAM_IN=current_date,
                     TGL_JAM_OUT=current_date,
@@ -1957,16 +1994,48 @@ def api_cuti_get():
             return jsonify({'success': False, 'error': 'Transaksi ID tidak boleh kosong'})
         
         dinas = DinasLuar.query.filter(
-            DinasLuar.DINAS_TRANSAKSI_ID == transaksi_id,
+            DinasLuar.TRANSAKSI_ID == transaksi_id,
             DinasLuar.TRANSAKSI == 'Cuti'
         ).first()
         
         if not dinas:
             return jsonify({'success': False, 'error': 'Data tidak ditemukan'})
         
-        # Ambil data pegawai
-        pegawai = Pegawai.query.filter(Pegawai.NIP == dinas.NIP).first()
+        # Ambil data pegawai melalui FingerID.
+        # DinasLuar tidak menyimpan NIP pada model HRIS Reborn.
+        pegawai = Pegawai.query.filter(
+            Pegawai.FINGER_ID == dinas.FINGER_ID
+        ).first()
         
+        if not pegawai:
+            return jsonify({
+                'success': False,
+                'error': 'Data pegawai tidak ditemukan'
+            })
+
+        # ====================================================
+        # HRIS REBORN BUSINESS RULE — SINGLE SOURCE OF TRUTH
+        #
+        # Pegawai aktif untuk kebutuhan operasional HRIS
+        # harus melewati satu pintu:
+        #
+        #     is_operational_pegawai()
+        #
+        # Rule:
+        #
+        #     Pegawai.IS_KELUAR = 'N'
+        #     AND
+        #     MfUnitKerja.IS_USE = 'Y'
+        #
+        # Jangan membuat definisi status aktif sendiri
+        # di modul Cuti.
+        # ====================================================
+        if not is_operational_pegawai(pegawai):
+            return jsonify({
+                'success': False,
+                'error': 'Pegawai tidak termasuk Pegawai Operasional HRIS'
+            })
+
         # Ambil nama potongan
         potongan = MfPot.query.filter(
             MfPot.TINGKAT == dinas.PENEMPATAN_DINAS_LUAR,
@@ -1974,8 +2043,8 @@ def api_cuti_get():
         ).first()
         
         result = {
-            'transaksi_id': dinas.DINAS_TRANSAKSI_ID,
-            'nip': dinas.NIP,
+            'transaksi_id': dinas.TRANSAKSI_ID,
+            'nip': pegawai.NIP,
             'nama': pegawai.NAMA if pegawai else '-',
             'tgl_awal': dinas.TGL_AWAL_DINAS_LUAR.strftime('%Y-%m-%d') if dinas.TGL_AWAL_DINAS_LUAR else '',
             'tgl_akhir': dinas.TGL_AKHIR_DINAS_LUAR.strftime('%Y-%m-%d') if dinas.TGL_AKHIR_DINAS_LUAR else '',
@@ -2011,7 +2080,7 @@ def api_cuti_delete():
         
         # Delete dari DINAS_LUAR
         DinasLuar.query.filter(
-            DinasLuar.DINAS_TRANSAKSI_ID == transaksi_id,
+            DinasLuar.TRANSAKSI_ID == transaksi_id,
             DinasLuar.TRANSAKSI == 'Cuti'
         ).delete()
         
@@ -2034,18 +2103,60 @@ def api_cuti_cari():
         filter_field2 = request.args.get('filter_field2', '')
         filter_value2 = request.args.get('filter_value2', '')
         
-        # Base query
-        query = db.session.query(
-            DinasLuar, Pegawai, MfPot
-        ).outerjoin(
-            Pegawai, DinasLuar.NIP == Pegawai.NIP
-        ).outerjoin(
-            MfPot, db.and_(
-                DinasLuar.PENEMPATAN_DINAS_LUAR == MfPot.TINGKAT,
-                MfPot.KATEGORI == 'CUTI'
+        # ====================================================
+        # BASE QUERY
+        # HRIS REBORN BUSINESS RULE:
+        # Hanya pegawai dari Unit Kerja yang masih aktif
+        # yang boleh muncul dalam daftar Cuti.
+        #
+        # Data historis Unit Kerja nonaktif tetap berada
+        # di database, tetapi tidak ditampilkan sebagai
+        # data aktif HRIS Reborn.
+        # ====================================================
+        # ====================================================
+        # SINGLE SOURCE OF TRUTH — PEGAWAI OPERASIONAL
+        #
+        # Populasi pegawai TIDAK boleh didefinisikan ulang
+        # di controller.
+        #
+        # Gunakan:
+        #
+        #     get_operational_pegawai_query()
+        #
+        # Business Rule terpusat di:
+        #
+        #     app/utils/pegawaiHelper.py
+        #
+        # Rule:
+        #
+        #     Pegawai.IS_KELUAR = 'N'
+        #     AND
+        #     MfUnitKerja.IS_USE = 'Y'
+        #
+        # Setelah populasi pegawai diperoleh dari helper,
+        # query dilanjutkan ke transaksi DINAS_LUAR.
+        # ====================================================
+        query = (
+            get_operational_pegawai_query()
+            .with_entities(
+                DinasLuar,
+                Pegawai,
+                MfPot
             )
-        ).filter(
-            DinasLuar.TRANSAKSI == 'Cuti'
+            .join(
+                DinasLuar,
+                DinasLuar.FINGER_ID == Pegawai.FINGER_ID
+            )
+            .outerjoin(
+                MfPot,
+                db.and_(
+                    DinasLuar.PENEMPATAN_DINAS_LUAR == MfPot.TINGKAT,
+                    MfPot.KATEGORI == 'CUTI'
+                )
+            )
+            .filter(
+                DinasLuar.TRANSAKSI == 'Cuti'
+            )
         )
         
         # Filter
@@ -2072,8 +2183,8 @@ def api_cuti_cari():
         for i, (dl, peg, pot) in enumerate(results, 1):
             data.append({
                 'no': i,
-                'transaksi_id': dl.DINAS_TRANSAKSI_ID,
-                'nip': dl.NIP,
+                'transaksi_id': dl.TRANSAKSI_ID,
+                'nip': peg.NIP,
                 'nama': peg.NAMA if peg else '-',
                 'tgl_awal': dl.TGL_AWAL_DINAS_LUAR.strftime('%d-%b-%Y') if dl.TGL_AWAL_DINAS_LUAR else '-',
                 'tgl_akhir': dl.TGL_AKHIR_DINAS_LUAR.strftime('%d-%b-%Y') if dl.TGL_AKHIR_DINAS_LUAR else '-',
@@ -2088,6 +2199,16 @@ def api_cuti_cari():
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e), 'data': []})
+
+
+
+def kepegawaian_cari_pegawai_cuti():
+    """
+    Render halaman pencarian Pegawai Cuti.
+    """
+    return render_template(
+        'pages/dashboard_1/Kepegawaian Cari Pegawai Cuti.html'
+    )
 
 
 def api_cuti_get_jenis():

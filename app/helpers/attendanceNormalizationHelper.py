@@ -351,8 +351,19 @@ class AttendanceNormalizationEngine:
             OUT = window fingerprint pada tanggal berikutnya
         """
 
+        # ------------------------------------------------------------
+        # MF_LOAD_FINGER Shift 2 mengikuti TANGGAL MULAI SIAGA.
+        #
+        # ActivityDate = H
+        #   IN  fingerprint = H
+        #   OUT fingerprint = H+1
+        #
+        # target_date adalah tanggal record ABSENSI (H+1),
+        # sehingga TIDAK boleh dipakai untuk memilih master
+        # MF_LOAD_FINGER.
+        # ------------------------------------------------------------
         load_finger = self.resolve_load_finger(
-            target_date,
+            activity_date,
             '2',
         )
 
@@ -413,7 +424,13 @@ class AttendanceNormalizationEngine:
             if not waktu:
                 continue
 
-            punch = raw.get('punch')
+            # RAW SQL menggunakan PUNCH, sedangkan RAW hasil
+            # grouping menggunakan punch.
+            punch = (
+                raw.get('punch')
+                if raw.get('punch') is not None
+                else raw.get('PUNCH')
+            )
 
             if (
                 punch == 0
@@ -787,11 +804,33 @@ class AttendanceNormalizationEngine:
         jam_out,
         shift_kerja='1',
         is_libur=False,
+        tgl_jam_baku=None,
     ):
+        # ------------------------------------------------------------
+        # Tanggal ABSENSI dan tanggal JAM BAKU dapat berbeda.
+        #
+        # Shift 1:
+        #   tgl_kerja    = tanggal absensi
+        #   tgl_jam_baku = tanggal yang sama
+        #
+        # Shift 2 Siaga:
+        #   tgl_kerja    = H+1
+        #   tgl_jam_baku = H (tanggal mulai siaga)
+        #
+        # Ini penting karena Shift 2 bekerja lintas tengah malam.
+        # ------------------------------------------------------------
+
         tgl_kerja = self._date(tgl_kerja)
 
+        if tgl_jam_baku is None:
+            tgl_jam_baku = tgl_kerja
+        else:
+            tgl_jam_baku = self._date(
+                tgl_jam_baku
+            )
+
         jk = self.resolve_jam_kerja(
-            tgl_kerja,
+            tgl_jam_baku,
             shift_kerja,
         )
 
@@ -800,7 +839,7 @@ class AttendanceNormalizationEngine:
 
         baku_in, baku_out = (
             self.resolve_jam_baku(
-                tgl_kerja,
+                tgl_jam_baku,
                 jk,
             )
         )
@@ -852,7 +891,7 @@ class AttendanceNormalizationEngine:
                 _unused_tk_psw,
                 _unused_pot_psw,
             ) = self.resolve_penalty(
-                awal_tlm,
+                total_tlm,
                 0,
                 tgl_kerja,
             )
@@ -946,7 +985,19 @@ class AttendanceNormalizationEngine:
         if not raw:
             return None
 
-        waktu = raw.get('waktu')
+        # RAW fingerprint dapat berasal dari:
+        #
+        # 1. hasil grouping controller -> 'waktu'
+        # 2. hasil SQL FINGER_HARVEST_RAW -> 'WAKTU'
+        #
+        # Engine menerima keduanya agar tidak terjadi perbedaan
+        # struktur data antar jalur normalisasi.
+
+        waktu = (
+            raw.get('waktu')
+            if raw.get('waktu') is not None
+            else raw.get('WAKTU')
+        )
 
         if isinstance(waktu, datetime):
             return waktu

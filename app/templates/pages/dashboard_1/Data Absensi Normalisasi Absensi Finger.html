@@ -758,8 +758,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 <td>${r.no}</td>
                 <td class="normalisasi-left">${r.nip || '-'}</td>
                 <td style="text-align: left;">${r.nama || '-'}</td>
-                <td class="normalisasi-left">${formatDateTimeID(r.tgl_kerja)}</td>
-                <td>1</td>
+                <td class="normalisasi-left">${formatDateTimeID(r.activity_date_siaga || r.tgl_kerja)}</td>
+                <td>${r.shift_kerja || r.shift || '1'}</td>
                 <td class="normalisasi-left">${formatDateTimeID(r.tgl_kerja)}</td>
                 <td class="normalisasi-left">${formatHariIndonesia(r.hari)} / ${r.is_libur || ''}</td>
                 <td>-</td>
@@ -848,10 +848,22 @@ document.addEventListener('DOMContentLoaded', function () {
             headers: {
                 'Content-Type': 'application/json'
             },
+
+            // --------------------------------------------------------
+            // EXPORT SERVER-SIDE
+            //
+            // Jangan kirim normalisasiRows ke server.
+            //
+            // Hasil normalisasi dapat berisi ribuan record sehingga
+            // request sebelumnya terlalu besar dan menghasilkan
+            // HTTP 413 Request Entity Too Large.
+            //
+            // Server akan menjalankan kembali pipeline normalisasi
+            // menggunakan parameter yang sama.
+            // --------------------------------------------------------
             body: JSON.stringify({
-                tgl_awal: tglAwal.value,
-                tgl_akhir: tglAkhir.value,
-                rows: normalisasiRows
+                default_tdk_check: inputDefaultTLM.value,
+                ...getFilterParams()
             })
         })
             .then(r => r.json())
@@ -923,7 +935,84 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // ================= TAB 3: Data Hasil Ekspor =================
+
     const tbodyExport = document.querySelector('#export-pane tbody');
+    const exportTab = document.getElementById('export-tab');
+
+    // ============================================================
+    // VIEW HASIL EXPORT
+    //
+    // Tab ini READ ONLY.
+    //
+    // Sumber:
+    //     ABSENSI
+    //
+    // Tidak menjalankan:
+    //     - NORMALISASI
+    //     - EXPORT
+    //     - FINGER_HARVEST_RAW
+    //
+    // Periode dan filter mengikuti bagian atas halaman.
+    // ============================================================
+
+    if (exportTab) {
+        exportTab.addEventListener('shown.bs.tab', function () {
+
+            const params = getFilterParams();
+
+            if (!params.tgl_awal || !params.tgl_akhir) {
+                renderEmptyRow(
+                    tbodyExport,
+                    16,
+                    'Periode tanggal belum diisi.'
+                );
+                return;
+            }
+
+            renderEmptyRow(
+                tbodyExport,
+                16,
+                'Mengambil data ABSENSI...'
+            );
+
+            fetch(
+                '/api/normalisasi/absensi-view?' +
+                qs(params)
+            )
+                .then(r => r.json())
+                .then(res => {
+
+                    if (res.error) {
+                        renderEmptyRow(
+                            tbodyExport,
+                            16,
+                            res.error
+                        );
+                        return;
+                    }
+
+                    const rows = Array.isArray(res.data)
+                        ? res.data
+                        : [];
+
+                    renderExportData(rows);
+                })
+                .catch(err => {
+
+                    console.error(
+                        'Gagal mengambil data ABSENSI:',
+                        err
+                    );
+
+                    renderEmptyRow(
+                        tbodyExport,
+                        16,
+                        'Gagal mengambil data ABSENSI.'
+                    );
+                });
+        });
+    }
+
 
     function renderExportData(rows) {
         if (!rows || rows.length === 0) {
