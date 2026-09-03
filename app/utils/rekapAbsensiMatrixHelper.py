@@ -423,14 +423,18 @@ def generate_rekap_absensi_matrix(
 
                 status = "LIBUR"
 
-            elif (
-                str(kalender_ket or '').upper()
-                == "WFH"
-            ):
-
-                status = "WFH"
-
             else:
+
+                # WFH adalah atribut kalender, bukan
+                # status kehadiran seluruh pegawai.
+                #
+                # Pegawai tetap:
+                #   - HADIR jika punya absensi
+                #   - ALPA jika tidak punya absensi
+                #
+                # Sumber ONLINE_WFH hanya diberikan
+                # pada record absensi yang benar-benar
+                # berasal dari tombol Absen Online WFH.
 
                 status = "ALPA"
 
@@ -479,18 +483,45 @@ def generate_rekap_absensi_matrix(
             status = "HADIR"
 
 
+        # Sumber absensi:
+        # LogFP = finger -> selalu tampil hitam
+        # WFH   = tombol absen online -> abu-abu tua
+        transaksi_in = (
+            absensi.TRANSAKSI_IN
+            or ""
+        ).upper()
+
+        transaksi_out = (
+            absensi.TRANSAKSI_OUT
+            or ""
+        ).upper()
+
+        is_online_wfh = (
+            transaksi_in == "WFH"
+            or transaksi_out == "WFH"
+            or str(absensi.KET_IN or "").upper()
+                == "ABSEN ONLINE WFH"
+            or str(absensi.KET_OUT or "").upper()
+                == "ABSEN ONLINE WFH"
+        )
+
         matrix[pegawai.NIP][tanggal] = {
 
             "status": status,
 
             "jam_in":
-                absensi.TGL_JAM_IN,
+                absensi.TGL_JAM_IN.strftime("%Y-%m-%d %H:%M:%S") if absensi.TGL_JAM_IN else None,
 
             "jam_out":
-                absensi.TGL_JAM_OUT,
+                absensi.TGL_JAM_OUT.strftime("%Y-%m-%d %H:%M:%S") if absensi.TGL_JAM_OUT else None,
 
             "keterangan":
-                current_cell.get("keterangan")
+                current_cell.get("keterangan"),
+
+            "sumber_absensi":
+                "ONLINE_WFH"
+                if is_online_wfh
+                else "FINGER"
 
         }
 

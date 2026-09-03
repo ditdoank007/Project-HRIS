@@ -273,6 +273,32 @@ function formatJamPreview(value){
         return '';
     }
 
+    /*
+     * ABSENSI menyimpan datetime sebagai waktu lokal WIB.
+     * Jangan biarkan JavaScript melakukan konversi timezone.
+     *
+     * Contoh:
+     *   2026-07-01 07:27:00
+     * harus tetap tampil:
+     *   07.27
+     *
+     * bukan:
+     *   14.27
+     */
+
+    const text = String(value);
+
+    const match = text.match(
+        /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?/
+    );
+
+    if (match){
+
+        return match[4]
+            + '.'
+            + match[5];
+    }
+
     const d = new Date(value);
 
     if (isNaN(d)){
@@ -461,7 +487,10 @@ function renderPreviewClockException(hasil){
 
             if (t.is_libur === true) {
                 cellClass += ' hris-calendar-holiday';
-            } else if (row && row.status === 'WFH') {
+            } else if (
+                row &&
+                row.sumber_absensi === 'ONLINE_WFH'
+            ) {
                 cellClass += ' hris-absen-wfh';
             }
 
@@ -512,7 +541,10 @@ function renderPreviewClockException(hasil){
 
             if (t.is_libur === true) {
                 cellClass += ' hris-calendar-holiday';
-            } else if (row && row.status === 'WFH') {
+            } else if (
+                row &&
+                row.sumber_absensi === 'ONLINE_WFH'
+            ) {
                 cellClass += ' hris-absen-wfh';
             }
 

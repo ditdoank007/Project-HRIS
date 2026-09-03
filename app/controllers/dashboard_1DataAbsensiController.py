@@ -828,77 +828,211 @@ def api_absensi_non_finger_koreksi():
 
 
 def api_absensi_non_finger_save():
-    """API: Simpan absensi non finger (single record)"""
+    """API: Simpan absensi non finger ke RAW + TIME_RECORDER."""
     try:
-        data = request.get_json()
-        nip = data.get('finger_id', '')  # ✅ Parameter bernama finger_id tapi isinya NIP
-        tgl = data.get('tgl', '')
-        jam_in = data.get('jam_in', '')
-        jam_out = data.get('jam_out', '')
-        shift = data.get('shift', '1')
-        ket_in = data.get('ket_in', '')
-        ket_out = data.get('ket_out', '')
-        mode = data.get('mode', 0)  # 0=IN+OUT, 1=IN only, 2=OUT only
-        
+        data = request.get_json() or {}
+
+        nip = str(data.get('finger_id', '')).strip()
+        tgl = str(data.get('tgl', '')).strip()
+        jam_in = str(data.get('jam_in', '')).strip()
+        jam_out = str(data.get('jam_out', '')).strip()
+        shift = str(data.get('shift', '1')).strip()
+        ket_in = str(data.get('ket_in', '')).strip()
+        ket_out = str(data.get('ket_out', '')).strip()
+        mode = int(data.get('mode', 0))
+
         if not nip or not tgl:
-            return jsonify({'error': 'NIP dan Tanggal harus diisi'})
-        
+            return jsonify({
+                'success': False,
+                'error': 'NIP dan Tanggal harus diisi'
+            }), 400
+
+        if mode not in [0, 1, 2]:
+            return jsonify({
+                'success': False,
+                'error': 'Mode absensi tidak valid'
+            }), 400
+
+        pegawai = (
+            Pegawai.query
+            .filter(Pegawai.NIP == nip)
+            .first()
+        )
+
+        if not pegawai:
+            return jsonify({
+                'success': False,
+                'error': f'Pegawai dengan NIP {nip} tidak ditemukan'
+            }), 404
+
+        finger_id = str(pegawai.FINGER_ID or '').strip()
+
+        if not finger_id:
+            return jsonify({
+                'success': False,
+                'error': 'FingerID pegawai belum tersedia'
+            }), 400
+
+        try:
+            finger_id_int = int(finger_id)
+        except ValueError:
+            return jsonify({
+                'success': False,
+                'error': f'FingerID {finger_id} bukan angka valid'
+            }), 400
+
         tgl_date = datetime.strptime(tgl, '%Y-%m-%d')
-        
-        # Hitung shift
+
         tgl_cek_in = tgl_date
-        tgl_cek_out = tgl_date
-        if shift == '2':
-            tgl_cek_out = tgl_date + timedelta(days=1)
-        
-        # ✅ Delete existing manual record untuk NIP ini (via KET_INJECT)
-        TimeRecorder.query.filter(
+        tgl_cek_out = tgl_date + timedelta(days=1) if shift == '2' else tgl_date
+
+        events = []
+
+        if mode in [0, 1] and jam_in:
+            events.append({
+                'waktu': datetime.strptime(
+                    f"{tgl_cek_in.strftime('%Y-%m-%d')} {jam_in}",
+                    '%Y-%m-%d %H:%M'
+                ),
+                'status': 'IN',
+                'punch': 0,
+                'keterangan': ket_in or 'MANUAL'
+            })
+
+        if mode in [0, 2] and jam_out:
+            events.append({
+                'waktu': datetime.strptime(
+                    f"{tgl_cek_out.strftime('%Y-%m-%d')} {jam_out}",
+                    '%Y-%m-%d %H:%M'
+                ),
+                'status': 'OUT',
+                'punch': 1,
+                'keterangan': ket_out or 'MANUAL'
+            })
+
+        if not events:
+            return jsonify({
+                'success': False,
+                'error': 'Jam masuk atau jam pulang harus diisi'
+            }), 400
+
+        raw_start = min(event['waktu'] for event in events)
+        raw_end = max(event['waktu'] for event in events)
+
+        # ============================================================
+        # Hapus RAW manual lama untuk pegawai/periode yang sama.
+        # DEVICE_IP='999' = sumber Absensi Non Finger.
+        # ============================================================
+        db.session.execute(
+            text("""
+                DELETE FROM FINGER_HARVEST_RAW
+                WHERE USER_ID = :user_id
+                  AND DEVICE_IP = '999'
+                  AND WAKTU >= :raw_start
+                  AND WAKTU <= :raw_end
+            """),
+            {
+                'user_id': finger_id,
+                'raw_start': raw_start,
+                'raw_end': raw_end,
+            }
+        )
+
+        # ============================================================
+        # Hapus TIME_RECORDER manual lama.
+        # Tetap dipertahankan untuk kompatibilitas modul lama.
+        # ============================================================
+        db.session.query(TimeRecorder).filter(
             TimeRecorder.KET_INJECT == nip,
             TimeRecorder.MESIN == '999',
-            db.func.date(TimeRecorder.WAKTU) == tgl_date.date()
-        ).delete()
-        
-        # Insert IN
-        if (mode in [0, 1]) and jam_in:
-            tgl_jam_in = datetime.strptime(f"{tgl_cek_in.strftime('%Y-%m-%d')} {jam_in}", '%Y-%m-%d %H:%M')
-            tr_in = TimeRecorder(
-                FINGER_ID=0,  # Placeholder karena kolom ini NOT NULL
-                WAKTU=tgl_jam_in,
-                STATUS='IN',
-                MESIN='999',
-                KET='MANUAL',
-                TRANSAKSI='MANUAL',
-                KET_INJECT=nip,  # ✅ Simpan NIP di sini
-                UPDATE_IN_BY='admin',
-                UPDATE_DATE=datetime.now()
+            TimeRecorder.WAKTU >= raw_start,
+            TimeRecorder.WAKTU <= raw_end
+        ).delete(synchronize_session=False)
+
+        for event in events:
+            waktu = event['waktu']
+            status = event['status']
+            punch = event['punch']
+
+            # ========================================================
+            # 1. RAW ATTENDANCE
+            # ========================================================
+            db.session.execute(
+                text("""
+                    INSERT INTO FINGER_HARVEST_RAW
+                    (
+                        HARVEST_DATE,
+                        DEVICE_IP,
+                        DEVICE_SERIAL,
+                        DEVICE_NAME,
+                        FINGER_ID,
+                        UID_DEVICE,
+                        USER_ID,
+                        WAKTU,
+                        STATUS,
+                        PUNCH
+                    )
+                    VALUES
+                    (
+                        :harvest_date,
+                        '999',
+                        NULL,
+                        'ABSENSI NON FINGER',
+                        :finger_id,
+                        NULL,
+                        :user_id,
+                        :waktu,
+                        :status,
+                        :punch
+                    )
+                """),
+                {
+                    'harvest_date': waktu.date(),
+                    'finger_id': finger_id_int,
+                    'user_id': finger_id,
+                    'waktu': waktu,
+                    'status': status,
+                    'punch': punch,
+                }
             )
-            db.session.add(tr_in)
-        
-        # Insert OUT
-        if (mode in [0, 2]) and jam_out:
-            tgl_jam_out = datetime.strptime(f"{tgl_cek_out.strftime('%Y-%m-%d')} {jam_out}", '%Y-%m-%d %H:%M')
-            tr_out = TimeRecorder(
-                FINGER_ID=0,
-                WAKTU=tgl_jam_out,
-                STATUS='OUT',
-                MESIN='999',
-                KET='MANUAL',
-                TRANSAKSI='MANUAL',
-                KET_INJECT=nip,  # ✅ Simpan NIP di sini
-                UPDATE_IN_BY='admin',
-                UPDATE_DATE=datetime.now()
+
+            # ========================================================
+            # 2. TIME_RECORDER
+            # ========================================================
+            db.session.add(
+                TimeRecorder(
+                    FINGER_ID=finger_id,
+                    WAKTU=waktu,
+                    STATUS=status,
+                    MESIN='999',
+                    KET='MANUAL',
+                    TRANSAKSI='MANUAL',
+                    KET_INJECT=nip,
+                    UPDATE_IN_BY='admin',
+                    UPDATE_DATE=datetime.now()
+                )
             )
-            db.session.add(tr_out)
-        
+
         db.session.commit()
-        
-        return jsonify({'success': True, 'message': 'Data berhasil disimpan'})
-        
+
+        return jsonify({
+            'success': True,
+            'message': (
+                f'Data absensi manual berhasil disimpan '
+                f'untuk {nip}. '
+                f'{len(events)} record masuk RAW dan TIME_RECORDER.'
+            )
+        })
+
     except Exception as e:
         db.session.rollback()
         import traceback
         traceback.print_exc()
-        return jsonify({'error': str(e)})
+
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 
 def api_absensi_non_finger_delete():
