@@ -29,6 +29,9 @@ from app.models.userAccountModel import UserAccount
 from app.models.formModel import MfForm
 from app.models.hakAksesFormModel import HakAksesForm
 from app.utils.pegawaiSortHelper import sort_pegawai_rows
+from app.helpers.masterJamKerjaHelper import (
+    get_shift_kerja_definition,
+)
 
 JENIS_TUNJANGAN_OPTIONS = ['U.Makan', 'U.Transport', 'U.Lembur']
 
@@ -459,13 +462,17 @@ def save_jam_kerja():
     Simpan data Master Jam Kerja baru dari form.
     Body JSON yang diharapkan:
     {
-        "shift": "1",                    // dari dropdown Shift (1/2) -> SHIFT_KERJA
+        "shift": "1",                    // SK-1 sampai SK-4
         "penggantian_tlm1": true,        // true=Ada Penggantian -> 'Y', false=Tidak Ada -> 'N'
         "tgl_mulai": "2026-01-01",
-        "hari_kerja": "1",                // 1=Senin-Kamis, 2=Jum'at -> AGENDA
-        "jam_masuk": "07:30",
-        "jam_pulang": "16:00"
+        "hari_kerja": "1",                // HK-1=Senin-Kamis, HK-2=Jumat
+        "jam_masuk": "HH:MM",
+        "jam_pulang": "HH:MM"
     }
+
+    Catatan:
+    Jam masuk dan jam pulang berasal dari input Master Jam Kerja
+    dan tidak ditentukan secara hardcode oleh SK.
     """
     payload = request.get_json(silent=True) or {}
 
@@ -512,22 +519,59 @@ def save_jam_kerja():
     # --- Konversi Penggantian TLM 1: Ada -> 'Y', Tidak Ada -> 'N' ---
     penggantian_tlm1 = 'Y' if penggantian_tlm1_raw else 'N'
 
-    # --- Konversi Hari Kerja -> label AGENDA ---
-    agenda_map = {'1': 'Senin-Kamis', '2': "Jum'at"}
-    agenda = agenda_map.get(hari_kerja_raw)
-    if agenda is None:
-        return jsonify({'status': 'error', 'message': 'Hari Kerja tidak valid'}), 400
+    # --- Validasi Hari Kerja ---
+    if hari_kerja_raw not in ('1', '2'):
+        return jsonify({
+            'status': 'error',
+            'message': 'Hari Kerja tidak valid'
+        }), 400
+
+    # --- Validasi dan mapping Shift Kerja bisnis HK/SK ---
+    shift_definition = get_shift_kerja_definition(shift_raw)
+
+    if shift_definition is None:
+        return jsonify({
+            'status': 'error',
+            'message': 'Shift Kerja tidak valid. Pilih SK-1 sampai SK-4.'
+        }), 400
+
+    if shift_definition['hari_kerja'] != hari_kerja_raw:
+        return jsonify({
+            'status': 'error',
+            'message': (
+                f"Shift Kerja SK-{shift_raw} tidak sesuai dengan "
+                f"Hari Kerja HK-{hari_kerja_raw}."
+            )
+        }), 400
+
+    # --- Mapping kode bisnis SK ke struktur legacy database ---
+    shift_db = shift_definition['hari_kerja']
+
+    if shift_raw in ('1', '3'):
+        shift_kerja_db = '1'
+    else:
+        shift_kerja_db = '2'
+
+    # --- Generate IDJKerja karena kolom database bukan AUTO_INCREMENT ---
+    max_id = db.session.query(
+        db.func.max(MfJamKerja.IDJKERJA)
+    ).scalar()
+    next_id = (max_id or 0) + 1
+
+    # Agenda legacy MF_JAM_KERJA saat ini selalu kosong.
+    agenda = None
 
     jam_kerja = MfJamKerja(
+        IDJKERJA=next_id,
         STD_JAM_IN=std_jam_in,
         STD_JAM_OUT=std_jam_out,
         TGL_MULAI_BERLAKU=tgl_mulai,
-        SHIFT=shift_raw,
+        SHIFT=shift_db,
         AGENDA=agenda,
         PENGGANTIAN_TLM1=penggantian_tlm1,
         UPDATE_BY=session.get('nip', 'system'),
-        UPDATE_DATE=datetime.utcnow(),
-        SHIFT_KERJA=shift_raw,
+        UPDATE_DATE=datetime.now(),
+        SHIFT_KERJA=shift_kerja_db,
     )
 
     db.session.add(jam_kerja)
@@ -862,10 +906,18 @@ def master_pegawai_vip():
     bukan hardcode di HTML — supaya kalau ada unit kerja baru, cukup tambah
     row di DB tanpa perlu edit template.
     """
-    unit_kerja_list = MfUnitKerja.query.order_by(
-        MfUnitKerja.URUT_REPORT.asc(),
-        MfUnitKerja.NAMA_UNIT_KERJA.asc()
-    ).all()
+    # Dropdown Unit Kerja menampilkan seluruh Unit Kerja yang aktif.
+    unit_kerja_list = (
+        MfUnitKerja.query
+        .filter(
+            MfUnitKerja.IS_USE == 'Y'
+        )
+        .order_by(
+            MfUnitKerja.URUT_REPORT.asc(),
+            MfUnitKerja.NAMA_UNIT_KERJA.asc()
+        )
+        .all()
+    )
 
     return render_template(
         'pages/dashboard_1/Master File Master Pegawai VIP.html',
@@ -926,25 +978,22 @@ def get_pegawai_vip_list():
     # untuk operasional HRIS Reborn.
     # ============================================================
 
+    # Pegawai selalu dihubungkan ke Master Unit Kerja.
+    # VIP List hanya menampilkan pegawai dari Unit Kerja yang aktif.
     query = (
         Pegawai.query
         .outerjoin(
             MfJabatan,
             Pegawai.JABATAN_ID == MfJabatan.JABATAN_ID
         )
-    )
-
-    # Join unit kerja hanya jika diperlukan.
-    needs_unit_kerja_join = (
-        unit_kerja_id is not None
-        or 'Unit Kerja' in (field1, field2)
-    )
-
-    if needs_unit_kerja_join:
-        query = query.join(
+        .join(
             MfUnitKerja,
             Pegawai.UNIT_KERJA_ID == MfUnitKerja.UNIT_KERJA_ID
         )
+        .filter(
+            MfUnitKerja.IS_USE == 'Y'
+        )
+    )
 
     if unit_kerja_id:
         query = query.filter(
@@ -2449,6 +2498,203 @@ def _format_jam(value):
     except AttributeError:
         return str(value)
 
+
+def get_jam_kerja_by_id():
+    """Ambil satu Master Jam Kerja berdasarkan IDJKerja untuk mode Edit."""
+    id_raw = request.args.get('id', '').strip()
+
+    try:
+        id_jkerja = int(id_raw)
+    except (TypeError, ValueError):
+        return jsonify({
+            'status': 'error',
+            'message': 'IDJKerja tidak valid'
+        }), 400
+
+    row = MfJamKerja.query.filter(
+        MfJamKerja.IDJKERJA == id_jkerja
+    ).first()
+
+    if row is None:
+        return jsonify({
+            'status': 'error',
+            'message': 'Data Master Jam Kerja tidak ditemukan'
+        }), 404
+
+    # Mapping struktur database legacy menjadi kode bisnis SK-1 s.d. SK-4.
+    shift_db = str(row.SHIFT).strip() if row.SHIFT is not None else ''
+    shift_kerja_db = str(row.SHIFT_KERJA).strip() if row.SHIFT_KERJA is not None else ''
+
+    shift_map = {
+        ('1', '1'): '1',
+        ('1', '2'): '2',
+        ('2', '1'): '3',
+        ('2', '2'): '4',
+    }
+
+    shift_bisnis = shift_map.get((shift_db, shift_kerja_db))
+
+    if shift_bisnis is None:
+        return jsonify({
+            'status': 'error',
+            'message': 'Data Shift/Hari Kerja pada database tidak valid'
+        }), 400
+
+    return jsonify({
+        'status': 'success',
+        'data': {
+            'id_jkerja': row.IDJKERJA,
+            'shift': shift_bisnis,
+            'hari_kerja': shift_db,
+            'tgl_mulai': (
+                row.TGL_MULAI_BERLAKU.strftime('%Y-%m-%d')
+                if row.TGL_MULAI_BERLAKU else ''
+            ),
+            'jam_masuk': _format_jam(row.STD_JAM_IN),
+            'jam_pulang': _format_jam(row.STD_JAM_OUT),
+            'penggantian_tlm1': (
+                '1' if str(row.PENGGANTIAN_TLM1).strip() == 'Y' else '0'
+            ),
+        }
+    })
+
+
+def update_jam_kerja():
+    """Update Master Jam Kerja berdasarkan IDJKerja yang sama."""
+    payload = request.get_json(silent=True) or {}
+
+    id_raw = payload.get('id_jkerja')
+    try:
+        id_jkerja = int(id_raw)
+    except (TypeError, ValueError):
+        return jsonify({
+            'status': 'error',
+            'message': 'IDJKerja tidak valid'
+        }), 400
+
+    jam_kerja = MfJamKerja.query.filter(
+        MfJamKerja.IDJKERJA == id_jkerja
+    ).first()
+
+    if jam_kerja is None:
+        return jsonify({
+            'status': 'error',
+            'message': 'Data Master Jam Kerja tidak ditemukan'
+        }), 404
+
+    shift_raw = str(payload.get('shift', '')).strip()
+    hari_kerja_raw = str(payload.get('hari_kerja', '')).strip()
+    tgl_mulai_raw = str(payload.get('tgl_mulai', '')).strip()
+    jam_masuk_raw = str(payload.get('jam_masuk', '')).strip()
+    jam_pulang_raw = str(payload.get('jam_pulang', '')).strip()
+    penggantian_tlm1_raw = payload.get('penggantian_tlm1')
+
+    if shift_raw not in ('1', '2', '3', '4'):
+        return jsonify({
+            'status': 'error',
+            'message': 'Shift Kerja tidak valid. Pilih SK-1 sampai SK-4.'
+        }), 400
+
+    if hari_kerja_raw not in ('1', '2'):
+        return jsonify({
+            'status': 'error',
+            'message': 'Hari Kerja tidak valid'
+        }), 400
+
+    if not tgl_mulai_raw or not jam_masuk_raw or not jam_pulang_raw:
+        return jsonify({
+            'status': 'error',
+            'message': 'Tanggal Mulai, Jam Masuk, dan Jam Pulang wajib diisi'
+        }), 400
+
+    shift_definition = get_shift_kerja_definition(shift_raw)
+
+    if shift_definition is None:
+        return jsonify({
+            'status': 'error',
+            'message': 'Shift Kerja tidak valid'
+        }), 400
+
+    if shift_definition['hari_kerja'] != hari_kerja_raw:
+        return jsonify({
+            'status': 'error',
+            'message': (
+                f"Shift Kerja SK-{shift_raw} tidak sesuai dengan "
+                f"Hari Kerja HK-{hari_kerja_raw}."
+            )
+        }), 400
+
+    try:
+        tgl_mulai = datetime.strptime(tgl_mulai_raw, '%Y-%m-%d')
+        jam_masuk_time = datetime.strptime(jam_masuk_raw, '%H:%M').time()
+        jam_pulang_time = datetime.strptime(jam_pulang_raw, '%H:%M').time()
+    except ValueError:
+        return jsonify({
+            'status': 'error',
+            'message': 'Format tanggal/jam tidak valid'
+        }), 400
+
+    shift_db = shift_definition['hari_kerja']
+    shift_kerja_db = '1' if shift_raw in ('1', '3') else '2'
+
+    jam_kerja.TGL_MULAI_BERLAKU = tgl_mulai
+    jam_kerja.STD_JAM_IN = datetime.combine(
+        tgl_mulai.date(),
+        jam_masuk_time,
+    )
+    jam_kerja.STD_JAM_OUT = datetime.combine(
+        tgl_mulai.date(),
+        jam_pulang_time,
+    )
+    jam_kerja.SHIFT = shift_db
+    jam_kerja.SHIFT_KERJA = shift_kerja_db
+    jam_kerja.PENGGANTIAN_TLM1 = (
+        'Y' if penggantian_tlm1_raw else 'N'
+    )
+    jam_kerja.UPDATE_BY = session.get('nip', 'system')
+    jam_kerja.UPDATE_DATE = datetime.now()
+
+    db.session.commit()
+
+    return jsonify({
+        'status': 'success',
+        'message': f'Data Master Jam Kerja ID {id_jkerja} berhasil diperbarui',
+        'id_jkerja': id_jkerja,
+    })
+
+
+def delete_jam_kerja():
+    """Hapus Master Jam Kerja berdasarkan IDJKerja."""
+    payload = request.get_json(silent=True) or {}
+    id_raw = payload.get('id_jkerja')
+
+    try:
+        id_jkerja = int(id_raw)
+    except (TypeError, ValueError):
+        return jsonify({
+            'status': 'error',
+            'message': 'IDJKerja tidak valid'
+        }), 400
+
+    jam_kerja = MfJamKerja.query.filter(
+        MfJamKerja.IDJKERJA == id_jkerja
+    ).first()
+
+    if jam_kerja is None:
+        return jsonify({
+            'status': 'error',
+            'message': 'Data Master Jam Kerja tidak ditemukan'
+        }), 404
+
+    db.session.delete(jam_kerja)
+    db.session.commit()
+
+    return jsonify({
+        'status': 'success',
+        'message': f'Data Master Jam Kerja ID {id_jkerja} berhasil dihapus',
+    })
+
+
 def get_jam_kerja_list():
     """
     Ambil data Master Jam Kerja untuk tabel Cari Master Jam Kerja.
@@ -2492,13 +2738,13 @@ def get_jam_kerja_list():
             continue  # filter ini tidak dipakai -> skip, tidak wajib diisi
 
         if field == 'Hari Kerja Senin-Kamis(1)/Jumat(2)':
-            agenda = hari_kerja_map.get(keyword)
-            if agenda is None:
+            shift = keyword.strip()
+            if shift not in ('1', '2'):
                 return jsonify({
                     'status': 'error',
                     'message': 'Hari Kerja harus diisi 1 (Senin-Kamis) atau 2 (Jumat)'
                 }), 400
-            query = query.filter(MfJamKerja.AGENDA == agenda)
+            query = query.filter(MfJamKerja.SHIFT == shift)
 
         elif field == 'Tanggal(yyyy-mm-dd)':
             try:
@@ -2512,21 +2758,60 @@ def get_jam_kerja_list():
                 MfJamKerja.TGL_MULAI_BERLAKU < akhir_hari
             )
 
-    jam_kerja_list = query.order_by(MfJamKerja.TGL_MULAI_BERLAKU.desc()).all()
+    jam_kerja_list = query.order_by(
+        MfJamKerja.UPDATE_DATE.desc(),
+        MfJamKerja.IDJKERJA.desc()
+    ).all()
 
     # --- Label Ada Pengganti TLM1: 'Y' -> Ada, 'N' -> Tidak Ada ---
     tlm1_label = {'Y': 'Ada', 'N': 'Tidak Ada'}
 
+    def _format_updated(value):
+        if value is None:
+            return '-'
+        if isinstance(value, str):
+            value = value.strip()
+            if not value:
+                return '-'
+            for fmt in (
+                '%Y-%m-%d %H:%M:%S',
+                '%Y-%m-%d %H:%M',
+                '%d-%m-%Y %H:%M:%S',
+                '%d-%m-%Y %H:%M',
+            ):
+                try:
+                    return datetime.strptime(value, fmt).strftime('%d-%m-%Y %H:%M')
+                except ValueError:
+                    continue
+            return value
+        try:
+            return value.strftime('%d-%m-%Y %H:%M')
+        except AttributeError:
+            return str(value)
+
     data = [
         {
             'no': idx + 1,
+            'id_jkerja': row.IDJKERJA,
             'tgl_mulai': row.TGL_MULAI_BERLAKU.strftime('%d-%m-%Y') if row.TGL_MULAI_BERLAKU else '-',
-            'hari_kerja': row.AGENDA or '-',
-            'shift': row.SHIFT or '-',
+            'hari_kerja': hari_kerja_map.get(str(row.SHIFT).strip(), '-')
+                if row.SHIFT is not None else '-',
+            'shift': {
+                ('1', '1'): 'SK-1',
+                ('1', '2'): 'SK-2',
+                ('2', '1'): 'SK-3',
+                ('2', '2'): 'SK-4',
+            }.get(
+                (
+                    str(row.SHIFT).strip() if row.SHIFT is not None else '',
+                    str(row.SHIFT_KERJA).strip() if row.SHIFT_KERJA is not None else '',
+                ),
+                '-',
+            ),
             'jam_masuk': _format_jam(row.STD_JAM_IN),
             'jam_pulang': _format_jam(row.STD_JAM_OUT),
             'penggantian_tlm1': tlm1_label.get(row.PENGGANTIAN_TLM1, '-'),
-            'updated': row.UPDATE_DATE.strftime('%d-%m-%Y %H:%M') if row.UPDATE_DATE else '-',
+            'updated': _format_updated(row.UPDATE_DATE),
         }
         for idx, row in enumerate(jam_kerja_list)
     ]

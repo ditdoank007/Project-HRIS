@@ -25,6 +25,7 @@ from app.controllers.dashboard_1MasterFileController import (
     cari_master_kalender, cari_master_potongan, cari_master_tunkin_class, cari_master_uang_makan, cari_master_unit_kerja,
     cari_user_account, create_kalender, save_jabatan, save_jam_kerja, save_joblist, save_potongan, save_tunkin_class, save_uang_makan, save_unit_kerja, save_user_account,
     toggle_pegawai_vip, save_jam_finger,
+    get_jam_kerja_by_id, update_jam_kerja, delete_jam_kerja,
 )
 from app.controllers.dashboard_1KepegawaianController import (
     kepegawaian_cari_data_pegawai,
@@ -765,6 +766,21 @@ def view_cari_master_jam_kerja():
 @login_required
 def api_jam_kerja_list():
     return get_jam_kerja_list()
+
+@main.route('/api/jam-kerja/detail', methods=['GET'])
+@login_required
+def api_jam_kerja_detail():
+    return get_jam_kerja_by_id()
+
+@main.route('/api/jam-kerja/update', methods=['POST'])
+@login_required
+def api_jam_kerja_update():
+    return update_jam_kerja()
+
+@main.route('/api/jam-kerja/delete', methods=['POST'])
+@login_required
+def api_jam_kerja_delete():
+    return delete_jam_kerja()
 
 @main.route('/master/cari/kalender')
 @login_required

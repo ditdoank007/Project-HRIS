@@ -83,11 +83,12 @@
                                         <th style="color:white; vertical-align: middle;">Jam Pulang</th>
                                         <th style="color:white; vertical-align: middle;">Ada Pengganti TLM1</th>
                                         <th style="color:white; vertical-align: middle;">Updated</th>
+                                        <th style="color:white; vertical-align: middle;">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody id="jamKerjaTableBody">
                                     <tr>
-                                        <td colspan="8" style="vertical-align: middle; padding: 20px;">No records to display.</td>
+                                        <td colspan="9" style="vertical-align: middle; padding: 20px;">No records to display.</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -127,12 +128,12 @@ function loadJamKerjaList() {
             tbody.innerHTML = '';
 
             if (data.status !== 'success') {
-                tbody.innerHTML = `<tr><td colspan="8" style="padding:20px;">${data.message || 'Terjadi kesalahan'}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="9" style="padding:20px;">${data.message || 'Terjadi kesalahan'}</td></tr>`;
                 return;
             }
 
             if (data.data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" style="padding:20px;">No records to display.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" style="padding:20px;">No records to display.</td></tr>';
                 return;
             }
 
@@ -147,6 +148,22 @@ function loadJamKerjaList() {
                         <td>${row.jam_pulang}</td>
                         <td>${row.penggantian_tlm1}</td>
                         <td>${row.updated}</td>
+                        <td>
+                            <div class="d-flex justify-content-center gap-1">
+                                <button type="button"
+                                        class="btn btn-sm btn-warning"
+                                        title="Edit"
+                                        onclick="editJamKerja(${row.id_jkerja})">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                                <button type="button"
+                                        class="btn btn-sm btn-danger"
+                                        title="Hapus"
+                                        onclick="hapusJamKerja(${row.id_jkerja})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
                     </tr>
                 `);
             });
@@ -154,8 +171,51 @@ function loadJamKerjaList() {
         .catch(err => {
             console.error(err);
             const tbody = document.getElementById('jamKerjaTableBody');
-            tbody.innerHTML = '<tr><td colspan="8" style="padding:20px;">Gagal memuat data.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" style="padding:20px;">Gagal memuat data.</td></tr>';
         });
+}
+
+
+async function editJamKerja(idJkerja) {
+    window.location.href =
+        "{{ url_for('main.view_master_jam_kerja') }}?edit_id=" +
+        encodeURIComponent(idJkerja);
+}
+
+async function hapusJamKerja(idJkerja) {
+    if (!confirm(
+        'Apakah Anda yakin ingin menghapus Master Jam Kerja ID ' +
+        idJkerja + '?'
+    )) {
+        return;
+    }
+
+    try {
+        const res = await fetch(
+            "{{ url_for('main.api_jam_kerja_delete') }}",
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    id_jkerja: idJkerja
+                })
+            }
+        );
+
+        const data = await res.json();
+
+        if (data.status === 'success') {
+            alert(data.message);
+            loadJamKerjaList();
+        } else {
+            alert('Gagal: ' + (data.message || 'Tidak dapat menghapus data.'));
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Terjadi kesalahan saat menghapus data.');
+    }
 }
 
 document.getElementById('btnRefreshJamKerja').addEventListener('click', loadJamKerjaList);
