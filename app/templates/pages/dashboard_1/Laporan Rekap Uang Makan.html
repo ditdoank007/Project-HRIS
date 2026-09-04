@@ -157,9 +157,41 @@
                                 <div class="p-4">
 
                                     <div class="row align-items-center mb-3">
+                                        <label class="col-md-2 form-label-custom mb-1 mb-md-0">Tahun</label>
+                                        <div class="col-md-4">
+                                            <select
+                                                id="tahun"
+                                                class="form-control-sm custom-input-field w-100 px-2"
+                                                aria-label="Pilih tahun rekap">
+                                                {% for tahun in range(current_year, 2012, -1) %}
+                                                <option value="{{ tahun }}" {% if tahun == current_year %}selected{% endif %}>
+                                                    {{ tahun }}
+                                                </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="row align-items-center mb-3">
                                         <label class="col-md-2 form-label-custom mb-1 mb-md-0">Bulan</label>
                                         <div class="col-md-4">
-                                            <input type="month" id="bulan" class="form-control-sm custom-input-field w-100 px-2">
+                                            <select
+                                                id="bulan"
+                                                class="form-control-sm custom-input-field w-100 px-2"
+                                                aria-label="Pilih bulan rekap">
+                                                <option value="01">Januari</option>
+                                                <option value="02">Februari</option>
+                                                <option value="03">Maret</option>
+                                                <option value="04">April</option>
+                                                <option value="05">Mei</option>
+                                                <option value="06">Juni</option>
+                                                <option value="07">Juli</option>
+                                                <option value="08">Agustus</option>
+                                                <option value="09">September</option>
+                                                <option value="10">Oktober</option>
+                                                <option value="11">November</option>
+                                                <option value="12">Desember</option>
+                                            </select>
                                         </div>
                                     </div>
 
@@ -177,9 +209,24 @@
                                                     <i class="bi bi-caret-down-fill small text-muted"></i>
                                                 </button>
 
-                                                <!-- Dropdown dinamis -->
+                                                <!-- Dropdown Unit Kerja -->
                                                 <ul class="dropdown-menu ...">
-                                                    <li class="dropdown-item-custom bg-light border-bottom">...</li>
+                                                    <li class="dropdown-item-custom bg-light border-bottom">
+                                                        <div class="form-check m-0 d-flex align-items-center gap-2">
+                                                            <input
+                                                                class="form-check-input"
+                                                                type="checkbox"
+                                                                id="checkAllUnit"
+                                                            >
+                                                            <label
+                                                                class="form-check-label small w-100 fw-semibold"
+                                                                for="checkAllUnit"
+                                                            >
+                                                                PILIH SEMUA
+                                                            </label>
+                                                        </div>
+                                                    </li>
+
                                                     {% for unit in unit_kerja_list %}
                                                     <li class="dropdown-item-custom">
                                                         <div class="form-check m-0 d-flex align-items-center gap-2">
@@ -199,14 +246,32 @@
                                     <div class="row align-items-center mb-4">
                                         <label class="col-md-2 form-label-custom mb-1 mb-md-0">Staf
                                             Kepegawaian</label>
-                                        <div class="col-md-6">
-                                            <input type="text" id="stafKepegawaian" class="form-control-sm custom-input-field w-100 px-2" placeholder="">
+                                        <div class="col-md-6 position-relative">
+                                            <input type="text"
+                                                   id="stafKepegawaian"
+                                                   class="form-control-sm custom-input-field w-100 px-2"
+                                                   placeholder="Ketik nama pegawai..."
+                                                   autocomplete="off">
+                                            <input type="hidden" id="stafKepegawaianNip">
+                                            <div id="stafKepegawaianResults"
+                                                 class="list-group position-absolute w-100 shadow-sm"
+                                                 style="z-index:1050; display:none; max-height:220px; overflow-y:auto;">
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="row align-items-center mb-4">
                                         <label class="col-md-2 form-label-custom mb-1 mb-md-0">KaSubBag Umum</label>
-                                        <div class="col-md-6">
-                                            <input type="text" id="kasubagUmum" class="form-control-sm custom-input-field w-100 px-2" placeholder="">
+                                        <div class="col-md-6 position-relative">
+                                            <input type="text"
+                                                   id="kasubagUmum"
+                                                   class="form-control-sm custom-input-field w-100 px-2"
+                                                   placeholder="Ketik nama pegawai..."
+                                                   autocomplete="off">
+                                            <input type="hidden" id="kasubagUmumNip">
+                                            <div id="kasubagUmumResults"
+                                                 class="list-group position-absolute w-100 shadow-sm"
+                                                 style="z-index:1050; display:none; max-height:220px; overflow-y:auto;">
+                                            </div>
                                         </div>
                                     </div>
                                     <!-- Tombol RUN -->
@@ -227,43 +292,472 @@
         </div>
     </div>
 </div>
+<!-- PREVIEW REKAP UANG MAKAN -->
+<div id="previewRekapUM" class="container-fluid mt-4 d-none">
+    <div class="card shadow-sm">
+        <div class="card-header-custom d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">
+                <i class="ti ti-eye me-2"></i> Preview Rekap Uang Makan
+            </h6>
+
+            <button type="button"
+                    id="btnExportExcel"
+                    class="btn btn-success btn-sm">
+                <i class="ti ti-file-spreadsheet me-1"></i>
+                Export Excel
+            </button>
+        </div>
+
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <strong>Bulan:</strong>
+                    <span id="previewBulan">-</span>
+                </div>
+                <div class="col-md-4">
+                    <strong>Hari Kerja:</strong>
+                    <span id="previewHariKerja">-</span>
+                </div>
+                <div class="col-md-4">
+                    <strong>Nominal UM:</strong>
+                    <span id="previewNominal">-</span>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <div class="hris-table-wrapper">
+                    <table class="hris-table">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>NIP</th>
+                            <th>Nama</th>
+                            <th>Pangkat</th>
+                            <th>DL</th>
+                            <th>CT</th>
+                            <th>Ijin</th>
+                            <th>Sakit</th>
+                            <th>TA</th>
+                            <th>Jumlah Hari</th>
+                            <th>Jumlah Uang</th>
+                        </tr>
+                    </thead>
+                    <tbody id="previewRekapUMBody"></tbody>
+                    <tfoot>
+                        <tr>
+                            <th colspan="9" class="text-end">TOTAL</th>
+                            <th id="previewTotalHari">0</th>
+                            <th id="previewTotalUang">Rp 0</th>
+                        </tr>
+                    </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
+
+
+
+
 
 {% block script %}
 <script>
-    document.querySelector('.btn-pill-run').addEventListener('click', async function(e) {
-        e.preventDefault();
-        const unitChecked = document.querySelectorAll('.check-unit-item:checked');
-        const bulan = document.getElementById('bulan')?.value || '';
-        const staf = document.getElementById('stafKepegawaian')?.value || '';
-        const kasubag = document.getElementById('kasubagUmum')?.value || '';
-        
-        if (!unitChecked.length || !bulan) {
-            alert('Unit atau Bulan kosong');
+
+// ================================================================
+// AUTOCOMPLETE PEGAWAI - STANDAR HRIS REBORN
+// Endpoint existing:
+// /api/laporan/search-pegawai
+// ================================================================
+
+function setupPegawaiAutocomplete(inputId, nipId, resultId) {
+    const input = document.getElementById(inputId);
+    const nipInput = document.getElementById(nipId);
+    const resultBox = document.getElementById(resultId);
+
+    if (!input || !nipInput || !resultBox) {
+        return;
+    }
+
+    let timer = null;
+
+    input.addEventListener('input', function() {
+        const keyword = this.value.trim();
+
+        // Jika operator mengubah teks setelah memilih,
+        // NIP pilihan lama harus dibatalkan.
+        nipInput.value = '';
+
+        clearTimeout(timer);
+
+        if (keyword.length < 1) {
+            resultBox.innerHTML = '';
+            resultBox.style.display = 'none';
             return;
         }
-        
-        const formData = new FormData();
-        unitChecked.forEach(cb => formData.append('unit_kerja[]', cb.value));
-        formData.append('bulan', bulan);
-        formData.append('staf_kepegawaian', staf);
-        formData.append('kasubag_umum', kasubag);
-        
-        const btn = this;
-        btn.disabled = true;
-        btn.innerHTML = '<span>Memproses...</span>';
-        
-        try {
-            const res = await fetch('/laporan/rekap-uang-makan/export', { method: 'POST', body: formData });
-            if (!res.ok) { const err = await res.json(); alert(err.error); return; }
-            const blob = await res.blob();
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Rekap_Uang_Makan_${bulan.replace('-','')}.xlsx`;
-            a.click(); URL.revokeObjectURL(url);
-        } catch(err) { alert('Gagal: ' + err.message); }
-        finally { btn.disabled = false; btn.innerHTML = 'RUN'; }
+
+        timer = setTimeout(async function() {
+            try {
+                const res = await fetch(
+                    '/api/laporan/search-pegawai?keyword=' +
+                    encodeURIComponent(keyword)
+                );
+
+                if (!res.ok) {
+                    throw new Error('HTTP ' + res.status);
+                }
+
+                const result = await res.json();
+
+                resultBox.innerHTML = '';
+
+                if (!result.data || !result.data.length) {
+                    resultBox.innerHTML =
+                        '<div class="list-group-item small text-muted">' +
+                        'Pegawai tidak ditemukan' +
+                        '</div>';
+
+                    resultBox.style.display = 'block';
+                    return;
+                }
+
+                result.data.forEach(function(pegawai) {
+                    const item = document.createElement('button');
+
+                    item.type = 'button';
+                    item.className =
+                        'list-group-item list-group-item-action text-start';
+
+                    item.innerHTML =
+                        '<strong>' +
+                        escapeHtmlPegawai(pegawai.nama || '') +
+                        '</strong>' +
+                        '<br><small class="text-muted">' +
+                        escapeHtmlPegawai(pegawai.nip || '') +
+                        '</small>';
+
+                    item.addEventListener('click', function() {
+                        input.value = pegawai.nama || '';
+                        nipInput.value = pegawai.nip || '';
+                        resultBox.innerHTML = '';
+                        resultBox.style.display = 'none';
+                    });
+
+                    resultBox.appendChild(item);
+                });
+
+                resultBox.style.display = 'block';
+
+            } catch (err) {
+                console.error(
+                    'Autocomplete pegawai error:',
+                    err
+                );
+
+                resultBox.innerHTML =
+                    '<div class="list-group-item small text-danger">' +
+                    'Gagal mencari pegawai' +
+                    '</div>';
+
+                resultBox.style.display = 'block';
+            }
+        }, 250);
     });
+
+    document.addEventListener('click', function(e) {
+        if (
+            !e.target.closest('#' + inputId) &&
+            !e.target.closest('#' + resultId)
+        ) {
+            resultBox.style.display = 'none';
+        }
+    });
+}
+
+
+// ================================================================
+// UNIT KERJA - PILIH SEMUA
+// ================================================================
+
+(function setupUnitKerjaSelectAll() {
+    const checkAll = document.getElementById('checkAllUnit');
+    const unitLabel = document.getElementById('dropdownLabelUnit');
+
+    if (!checkAll || !unitLabel) {
+        return;
+    }
+
+    function getUnitCheckboxes() {
+        return Array.from(
+            document.querySelectorAll('.check-unit-item')
+        );
+    }
+
+    function updateUnitState() {
+        const checkboxes = getUnitCheckboxes();
+        const checked = checkboxes.filter(cb => cb.checked);
+
+        checkAll.checked =
+            checkboxes.length > 0 &&
+            checked.length === checkboxes.length;
+
+        checkAll.indeterminate =
+            checked.length > 0 &&
+            checked.length < checkboxes.length;
+
+        if (checked.length === 0) {
+            unitLabel.textContent = 'Pilih Unit Kerja';
+        } else if (checked.length === checkboxes.length) {
+            unitLabel.textContent = 'Semua Unit Kerja';
+        } else {
+            unitLabel.textContent =
+                checked.length + ' Unit Terpilih';
+        }
+    }
+
+    checkAll.addEventListener('change', function() {
+        const checked = this.checked;
+
+        getUnitCheckboxes().forEach(function(cb) {
+            cb.checked = checked;
+        });
+
+        updateUnitState();
+    });
+
+    document.querySelectorAll('.check-unit-item').forEach(function(cb) {
+        cb.addEventListener('change', updateUnitState);
+    });
+
+    updateUnitState();
+})();
+
+
+function escapeHtmlPegawai(value) {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+
+setupPegawaiAutocomplete(
+    'stafKepegawaian',
+    'stafKepegawaianNip',
+    'stafKepegawaianResults'
+);
+
+setupPegawaiAutocomplete(
+    'kasubagUmum',
+    'kasubagUmumNip',
+    'kasubagUmumResults'
+);
+
+
+const bulanSelect = document.getElementById('bulan');
+if (bulanSelect) {
+    const bulanSekarang = String(new Date().getMonth() + 1).padStart(2, '0');
+    bulanSelect.value = bulanSekarang;
+}
+
+document.querySelector('.btn-pill-run').addEventListener('click', async function(e) {
+    e.preventDefault();
+
+    const unitChecked = document.querySelectorAll('.check-unit-item:checked');
+    const tahun = document.getElementById('tahun')?.value || '';
+    const bulanPilihan = document.getElementById('bulan')?.value || '';
+    const bulan = tahun && bulanPilihan ? `${tahun}-${bulanPilihan}` : '';
+    const staf = document.getElementById('stafKepegawaian')?.value || '';
+    const kasubag = document.getElementById('kasubagUmum')?.value || '';
+
+    if (!unitChecked.length || !bulan) {
+        alert('Unit atau Bulan kosong');
+        return;
+    }
+
+    const formData = new FormData();
+
+    unitChecked.forEach(cb => {
+        formData.append('unit_kerja[]', cb.value);
+    });
+
+    formData.append('bulan', bulan);
+    formData.append('staf_kepegawaian', staf);
+    formData.append('kasubag_umum', kasubag);
+
+    const btn = this;
+    btn.disabled = true;
+    btn.innerHTML = '<span>Memproses...</span>';
+
+    try {
+        const res = await fetch(
+            '/laporan/rekap-uang-makan/preview',
+            {
+                method: 'POST',
+                body: formData
+            }
+        );
+
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+            alert(data.error || 'Gagal membuat preview.');
+            return;
+        }
+
+        document.getElementById('previewBulan').textContent =
+            data.bulan || '-';
+
+        document.getElementById('previewHariKerja').textContent =
+            data.hari_kerja ?? 0;
+
+        document.getElementById('previewNominal').textContent =
+            'Rp ' + Number(data.nominal_um || 0).toLocaleString('id-ID');
+
+        const tbody = document.getElementById('previewRekapUMBody');
+        tbody.innerHTML = '';
+
+        let totalHari = 0;
+
+        (data.rows || []).forEach(item => {
+            totalHari += Number(item.jumlah_hari || 0);
+
+            const tr = document.createElement('tr');
+
+            const values = [
+                item.no,
+                item.nip,
+                item.nama,
+                item.pangkat,
+                item.dl || '',
+                item.cuti || '',
+                item.ijin || '',
+                item.sakit || '',
+                item.ta || '',
+                item.jumlah_hari || 0,
+                'Rp ' + Number(item.jumlah_uang || 0).toLocaleString('id-ID')
+            ];
+
+            values.forEach((value, index) => {
+                const td = document.createElement('td');
+
+                // ====================================================
+                // HRIS GLOBAL TABLE ALIGNMENT
+                //
+                // 0  No          = center
+                // 1  NIP         = left
+                // 2  Nama        = left
+                // 3  Pangkat     = left
+                // 4  DL          = center
+                // 5  CT          = center
+                // 6  Ijin        = center
+                // 7  Sakit       = center
+                // 8  TA          = center
+                // 9  Jumlah Hari = center
+                // 10 Jumlah Uang = right
+                // ====================================================
+
+                if (index === 1 || index === 2 || index === 3) {
+                    td.classList.add('hris-text-left');
+                } else if (index === 10) {
+                    td.classList.add('hris-text-right');
+                } else {
+                    td.classList.add('hris-text-center');
+                }
+
+                td.textContent = value;
+                tr.appendChild(td);
+            });
+
+            tbody.appendChild(tr);
+        });
+
+        document.getElementById('previewTotalHari').textContent =
+            totalHari.toLocaleString('id-ID');
+
+        document.getElementById('previewTotalUang').textContent =
+            'Rp ' + Number(data.total_um || 0).toLocaleString('id-ID');
+
+        document.getElementById('previewRekapUM').classList.remove('d-none');
+
+        document.getElementById('previewRekapUM').scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+        });
+
+    } catch(err) {
+        alert('Gagal: ' + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'RUN';
+    }
+});
+
+
+document.getElementById('btnExportExcel').addEventListener('click', async function() {
+    const unitChecked = document.querySelectorAll('.check-unit-item:checked');
+    const tahun = document.getElementById('tahun')?.value || '';
+    const bulanPilihan = document.getElementById('bulan')?.value || '';
+    const bulan = tahun && bulanPilihan ? `${tahun}-${bulanPilihan}` : '';
+    const staf = document.getElementById('stafKepegawaian')?.value || '';
+    const kasubag = document.getElementById('kasubagUmum')?.value || '';
+
+    if (!unitChecked.length || !bulan) {
+        alert('Unit atau Bulan kosong');
+        return;
+    }
+
+    const formData = new FormData();
+
+    unitChecked.forEach(cb => {
+        formData.append('unit_kerja[]', cb.value);
+    });
+
+    formData.append('bulan', bulan);
+    formData.append('staf_kepegawaian', staf);
+    formData.append('kasubag_umum', kasubag);
+
+    const btn = this;
+    btn.disabled = true;
+
+    try {
+        const res = await fetch(
+            '/laporan/rekap-uang-makan/export',
+            {
+                method: 'POST',
+                body: formData
+            }
+        );
+
+        if (!res.ok) {
+            const err = await res.json();
+            alert(err.error || 'Gagal export Excel.');
+            return;
+        }
+
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download =
+            `Rekap_Uang_Makan_${bulan.replace('-', '')}.xlsx`;
+
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        URL.revokeObjectURL(url);
+
+    } catch(err) {
+        alert('Gagal export: ' + err.message);
+    } finally {
+        btn.disabled = false;
+    }
+});
 </script>
 {% endblock %}

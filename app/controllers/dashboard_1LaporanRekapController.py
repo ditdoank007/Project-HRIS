@@ -2523,17 +2523,23 @@ def export_rekap_pelanggaran_disiplin():
 
 def laporan_rekap_uang_makan():
     """Render halaman Laporan Rekap Uang Makan."""
-    unit_kerja_list = MfUnitKerja.query.order_by(
+    unit_kerja_list = MfUnitKerja.query.filter(
+        MfUnitKerja.IS_USE == 'Y'
+    ).order_by(
         MfUnitKerja.URUT_REPORT.asc(),
         MfUnitKerja.NAMA_UNIT_KERJA.asc()
     ).all()
+
+    current_year = datetime.now().year
+
     return render_template(
         'pages/dashboard_1/Laporan Rekap Uang Makan.html',
-        unit_kerja_list=unit_kerja_list
+        unit_kerja_list=unit_kerja_list,
+        current_year=current_year
     )
 
-def export_rekap_uang_makan():
-    """Export Rekap Uang Makan (seperti RekapUM di VB.NET)."""
+def export_rekap_uang_makan(preview=False):
+    """Export / Preview Rekap Uang Makan (seperti RekapUM di VB.NET)."""
     unit_list = request.form.getlist('unit_kerja[]')
     bulan_str = request.form.get('bulan', '')  # Format: YYYY-MM
     staf_kepegawaian = request.form.get('staf_kepegawaian', '')
@@ -2572,12 +2578,22 @@ def export_rekap_uang_makan():
     )
     default_tgl_kerja = len(kalender_rows)
     
-    # Ambil nominal uang makan terbaru
+    # Ambil nominal Uang Makan reguler yang berlaku.
+    # Master HRIS:
+    #   JenisTunjangan = U.Makan
+    #   Activity       = Intern
+    #   HariKerja      = 0
+    # Nominal tidak di-hardcode; tetap mengikuti MF_TUNJANGAN.
     um_row = (
         MfTunjangan.query
         .filter(MfTunjangan.JENIS_TUNJANGAN == 'U.Makan')
+        .filter(MfTunjangan.ACTIVITY == 'Intern')
+        .filter(MfTunjangan.HARI_KERJA == 0)
         .filter(MfTunjangan.TGL_MULAI <= tgl_akhir.date())
-        .order_by(MfTunjangan.TGL_MULAI.desc())
+        .order_by(
+            MfTunjangan.TGL_MULAI.desc(),
+            MfTunjangan.IDTUNJANGAN.desc()
+        )
         .first()
     )
     nominal_um = um_row.NOMINAL if um_row else 0
@@ -2603,22 +2619,110 @@ def export_rekap_uang_makan():
                 db.and_(Pegawai.IS_KELUAR == 'Y', Pegawai.TGL_KELUAR >= tgl_awal)
             )
         )
-        .order_by(Pegawai.NAMA)
         .all()
     )
+
+    # ================================================================
+    # SORTING STANDARD HRIS REBORN
+    #
+    # Single Source of Sorting:
+    #   1. Eselon
+    #   2. Urut Jabatan
+    #   3. Class Jabatan DESC
+    #   4. NIP ASC
+    # ================================================================
+    pegawai_list = sort_pegawai_rows(pegawai_list)
+
+    # ================================================================
+    # MASTER PANGKAT
+    #
+    # Sumber resmi nama pangkat adalah MF_GOLONGAN berdasarkan GOL_ID.
+    # Jangan menggunakan Pegawai.PANGKAT karena merupakan data legacy
+    # yang dapat berbeda antarpegawai dengan golongan yang sama.
+    # ================================================================
+    pangkat_map = {
+        row.GOL_ID: row.PANGKAT
+        for row in MfGolongan.query.all()
+        if row.GOL_ID
+    }
     
     if not pegawai_list:
         return {'error': 'Pegawai tidak ditemukan'}, 400
     
-    # Build dict absensi per NIP
+    # ================================================================
+    # DATA ABSENSI PER PEGAWAI
+    # ================================================================
     from collections import defaultdict
+
     absensi_dict = defaultdict(list)
     for a, p in absensi_rows:
         absensi_dict[p.NIP].append(a)
-    
+
+    # ================================================================
+    # DATA DINAS LUAR UNTUK POTONG UANG MAKAN
+    #
+    # STATUS_UM:
+    #   0 = tidak memotong UM
+    #   1 = MEMOTONG UM
+    #   2 = tidak memotong UM / penempatan
+    #
+    # Sumber resmi transaksi DL adalah DINAS_LUAR.
+    # Tanggal disimpan dalam SET agar overlapping SPRIN pada tanggal
+    # yang sama tidak dihitung dua kali.
+    # ================================================================
+    kalender_dates = {
+        k.TGL_KERJA.date()
+        if hasattr(k.TGL_KERJA, 'date')
+        else k.TGL_KERJA
+        for k in kalender_rows
+        if k.TGL_KERJA
+    }
+
+    dinas_luar_rows = (
+        DinasLuar.query
+        .filter(DinasLuar.TRANSAKSI == 'DinasLuar')
+        .filter(DinasLuar.STATUS_UM == 1)
+        .filter(DinasLuar.TGL_AWAL_DINAS_LUAR <= tgl_akhir)
+        .filter(DinasLuar.TGL_AKHIR_DINAS_LUAR >= tgl_awal)
+        .all()
+    )
+
+    dl_dates_dict = defaultdict(set)
+
+    for dl in dinas_luar_rows:
+        if (
+            not dl.FINGER_ID
+            or not dl.TGL_AWAL_DINAS_LUAR
+            or not dl.TGL_AKHIR_DINAS_LUAR
+        ):
+            continue
+
+        dl_awal = max(
+            dl.TGL_AWAL_DINAS_LUAR.date(),
+            tgl_awal.date()
+        )
+        dl_akhir = min(
+            dl.TGL_AKHIR_DINAS_LUAR.date(),
+            tgl_akhir.date()
+        )
+
+        if dl_awal > dl_akhir:
+            continue
+
+        current_date = dl_awal
+        while current_date <= dl_akhir:
+            if current_date in kalender_dates:
+                dl_dates_dict[str(dl.FINGER_ID)].add(current_date)
+            current_date += timedelta(days=1)
+
     # Nama unit
-    unit_names = ', '.join([u.NAMA_UNIT_KERJA for u in MfUnitKerja.query.filter(MfUnitKerja.UNIT_KERJA_ID.in_(unit_ids)).all()])
-    
+    unit_names = ', '.join([
+        u.NAMA_UNIT_KERJA
+        for u in MfUnitKerja.query
+        .filter(MfUnitKerja.UNIT_KERJA_ID.in_(unit_ids))
+        .all()
+    ])
+
     # Build Excel
     wb = Workbook()
     ws = wb.active
@@ -2626,9 +2730,9 @@ def export_rekap_uang_makan():
     ws.sheet_properties.tabColor = "FF7B00"
     ws.page_setup.orientation = 'landscape'
     ws.page_setup.paperSize = ws.PAPERSIZE_A4
-    
+
     col_paraf = 16
-    
+
     # Logo
     try:
         img = XLImage('static/img/LogoSAR.png')
@@ -2636,34 +2740,33 @@ def export_rekap_uang_makan():
         ws.add_image(img, 'A1')
     except:
         pass
-    
+
     thin = Side(style='thin')
     border = Border(top=thin, left=thin, right=thin, bottom=thin)
     green_fill = PatternFill(start_color='ADFF2F', end_color='ADFF2F', fill_type='solid')
     gray_fill = PatternFill(start_color='D3D3D3', end_color='D3D3D3', fill_type='solid')
-    
+
     # === JUDUL ===
     ws.merge_cells(start_row=2, start_column=4, end_row=2, end_column=col_paraf-1)
     ws.cell(row=2, column=4, value='REKAP UANG MAKAN').font = Font(bold=True, size=14)
     ws.cell(row=2, column=4).alignment = Alignment(horizontal='center')
-    
+
     ws.merge_cells(start_row=3, start_column=4, end_row=3, end_column=col_paraf-1)
     ws.cell(row=3, column=4, value=f"PEGAWAI KANTOR PENCARIAN DAN PERTOLONGAN {unit_names}")
     ws.cell(row=3, column=4).font = Font(bold=True)
     ws.cell(row=3, column=4).alignment = Alignment(horizontal='center')
-    
+
     # Info bulan & hari kerja
     ws.cell(row=5, column=14, value='Bulan').font = Font(bold=True)
     ws.cell(row=5, column=15, value=f": {tgl_awal:%B %Y}")
     ws.cell(row=6, column=14, value='Hari Kerja').font = Font(bold=True)
     ws.cell(row=6, column=15, value=f": {default_tgl_kerja}")
-    
+
     # === HEADER (row 7-9) ===
-    # Row 7
     ws.cell(row=7, column=2, value='No')
-    ws.cell(row=7, column=3, value='Nama')
-    ws.cell(row=7, column=4, value='Pangkat')
-    ws.cell(row=7, column=5, value='NIP')
+    ws.cell(row=7, column=3, value='NIP')
+    ws.cell(row=7, column=4, value='Nama')
+    ws.cell(row=7, column=5, value='Pangkat')
     ws.cell(row=7, column=6, value='Jenis Absensi')
     ws.merge_cells(start_row=7, start_column=6, end_row=7, end_column=10)
     ws.cell(row=7, column=11, value='JUMLAH HARI')
@@ -2671,26 +2774,22 @@ def export_rekap_uang_makan():
     ws.cell(row=7, column=13, value='JUMLAH UANG (Rp)')
     ws.cell(row=7, column=14, value='TANDA TANGAN')
     ws.merge_cells(start_row=7, start_column=14, end_row=7, end_column=15)
-    
-    # Row 8
+
     ws.cell(row=8, column=6, value='DL')
     ws.cell(row=8, column=7, value='CT')
     ws.cell(row=8, column=8, value='i')
     ws.cell(row=8, column=9, value='S')
     ws.cell(row=8, column=10, value='TA')
-    
-    # Merge
+
     ws.merge_cells('B7:B9')
     ws.merge_cells('C7:C9')
     ws.merge_cells('D7:D9')
     ws.merge_cells('E7:E9')
-    ws.merge_cells('K7:L8')
     ws.merge_cells('M7:M9')
-    ws.merge_cells('N7:O8')
     ws.merge_cells('K9:L9')
     ws.merge_cells('N9:O9')
-    
-    # Styling header (pakai try-except untuk skip merged cells)
+
+    # Styling header
     for r in range(7, 10):
         for c in range(2, 16):
             try:
@@ -2698,97 +2797,243 @@ def export_rekap_uang_makan():
                 cell.border = border
                 cell.fill = green_fill
                 cell.font = Font(bold=True, size=9)
-                cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+                cell.alignment = Alignment(
+                    horizontal='center',
+                    vertical='center',
+                    wrap_text=True
+                )
             except AttributeError:
-                pass  # Skip merged cells
-    
+                pass
+
     # Lebar kolom
     ws.column_dimensions['B'].width = 5
     ws.column_dimensions['C'].width = 30
     ws.column_dimensions['D'].width = 20
     ws.column_dimensions['E'].width = 20
+
     for c in ['F','G','H','I','J','K','L']:
         ws.column_dimensions[c].width = 5
+
     ws.column_dimensions['M'].width = 15
     ws.column_dimensions['N'].width = 17
     ws.column_dimensions['O'].width = 17
-    
+
     # === ISI DATA ===
     row = 10
     no = 1
     total_um = 0
-    
+    preview_rows = []
+
     for peg in pegawai_list:
         abs_list = absensi_dict.get(peg.NIP, [])
-        
-        # Hitung per kategori
-        dl_count = sum(1 for a in abs_list if a.TRANSAKSI_IN and a.TRANSAKSI_IN.strip().upper() == 'DINASLUAR' and a.STATUS_UM == 1)
-        
-        cuti_ct = sum(1 for a in abs_list if a.TRANSAKSI_IN and a.TRANSAKSI_IN.strip().upper() == 'CUTI' and a.TINGKAT_TLM == 'CT')
-        cuti_cb1 = sum(1 for a in abs_list if a.TRANSAKSI_IN and a.TRANSAKSI_IN.strip().upper() == 'CUTI' and a.TINGKAT_TLM == 'CB-1')
-        cuti_cb2 = sum(1 for a in abs_list if a.TRANSAKSI_IN and a.TRANSAKSI_IN.strip().upper() == 'CUTI' and a.TINGKAT_TLM == 'CB-2')
-        cuti_cb3 = sum(1 for a in abs_list if a.TRANSAKSI_IN and a.TRANSAKSI_IN.strip().upper() == 'CUTI' and a.TINGKAT_TLM == 'CB-3')
-        cuti_capm2 = sum(1 for a in abs_list if a.TRANSAKSI_IN and a.TRANSAKSI_IN.strip().upper() == 'CUTI' and a.TINGKAT_TLM == 'CAP-M2')
-        cuti_cap = sum(1 for a in abs_list if a.TRANSAKSI_IN and a.TRANSAKSI_IN.strip().upper() == 'CUTI' and a.TINGKAT_TLM == 'CAP')
-        total_cuti = cuti_ct + cuti_cb1 + cuti_cb2 + cuti_cb3 + cuti_capm2 + cuti_cap
-        
-        sakit_all = sum(1 for a in abs_list if a.TRANSAKSI_IN and a.TRANSAKSI_IN.strip().upper() == 'SAKIT')
-        alpa_ijin = sum(1 for a in abs_list if a.TRANSAKSI_IN and a.TRANSAKSI_IN.strip().upper() == 'ALPA' and a.PENDUKUNG_IN == 'Y')
-        alpa_tanpa = sum(1 for a in abs_list if a.TRANSAKSI_IN and a.TRANSAKSI_IN.strip().upper() == 'ALPA' and a.PENDUKUNG_IN != 'Y')
-        
-        # Hitung hari kerja per pegawai (kalau masuk setelah tgl_awal)
+
+        # ============================================================
+        # KUMPULKAN TANGGAL CUTI / SAKIT / IJIN
+        # ============================================================
+        cuti_dates = set()
+        sakit_dates = set()
+        ijin_dates = set()
+        alpa_tanpa_dates = set()
+
+        for a in abs_list:
+            if not a.TGL_KERJA:
+                continue
+
+            abs_date = (
+                a.TGL_KERJA.date()
+                if hasattr(a.TGL_KERJA, 'date')
+                else a.TGL_KERJA
+            )
+
+            if abs_date not in kalender_dates:
+                continue
+
+            transaksi = (
+                a.TRANSAKSI_IN.strip().upper()
+                if a.TRANSAKSI_IN
+                else ''
+            )
+
+            if transaksi == 'CUTI':
+                cuti_dates.add(abs_date)
+
+            elif transaksi == 'SAKIT':
+                sakit_dates.add(abs_date)
+
+            elif transaksi == 'ALPA':
+                if a.PENDUKUNG_IN == 'Y':
+                    ijin_dates.add(abs_date)
+                else:
+                    alpa_tanpa_dates.add(abs_date)
+
+        # ============================================================
+        # HARI KERJA PEGAWAI
+        # ============================================================
         tgl_masuk = peg.TGL_MASUK
-        if tgl_masuk and tgl_masuk.date() > tgl_awal.date():
-            xn_tgl_kerja = len([k for k in kalender_rows if k.TGL_KERJA and k.TGL_KERJA > tgl_masuk])
+
+        if tgl_masuk:
+            tgl_masuk_date = (
+                tgl_masuk.date()
+                if hasattr(tgl_masuk, 'date')
+                else tgl_masuk
+            )
+        else:
+            tgl_masuk_date = None
+
+        if tgl_masuk_date and tgl_masuk_date > tgl_awal.date():
+            # Tanggal mulai bekerja tetap dihitung apabila merupakan
+            # hari kerja kalender.
+            xn_tgl_kerja = len([
+                k for k in kalender_dates
+                if k >= tgl_masuk_date
+            ])
         else:
             xn_tgl_kerja = default_tgl_kerja
-        
-        ta = alpa_tanpa + (xn_tgl_kerja - len(abs_list))
-        if ta < 0:
-            ta = 0
-        
-        jumlah_hari = xn_tgl_kerja - (total_cuti + sakit_all + dl_count + ta + alpa_ijin)
+
+        # TA tetap ditampilkan sebagai informasi.
+        # TA TIDAK mengurangi Uang Makan.
+        ta = len(alpa_tanpa_dates) + max(
+            0,
+            xn_tgl_kerja - len({
+                (
+                    a.TGL_KERJA.date()
+                    if hasattr(a.TGL_KERJA, 'date')
+                    else a.TGL_KERJA
+                )
+                for a in abs_list
+                if a.TGL_KERJA
+            })
+        )
+
+        # ============================================================
+        # DINAS LUAR POTONG UM
+        # ============================================================
+        dl_dates = dl_dates_dict.get(str(peg.FINGER_ID), set())
+
+        # Satu tanggal hanya boleh mengurangi UM satu kali.
+        # Prioritaskan DL sebagai alasan potongan apabila tanggal yang
+        # sama juga mempunyai record absensi cuti/sakit/ijin.
+        cuti_dates -= dl_dates
+        sakit_dates -= dl_dates
+        ijin_dates -= dl_dates
+
+        dl_count = len(dl_dates)
+        total_cuti = len(cuti_dates)
+        sakit_all = len(sakit_dates)
+        alpa_ijin = len(ijin_dates)
+
+        # ============================================================
+        # FORMULA UANG MAKAN
+        #
+        # Hari Kerja Efektif =
+        #   Hari Kerja Master
+        #   - Cuti
+        #   - Sakit
+        #   - Ijin
+        #   - DL StatusUM=1
+        #   - TA (Tidak Hadir)
+        # ============================================================
+        jumlah_hari = xn_tgl_kerja - (
+            total_cuti
+            + sakit_all
+            + alpa_ijin
+            + dl_count
+            + ta
+        )
+
         if jumlah_hari < 0:
             jumlah_hari = 0
-        
+
         um = jumlah_hari * nominal_um
         total_um += um
-        
+
+        preview_rows.append({
+            "no": no,
+            "nama": peg.NAMA or "",
+            "pangkat": f"{peg.GOL_ID} - {pangkat_map.get(peg.GOL_ID, '-')}",
+            "nip": peg.NIP or "",
+            "dl": dl_count,
+            "cuti": total_cuti,
+            "ijin": alpa_ijin,
+            "sakit": sakit_all,
+            "ta": ta,
+            "jumlah_hari": jumlah_hari,
+            "jumlah_uang": um,
+        })
+
         # Tulis data
         for c in range(2, 16):
             ws.cell(row=row, column=c).border = border
-        
-        ws.cell(row=row, column=2, value=no).alignment = Alignment(horizontal='center')
-        ws.cell(row=row, column=3, value=peg.NAMA)
-        ws.cell(row=row, column=4, value=f"{peg.GOL_ID} - {peg.PANGKAT or ''}")
-        ws.cell(row=row, column=5, value=peg.NIP)
+
+        ws.cell(
+            row=row,
+            column=2,
+            value=no
+        ).alignment = Alignment(horizontal='center')
+
+        ws.cell(
+            row=row,
+            column=3,
+            value=peg.NIP
+        ).alignment = Alignment(horizontal='left')
+
+        ws.cell(
+            row=row,
+            column=4,
+            value=peg.NAMA
+        ).alignment = Alignment(horizontal='left')
+
+        ws.cell(
+            row=row,
+            column=5,
+            value=f"{peg.GOL_ID} - {pangkat_map.get(peg.GOL_ID, '-')}"
+        ).alignment = Alignment(horizontal='left')
+
         if dl_count > 0:
             ws.cell(row=row, column=6, value=dl_count).alignment = Alignment(horizontal='center')
+
         if total_cuti > 0:
             ws.cell(row=row, column=7, value=total_cuti).alignment = Alignment(horizontal='center')
+
         if alpa_ijin > 0:
             ws.cell(row=row, column=8, value=alpa_ijin).alignment = Alignment(horizontal='center')
+
         if sakit_all > 0:
             ws.cell(row=row, column=9, value=sakit_all).alignment = Alignment(horizontal='center')
+
         if ta > 0:
             ws.cell(row=row, column=10, value=ta).alignment = Alignment(horizontal='center')
-        
+
         ws.cell(row=row, column=11, value=jumlah_hari).alignment = Alignment(horizontal='center')
         ws.cell(row=row, column=12, value='hari').alignment = Alignment(horizontal='center')
-        
+
         if um > 0:
             ws.cell(row=row, column=13, value=um)
             ws.cell(row=row, column=13).number_format = '#,##0'
-        
-        # Tanda tangan (merge 2 baris untuk ganjil)
+
+        # Tanda tangan
         if no % 2 == 1:
             ws.merge_cells(start_row=row, start_column=14, end_row=row+1, end_column=14)
             ws.merge_cells(start_row=row, start_column=15, end_row=row+1, end_column=15)
             ws.cell(row=row, column=14, value=no).alignment = Alignment(vertical='top')
-        
+
         no += 1
         row += 1
-    
+
+    # ================================================================
+    # PREVIEW
+    # ================================================================
+    if preview:
+        return {
+            "success": True,
+            "bulan": bulan_str,
+            "hari_kerja": default_tgl_kerja,
+            "nominal_um": nominal_um,
+            "unit_names": unit_names,
+            "total_um": total_um,
+            "rows": preview_rows,
+        }
+
     # === BARIS TOTAL ===
     if no % 2 == 0:
         row += 1
