@@ -1,7 +1,7 @@
 # app/routes/routes.py
 
-from flask import Blueprint, jsonify
-from app.utils.decorators import login_required
+from flask import Blueprint, jsonify, render_template
+from app.utils.decorators import login_required, admin_required
 from app.controllers.homeController import (
     get_pelanggaran_disiplin,
     get_piket_siaga,
@@ -9,7 +9,7 @@ from app.controllers.homeController import (
     search_buku_telp,
     search_pegawai_autocomplete,
 )
-from app.controllers.loginController import login, logout
+from app.controllers.loginController import login, logout, sso_callback
 from app.controllers.absenOnlineController import (
     status_absen_online,
     punch_absen_online,
@@ -26,6 +26,9 @@ from app.controllers.dashboard_1MasterFileController import (
     cari_user_account, create_kalender, save_jabatan, save_jam_kerja, save_joblist, save_potongan, save_tunkin_class, save_uang_makan, save_unit_kerja, save_user_account,
     toggle_pegawai_vip, save_jam_finger,
     get_jam_kerja_by_id, update_jam_kerja, delete_jam_kerja,
+    get_auth_config, save_auth_config,
+    get_jam_finger_by_id, update_jam_finger, delete_jam_finger,
+    get_jabatan_by_id, update_jabatan, delete_jabatan,
 )
 from app.controllers.dashboard_1KepegawaianController import (
     kepegawaian_cari_data_pegawai,
@@ -215,6 +218,7 @@ from app.controllers.dashboard_3PengajuanController import (
     pengajuan_absensi,
 )
 from app.models.pegawaiModel import Pegawai
+from app.controllers.dashboard_1MasterFileController import get_uang_makan_detail, update_uang_makan, delete_uang_makan
 
 main = Blueprint('main', __name__)
 
@@ -237,6 +241,10 @@ def api_pelanggaran_disiplin():
 @main.route('/api/login', methods=['POST'])
 def api_login():
     return login()
+
+@main.route('/api/login/sso', methods=['GET'])
+def api_login_sso():
+    return sso_callback()
 
 @main.route('/api/logout', methods=['POST'])
 def api_logout():
@@ -594,6 +602,21 @@ def view_master_jabatan():
 def api_jabatan_save():
     return save_jabatan()
 
+@main.route('/api/jabatan/detail', methods=['GET'])
+@login_required
+def api_jabatan_detail():
+    return get_jabatan_by_id()
+
+@main.route('/api/jabatan/update', methods=['POST'])
+@login_required
+def api_jabatan_update():
+    return update_jabatan()
+
+@main.route('/api/jabatan/delete', methods=['POST'])
+@login_required
+def api_jabatan_delete():
+    return delete_jabatan()
+
 @main.route('/master/jam-finger')
 @login_required
 def view_master_jam_finger():
@@ -701,6 +724,26 @@ def api_unit_kerja_toggle():
 def view_master_user():
     return master_user()
 
+
+@main.route('/master/login')
+@admin_required
+def view_master_login():
+    return render_template(
+        'pages/dashboard_1/Master Login.html'
+    )
+
+
+@main.route('/api/auth-config', methods=['GET'])
+@admin_required
+def api_auth_config():
+    return get_auth_config()
+
+
+@main.route('/api/auth-config/save', methods=['POST'])
+@admin_required
+def api_auth_config_save():
+    return save_auth_config()
+
 @main.route('/api/user-account/detail', methods=['GET'])
 @login_required
 def api_user_account_detail():
@@ -725,6 +768,21 @@ def view_master_uang_makan():
 @login_required
 def api_uang_makan_save():
     return save_uang_makan()
+
+@main.route('/api/uang-makan/detail', methods=['GET'])
+@login_required
+def api_uang_makan_detail():
+    return get_uang_makan_detail()
+
+@main.route('/api/uang-makan/update', methods=['POST'])
+@login_required
+def api_uang_makan_update():
+    return update_uang_makan()
+
+@main.route('/api/uang-makan/delete', methods=['POST'])
+@login_required
+def api_uang_makan_delete():
+    return delete_uang_makan()
 
 @main.route('/api/tunjangan/list', methods=['GET'])
 @login_required
@@ -756,6 +814,24 @@ def api_jam_finger_list():
 @login_required
 def api_jam_finger_export():
     return export_jam_finger_excel()
+
+
+@main.route('/api/jam-finger/detail', methods=['GET'])
+@login_required
+def api_jam_finger_detail():
+    return get_jam_finger_by_id()
+
+
+@main.route('/api/jam-finger/update', methods=['POST'])
+@login_required
+def api_jam_finger_update():
+    return update_jam_finger()
+
+
+@main.route('/api/jam-finger/delete', methods=['POST'])
+@login_required
+def api_jam_finger_delete():
+    return delete_jam_finger()
 
 @main.route('/master/cari/jam-kerja')
 @login_required
@@ -992,6 +1068,12 @@ def export_laporan_rekap_pelanggaran_disiplin():
 @login_required
 def view_laporan_rekap_uang_makan():
     return laporan_rekap_uang_makan()
+
+@main.route('/laporan/rekap-uang-makan/preview', methods=['POST'])
+@login_required
+def preview_laporan_rekap_uang_makan():
+    return export_rekap_uang_makan(preview=True)
+
 
 @main.route('/laporan/rekap-uang-makan/export', methods=['POST'])
 @login_required

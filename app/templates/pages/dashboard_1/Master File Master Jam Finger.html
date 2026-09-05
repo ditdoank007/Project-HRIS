@@ -117,51 +117,131 @@
 
 {% block script %}
 <script>
-document.getElementById('btnSimpanJamFinger').addEventListener('click', function () {
-    const shift = document.getElementById('selectShiftFinger').value;
-    const tglMulai = document.getElementById('inputTglMulaiFinger').value;
-    const jamInStart = document.getElementById('inputJamInStart').value;
-    const jamInEnd = document.getElementById('inputJamInEnd').value;
-    const jamOutStart = document.getElementById('inputJamOutStart').value;
-    const jamOutEnd = document.getElementById('inputJamOutEnd').value;
+document.addEventListener('DOMContentLoaded', function () {
+    const params = new URLSearchParams(window.location.search);
+    const editId = params.get('edit_id');
 
-    if (!shift) { alert('Shift wajib dipilih'); return; }
-    if (!tglMulai) { alert('Tanggal Mulai wajib diisi'); return; }
-    if (!jamInStart || !jamInEnd) { alert('Rentang Start Jam In wajib diisi'); return; }
-    if (!jamOutStart || !jamOutEnd) { alert('Rentang Start Jam Out wajib diisi'); return; }
+    const btn = document.getElementById('btnSimpanJamFinger');
 
-    const payload = {
-        shift: shift,
-        tgl_mulai: tglMulai,
-        jam_in_start: jamInStart,
-        jam_in_end: jamInEnd,
-        jam_out_start: jamOutStart,
-        jam_out_end: jamOutEnd,
-    };
+    async function loadEditJamFinger() {
+        if (!editId) {
+            return;
+        }
 
-    fetch("{{ url_for('main.api_jam_finger_save') }}", {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-    })
-        .then(res => res.json())
-        .then(data => {
+        try {
+            const res = await fetch(
+                "{{ url_for('main.api_jam_finger_detail') }}?transaksi_id=" +
+                encodeURIComponent(editId)
+            );
+
+            const data = await res.json();
+
+            if (data.status !== 'success') {
+                alert(data.message || 'Data Master Jam Finger tidak ditemukan.');
+                return;
+            }
+
+            const row = data.data;
+
+            document.getElementById('selectShiftFinger').value = row.shift || '';
+            document.getElementById('inputTglMulaiFinger').value = row.tgl_mulai || '';
+            document.getElementById('inputJamInStart').value = row.jam_in_start || '';
+            document.getElementById('inputJamInEnd').value = row.jam_in_end || '';
+            document.getElementById('inputJamOutStart').value = row.jam_out_start || '';
+            document.getElementById('inputJamOutEnd').value = row.jam_out_end || '';
+
+            btn.innerHTML =
+                '<i class="bi bi-pencil-square me-1"></i>Update';
+
+        } catch (err) {
+            console.error(err);
+            alert('Terjadi kesalahan saat mengambil data Master Jam Finger.');
+        }
+    }
+
+    btn.addEventListener('click', async function () {
+        const shift = document.getElementById('selectShiftFinger').value;
+        const tglMulai = document.getElementById('inputTglMulaiFinger').value;
+        const jamInStart = document.getElementById('inputJamInStart').value;
+        const jamInEnd = document.getElementById('inputJamInEnd').value;
+        const jamOutStart = document.getElementById('inputJamOutStart').value;
+        const jamOutEnd = document.getElementById('inputJamOutEnd').value;
+
+        if (!shift) {
+            alert('Shift wajib dipilih');
+            return;
+        }
+
+        if (!tglMulai) {
+            alert('Tanggal Mulai wajib diisi');
+            return;
+        }
+
+        if (!jamInStart || !jamInEnd) {
+            alert('Rentang Start Jam In wajib diisi');
+            return;
+        }
+
+        if (!jamOutStart || !jamOutEnd) {
+            alert('Rentang Start Jam Out wajib diisi');
+            return;
+        }
+
+        const payload = {
+            shift: shift,
+            tgl_mulai: tglMulai,
+            jam_in_start: jamInStart,
+            jam_in_end: jamInEnd,
+            jam_out_start: jamOutStart,
+            jam_out_end: jamOutEnd
+        };
+
+        const url = editId
+            ? "{{ url_for('main.api_jam_finger_update') }}"
+            : "{{ url_for('main.api_jam_finger_save') }}";
+
+        if (editId) {
+            payload.transaksi_id = editId;
+        }
+
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+
             if (data.status === 'success') {
                 alert(data.message);
+
+                if (editId) {
+                    window.location.href =
+                        "{{ url_for('main.view_cari_master_jam_finger') }}";
+                    return;
+                }
+
                 document.getElementById('selectShiftFinger').value = '';
                 document.getElementById('inputTglMulaiFinger').value = '';
                 document.getElementById('inputJamInStart').value = '';
                 document.getElementById('inputJamInEnd').value = '';
                 document.getElementById('inputJamOutStart').value = '';
                 document.getElementById('inputJamOutEnd').value = '';
+
             } else {
-                alert('Gagal: ' + data.message);
+                alert('Gagal: ' + (data.message || 'Proses gagal.'));
             }
-        })
-        .catch(err => {
+
+        } catch (err) {
             console.error(err);
             alert('Terjadi kesalahan saat menyimpan data.');
-        });
+        }
+    });
+
+    loadEditJamFinger();
 });
 </script>
 {% endblock %}

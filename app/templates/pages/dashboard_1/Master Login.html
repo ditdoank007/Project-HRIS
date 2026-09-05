@@ -1,0 +1,199 @@
+{% extends "layout/baseDashboard1.html" %}
+
+{% block title %}- Master Login{% endblock %}
+
+{% block content %}
+<div class="nxl-content">
+
+    <div class="page-header">
+        <div class="page-header-left d-flex align-items-center">
+            <div class="page-header-title">
+                <h5 class="m-b-10">Master File</h5>
+            </div>
+            <ul class="breadcrumb">
+                <li class="breadcrumb-item">
+                    <a href="{{ url_for('main.view_master_login') }}">Master Login</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="container-fluid">
+
+            <div class="card mb-4 shadow-sm"
+                 style="border-radius:10px; overflow:hidden; border:none;">
+
+                <div class="card-header-custom"
+                     style="border-radius:10px;">
+                    <h6 class="mb-0">
+                        <i class="ti ti-lock me-2"></i>
+                        Master Login HRIS
+                    </h6>
+                </div>
+
+                <div class="card-body p-4">
+
+                    <div class="row mb-4 align-items-center">
+                        <label class="col-md-3 fw-bold text-dark">
+                            Mode Login
+                        </label>
+
+                        <div class="col-md-5">
+                            <select class="form-select" id="authMode">
+                                <option value="LOCAL">LOCAL</option>
+                                <option value="SSO">SSO</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="ssoSettings">
+
+                        <div class="row mb-4 align-items-center">
+                            <label class="col-md-3 fw-bold text-dark">
+                                SSO Server
+                            </label>
+
+                            <div class="col-md-7">
+                                <input type="text"
+                                       class="form-control"
+                                       id="ssoServer"
+                                       placeholder="https://bdip.example.id">
+                            </div>
+                        </div>
+
+                        <div class="row mb-4 align-items-center">
+                            <label class="col-md-3 fw-bold text-dark">
+                                SSO Callback
+                            </label>
+
+                            <div class="col-md-7">
+                                <input type="text"
+                                       class="form-control"
+                                       id="ssoCallback"
+                                       placeholder="http://hris.example.id/api/login/sso">
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="button"
+                                class="btn btn-info text-white px-4 fw-bold"
+                                id="btnSaveAuth">
+                            <i class="bi bi-save me-1"></i>
+                            SIMPAN
+                        </button>
+
+                        <button type="button"
+                                class="btn btn-light border px-4"
+                                id="btnRefreshAuth">
+                            <i class="bi bi-arrow-clockwise me-1"></i>
+                            REFRESH
+                        </button>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="alert alert-warning mb-0">
+                        <i class="bi bi-shield-lock me-2"></i>
+                        Pengaturan login hanya dapat diubah oleh Administrator HRIS.
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const authMode = document.getElementById('authMode');
+    const ssoSettings = document.getElementById('ssoSettings');
+    const ssoServer = document.getElementById('ssoServer');
+    const ssoCallback = document.getElementById('ssoCallback');
+    const btnSave = document.getElementById('btnSaveAuth');
+    const btnRefresh = document.getElementById('btnRefreshAuth');
+
+    function updateSsoVisibility() {
+        ssoSettings.style.display =
+            authMode.value === 'SSO' ? '' : 'none';
+    }
+
+    async function loadAuthConfig() {
+        try {
+            const response = await fetch('/api/auth-config');
+
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                throw new Error(
+                    result.message || 'Gagal membaca konfigurasi login.'
+                );
+            }
+
+            const config = result.data;
+
+            authMode.value = config.auth_mode || 'LOCAL';
+            ssoServer.value = config.sso_server || '';
+            ssoCallback.value = config.sso_callback || '';
+
+            updateSsoVisibility();
+
+        } catch (error) {
+            console.error(error);
+            alert(error.message);
+        }
+    }
+
+    async function saveAuthConfig() {
+        btnSave.disabled = true;
+
+        try {
+            const response = await fetch('/api/auth-config/save', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    auth_mode: authMode.value,
+                    sso_server: ssoServer.value.trim(),
+                    sso_callback: ssoCallback.value.trim()
+                })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                throw new Error(
+                    result.message || 'Gagal menyimpan konfigurasi login.'
+                );
+            }
+
+            alert(result.message);
+
+            const config = result.data;
+
+            authMode.value = config.auth_mode || 'LOCAL';
+            ssoServer.value = config.sso_server || '';
+            ssoCallback.value = config.sso_callback || '';
+
+            updateSsoVisibility();
+
+        } catch (error) {
+            console.error(error);
+            alert(error.message);
+        } finally {
+            btnSave.disabled = false;
+        }
+    }
+
+    authMode.addEventListener('change', updateSsoVisibility);
+    btnSave.addEventListener('click', saveAuthConfig);
+    btnRefresh.addEventListener('click', loadAuthConfig);
+
+    loadAuthConfig();
+})();
+</script>
+{% endblock %}

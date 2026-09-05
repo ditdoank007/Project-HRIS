@@ -1,51 +1,58 @@
-# app/models/tunjanganModel.py
 from app import db
 
 
 class MfTunjangan(db.Model):
     """
-    Model untuk tabel MF_TUNJANGAN.
-    Merepresentasikan data master tunjangan pegawai.
-    Primary Key : TUNJANGAN_ID
-    Digunakan sebagai referensi oleh tabel PEGAWAI (TUNJANGAN_ID).
+    Mapping ORM ke tabel legacy MF_TUNJANGAN.
+
+    Catatan:
+    - Database TIDAK memiliki PRIMARY KEY formal.
+    - IDTunjangan saat ini unik dan dipakai aplikasi sebagai logical key.
+    - primary_key=True di SQLAlchemy TIDAK mengubah schema database.
     """
-    __tablename__ = 'MF_TUNJANGAN'
 
-    # Primary Key
-    TUNJANGAN_ID = db.Column(db.Integer, primary_key=True)
+    __tablename__ = "MF_TUNJANGAN"
 
-    # Data tunjangan
-    JENIS_TUNJANGAN = db.Column(db.String(50), nullable=True)
-    ACTIVITY = db.Column(db.String(50), nullable=True)
-    NOMINAL = db.Column(db.Float, nullable=True)
-    TGL_MULAI = db.Column(db.Date, nullable=True)
-    HARI_KERJA = db.Column(db.Integer, nullable=True)
-    FUNGSIONAL = db.Column(db.String(50), nullable=True)
-    STATUS_PEG = db.Column(db.Integer, nullable=True)
-    SHIFT = db.Column(db.String(5), nullable=True)
-    UNIT_KERJA_ID = db.Column(db.String(50), nullable=True)
+    IDTUNJANGAN = db.Column("IDTunjangan", db.Integer, primary_key=True)
 
-    # Metadata audit
-    UPDATE_BY = db.Column(db.String(50), nullable=True)
-    UPDATE_DATE = db.Column(db.DateTime, nullable=True)
-    DOKREFF = db.Column(db.String(250), nullable=True)
+    JENIS_TUNJANGAN = db.Column("JenisTunjangan", db.String(50), nullable=True)
+    ACTIVITY = db.Column("Activity", db.String(50), nullable=True)
+    NOMINAL = db.Column("Nominal", db.Float, nullable=True)
+    TGL_MULAI = db.Column("TglMulai", db.Date, nullable=True)
+    HARI_KERJA = db.Column("HariKerja", db.Integer, nullable=True)
+    FUNGSIONAL = db.Column("Fungsional", db.String(50), nullable=True)
+    UPDATE_BY = db.Column("UpdateBy", db.String(50), nullable=True)
+    UPDATE_DATE = db.Column("UpdateDate", db.DateTime, nullable=True)
+    DOKREFF = db.Column("DokReff", db.String(250), nullable=True)
+    STATUS_PEG = db.Column("StatusPeg", db.Integer, nullable=True)
+    ID_UNIT_KERJA = db.Column("IDUnitKerja", db.String(50), nullable=True)
+    SHIFT = db.Column("Shift", db.String(5), nullable=True)
 
-    # Representasi objek (memudahkan debugging di console/log)
     def __repr__(self):
-        return f'<MfTunjangan {self.TUNJANGAN_ID} - {self.JENIS_TUNJANGAN}>'
+        return (
+            f"<MfTunjangan {self.IDTUNJANGAN} - "
+            f"{self.JENIS_TUNJANGAN}>"
+        )
 
-    # Helper: ubah objek jadi dict (berguna untuk response JSON/API)
     def to_dict(self):
         return {
-            'tunjangan_id': self.TUNJANGAN_ID,
-            'jenis_tunjangan': self.JENIS_TUNJANGAN,
-            'activity': self.ACTIVITY,
-            'nominal': self.NOMINAL,
-            'tgl_mulai': self.TGL_MULAI.isoformat() if self.TGL_MULAI else None,
-            'hari_kerja': self.HARI_KERJA,
-            'fungsional': self.FUNGSIONAL,
-            'status_peg': self.STATUS_PEG,
-            'shift': self.SHIFT,
-            'unit_kerja_id': self.UNIT_KERJA_ID,
-            'dokreff': self.DOKREFF,
+            "tunjangan_id": self.IDTUNJANGAN,
+            "jenis_tunjangan": self.JENIS_TUNJANGAN,
+            "activity": self.ACTIVITY,
+            "nominal": self.NOMINAL,
+            "tgl_mulai": (
+                self.TGL_MULAI.isoformat()
+                if self.TGL_MULAI else None
+            ),
+            "hari_kerja": self.HARI_KERJA,
+            "fungsional": self.FUNGSIONAL,
+            "update_by": self.UPDATE_BY,
+            "update_date": (
+                self.UPDATE_DATE.isoformat()
+                if self.UPDATE_DATE else None
+            ),
+            "dokreff": self.DOKREFF,
+            "status_peg": self.STATUS_PEG,
+            "id_unit_kerja": self.ID_UNIT_KERJA,
+            "shift": self.SHIFT,
         }

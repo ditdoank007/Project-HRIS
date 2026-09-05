@@ -11,117 +11,137 @@
                 <h5 class="m-b-10">Master File</h5>
             </div>
             <ul class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url_for('main.view_master_uang_makan') }}">Master Uang Makan</a></li>
+                <li class="breadcrumb-item">
+                    <a href="{{ url_for('main.view_master_uang_makan') }}">
+                        Master Uang Makan
+                    </a>
+                </li>
             </ul>
         </div>
     </div>
 
-    <div class="main-content master-siaga">
+    <div class="main-content">
         <div class="container-fluid">
             <div class="card mb-4 filter-card">
                 <div class="card-header-custom d-flex justify-content-between align-items-center"
-                    style="border-radius: 10px;">
+                     style="border-radius:10px;">
                     <h6 class="mb-0">
-                        <i class="ti ti-tools-kitchen-2 me-2"></i> Master Uang Makan
+                        <i class="ti ti-tools-kitchen-2 me-2"></i>
+                        <span id="pageTitle">Master Uang Makan</span>
                     </h6>
 
                     <div class="header-actions">
-                        <button class="btn p-0 border-0 bg-transparent shadow-none d-md-none" type="button"
-                            data-bs-toggle="collapse" data-bs-target="#headerIconsCollapse">
-                            <i class="bi bi-three-dots-vertical" style="font-size: 1.5rem; color: #333;"></i>
-                        </button>
-
-                        <div class="collapse d-md-flex align-items-center" id="headerIconsCollapse">
-                            <div class="header-icons-wrapper d-flex gap-3 p-2 p-md-0 mt-2 mt-md-0">
-                                <a href="{{ url_for('main.view_cari_master_uang_makan') }}"
-                                    class="btn p-0 border-0 bg-transparent shadow-none text-decoration-none">
-                                    <i class="bi bi-search" style="color: #333; font-size: 1.1rem;"></i>
-                                </a>
-                            </div>
-                        </div>
+                        <a href="{{ url_for('main.view_cari_master_uang_makan') }}"
+                           class="btn p-0 border-0 bg-transparent shadow-none">
+                            <i class="bi bi-search"
+                               style="color:#333;font-size:1.1rem;"></i>
+                        </a>
                     </div>
                 </div>
 
                 <div class="card-body">
                     <div class="row g-3">
+
                         <div class="col-12 d-md-flex align-items-center">
                             <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Tanggal Mulai</label>
+                            <label class="col-md-2 text-md-start pe-md-4 fw-bold">
+                                Tanggal Mulai
+                            </label>
                             <div class="col-md-7">
                                 <div class="input-group-custom w-100">
-                                    <input type="date" id="inputTglMulai" class="form-control-sm border w-100" style="outline: none;">
-                                    <span class="icon-append"><i class="bi bi-calendar3"></i></span>
+                                    <input type="date"
+                                           id="inputTglMulai"
+                                           class="form-control-sm border w-100">
+                                    <span class="icon-append">
+                                        <i class="bi bi-calendar3"></i>
+                                    </span>
                                 </div>
                             </div>
                         </div>
+
                         <div class="col-12 d-md-flex align-items-center">
                             <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Jenis Tunjangan</label>
+                            <label class="col-md-2 text-md-start pe-md-4 fw-bold">
+                                Jenis Tunjangan
+                            </label>
                             <div class="col-md-7">
-                                <select class="form-select-sm border w-100" id="inputJenisTunjangan">
-                                    <option value="">-- Pilih Jenis Tunjangan --</option>
-                                    {% for jenis in jenis_tunjangan_options %}
-                                    <option value="{{ jenis }}">{{ jenis }}</option>
-                                    {% endfor %}
-                                </select>
+                                <input type="text"
+                                       class="form-control-sm border w-100"
+                                       value="U.Makan"
+                                       readonly>
                             </div>
                         </div>
+
                         <div class="col-12 d-md-flex align-items-center">
                             <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Nominal</label>
+                            <label class="col-md-2 text-md-start pe-md-4 fw-bold">
+                                Activity
+                            </label>
+                            <div class="col-md-7">
+                                <input type="text"
+                                       class="form-control-sm border w-100"
+                                       value="Intern"
+                                       readonly>
+                            </div>
+                        </div>
+
+                        <div class="col-12 d-md-flex align-items-center">
+                            <div class="col-md-1"></div>
+                            <label class="col-md-2 text-md-start pe-md-4 fw-bold">
+                                Nominal
+                            </label>
                             <div class="col-md-7">
                                 <div class="input-group-custom w-100">
-                                    <input type="number" id="inputNominal" class="form-control-sm border w-100 text-end" min="0" step="1" value="0">
-                                    <span class="icon-append"><i class="bi bi-sort-numeric-down"></i></span>
+                                    <input type="number"
+                                           id="inputNominal"
+                                           class="form-control-sm border w-100 text-end"
+                                           min="0"
+                                           step="1"
+                                           value="0">
+                                    <span class="icon-append">
+                                        <i class="bi bi-sort-numeric-down"></i>
+                                    </span>
                                 </div>
                             </div>
                         </div>
+
                         <div class="col-12 d-md-flex align-items-center">
                             <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">No Surat</label>
+                            <label class="col-md-2 text-md-start pe-md-4 fw-bold">
+                                No Surat
+                            </label>
                             <div class="col-md-7">
                                 <div class="input-group-custom w-100">
-                                    <input type="text" id="inputNoSurat" class="form-control-sm border w-100">
-                                    <span class="icon-append"><i class="bi bi-pencil-fill"></i></span>
+                                    <input type="text"
+                                           id="inputNoSurat"
+                                           class="form-control-sm border w-100">
+                                    <span class="icon-append">
+                                        <i class="bi bi-pencil-fill"></i>
+                                    </span>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-12 d-md-flex align-items-center">
-                            <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Hari Kerja</label>
-                            <div class="col-md-7">
-                                <select class="form-select-sm border w-100" id="inputHariKerja">
-                                    <option value="">-- Pilih Hari Kerja --</option>
-                                    <option value="1">Hari Kerja</option>
-                                    <option value="0">Hari Libur</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-12 d-md-flex align-items-center">
-                            <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Fungsional</label>
-                            <div class="col-md-7">
-                                <div class="input-group-custom w-100">
-                                    <input type="text" id="inputFungsional" class="form-control-sm border w-100" maxlength="50">
-                                    <span class="icon-append"><i class="bi bi-pencil-fill"></i></span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12 d-md-flex align-items-center">
-                            <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Shift</label>
-                            <div class="col-md-7">
-                                <div class="input-group-custom w-100">
-                                    <input type="text" id="inputShift" class="form-control-sm border w-100" maxlength="5">
-                                    <span class="icon-append"><i class="bi bi-pencil-fill"></i></span>
-                                </div>
-                            </div>
-                        </div>
+
                         <div class="col-12 d-flex justify-content-center mt-3">
-                            <button type="button" id="btnSimpanTunjangan" class="btn btn-orange-figma px-4">
-                                <i class="bi bi-save me-1"></i>Simpan
+                            <button type="button"
+                                    id="btnSimpanTunjangan"
+                                    class="btn btn-orange-figma px-4">
+                                <i class="bi bi-save me-1"></i>
+                                <span id="btnText">Simpan</span>
+                            </button>
+
+                            <button type="button"
+                                    id="btnBatalEdit"
+                                    class="btn btn-secondary ms-2 px-4"
+                                    style="display:none;">
+                                Batal
                             </button>
                         </div>
+
+                        <div class="col-12 text-center">
+                            <small id="editInfo" class="text-muted"></small>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -133,66 +153,135 @@
 {% block script %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    const editId = {{ edit_id|default('null')|tojson }};
+
     const btnSimpan = document.getElementById('btnSimpanTunjangan');
-    if (!btnSimpan) return;
+    const btnBatal = document.getElementById('btnBatalEdit');
 
-    btnSimpan.addEventListener('click', async () => {
-        const jenisTunjangan = document.getElementById('inputJenisTunjangan').value;
-        const tglMulai = document.getElementById('inputTglMulai').value;
-        const nominal = document.getElementById('inputNominal').value;
-        const noSurat = document.getElementById('inputNoSurat').value;
-        const hariKerja = document.getElementById('inputHariKerja').value;
-        const shift = document.getElementById('inputShift').value;
-        const fungsional = document.getElementById('inputFungsional').value;
+    const inputTglMulai = document.getElementById('inputTglMulai');
+    const inputNominal = document.getElementById('inputNominal');
+    const inputNoSurat = document.getElementById('inputNoSurat');
 
-        if (!jenisTunjangan) {
-            alert('Pilih Jenis Tunjangan terlebih dahulu');
-            return;
+    const pageTitle = document.getElementById('pageTitle');
+    const btnText = document.getElementById('btnText');
+    const editInfo = document.getElementById('editInfo');
+
+    let currentEditId = editId;
+
+    function clearForm() {
+        currentEditId = null;
+        inputTglMulai.value = '';
+        inputNominal.value = '0';
+        inputNoSurat.value = '';
+
+        pageTitle.textContent = 'Master Uang Makan';
+        btnText.textContent = 'Simpan';
+        editInfo.textContent = '';
+        btnBatal.style.display = 'none';
+
+        history.replaceState(
+            {},
+            '',
+            '{{ url_for("main.view_master_uang_makan") }}'
+        );
+    }
+
+    async function loadEditData(id) {
+        try {
+            const res = await fetch(
+                '/api/uang-makan/detail?id=' +
+                encodeURIComponent(id)
+            );
+
+            const json = await res.json();
+
+            if (json.status !== 'success') {
+                alert(json.message || 'Data tidak ditemukan');
+                clearForm();
+                return;
+            }
+
+            const row = json.data;
+
+            currentEditId = row.tunjangan_id;
+            inputTglMulai.value = row.tgl_mulai || '';
+            inputNominal.value = row.nominal ?? 0;
+            inputNoSurat.value = row.dokreff || '';
+
+            pageTitle.textContent = 'Edit Master Uang Makan';
+            btnText.textContent = 'UPDATE';
+            btnBatal.style.display = 'inline-block';
+            editInfo.textContent =
+                'ID Tunjangan: ' + row.tunjangan_id;
+
+        } catch (err) {
+            console.error(err);
+            alert('Gagal mengambil data untuk Edit.');
+            clearForm();
         }
+    }
+
+    btnSimpan.addEventListener('click', async function () {
+        const tglMulai = inputTglMulai.value;
+        const nominal = inputNominal.value;
+        const noSurat = inputNoSurat.value.trim();
+
         if (!tglMulai) {
             alert('Tanggal Mulai wajib diisi');
             return;
         }
+
         if (nominal === '' || Number(nominal) < 0) {
             alert('Nominal wajib diisi dan tidak boleh negatif');
             return;
         }
-        if (hariKerja === '') {
-            alert('Hari Kerja wajib dipilih');
-            return;
+
+        const isEdit = currentEditId !== null &&
+                       currentEditId !== undefined;
+
+        const url = isEdit
+            ? '/api/uang-makan/update'
+            : '/api/uang-makan/save';
+
+        const body = {
+            tgl_mulai: tglMulai,
+            nominal: nominal,
+            no_surat: noSurat
+        };
+
+        if (isEdit) {
+            body.tunjangan_id = currentEditId;
         }
 
         try {
-            const res = await fetch('/api/uang-makan/save', {
+            const res = await fetch(url, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    jenis_tunjangan: jenisTunjangan,
-                    tgl_mulai: tglMulai,
-                    nominal: nominal,
-                    no_surat: noSurat,
-                    hari_kerja: hariKerja,
-                    shift: shift,
-                    fungsional: fungsional,
-                })
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(body)
             });
+
             const json = await res.json();
+
             alert(json.message);
 
             if (json.status === 'success') {
-                document.getElementById('inputJenisTunjangan').value = '';
-                document.getElementById('inputTglMulai').value = '';
-                document.getElementById('inputNominal').value = '0';
-                document.getElementById('inputNoSurat').value = '';
-                document.getElementById('inputHariKerja').value = '';
-                document.getElementById('inputShift').value = '';
-                document.getElementById('inputFungsional').value = '';
+                clearForm();
             }
+
         } catch (err) {
-            alert('Gagal menghubungi server, coba lagi.');
             console.error(err);
+            alert('Gagal menghubungi server, coba lagi.');
         }
     });
+
+    btnBatal.addEventListener('click', clearForm);
+
+    if (currentEditId !== null &&
+        currentEditId !== undefined) {
+        loadEditData(currentEditId);
+    }
 });
 </script>
 {% endblock %}

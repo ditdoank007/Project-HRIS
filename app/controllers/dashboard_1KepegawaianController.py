@@ -28,6 +28,7 @@ from app.utils.pegawaiHelper import (
     search_operational_pegawai,
     is_operational_pegawai,
 )
+from app.utils.pegawaiSortHelper import sort_pegawai_rows
 
 
 def kepegawaian_cari_data_pegawai():
@@ -110,14 +111,33 @@ def api_pegawai_cari():
             if field is not None:
                 query = query.filter(field.ilike(f'%{filter_value2}%'))
         
-        # Order
-        query = query.order_by(
-            MfJabatan.URUT_JABATAN.asc(),
-            MfGolongan.URUT_GOL.asc(),
-            Pegawai.NIP.asc()
-        )
-        
-        results = query.limit(500).all()
+        # ========================================================
+        # STANDARD SORTING PEGAWAI HRIS REBORN
+        #
+        # Jangan membuat ORDER BY lokal di controller.
+        # Seluruh modul menggunakan pegawaiSortHelper.py
+        # sebagai Single Source of Truth.
+        # ========================================================
+
+        results = query.all()
+
+        # Simpan hasil JOIN berdasarkan NIP agar hasil JOIN
+        # tetap mengikuti urutan pegawai hasil standard sorting.
+        result_map = {
+            peg.NIP: (peg, unit, gol, jab)
+            for peg, unit, gol, jab in results
+        }
+
+        sorted_pegawai = sort_pegawai_rows([
+            peg
+            for peg, unit, gol, jab in results
+        ])
+
+        results = [
+            result_map[peg.NIP]
+            for peg in sorted_pegawai
+            if peg.NIP in result_map
+        ][:500]
         
         # Format data
         data = []
@@ -132,7 +152,16 @@ def api_pegawai_cari():
                 'no': i,
                 'nip': peg.NIP,
                 'nama': peg.NAMA or '',
-                'gol_pangkat': f"{gol.NAMA_GOL or ''} - {gol.PANGKAT_GOL or ''}" if gol else '-',
+                'golongan': (
+                    gol.NAMA_GOL
+                    if gol and gol.NAMA_GOL
+                    else '-'
+                ),
+                'pangkat': (
+                    gol.PANGKAT_GOL
+                    if gol and gol.PANGKAT_GOL
+                    else '-'
+                ),
                 'unit_kerja': unit.NAMA_UNIT_KERJA if unit else '-',
                 # ====================================================
                 # SUMBER JABATAN HRIS REBORN
@@ -163,7 +192,6 @@ def api_pegawai_cari():
                     else 'NON PNS'
                 ),
 
-                'keterangan': keterangan,
             })
         
         return jsonify({

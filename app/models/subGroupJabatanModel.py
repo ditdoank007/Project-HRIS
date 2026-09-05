@@ -12,10 +12,22 @@ class MfSubGroupJabatan(db.Model):
     __tablename__ = 'MF_SUB_GROUP_JABATAN'
 
     # Primary Key
-    SUB_GROUP_JABATAN_ID = db.Column(db.Integer, primary_key=True, nullable=False)
+    # Python attribute tetap dipertahankan untuk kompatibilitas
+    # dengan controller/template HRIS Reborn.
+    # Nama kolom mengikuti schema legacy HRIS di CT128.
+    SUB_GROUP_JABATAN_ID = db.Column(
+        'IDSubGroupJabatan',
+        db.Integer,
+        primary_key=True,
+        nullable=False
+    )
 
     # Nama sub-kelompok jabatan
-    NAMA_SUB_GROUP_JABATAN = db.Column(db.String(150), nullable=False)
+    NAMA_SUB_GROUP_JABATAN = db.Column(
+        'SubGroupJabatan',
+        db.String(150),
+        nullable=True
+    )
 
     def __repr__(self):
         return f'<MfSubGroupJabatan {self.SUB_GROUP_JABATAN_ID} - {self.NAMA_SUB_GROUP_JABATAN}>'

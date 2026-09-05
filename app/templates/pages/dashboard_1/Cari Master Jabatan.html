@@ -79,13 +79,13 @@
                             style="min-width: 1000px;">
                             <thead style="background:#EB6831;">
                                 <tr>
-                                    <th style="color:white; vertical-align: middle;">-</th>
                                     <th style="color:white; vertical-align: middle;">NO</th>
                                     <th style="color:white; vertical-align: middle;">JABATAN ID</th>
-                                    <th style="color:white; vertical-align: middle;">NAMA JABATAN</th>
+                                    <th style="color:white; vertical-align: middle; text-align:left;">NAMA JABATAN</th>
                                     <th style="color:white; vertical-align: middle;">BUTIR KEGIATAN</th>
                                     <th style="color:white; vertical-align: middle;">URUT JABATAN</th>
                                     <th style="color:white; vertical-align: middle;">ISI AKTIF?</th>
+                                    <th style="color:white; vertical-align: middle;">AKSI</th>
                                     <th style="color:white; vertical-align: middle;">UPDATED</th>
                                 </tr>
                             </thead>
@@ -106,17 +106,28 @@
 
 {% block script %}
 <script>
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 function loadJabatanList() {
-    const field1   = document.getElementById('filterField1').value;
+    const field1 = document.getElementById('filterField1').value;
     const keyword1 = document.getElementById('filterKeyword1').value.trim();
-    const field2   = document.getElementById('filterField2').value;
+    const field2 = document.getElementById('filterField2').value;
     const keyword2 = document.getElementById('filterKeyword2').value.trim();
 
     const params = new URLSearchParams();
+
     if (field1 && keyword1) {
         params.append('field1', field1);
         params.append('keyword1', keyword1);
     }
+
     if (field2 && keyword2) {
         params.append('field2', field2);
         params.append('keyword2', keyword2);
@@ -126,28 +137,58 @@ function loadJabatanList() {
         .then(res => res.json())
         .then(data => {
             const tbody = document.getElementById('jabatanTableBody');
+
             tbody.innerHTML = '';
 
             if (data.status !== 'success') {
-                tbody.innerHTML = `<tr><td colspan="8" style="padding:20px;">${data.message || 'Terjadi kesalahan'}</td></tr>`;
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" style="padding:20px;">
+                            ${escapeHtml(data.message || 'Terjadi kesalahan')}
+                        </td>
+                    </tr>
+                `;
                 return;
             }
 
-            if (data.data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" style="padding:20px;">No records to display.</td></tr>';
+            if (!data.data || data.data.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" style="padding:20px;">
+                            No records to display.
+                        </td>
+                    </tr>
+                `;
                 return;
             }
 
             data.data.forEach(row => {
                 tbody.insertAdjacentHTML('beforeend', `
                     <tr>
-                        <td><input type="checkbox"></td>
                         <td>${row.no}</td>
                         <td>${row.jabatan_id}</td>
-                        <td>${row.nama_jabatan}</td>
+                        <td style="text-align:left !important;">${row.nama_jabatan}</td>
                         <td>${row.butir_kegiatan}</td>
                         <td>${row.urut_jabatan}</td>
                         <td>${row.is_aktif}</td>
+                        <td>
+                            <div class="d-flex justify-content-center gap-1">
+                                <button
+                                    type="button"
+                                    class="btn btn-sm btn-warning"
+                                    title="Edit"
+                                    onclick="editJabatan(${row.jabatan_id})">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                                <button
+                                    type="button"
+                                    class="btn btn-sm btn-danger"
+                                    title="Hapus"
+                                    onclick="deleteJabatan(${row.jabatan_id})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
                         <td>${row.updated}</td>
                     </tr>
                 `);
@@ -155,14 +196,104 @@ function loadJabatanList() {
         })
         .catch(err => {
             console.error(err);
-            const tbody = document.getElementById('jabatanTableBody');
-            tbody.innerHTML = '<tr><td colspan="8" style="padding:20px;">Gagal memuat data.</td></tr>';
+
+            document.getElementById('jabatanTableBody').innerHTML = `
+                <tr>
+                    <td colspan="8" style="padding:20px;">
+                        Gagal memuat data.
+                    </td>
+                </tr>
+            `;
         });
 }
 
-document.getElementById('btnRefreshJabatan').addEventListener('click', loadJabatanList);
 
-// Load semua data begitu halaman dibuka (sama seperti klik Refresh dengan filter kosong)
-document.addEventListener('DOMContentLoaded', loadJabatanList);
+function editJabatan(jabatanId) {
+    if (!jabatanId) {
+        alert('Jabatan ID tidak valid.');
+        return;
+    }
+
+    window.location.href =
+        "{{ url_for('main.view_master_jabatan') }}" +
+        "?edit=" + encodeURIComponent(jabatanId);
+}
+
+
+function deleteJabatan(jabatanId) {
+    if (!jabatanId) {
+        alert('Jabatan ID tidak valid.');
+        return;
+    }
+
+    if (!confirm(
+        'Hapus Master Jabatan ID ' +
+        jabatanId +
+        '?'
+    )) {
+        return;
+    }
+
+    fetch("{{ url_for('main.api_jabatan_delete') }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            jabatan_id: jabatanId
+        })
+    })
+        .then(async res => {
+            const data = await res.json();
+
+            if (res.ok && data.status === 'success') {
+                alert(data.message);
+                loadJabatanList();
+                return;
+            }
+
+            if (res.status === 409) {
+                let message =
+                    'Master Jabatan ID ' +
+                    jabatanId +
+                    ' tidak dapat dihapus.';
+
+                if (Array.isArray(data.references) &&
+                    data.references.length > 0) {
+
+                    message += '\n\nMasih digunakan oleh:\n';
+
+                    data.references.forEach(reference => {
+                        message += '\n• ' + reference;
+                    });
+                } else if (data.message) {
+                    message += '\n\n' + data.message;
+                }
+
+                alert(message);
+                return;
+            }
+
+            alert(
+                data.message ||
+                'Terjadi kesalahan saat menghapus data.'
+            );
+        })
+        .catch(err => {
+            console.error(err);
+            alert(
+                'Tidak dapat terhubung ke server saat menghapus data.'
+            );
+        });
+}
+
+
+document.getElementById('btnRefreshJabatan')
+    .addEventListener('click', loadJabatanList);
+
+document.addEventListener(
+    'DOMContentLoaded',
+    loadJabatanList
+);
 </script>
 {% endblock %}

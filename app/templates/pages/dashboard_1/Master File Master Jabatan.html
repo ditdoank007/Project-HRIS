@@ -21,7 +21,7 @@
             <div class="card mb-4 filter-card">
                 <div class="card-header-custom d-flex justify-content-between align-items-center"
                     style="border-radius: 10px;">
-                    <h6 class="mb-0">
+                    <h6 class="mb-0" id="masterJabatanTitle">
                         <i class="feather-award me-2"></i> Master Jabatan
                     </h6>
 
@@ -142,7 +142,8 @@
 
                         <div class="col-12 d-flex justify-content-center mt-3">
                             <button type="button" id="btnSimpanJabatan" class="btn btn-orange-figma px-4">
-                                <i class="bi bi-save me-1"></i>Simpan
+                                <i class="bi bi-save me-1"></i>
+                                <span id="btnSimpanJabatanText">Simpan</span>
                             </button>
                         </div>
 
@@ -186,60 +187,245 @@
 
 {% block script %}
 <script>
-document.getElementById('btnSimpanJabatan').addEventListener('click', function () {
-    const groupJabatanId = document.getElementById('selectGroupJabatan').value;
-    const subGroupJabatanId = document.getElementById('selectSubGroupJabatan').value;
-    const jabatanId = document.getElementById('inputJabatanId').value;
-    const namaJabatan = document.getElementById('inputNamaJabatan').value.trim();
-    const parentJabatanId = document.getElementById('inputParentJabatanId').value;
-    const levelJabatan = document.getElementById('inputLevelJabatan').value;
-    const typeJabatan = document.getElementById('selectType').value;
-    const isAktif = document.getElementById('selectIsAktif').value;
+let editJabatanId = null;
 
-    if (!groupJabatanId) { alert('Group Jabatan wajib dipilih'); return; }
-    if (!subGroupJabatanId) { alert('SubGroup Jabatan wajib dipilih'); return; }
-    if (!jabatanId) { alert('Jabatan ID wajib diisi'); return; }
-    if (!namaJabatan) { alert('Nama Jabatan wajib diisi'); return; }
-    if (levelJabatan === '') { alert('Level Jabatan wajib diisi'); return; }
-    if (!typeJabatan) { alert('Type wajib dipilih'); return; }
-    if (isAktif === '') { alert('Isi Aktif wajib dipilih'); return; }
 
-    const payload = {
-        group_jabatan_id: groupJabatanId,
-        sub_group_jabatan_id: subGroupJabatanId,
-        jabatan_id: jabatanId,
-        nama_jabatan: namaJabatan,
-        parent_jabatan_id: parentJabatanId,
-        level_jabatan: levelJabatan,
-        type_jabatan: typeJabatan,
-        is_aktif: isAktif === '1',
-    };
+function resetFormJabatan() {
+    editJabatanId = null;
 
-    fetch("{{ url_for('main.api_jabatan_save') }}", {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-    })
+    document.getElementById('selectGroupJabatan').value = '';
+    document.getElementById('selectSubGroupJabatan').value = '';
+    document.getElementById('inputJabatanId').value = '0';
+    document.getElementById('inputNamaJabatan').value = '';
+    document.getElementById('inputParentJabatanId').value = '0';
+    document.getElementById('inputLevelJabatan').value = '0';
+    document.getElementById('selectType').value = '';
+    document.getElementById('selectIsAktif').value = '';
+
+    document.getElementById('inputJabatanId').readOnly = false;
+
+    document.getElementById('masterJabatanTitle').innerHTML =
+        '<i class="feather-award me-2"></i> Master Jabatan';
+
+    document.getElementById('btnSimpanJabatanText').textContent =
+        'Simpan';
+}
+
+
+function loadEditJabatan() {
+    const params = new URLSearchParams(window.location.search);
+    const editId = params.get('edit');
+
+    if (!editId) {
+        resetFormJabatan();
+        return;
+    }
+
+    const jabatanId = Number(editId);
+
+    if (!Number.isInteger(jabatanId) || jabatanId <= 0) {
+        alert('Jabatan ID untuk Edit tidak valid.');
+        return;
+    }
+
+    fetch(
+        "{{ url_for('main.api_jabatan_detail') }}" +
+        "?id=" + encodeURIComponent(jabatanId)
+    )
         .then(res => res.json())
         .then(data => {
-            if (data.status === 'success') {
-                alert(data.message);
-                document.getElementById('selectGroupJabatan').value = '';
-                document.getElementById('selectSubGroupJabatan').value = '';
-                document.getElementById('inputJabatanId').value = '0';
-                document.getElementById('inputNamaJabatan').value = '';
-                document.getElementById('inputParentJabatanId').value = '0';
-                document.getElementById('inputLevelJabatan').value = '0';
-                document.getElementById('selectType').value = '';
-                document.getElementById('selectIsAktif').value = '';
-            } else {
-                alert('Gagal: ' + data.message);
+
+            if (data.status !== 'success') {
+                alert(
+                    'Gagal mengambil data Jabatan: ' +
+                    (data.message || 'Data tidak ditemukan')
+                );
+                return;
             }
+
+            const row = data.data || data;
+
+            editJabatanId = jabatanId;
+
+            document.getElementById('selectGroupJabatan').value =
+                row.group_jabatan_id ?? '';
+
+            document.getElementById('selectSubGroupJabatan').value =
+                row.sub_group_jabatan_id ?? '';
+
+            document.getElementById('inputJabatanId').value =
+                row.jabatan_id ?? jabatanId;
+
+            document.getElementById('inputNamaJabatan').value =
+                row.nama_jabatan ?? '';
+
+            document.getElementById('inputParentJabatanId').value =
+                row.parent_id ??
+                row.parent_jabatan_id ??
+                0;
+
+            document.getElementById('inputLevelJabatan').value =
+                row.level_jabatan ??
+                row.urut_jabatan ??
+                0;
+
+            document.getElementById('selectType').value =
+                row.type_jabatan ?? '';
+
+            let isAktif = row.is_aktif;
+
+            if (
+                isAktif === true ||
+                isAktif === 1 ||
+                isAktif === '1' ||
+                isAktif === 'Aktif'
+            ) {
+                isAktif = '1';
+            } else {
+                isAktif = '0';
+            }
+
+            document.getElementById('selectIsAktif').value =
+                isAktif;
+
+            document.getElementById('inputJabatanId').readOnly = true;
+
+            document.getElementById('masterJabatanTitle').innerHTML =
+                '<i class="feather-award me-2"></i> Edit Master Jabatan';
+
+            document.getElementById('btnSimpanJabatanText').textContent =
+                'Update';
         })
         .catch(err => {
             console.error(err);
-            alert('Terjadi kesalahan saat menyimpan data.');
+            alert(
+                'Terjadi kesalahan saat mengambil data Jabatan.'
+            );
         });
-});
+}
+
+
+document.getElementById('btnSimpanJabatan')
+    .addEventListener('click', function () {
+
+        const groupJabatanId =
+            document.getElementById('selectGroupJabatan').value;
+
+        const subGroupJabatanId =
+            document.getElementById('selectSubGroupJabatan').value;
+
+        const jabatanId =
+            document.getElementById('inputJabatanId').value;
+
+        const namaJabatan =
+            document.getElementById('inputNamaJabatan').value.trim();
+
+        const parentJabatanId =
+            document.getElementById('inputParentJabatanId').value;
+
+        const levelJabatan =
+            document.getElementById('inputLevelJabatan').value;
+
+        const typeJabatan =
+            document.getElementById('selectType').value;
+
+        const isAktif =
+            document.getElementById('selectIsAktif').value;
+
+
+        if (!groupJabatanId) {
+            alert('Group Jabatan wajib dipilih');
+            return;
+        }
+
+        if (!subGroupJabatanId) {
+            alert('SubGroup Jabatan wajib dipilih');
+            return;
+        }
+
+        if (!jabatanId) {
+            alert('Jabatan ID wajib diisi');
+            return;
+        }
+
+        if (!namaJabatan) {
+            alert('Nama Jabatan wajib diisi');
+            return;
+        }
+
+        if (levelJabatan === '') {
+            alert('Level Jabatan wajib diisi');
+            return;
+        }
+
+        if (!typeJabatan) {
+            alert('Type wajib dipilih');
+            return;
+        }
+
+        if (isAktif === '') {
+            alert('Isi Aktif wajib dipilih');
+            return;
+        }
+
+
+        const payload = {
+            group_jabatan_id: groupJabatanId,
+            sub_group_jabatan_id: subGroupJabatanId,
+            jabatan_id: jabatanId,
+            nama_jabatan: namaJabatan,
+            parent_jabatan_id: parentJabatanId,
+            level_jabatan: levelJabatan,
+            type_jabatan: typeJabatan,
+            is_aktif: isAktif === '1'
+        };
+
+
+        const endpoint = editJabatanId !== null
+            ? "{{ url_for('main.api_jabatan_update') }}"
+            : "{{ url_for('main.api_jabatan_save') }}";
+
+
+        fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        })
+            .then(res => res.json())
+            .then(data => {
+
+                if (data.status === 'success') {
+
+                    alert(data.message);
+
+                    window.location.href =
+                        "{{ url_for('main.view_cari_master_jabatan') }}";
+
+                } else {
+
+                    alert(
+                        'Gagal: ' +
+                        (data.message || 'Terjadi kesalahan')
+                    );
+                }
+            })
+            .catch(err => {
+                console.error(err);
+
+                alert(
+                    editJabatanId !== null
+                        ? 'Terjadi kesalahan saat memperbarui data.'
+                        : 'Terjadi kesalahan saat menyimpan data.'
+                );
+            });
+    });
+
+
+document.addEventListener(
+    'DOMContentLoaded',
+    loadEditJabatan
+);
 </script>
 {% endblock %}

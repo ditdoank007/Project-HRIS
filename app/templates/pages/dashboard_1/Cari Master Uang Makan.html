@@ -11,94 +11,131 @@
                 <h5 class="m-b-10">Master File</h5>
             </div>
             <ul class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url_for('main.view_master_uang_makan') }}">Master Uang Makan</a></li>
-                <li class="breadcrumb-item">Cari Master Uang Makan</li>
+                <li class="breadcrumb-item">
+                    <a href="{{ url_for('main.view_master_uang_makan') }}">
+                        Master Uang Makan
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    Cari Master Uang Makan
+                </li>
             </ul>
         </div>
     </div>
 
     <div class="main-content">
         <div class="container-fluid">
-            <div class="card mb-4 shadow-sm" style="border-radius: 10px; overflow: hidden; border: none;">
+            <div class="card mb-4 shadow-sm"
+                 style="border-radius:10px;overflow:hidden;border:none;">
+
                 <div class="card-header-custom d-flex justify-content-between align-items-center p-3"
-                    style="background: #ffffff; border-bottom: 1px solid #eee;">
-                    <h6 class="mb-0"><i class="bi bi-search me-2"></i> Cari Transaksi</h6>
-                    <a href="{{ url_for('main.view_master_uang_makan') }}" class="btn-close-custom">
+                     style="background:#fff;border-bottom:1px solid #eee;">
+                    <h6 class="mb-0">
+                        <i class="bi bi-search me-2"></i>
+                        Cari Master Uang Makan
+                    </h6>
+
+                    <a href="{{ url_for('main.view_master_uang_makan') }}"
+                       class="btn-close-custom">
                         <i class="bi bi-x-lg"></i>
                     </a>
                 </div>
 
                 <div class="card-body p-4">
+
                     <div class="row mb-4 align-items-center">
-                        <div
-                            class="col-md-12 d-flex flex-column flex-md-row align-items-start align-items-md-center flex-wrap gap-2">
+                        <div class="col-md-12 d-flex flex-column flex-md-row
+                                    align-items-start align-items-md-center
+                                    flex-wrap gap-2">
+
                             <label class="filter-label-wide">Filter</label>
 
-                            <select class="form-select-sm border custom-select w-mobile-100" id="filterField1">
+                            <select class="form-select-sm border custom-select w-mobile-100"
+                                    id="filterField1">
                                 <option value="">- Pilih Field -</option>
-                                <option value="Jenis Tunjangan">Jenis Tunjangan</option>
                                 <option value="Nominal">Nominal</option>
                                 <option value="No Surat">No Surat</option>
                                 <option value="Tanggal Mulai">Tanggal Mulai</option>
                             </select>
 
                             <div class="input-group-custom w-mobile-100">
-                                <input type="text" class="form-control-sm border" id="filterKeyword1">
-                                <span class="icon-append"><i class="bi bi-pencil-fill"></i></span>
+                                <input type="text"
+                                       class="form-control-sm border"
+                                       id="filterKeyword1">
+                                <span class="icon-append">
+                                    <i class="bi bi-pencil-fill"></i>
+                                </span>
                             </div>
 
                             <span class="mx-md-2 fw-bold text-dan">Dan</span>
 
-                            <select class="form-select-sm border custom-select w-mobile-100" id="filterField2">
+                            <select class="form-select-sm border custom-select w-mobile-100"
+                                    id="filterField2">
                                 <option value="">- Pilih Field -</option>
-                                <option value="Jenis Tunjangan">Jenis Tunjangan</option>
                                 <option value="Nominal">Nominal</option>
                                 <option value="No Surat">No Surat</option>
                                 <option value="Tanggal Mulai">Tanggal Mulai</option>
                             </select>
 
                             <div class="input-group-custom w-mobile-100">
-                                <input type="text" class="form-control-sm border" id="filterKeyword2">
-                                <span class="icon-append"><i class="bi bi-pencil-fill"></i></span>
+                                <input type="text"
+                                       class="form-control-sm border"
+                                       id="filterKeyword2">
+                                <span class="icon-append">
+                                    <i class="bi bi-pencil-fill"></i>
+                                </span>
                             </div>
 
-                            <button class="btn-refresh-custom ms-md-auto mt-2 mt-md-0 w-mobile-100" id="btnRefreshTunjangan">
-                                <i class="bi bi-arrow-clockwise"></i> Refresh
+                            <button class="btn-refresh-custom ms-md-auto mt-2 mt-md-0 w-mobile-100"
+                                    id="btnRefreshTunjangan">
+                                <i class="bi bi-arrow-clockwise"></i>
+                                Refresh
                             </button>
                         </div>
                     </div>
 
                     <div class="d-flex justify-content-end mb-2">
-                        <button class="btn btn-sm p-0 border-0 shadow-none" id="btnExportExcel" title="Export Excel">
-                            <img src="https://cdn-icons-png.flaticon.com/512/732/732220.png" alt="Excel"
-                                style="width: 25px; height: 25px;">
+                        <button class="btn btn-sm p-0 border-0 shadow-none"
+                                id="btnExportExcel"
+                                title="Export Excel">
+                            <img src="https://cdn-icons-png.flaticon.com/512/732/732220.png"
+                                 alt="Excel"
+                                 style="width:25px;height:25px;">
                         </button>
                     </div>
 
                     <div class="table-responsive">
-                        <table class="table table-bordered table-striped text-center align-middle"
-                            style="min-width: 1000px;">
+                        <table class="table table-bordered table-striped
+                                      text-center align-middle"
+                               style="min-width:1100px;">
+
                             <thead style="background:#EB6831;">
                                 <tr>
-                                    <th style="color:white; vertical-align: middle;">No</th>
-                                    <th style="color:white; vertical-align: middle;">Jenis Tunjangan</th>
-                                    <th style="color:white; vertical-align: middle;">TGL Mulai</th>
-                                    <th style="color:white; vertical-align: middle;">Nominal</th>
-                                    <th style="color:white; vertical-align: middle;">Hari Kerja</th>
-                                    <th style="color:white; vertical-align: middle;">Shift</th>
-                                    <th style="color:white; vertical-align: middle;">Fungsional</th>
-                                    <th style="color:white; vertical-align: middle;">No Surat</th>
-                                    <th style="color:white; vertical-align: middle;">Updated</th>
+                                    <th style="color:white;">No</th>
+                                    <th style="color:white;">ID Tunjangan</th>
+                                    <th style="color:white;">Jenis Tunjangan</th>
+                                    <th style="color:white;">TGL Mulai</th>
+                                    <th style="color:white;">Nominal</th>
+                                    <th style="color:white;">Hari Kerja</th>
+                                    <th style="color:white;">Fungsional</th>
+                                    <th style="color:white;">No Surat</th>
+                                    <th style="color:white;">Updated</th>
+                                    <th style="color:white;">AKSI</th>
                                 </tr>
                             </thead>
+
                             <tbody id="tunjanganTableBody">
                                 <tr>
-                                    <td colspan="9" style="vertical-align: middle; padding: 20px;">No records to
-                                        display.</td>
+                                    <td colspan="10"
+                                        style="padding:20px;">
+                                        No records to display.
+                                    </td>
                                 </tr>
                             </tbody>
+
                         </table>
                     </div>
+
                 </div>
             </div>
         </div>
@@ -110,30 +147,47 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const tbody = document.getElementById('tunjanganTableBody');
-    const hariKerjaLabel = { 0: 'Hari Libur', 1: 'Hari Kerja' };
+
+    function escapeHtml(value) {
+        const div = document.createElement('div');
+        div.textContent = value ?? '';
+        return div.innerHTML;
+    }
 
     function buildQueryParams() {
         const params = new URLSearchParams();
-        const field1 = document.getElementById('filterField1').value;
-        const keyword1 = document.getElementById('filterKeyword1').value.trim();
-        const field2 = document.getElementById('filterField2').value;
-        const keyword2 = document.getElementById('filterKeyword2').value.trim();
+
+        const field1 =
+            document.getElementById('filterField1').value;
+        const keyword1 =
+            document.getElementById('filterKeyword1').value.trim();
+
+        const field2 =
+            document.getElementById('filterField2').value;
+        const keyword2 =
+            document.getElementById('filterKeyword2').value.trim();
 
         if (field1 && keyword1) {
             params.append('field1', field1);
             params.append('keyword1', keyword1);
         }
+
         if (field2 && keyword2) {
             params.append('field2', field2);
             params.append('keyword2', keyword2);
         }
+
         return params;
     }
 
     async function loadTunjangan() {
         const params = buildQueryParams();
+
         try {
-            const res = await fetch('/api/tunjangan/list?' + params.toString());
+            const res = await fetch(
+                '/api/tunjangan/list?' + params.toString()
+            );
+
             const json = await res.json();
 
             if (json.status !== 'success') {
@@ -142,9 +196,10 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             renderTable(json.data);
+
         } catch (err) {
-            alert('Gagal menghubungi server, coba lagi.');
             console.error(err);
+            alert('Gagal menghubungi server, coba lagi.');
         }
     }
 
@@ -152,39 +207,106 @@ document.addEventListener('DOMContentLoaded', function () {
         tbody.innerHTML = '';
 
         if (!data || data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" style="padding:20px;">No records to display.</td></tr>';
+            tbody.innerHTML =
+                '<tr>' +
+                '<td colspan="10" style="padding:20px;">' +
+                'No records to display.' +
+                '</td>' +
+                '</tr>';
             return;
         }
 
         data.forEach(row => {
-            const hariKerjaText = row.hari_kerja === 0 || row.hari_kerja === 1
-                ? hariKerjaLabel[row.hari_kerja]
-                : '-';
+            const hariKerja = 'Hari Kerja';
 
             tbody.innerHTML += `
                 <tr>
-                    <td>${row.no}</td>
-                    <td>${row.jenis_tunjangan}</td>
-                    <td>${row.tgl_mulai}</td>
-                    <td>${row.nominal}</td>
-                    <td>${hariKerjaText}</td>
-                    <td>${row.shift}</td>
-                    <td>${row.fungsional}</td>
-                    <td>${row.no_surat}</td>
-                    <td>${row.updated}</td>
+                    <td>${escapeHtml(row.no)}</td>
+                    <td>${escapeHtml(row.tunjangan_id)}</td>
+                    <td>${escapeHtml(row.jenis_tunjangan)}</td>
+                    <td>${escapeHtml(row.tgl_mulai)}</td>
+                    <td class="text-end">${escapeHtml(row.nominal)}</td>
+                    <td>${escapeHtml(hariKerja)}</td>
+                    <td>${escapeHtml(row.fungsional)}</td>
+                    <td>${escapeHtml(row.no_surat)}</td>
+                    <td>${escapeHtml(row.updated)}</td>
+                    <td>
+                        <a href="/master/uang-makan?edit=${encodeURIComponent(row.tunjangan_id)}"
+                           class="btn btn-sm btn-outline-primary me-1"
+                           title="Edit">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+
+                        <button type="button"
+                                class="btn btn-sm btn-outline-danger btn-delete-um"
+                                data-id="${escapeHtml(row.tunjangan_id)}"
+                                title="Hapus">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
                 </tr>
             `;
         });
+
+        tbody.querySelectorAll('.btn-delete-um')
+            .forEach(button => {
+                button.addEventListener('click', async function () {
+                    const id = this.dataset.id;
+
+                    if (!confirm(
+                        'Yakin hapus Master Uang Makan ID ' +
+                        id + '?'
+                    )) {
+                        return;
+                    }
+
+                    try {
+                        const res = await fetch(
+                            '/api/uang-makan/delete',
+                            {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type':
+                                        'application/json'
+                                },
+                                body: JSON.stringify({
+                                    tunjangan_id: Number(id)
+                                })
+                            }
+                        );
+
+                        const json = await res.json();
+
+                        alert(json.message);
+
+                        if (json.status === 'success') {
+                            loadTunjangan();
+                        }
+
+                    } catch (err) {
+                        console.error(err);
+                        alert(
+                            'Gagal menghubungi server, coba lagi.'
+                        );
+                    }
+                });
+            });
     }
 
-    document.getElementById('btnRefreshTunjangan').addEventListener('click', loadTunjangan);
+    document.getElementById(
+        'btnRefreshTunjangan'
+    ).addEventListener('click', loadTunjangan);
 
-    document.getElementById('btnExportExcel').addEventListener('click', () => {
+    document.getElementById(
+        'btnExportExcel'
+    ).addEventListener('click', function () {
         const params = buildQueryParams();
-        window.location.href = '/api/tunjangan/export?' + params.toString();
+
+        window.location.href =
+            '/api/tunjangan/export?' +
+            params.toString();
     });
 
-    // Load data pertama kali saat halaman dibuka
     loadTunjangan();
 });
 </script>

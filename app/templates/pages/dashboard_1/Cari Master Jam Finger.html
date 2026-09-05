@@ -80,6 +80,7 @@
                                     <th colspan="2" style="color:white; vertical-align: middle;">IN (START DAN END TGL YG SAMA)</th>
                                     <th colspan="2" style="color:white; vertical-align: middle;">OUT (START DAN END TGL YG SAMA)</th>
                                     <th rowspan="2" style="color:white; vertical-align: middle;">UPDATED</th>
+                                    <th rowspan="2" style="color:white; vertical-align: middle;">AKSI</th>
                                 </tr>
                                 <tr>
                                     <th style="color:white; vertical-align: middle;">START FINGER</th>
@@ -90,7 +91,7 @@
                             </thead>
                             <tbody id="jamFingerTableBody">
                                 <tr>
-                                    <td colspan="10" style="vertical-align: middle; padding: 20px;">No records to display.</td>
+                                    <td colspan="11" style="vertical-align: middle; padding: 20px;">No records to display.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -130,7 +131,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     async function loadJamFingerList() {
-        tbody.innerHTML = `<tr><td colspan="10" style="padding:20px;">Memuat data...</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="11" style="padding:20px;">Memuat data...</td></tr>`;
 
         try {
             const params = buildQueryParams();
@@ -138,12 +139,12 @@ document.addEventListener('DOMContentLoaded', function () {
             const json = await res.json();
 
             if (json.status !== 'success') {
-                tbody.innerHTML = `<tr><td colspan="10" style="padding:20px;">${json.message || 'Gagal memuat data.'}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="11" style="padding:20px;">${json.message || 'Gagal memuat data.'}</td></tr>`;
                 return;
             }
 
             if (json.data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="10" style="padding:20px;">No records to display.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="11" style="padding:20px;">No records to display.</td></tr>`;
                 return;
             }
 
@@ -159,14 +160,68 @@ document.addEventListener('DOMContentLoaded', function () {
                     <td>${row.start_finger_out}</td>
                     <td>${row.end_finger_out}</td>
                     <td>${row.updated}</td>
+                    <td style="white-space: nowrap;">
+                        <button type="button"
+                                class="btn btn-sm btn-warning me-1"
+                                onclick="editJamFinger(${row.transaksi_id})"
+                                title="Edit">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+                        <button type="button"
+                                class="btn btn-sm btn-danger"
+                                onclick="hapusJamFinger(${row.transaksi_id})"
+                                title="Hapus">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
                 </tr>
             `).join('');
 
         } catch (err) {
             console.error('Gagal memuat data jam finger:', err);
-            tbody.innerHTML = `<tr><td colspan="10" style="padding:20px;">Gagal memuat data.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="11" style="padding:20px;">Gagal memuat data.</td></tr>`;
         }
     }
+
+    window.editJamFinger = function (transaksiId) {
+        window.location.href =
+            "{{ url_for('main.view_master_jam_finger') }}?edit_id=" +
+            encodeURIComponent(transaksiId);
+    };
+
+    window.hapusJamFinger = async function (transaksiId) {
+        if (!confirm('Apakah data Master Jam Finger ini akan dihapus?')) {
+            return;
+        }
+
+        try {
+            const res = await fetch(
+                "{{ url_for('main.api_jam_finger_delete') }}",
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        transaksi_id: transaksiId
+                    })
+                }
+            );
+
+            const data = await res.json();
+
+            if (data.status === 'success') {
+                alert(data.message);
+                await loadJamFingerList();
+            } else {
+                alert('Gagal: ' + (data.message || 'Data gagal dihapus.'));
+            }
+
+        } catch (err) {
+            console.error(err);
+            alert('Terjadi kesalahan saat menghapus data.');
+        }
+    };
 
     function exportExcel() {
         const params = buildQueryParams();

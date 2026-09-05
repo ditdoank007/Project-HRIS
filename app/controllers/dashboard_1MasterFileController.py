@@ -8,7 +8,7 @@ from urllib.parse import quote
 from flask import render_template, request, jsonify, session, current_app, send_file
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
-from sqlalchemy import func
+from sqlalchemy import func, text as sa_text, text
 from app import db
 from app.models.classModel import MfClass
 from app.models.pegawaiModel import Pegawai
@@ -26,6 +26,7 @@ from app.models.joblistModel import MfJoblist
 from app.models.jabatanKegiatanModel import MfJabatanKegiatan
 from app.models.tunjanganModel import MfTunjangan
 from app.models.userAccountModel import UserAccount
+from app.models.hrisAuthConfigModel import HrisAuthConfig
 from app.models.formModel import MfForm
 from app.models.hakAksesFormModel import HakAksesForm
 from app.utils.pegawaiSortHelper import sort_pegawai_rows
@@ -33,12 +34,72 @@ from app.helpers.masterJamKerjaHelper import (
     get_shift_kerja_definition,
 )
 
-JENIS_TUNJANGAN_OPTIONS = ['U.Makan', 'U.Transport', 'U.Lembur']
-
 GOOGLE_ID_HOLIDAY_CALENDAR_ID = 'id.indonesian#holiday@group.v.calendar.google.com'
 
 LEVEL_LABEL = {0: 'Admin', 1: 'Operator'}
 LEVEL_VALUE = {'admin': 0, 'operator': 1}
+
+def get_auth_config():
+    config = HrisAuthConfig.query.first()
+
+    if not config:
+        return jsonify({
+            'success': False,
+            'message': 'Konfigurasi login HRIS belum tersedia.'
+        }), 404
+
+    return jsonify({
+        'success': True,
+        'data': config.to_dict()
+    })
+
+
+def save_auth_config():
+    data = request.get_json() or {}
+
+    auth_mode = str(data.get('auth_mode', '')).strip().upper()
+    sso_server = str(data.get('sso_server', '')).strip() or None
+    sso_callback = str(data.get('sso_callback', '')).strip() or None
+
+    if auth_mode not in ('LOCAL', 'SSO'):
+        return jsonify({
+            'success': False,
+            'message': 'Mode Login harus LOCAL atau SSO.'
+        }), 400
+
+    if auth_mode == 'SSO' and (not sso_server or not sso_callback):
+        return jsonify({
+            'success': False,
+            'message': 'SSO Server dan SSO Callback wajib diisi untuk mode SSO.'
+        }), 400
+
+    config = HrisAuthConfig.query.first()
+
+    if not config:
+        return jsonify({
+            'success': False,
+            'message': 'Konfigurasi login HRIS tidak ditemukan.'
+        }), 404
+
+    config.AUTH_MODE = auth_mode
+
+    if auth_mode == 'SSO':
+        config.SSO_SERVER = sso_server
+        config.SSO_CALLBACK = sso_callback
+    else:
+        config.SSO_SERVER = None
+        config.SSO_CALLBACK = None
+
+    config.UPDATED_AT = datetime.now()
+
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'message': 'Konfigurasi Master Login berhasil disimpan.',
+        'data': config.to_dict()
+    })
+
 
 def master_butir_kegiatan():
     """
@@ -306,7 +367,7 @@ def save_jabatan():
         URUT_JABATAN=level_jabatan,
         TYPE_JABATAN=type_jabatan,
         IS_USE=is_use,
-        UPDATE_IN_BY=session.get('nip', 'system'),
+        UPDATE_BY=session.get('nip', 'system'),
         UPDATE_DATE=datetime.utcnow(),
     )
 
@@ -451,6 +512,222 @@ def save_jam_finger():
         'status': 'success',
         'message': 'Data jam finger berhasil disimpan',
         'data': jam_finger.to_dict(),
+    })
+
+
+def get_jam_finger_by_id():
+    """Ambil satu record Master Jam Finger berdasarkan TransaksiID."""
+    transaksi_id_raw = request.args.get('transaksi_id', '').strip()
+
+    if not transaksi_id_raw.isdigit():
+        return jsonify({
+            'status': 'error',
+            'message': 'TransaksiID tidak valid'
+        }), 400
+
+    transaksi_id = int(transaksi_id_raw)
+
+    row = db.session.get(MfLoadFinger, transaksi_id)
+
+    if row is None:
+        return jsonify({
+            'status': 'error',
+            'message': 'Data Master Jam Finger tidak ditemukan'
+        }), 404
+
+    def _time_value(value):
+        if value is None:
+            return ''
+
+        if isinstance(value, str):
+            value = value.strip()
+
+            for fmt in (
+                '%Y-%m-%d %H:%M:%S',
+                '%H:%M:%S',
+                '%H:%M',
+            ):
+                try:
+                    return datetime.strptime(value, fmt).strftime('%H:%M')
+                except ValueError:
+                    continue
+
+            return ''
+
+        if hasattr(value, 'strftime'):
+            return value.strftime('%H:%M')
+
+        return ''
+
+    return jsonify({
+        'status': 'success',
+        'data': {
+            'transaksi_id': row.TRAKSAKSI_ID,
+            'shift': row.SHIFT_KERJA or '',
+            'tgl_mulai': (
+                row.TGL_MULAI_BERLAKU.strftime('%Y-%m-%d')
+                if row.TGL_MULAI_BERLAKU and hasattr(row.TGL_MULAI_BERLAKU, 'strftime')
+                else ''
+            ),
+            'jam_in_start': _time_value(row.START_FINGER),
+            'jam_in_end': _time_value(row.END_FINGER),
+            'jam_out_start': _time_value(row.START_FINGER_OUT),
+            'jam_out_end': _time_value(row.END_FINGER_OUT),
+        }
+    })
+
+
+def update_jam_finger():
+    """Update satu record Master Jam Finger berdasarkan TransaksiID."""
+    payload = request.get_json(silent=True) or {}
+
+    transaksi_id_raw = str(payload.get('transaksi_id') or '').strip()
+    shift_raw = str(payload.get('shift') or '').strip()
+    tgl_mulai_raw = str(payload.get('tgl_mulai') or '').strip()
+    jam_in_start_raw = str(payload.get('jam_in_start') or '').strip()
+    jam_in_end_raw = str(payload.get('jam_in_end') or '').strip()
+    jam_out_start_raw = str(payload.get('jam_out_start') or '').strip()
+    jam_out_end_raw = str(payload.get('jam_out_end') or '').strip()
+
+    if not transaksi_id_raw.isdigit():
+        return jsonify({'status': 'error', 'message': 'TransaksiID tidak valid'}), 400
+
+    if shift_raw not in ('1', '2'):
+        return jsonify({'status': 'error', 'message': 'Shift tidak valid'}), 400
+
+    if not tgl_mulai_raw:
+        return jsonify({'status': 'error', 'message': 'Tanggal Mulai wajib diisi'}), 400
+
+    if not jam_in_start_raw or not jam_in_end_raw:
+        return jsonify({
+            'status': 'error',
+            'message': 'Rentang Start Jam In wajib diisi'
+        }), 400
+
+    if not jam_out_start_raw or not jam_out_end_raw:
+        return jsonify({
+            'status': 'error',
+            'message': 'Rentang Start Jam Out wajib diisi'
+        }), 400
+
+    try:
+        transaksi_id = int(transaksi_id_raw)
+        tgl_mulai = datetime.strptime(
+            tgl_mulai_raw, '%Y-%m-%d'
+        ).date()
+    except ValueError:
+        return jsonify({
+            'status': 'error',
+            'message': 'Format tanggal atau TransaksiID tidak valid'
+        }), 400
+
+    def _parse_jam(value):
+        try:
+            jam = datetime.strptime(value, '%H:%M').time()
+            return datetime.combine(tgl_mulai, jam)
+        except ValueError:
+            return None
+
+    start_finger = _parse_jam(jam_in_start_raw)
+    end_finger = _parse_jam(jam_in_end_raw)
+    start_finger_out = _parse_jam(jam_out_start_raw)
+    end_finger_out = _parse_jam(jam_out_end_raw)
+
+    if start_finger is None or end_finger is None:
+        return jsonify({
+            'status': 'error',
+            'message': 'Format Start Jam In harus HH:MM'
+        }), 400
+
+    if start_finger_out is None or end_finger_out is None:
+        return jsonify({
+            'status': 'error',
+            'message': 'Format Start Jam Out harus HH:MM'
+        }), 400
+
+    if start_finger >= end_finger:
+        return jsonify({
+            'status': 'error',
+            'message': 'Rentang Start Jam In tidak valid'
+        }), 400
+
+    if start_finger_out >= end_finger_out:
+        return jsonify({
+            'status': 'error',
+            'message': 'Rentang Start Jam Out tidak valid'
+        }), 400
+
+    current_nip = session.get('nip')
+
+    if not current_nip:
+        return jsonify({
+            'status': 'error',
+            'message': 'Sesi login tidak valid (NIP tidak ditemukan)'
+        }), 401
+
+    row = db.session.get(MfLoadFinger, transaksi_id)
+
+    if row is None:
+        return jsonify({
+            'status': 'error',
+            'message': 'Data Master Jam Finger tidak ditemukan'
+        }), 404
+
+    try:
+        row.START_FINGER = start_finger
+        row.END_FINGER = end_finger
+        row.TGL_MULAI_BERLAKU = tgl_mulai
+        row.UPDATE_BY = current_nip
+        row.UPDATE_DATE = datetime.utcnow()
+        row.SHIFT_KERJA = shift_raw
+        row.START_FINGER_OUT = start_finger_out
+        row.END_FINGER_OUT = end_finger_out
+
+        db.session.commit()
+
+    except Exception:
+        db.session.rollback()
+        raise
+
+    return jsonify({
+        'status': 'success',
+        'message': 'Data jam finger berhasil diperbarui',
+    })
+
+
+def delete_jam_finger():
+    """Hapus satu record Master Jam Finger berdasarkan TransaksiID."""
+    payload = request.get_json(silent=True) or {}
+
+    transaksi_id_raw = str(payload.get('transaksi_id') or '').strip()
+
+    if not transaksi_id_raw.isdigit():
+        return jsonify({
+            'status': 'error',
+            'message': 'TransaksiID tidak valid'
+        }), 400
+
+    transaksi_id = int(transaksi_id_raw)
+
+    row = db.session.get(MfLoadFinger, transaksi_id)
+
+    if row is None:
+        return jsonify({
+            'status': 'error',
+            'message': 'Data Master Jam Finger tidak ditemukan'
+        }), 404
+
+    try:
+        db.session.delete(row)
+        db.session.commit()
+
+    except Exception:
+        db.session.rollback()
+        raise
+
+    return jsonify({
+        'status': 'success',
+        'message': 'Data jam finger berhasil dihapus',
     })
 
 def master_jam_kerja():
@@ -892,7 +1169,7 @@ def get_kalender_list():
             'tanggal_iso': row.TGL_KERJA.strftime('%Y-%m-%d'),
             'is_libur': row.IS_LIBUR,
             'ket': row.KET or '-',
-            'updated': row.UPDATE_DATE.strftime('%d-%m-%Y %H:%M') if row.UPDATE_DATE else '-',
+            'updated': _format_jam_finger_updated(row.UPDATE_DATE),
         }
         for idx, row in enumerate(rows)
     ]
@@ -1349,7 +1626,7 @@ def get_potongan_list():
             'persen_pot': row.PERSEN_POT if row.PERSEN_POT is not None else '-',
             'range': format_range(row),
             'tgl_mulai': row.TGL_MULAI.strftime('%d-%m-%Y') if row.TGL_MULAI else '-',
-            'updated': row.UPDATE_DATE.strftime('%d-%m-%Y %H:%M') if row.UPDATE_DATE else '-',
+            'updated': _format_jam_finger_updated(row.UPDATE_DATE),
         }
         for idx, row in enumerate(pot_list)
     ]
@@ -2048,196 +2325,427 @@ def delete_user_account():
         'message': f'User Account HRIS {nip} berhasil dihapus'
     })
 
+
 def master_uang_makan():
     """
-    Render halaman Master File Uang Makan.
-    Sebenarnya tabel target-nya adalah MF_TUNJANGAN yang menampung
-    beberapa jenis tunjangan (Uang Makan, Transport, Lembur), dibedakan
-    lewat kolom JENIS_TUNJANGAN. Dropdown-nya dikirim sebagai daftar
-    fix (bukan dari DB), karena set jenis tunjangan yang berlaku
-    bersifat tetap dan sudah disepakati.
+    Render halaman Master Uang Makan.
+
+    Halaman ini secara khusus hanya menangani:
+      JenisTunjangan = U.Makan
+      Activity       = Intern
     """
+    edit_id = request.args.get("edit", type=int)
+
     return render_template(
-        'pages/dashboard_1/Master File Uang Makan.html',
-        jenis_tunjangan_options=JENIS_TUNJANGAN_OPTIONS,
+        "pages/dashboard_1/Master File Uang Makan.html",
+        edit_id=edit_id,
     )
+
 
 def save_uang_makan():
     """
-    Simpan data Master Tunjangan (Uang Makan/Transport/Lembur) baru
-    ke tabel MF_TUNJANGAN.
+    Insert Master Uang Makan.
 
-    Body JSON yang diharapkan:
-    {
-        "jenis_tunjangan": "U.Makan",     // wajib
-        "tgl_mulai": "2026-01-01",         // wajib
-        "nominal": 37000,                  // wajib
-        "no_surat": "KGR-KRJ-2026",        // opsional -> DOKREFF
-        "activity": "Piket Siaga",         // opsional, default "Piket Siaga"
-        "hari_kerja": "1",                 // wajib: "0"=Hari Libur, "1"=Hari Kerja
-        "shift": "P1",                     // opsional, manual, max 5 karakter
-        "fungsional": "Rescuer"            // opsional, manual, max 50 karakter
-    }
+    Field bisnis mengikuti HRIS 2013:
+      JenisTunjangan = U.Makan
+      Activity       = Intern
+      HariKerja      = 1
+      Fungsional     = All
 
-    Catatan penting:
-    STATUS_PEG dan UNIT_KERJA_ID TIDAK diambil dari body request --
-    keduanya diambil otomatis dari data PEGAWAI milik user yang sedang
-    login (session['nip']).
-
-    PENTING: TUNJANGAN_ID BUKAN auto_increment di database, jadi ID
-    dihitung manual lewat MAX(TUNJANGAN_ID)+1.
+    IDTunjangan dibuat oleh aplikasi karena tabel legacy tidak
+    memiliki AUTO_INCREMENT.
     """
     payload = request.get_json(silent=True) or {}
 
-    jenis_tunjangan = (payload.get('jenis_tunjangan') or '').strip()
-    tgl_mulai_raw = (payload.get('tgl_mulai') or '').strip()
-    nominal_raw = payload.get('nominal')
-    no_surat = (payload.get('no_surat') or '').strip()
-    activity = (payload.get('activity') or '').strip() or 'Piket Siaga'
-    hari_kerja_raw = payload.get('hari_kerja')
-    shift = (payload.get('shift') or '').strip()
-    fungsional = (payload.get('fungsional') or '').strip()
+    tgl_mulai_raw = (payload.get("tgl_mulai") or "").strip()
+    nominal_raw = payload.get("nominal")
+    no_surat = (payload.get("no_surat") or "").strip()
 
-    # --- Pastikan sesi login valid, karena STATUS_PEG & UNIT_KERJA_ID
-    #     bergantung pada data pegawai yang sedang login ---
-    current_nip = session.get('nip')
-    if not current_nip:
-        return jsonify({'status': 'error', 'message': 'Sesi login tidak valid (NIP tidak ditemukan)'}), 401
-
-    pegawai_pengisi = Pegawai.query.filter(Pegawai.NIP == current_nip).first()
-    if pegawai_pengisi is None:
-        return jsonify({
-            'status': 'error',
-            'message': f'Data pegawai untuk NIP {current_nip} tidak ditemukan, tidak bisa mengisi Status Peg/Unit Kerja otomatis'
-        }), 400
-
-    # --- Validasi field wajib ---
-    if not jenis_tunjangan:
-        return jsonify({'status': 'error', 'message': 'Jenis Tunjangan wajib dipilih'}), 400
-    if jenis_tunjangan not in JENIS_TUNJANGAN_OPTIONS:
-        return jsonify({
-            'status': 'error',
-            'message': f'Jenis Tunjangan harus salah satu dari: {", ".join(JENIS_TUNJANGAN_OPTIONS)}'
-        }), 400
     if not tgl_mulai_raw:
-        return jsonify({'status': 'error', 'message': 'Tanggal Mulai wajib diisi'}), 400
-    if nominal_raw in (None, ''):
-        return jsonify({'status': 'error', 'message': 'Nominal wajib diisi'}), 400
-    if hari_kerja_raw is None or str(hari_kerja_raw).strip() == '':
-        return jsonify({'status': 'error', 'message': 'Hari Kerja wajib dipilih'}), 400
+        return jsonify({
+            "status": "error",
+            "message": "Tanggal Mulai wajib diisi"
+        }), 400
 
-    # --- Validasi & konversi Tanggal Mulai ---
+    if nominal_raw in (None, ""):
+        return jsonify({
+            "status": "error",
+            "message": "Nominal wajib diisi"
+        }), 400
+
     try:
-        tgl_mulai = datetime.strptime(tgl_mulai_raw, '%Y-%m-%d').date()
+        tgl_mulai = datetime.strptime(
+            tgl_mulai_raw, "%Y-%m-%d"
+        ).date()
     except ValueError:
-        return jsonify({'status': 'error', 'message': 'Format Tanggal Mulai harus YYYY-MM-DD'}), 400
+        return jsonify({
+            "status": "error",
+            "message": "Format Tanggal Mulai tidak valid"
+        }), 400
 
-    # --- Validasi & konversi Nominal ---
     try:
         nominal = float(nominal_raw)
-        if nominal < 0:
-            return jsonify({'status': 'error', 'message': 'Nominal tidak boleh negatif'}), 400
     except (TypeError, ValueError):
-        return jsonify({'status': 'error', 'message': 'Nominal harus berupa angka'}), 400
+        return jsonify({
+            "status": "error",
+            "message": "Nominal harus berupa angka"
+        }), 400
 
-    # --- Validasi & konversi Hari Kerja: HARUS 0 (Libur) atau 1 (Kerja) ---
+    if nominal < 0:
+        return jsonify({
+            "status": "error",
+            "message": "Nominal tidak boleh negatif"
+        }), 400
+
+    nip = session.get("nip", "system")
+
     try:
-        hari_kerja = int(hari_kerja_raw)
-    except (TypeError, ValueError):
-        return jsonify({'status': 'error', 'message': 'Hari Kerja harus berupa angka'}), 400
-    if hari_kerja not in (0, 1):
-        return jsonify({'status': 'error', 'message': 'Hari Kerja harus 0 (Hari Libur) atau 1 (Hari Kerja)'}), 400
+        # Karena tabel tidak mempunyai AUTO_INCREMENT, ambil ID
+        # terbesar kemudian +1.
+        last_id = db.session.execute(
+            sa_text("""
+                SELECT IDTunjangan
+                FROM MF_TUNJANGAN
+                ORDER BY IDTunjangan DESC
+                LIMIT 1
+                FOR UPDATE
+            """)
+        ).scalar()
 
-    # --- Validasi Shift (opsional, manual, max 5 karakter sesuai model) ---
-    if shift and len(shift) > 5:
-        return jsonify({'status': 'error', 'message': 'Shift maksimal 5 karakter'}), 400
+        next_id = (int(last_id) + 1) if last_id is not None else 1
 
-    # --- Validasi Fungsional (opsional, manual, max 50 karakter sesuai model) ---
-    if fungsional and len(fungsional) > 50:
-        return jsonify({'status': 'error', 'message': 'Fungsional maksimal 50 karakter'}), 400
+        row = MfTunjangan(
+            IDTUNJANGAN=next_id,
+            JENIS_TUNJANGAN="U.Makan",
+            ACTIVITY="Intern",
+            NOMINAL=nominal,
+            TGL_MULAI=tgl_mulai,
+            HARI_KERJA=1,
+            FUNGSIONAL="All",
+            UPDATE_BY=nip,
+            UPDATE_DATE=datetime.now(),
+            DOKREFF=no_surat,
+        )
 
-    # --- Hitung TUNJANGAN_ID berikutnya secara manual (kolom bukan auto_increment) ---
-    next_tunjangan_id = db.session.query(
-        func.coalesce(func.max(MfTunjangan.TUNJANGAN_ID), 0)
-    ).scalar() + 1
+        db.session.add(row)
+        db.session.commit()
 
-    tunjangan = MfTunjangan(
-        TUNJANGAN_ID=next_tunjangan_id,
-        JENIS_TUNJANGAN=jenis_tunjangan,
-        ACTIVITY=activity,
-        NOMINAL=nominal,
-        TGL_MULAI=tgl_mulai,
-        HARI_KERJA=hari_kerja,
-        FUNGSIONAL=fungsional or None,   # <- sekarang diisi dari input form
-        STATUS_PEG=pegawai_pengisi.STATUS_PEG,          # otomatis dari pegawai login
-        SHIFT=shift or None,
-        UNIT_KERJA_ID=str(pegawai_pengisi.UNIT_KERJA_ID) if pegawai_pengisi.UNIT_KERJA_ID is not None else None,  # otomatis
-        UPDATE_BY=current_nip,
-        UPDATE_DATE=datetime.utcnow(),
-        DOKREFF=no_surat or None,
+        return jsonify({
+            "status": "success",
+            "message": "Master Uang Makan berhasil disimpan",
+            "data": row.to_dict(),
+        })
+
+    except Exception as exc:
+        db.session.rollback()
+        current_app.logger.exception(
+            "Gagal menyimpan Master Uang Makan"
+        )
+        return jsonify({
+            "status": "error",
+            "message": f"Gagal menyimpan Master Uang Makan: {exc}"
+        }), 500
+
+
+def get_uang_makan_detail():
+    """
+    Ambil satu record Uang Makan untuk kebutuhan Edit.
+    """
+    tunjangan_id = request.args.get("id", type=int)
+
+    if tunjangan_id is None:
+        return jsonify({
+            "status": "error",
+            "message": "ID Tunjangan wajib diisi"
+        }), 400
+
+    row = (
+        MfTunjangan.query
+        .filter(
+            MfTunjangan.IDTUNJANGAN == tunjangan_id,
+            MfTunjangan.JENIS_TUNJANGAN == "U.Makan",
+            MfTunjangan.ACTIVITY == "Intern",
+        )
+        .first()
     )
 
-    db.session.add(tunjangan)
-    db.session.commit()
+    if row is None:
+        return jsonify({
+            "status": "error",
+            "message": "Data Uang Makan tidak ditemukan"
+        }), 404
 
     return jsonify({
-        'status': 'success',
-        'message': f'Data {jenis_tunjangan} berhasil disimpan',
-        'data': tunjangan.to_dict(),
+        "status": "success",
+        "data": row.to_dict(),
     })
+
+
+def update_uang_makan():
+    """
+    Update Master Uang Makan berdasarkan IDTunjangan.
+
+    IDTunjangan TIDAK BOLEH berubah.
+    JenisTunjangan dan Activity dipaksa tetap U.Makan/Intern.
+    """
+    payload = request.get_json(silent=True) or {}
+
+    tunjangan_id_raw = payload.get("tunjangan_id")
+    tgl_mulai_raw = (payload.get("tgl_mulai") or "").strip()
+    nominal_raw = payload.get("nominal")
+    no_surat = (payload.get("no_surat") or "").strip()
+
+    if tunjangan_id_raw in (None, ""):
+        return jsonify({
+            "status": "error",
+            "message": "ID Tunjangan wajib diisi"
+        }), 400
+
+    try:
+        tunjangan_id = int(tunjangan_id_raw)
+    except (TypeError, ValueError):
+        return jsonify({
+            "status": "error",
+            "message": "ID Tunjangan tidak valid"
+        }), 400
+
+    if not tgl_mulai_raw:
+        return jsonify({
+            "status": "error",
+            "message": "Tanggal Mulai wajib diisi"
+        }), 400
+
+    try:
+        tgl_mulai = datetime.strptime(
+            tgl_mulai_raw, "%Y-%m-%d"
+        ).date()
+    except ValueError:
+        return jsonify({
+            "status": "error",
+            "message": "Format Tanggal Mulai tidak valid"
+        }), 400
+
+    try:
+        nominal = float(nominal_raw)
+    except (TypeError, ValueError):
+        return jsonify({
+            "status": "error",
+            "message": "Nominal harus berupa angka"
+        }), 400
+
+    if nominal < 0:
+        return jsonify({
+            "status": "error",
+            "message": "Nominal tidak boleh negatif"
+        }), 400
+
+    row = (
+        MfTunjangan.query
+        .filter(
+            MfTunjangan.IDTUNJANGAN == tunjangan_id,
+            MfTunjangan.JENIS_TUNJANGAN == "U.Makan",
+            MfTunjangan.ACTIVITY == "Intern",
+        )
+        .first()
+    )
+
+    if row is None:
+        return jsonify({
+            "status": "error",
+            "message": "Data Uang Makan tidak ditemukan"
+        }), 404
+
+    row.TGL_MULAI = tgl_mulai
+    row.NOMINAL = nominal
+    row.DOKREFF = no_surat
+    row.UPDATE_BY = session.get("nip", "system")
+    row.UPDATE_DATE = datetime.now()
+
+    # Field domain Uang Makan tidak diubah saat EDIT.
+    # Khusus HariKerja: pertahankan nilai existing agar data historis
+    # tidak berubah hanya karena Tanggal/Nominal/No Surat diedit.
+
+    try:
+        db.session.commit()
+
+        return jsonify({
+            "status": "success",
+            "message": "Master Uang Makan berhasil diupdate",
+            "data": row.to_dict(),
+        })
+
+    except Exception as exc:
+        db.session.rollback()
+        current_app.logger.exception(
+            "Gagal update Master Uang Makan"
+        )
+        return jsonify({
+            "status": "error",
+            "message": f"Gagal update Master Uang Makan: {exc}"
+        }), 500
+
+
+def _get_uang_makan_reference_counts(tunjangan_id):
+    """
+    Cari tabel lain yang mempunyai kolom IDTunjangan.
+
+    Kita tidak mengasumsikan FK legacy karena database memang tidak
+    mendeklarasikan seluruh relasi sebagai foreign key.
+    """
+    tables = db.session.execute(
+        sa_text("""
+            SELECT TABLE_NAME
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND LOWER(COLUMN_NAME) = LOWER('IDTunjangan')
+              AND TABLE_NAME <> 'MF_TUNJANGAN'
+        """)
+    ).scalars().all()
+
+    references = []
+
+    for table_name in tables:
+        safe_table = str(table_name).replace("`", "``")
+
+        count = db.session.execute(
+            sa_text(
+                f"SELECT COUNT(*) FROM `{safe_table}` "
+                "WHERE IDTunjangan = :id"
+            ),
+            {"id": tunjangan_id},
+        ).scalar()
+
+        if count and int(count) > 0:
+            references.append({
+                "table": table_name,
+                "count": int(count),
+            })
+
+    return references
+
+
+def delete_uang_makan():
+    """
+    Hapus Master Uang Makan dengan pemeriksaan referensi.
+
+    Tidak langsung DELETE apabila record masih direferensikan tabel lain.
+    """
+    payload = request.get_json(silent=True) or {}
+
+    tunjangan_id_raw = payload.get("tunjangan_id")
+
+    if tunjangan_id_raw in (None, ""):
+        return jsonify({
+            "status": "error",
+            "message": "ID Tunjangan wajib diisi"
+        }), 400
+
+    try:
+        tunjangan_id = int(tunjangan_id_raw)
+    except (TypeError, ValueError):
+        return jsonify({
+            "status": "error",
+            "message": "ID Tunjangan tidak valid"
+        }), 400
+
+    row = (
+        MfTunjangan.query
+        .filter(
+            MfTunjangan.IDTUNJANGAN == tunjangan_id,
+            MfTunjangan.JENIS_TUNJANGAN == "U.Makan",
+            MfTunjangan.ACTIVITY == "Intern",
+        )
+        .first()
+    )
+
+    if row is None:
+        return jsonify({
+            "status": "error",
+            "message": "Data Uang Makan tidak ditemukan"
+        }), 404
+
+    try:
+        references = _get_uang_makan_reference_counts(tunjangan_id)
+
+        if references:
+            detail = "; ".join(
+                f"{item['table']} ({item['count']} referensi)"
+                for item in references
+            )
+
+            return jsonify({
+                "status": "error",
+                "message": (
+                    "Data tidak dapat dihapus karena masih digunakan "
+                    f"oleh: {detail}"
+                ),
+                "references": references,
+            }), 409
+
+        db.session.delete(row)
+        db.session.commit()
+
+        return jsonify({
+            "status": "success",
+            "message": "Master Uang Makan berhasil dihapus",
+        })
+
+    except Exception as exc:
+        db.session.rollback()
+        current_app.logger.exception(
+            "Gagal menghapus Master Uang Makan"
+        )
+        return jsonify({
+            "status": "error",
+            "message": f"Gagal menghapus Master Uang Makan: {exc}"
+        }), 500
 
 
 def get_tunjangan_list():
     """
-    Ambil data MF_TUNJANGAN untuk tabel Cari Master Uang Makan.
-    Bisa dipakai untuk semua jenis tunjangan, atau difilter salah satu
-    lewat query param jenis_tunjangan.
+    API daftar Master Uang Makan.
 
-    Filter opsional:
-      - jenis_tunjangan : exact match (U.Makan / U.Transport / U.Lembur)
-      - periode         : filter TGL_MULAI pada tanggal tertentu (YYYY-MM-DD)
+    Selalu hanya mengembalikan:
+      JenisTunjangan = U.Makan
+      Activity       = Intern
     """
-    jenis_tunjangan = request.args.get('jenis_tunjangan', '').strip()
-    periode_raw = request.args.get('periode', '').strip()
+    rows = _query_tunjangan().all()
 
-    query = MfTunjangan.query
+    data = []
 
-    if jenis_tunjangan:
-        if jenis_tunjangan not in JENIS_TUNJANGAN_OPTIONS:
-            return jsonify({
-                'status': 'error',
-                'message': f'Jenis Tunjangan harus salah satu dari: {", ".join(JENIS_TUNJANGAN_OPTIONS)}'
-            }), 400
-        query = query.filter(MfTunjangan.JENIS_TUNJANGAN == jenis_tunjangan)
+    for idx, row in enumerate(rows, start=1):
+        updated = "-"
 
-    if periode_raw:
-        try:
-            periode_date = datetime.strptime(periode_raw, '%Y-%m-%d').date()
-        except ValueError:
-            return jsonify({'status': 'error', 'message': 'Format periode harus YYYY-MM-DD'}), 400
-        query = query.filter(MfTunjangan.TGL_MULAI == periode_date)
+        if row.UPDATE_DATE:
+            updated = row.UPDATE_DATE.strftime(
+                "%d/%m/%Y %H:%M:%S"
+            )
 
-    rows = query.order_by(MfTunjangan.TUNJANGAN_ID.desc()).all()
+        data.append({
+            "no": idx,
+            "tunjangan_id": row.IDTUNJANGAN,
+            "jenis_tunjangan": row.JENIS_TUNJANGAN or "-",
+            "activity": row.ACTIVITY or "-",
+            "tgl_mulai": (
+                row.TGL_MULAI.strftime("%d/%m/%Y")
+                if row.TGL_MULAI else "-"
+            ),
+            "nominal": (
+                f"{row.NOMINAL:,.0f}"
+                if row.NOMINAL is not None else "0"
+            ),
+            "hari_kerja": row.HARI_KERJA,
+            "shift": row.SHIFT or "-",
+            "fungsional": row.FUNGSIONAL or "-",
+            "no_surat": row.DOKREFF or "-",
+            "updated": updated,
+        })
 
-    data = [
-        {
-            'no': idx + 1,
-            'tunjangan_id': row.TUNJANGAN_ID,
-            'jenis_tunjangan': row.JENIS_TUNJANGAN or '-',
-            'activity': row.ACTIVITY or '-',
-            'nominal': row.NOMINAL if row.NOMINAL is not None else '-',
-            'tgl_mulai': row.TGL_MULAI.strftime('%d-%m-%Y') if row.TGL_MULAI else '-',
-            'hari_kerja': row.HARI_KERJA if row.HARI_KERJA is not None else '-',
-            'fungsional': row.FUNGSIONAL or '-',
-            'no_surat': row.DOKREFF or '-',
-            'updated': row.UPDATE_DATE.strftime('%d-%m-%Y %H:%M') if row.UPDATE_DATE else '-',
-        }
-        for idx, row in enumerate(rows)
-    ]
+    return jsonify({
+        "status": "success",
+        "data": data,
+    })
 
-    return jsonify({'status': 'success', 'data': data})
-
-# ---- Cari Master (pencarian) ----
 def cari_master_jabatan():
     """Render halaman Cari Master Jabatan."""
     return render_template('pages/dashboard_1/Cari Master Jabatan.html')
@@ -2302,7 +2810,52 @@ def get_jabatan_list():
 
     jabatan_list = query.order_by(MfJabatan.JABATAN_ID.asc()).all()
 
-    is_aktif_label = {1: 'Aktif', 0: 'Non Aktif'}
+    def _format_jabatan_updated(value):
+        # Database legacy bisa mengembalikan UPDATE_DATE sebagai
+        # datetime maupun string, termasuk kemungkinan zero-date.
+        if value is None:
+            return '-'
+
+        if isinstance(value, str):
+            value = value.strip()
+
+            if not value or value.startswith('0000-00-00'):
+                return '-'
+
+            for fmt in (
+                '%Y-%m-%d %H:%M:%S',
+                '%Y-%m-%d %H:%M',
+                '%d-%m-%Y %H:%M:%S',
+                '%d-%m-%Y %H:%M',
+            ):
+                try:
+                    return datetime.strptime(
+                        value,
+                        fmt
+                    ).strftime('%d-%m-%Y %H:%M')
+                except ValueError:
+                    continue
+
+            return value
+
+        try:
+            return value.strftime('%d-%m-%Y %H:%M')
+        except AttributeError:
+            return str(value)
+
+    def _format_jabatan_is_aktif(value):
+        if value is None:
+            return '-'
+
+        normalized = str(value).strip().upper()
+
+        if normalized in ('1', 'Y', 'YA', 'TRUE'):
+            return 'Aktif'
+
+        if normalized in ('0', 'N', 'TIDAK', 'FALSE'):
+            return 'Non Aktif'
+
+        return str(value)
 
     data = [
         {
@@ -2310,14 +2863,359 @@ def get_jabatan_list():
             'jabatan_id': row.JABATAN_ID,
             'nama_jabatan': row.NAMA_JABATAN or '-',
             'butir_kegiatan': '-',  # belum ada model/relasi Butir Kegiatan
-            'urut_jabatan': row.URUT_JABATAN if row.URUT_JABATAN is not None else '-',
-            'is_aktif': is_aktif_label.get(row.IS_USE, '-'),
-            'updated': row.UPDATE_DATE.strftime('%d-%m-%Y %H:%M') if row.UPDATE_DATE else '-',
+            'urut_jabatan': (
+                row.URUT_JABATAN
+                if row.URUT_JABATAN is not None
+                else '-'
+            ),
+            'is_aktif': _format_jabatan_is_aktif(row.IS_USE),
+            'updated': _format_jabatan_updated(row.UPDATE_DATE),
         }
         for idx, row in enumerate(jabatan_list)
     ]
 
     return jsonify({'status': 'success', 'data': data})
+
+
+def get_jabatan_by_id():
+    """Ambil satu Master Jabatan berdasarkan JabatanID untuk mode Edit."""
+    id_raw = request.args.get('id', '').strip()
+
+    try:
+        jabatan_id = int(id_raw)
+    except (TypeError, ValueError):
+        return jsonify({
+            'status': 'error',
+            'message': 'Jabatan ID tidak valid'
+        }), 400
+
+    row = MfJabatan.query.filter(
+        MfJabatan.JABATAN_ID == jabatan_id
+    ).first()
+
+    if row is None:
+        return jsonify({
+            'status': 'error',
+            'message': 'Data Master Jabatan tidak ditemukan'
+        }), 404
+
+    is_use = str(row.IS_USE).strip().upper() if row.IS_USE is not None else ''
+
+    if is_use in ('Y', 'YA', 'TRUE'):
+        is_aktif = '1'
+    elif is_use in ('N', 'TIDAK', 'FALSE'):
+        is_aktif = '0'
+    elif is_use in ('1', '0'):
+        is_aktif = is_use
+    else:
+        is_aktif = ''
+
+    return jsonify({
+        'status': 'success',
+        'data': {
+            'jabatan_id': row.JABATAN_ID,
+            'group_jabatan_id': row.GROUP_JABATAN_ID,
+            'sub_group_jabatan_id': row.SUB_GROUP_JABATAN_ID,
+            'nama_jabatan': row.NAMA_JABATAN or '',
+            'parent_jabatan_id': (
+                row.PARENT_ID
+                if row.PARENT_ID is not None
+                else ''
+            ),
+            'level_jabatan': (
+                row.URUT_JABATAN
+                if row.URUT_JABATAN is not None
+                else ''
+            ),
+            'type_jabatan': row.TYPE_JABATAN or '',
+            'is_aktif': is_aktif,
+        }
+    })
+
+
+def update_jabatan():
+    """Update Master Jabatan dengan mempertahankan JabatanID."""
+    payload = request.get_json(silent=True) or {}
+
+    jabatan_id_raw = payload.get('jabatan_id')
+    group_jabatan_id_raw = payload.get('group_jabatan_id')
+    sub_group_jabatan_id_raw = payload.get('sub_group_jabatan_id')
+    nama_jabatan = (payload.get('nama_jabatan') or '').strip()
+    parent_jabatan_id_raw = payload.get('parent_jabatan_id')
+    level_jabatan_raw = payload.get('level_jabatan')
+    type_jabatan = (payload.get('type_jabatan') or '').strip()
+    is_aktif_raw = payload.get('is_aktif')
+
+    if jabatan_id_raw in (None, ''):
+        return jsonify({
+            'status': 'error',
+            'message': 'Jabatan ID wajib diisi'
+        }), 400
+
+    try:
+        jabatan_id = int(jabatan_id_raw)
+    except (TypeError, ValueError):
+        return jsonify({
+            'status': 'error',
+            'message': 'Jabatan ID harus berupa angka'
+        }), 400
+
+    jabatan = MfJabatan.query.filter(
+        MfJabatan.JABATAN_ID == jabatan_id
+    ).first()
+
+    if jabatan is None:
+        return jsonify({
+            'status': 'error',
+            'message': 'Data Master Jabatan tidak ditemukan'
+        }), 404
+
+    if group_jabatan_id_raw in (None, ''):
+        return jsonify({
+            'status': 'error',
+            'message': 'Group Jabatan wajib dipilih'
+        }), 400
+
+    if sub_group_jabatan_id_raw in (None, ''):
+        return jsonify({
+            'status': 'error',
+            'message': 'SubGroup Jabatan wajib dipilih'
+        }), 400
+
+    if not nama_jabatan:
+        return jsonify({
+            'status': 'error',
+            'message': 'Nama Jabatan wajib diisi'
+        }), 400
+
+    if level_jabatan_raw in (None, ''):
+        return jsonify({
+            'status': 'error',
+            'message': 'Level Jabatan wajib diisi'
+        }), 400
+
+    if not type_jabatan:
+        return jsonify({
+            'status': 'error',
+            'message': 'Type wajib dipilih'
+        }), 400
+
+    if is_aktif_raw is None:
+        return jsonify({
+            'status': 'error',
+            'message': 'Isi Aktif wajib dipilih'
+        }), 400
+
+    try:
+        group_jabatan_id = int(group_jabatan_id_raw)
+    except (TypeError, ValueError):
+        return jsonify({
+            'status': 'error',
+            'message': 'Group Jabatan ID harus berupa angka'
+        }), 400
+
+    group_jabatan = MfGroupJabatan.query.get(group_jabatan_id)
+
+    if group_jabatan is None:
+        return jsonify({
+            'status': 'error',
+            'message': 'Group Jabatan tidak ditemukan'
+        }), 400
+
+    try:
+        sub_group_jabatan_id = int(sub_group_jabatan_id_raw)
+    except (TypeError, ValueError):
+        return jsonify({
+            'status': 'error',
+            'message': 'SubGroup Jabatan ID harus berupa angka'
+        }), 400
+
+    sub_group_jabatan = MfSubGroupJabatan.query.get(
+        sub_group_jabatan_id
+    )
+
+    if sub_group_jabatan is None:
+        return jsonify({
+            'status': 'error',
+            'message': 'SubGroup Jabatan tidak ditemukan'
+        }), 400
+
+    parent_jabatan_id = None
+
+    if parent_jabatan_id_raw not in (None, ''):
+        try:
+            parent_jabatan_id = int(parent_jabatan_id_raw)
+        except (TypeError, ValueError):
+            return jsonify({
+                'status': 'error',
+                'message': 'Parent Jabatan ID harus berupa angka'
+            }), 400
+
+    try:
+        level_jabatan = int(level_jabatan_raw)
+    except (TypeError, ValueError):
+        return jsonify({
+            'status': 'error',
+            'message': 'Level Jabatan harus berupa angka bulat'
+        }), 400
+
+    if type_jabatan not in ('FT', 'FU'):
+        return jsonify({
+            'status': 'error',
+            'message': 'Type harus "FT" atau "FU"'
+        }), 400
+
+    # Pertahankan format legacy IsUse yang sudah digunakan row lama.
+    current_is_use = (
+        str(jabatan.IS_USE).strip().upper()
+        if jabatan.IS_USE is not None
+        else ''
+    )
+
+    if current_is_use in ('Y', 'N'):
+        is_use = 'Y' if bool(is_aktif_raw) else 'N'
+    else:
+        is_use = 1 if bool(is_aktif_raw) else 0
+
+    jabatan.GROUP_JABATAN_ID = group_jabatan_id
+    jabatan.SUB_GROUP_JABATAN_ID = sub_group_jabatan_id
+    jabatan.PARENT_ID = parent_jabatan_id
+    jabatan.NAMA_JABATAN = nama_jabatan
+    jabatan.URUT_JABATAN = level_jabatan
+    jabatan.TYPE_JABATAN = type_jabatan
+    jabatan.IS_USE = is_use
+    jabatan.UPDATE_BY = session.get('nip', 'system')
+    jabatan.UPDATE_DATE = datetime.utcnow()
+
+    db.session.commit()
+
+    return jsonify({
+        'status': 'success',
+        'message': (
+            f'Data Master Jabatan ID {jabatan_id} '
+            'berhasil diperbarui'
+        ),
+        'data': jabatan.to_dict(),
+    })
+
+
+def delete_jabatan():
+    """Hapus Master Jabatan hanya jika tidak memiliki referensi data lain."""
+    payload = request.get_json(silent=True) or {}
+    jabatan_id_raw = payload.get('jabatan_id')
+
+    try:
+        jabatan_id = int(jabatan_id_raw)
+    except (TypeError, ValueError):
+        return jsonify({
+            'status': 'error',
+            'message': 'Jabatan ID tidak valid'
+        }), 400
+
+    jabatan = MfJabatan.query.filter(
+        MfJabatan.JABATAN_ID == jabatan_id
+    ).first()
+
+    if jabatan is None:
+        return jsonify({
+            'status': 'error',
+            'message': 'Data Master Jabatan tidak ditemukan'
+        }), 404
+
+    references = []
+
+    child_count = MfJabatan.query.filter(
+        MfJabatan.PARENT_ID == jabatan_id
+    ).count()
+
+    if child_count > 0:
+        references.append(
+            f'{child_count} data Master Jabatan sebagai child/struktur bawahan'
+        )
+
+    kegiatan_result = db.session.execute(
+        text(
+            'SELECT COUNT(*) '
+            'FROM MF_JABATAN_KEGIATAN '
+            'WHERE JabatanID = :id'
+        ),
+        {'id': jabatan_id}
+    )
+
+    kegiatan_count = kegiatan_result.scalar() or 0
+
+    if kegiatan_count > 0:
+        references.append(
+            f'{kegiatan_count} data Master Jabatan Kegiatan'
+        )
+
+    pegawai_result = db.session.execute(
+        text(
+            'SELECT COUNT(*) '
+            'FROM PEGAWAI '
+            'WHERE JabatanID = :id'
+        ),
+        {'id': jabatan_id}
+    )
+
+    pegawai_count = pegawai_result.scalar() or 0
+
+    if pegawai_count > 0:
+        references.append(
+            f'{pegawai_count} data Pegawai'
+        )
+
+    checks = [
+        ('BUKU_HARIAN_HEAD', 'SELECT COUNT(*) FROM BUKU_HARIAN_HEAD WHERE JabatanID = :id OR JabatanIDParent = :id'),
+        ('DRH', 'SELECT COUNT(*) FROM DRH WHERE JabatanID = :id'),
+        ('PERUBAHAN_JABATAN', 'SELECT COUNT(*) FROM PERUBAHAN_JABATAN WHERE JabatanIDBaru = :id OR JabatanIDLama = :id'),
+        ('SARAN', 'SELECT COUNT(*) FROM SARAN WHERE JabatanID = :id'),
+        ('SKP_PEGAWAI', 'SELECT COUNT(*) FROM SKP_PEGAWAI WHERE JabatanID = :id'),
+        ('SKP_PEGAWAI_HEAD', 'SELECT COUNT(*) FROM SKP_PEGAWAI_HEAD WHERE JabatanID = :id OR JabatanIDParent = :id'),
+    ]
+
+    for table_name, sql in checks:
+        result = db.session.execute(
+            text(sql),
+            {'id': jabatan_id}
+        )
+        count = result.scalar() or 0
+
+        if count > 0:
+            references.append(
+                f'{count} data {table_name}'
+            )
+
+    if references:
+        return jsonify({
+            'status': 'error',
+            'message': (
+                f'Data Master Jabatan ID {jabatan_id} tidak dapat dihapus '
+                'karena masih digunakan oleh data lain.'
+            ),
+            'references': references
+        }), 409
+
+    try:
+        db.session.delete(jabatan)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        return jsonify({
+            'status': 'error',
+            'message': (
+                f'Data Master Jabatan ID {jabatan_id} gagal dihapus '
+                'karena terjadi kesalahan database.'
+            )
+        }), 500
+
+    return jsonify({
+        'status': 'success',
+        'message': (
+            f'Data Master Jabatan ID {jabatan_id} berhasil dihapus'
+        ),
+    })
+
 
 def cari_master_jam_finger():
     """Render halaman Cari Master Jam Finger."""
@@ -2367,6 +3265,102 @@ def _query_jam_finger(periode_raw, field1, keyword1, field2, keyword2):
     return query.order_by(MfLoadFinger.TGL_MULAI_BERLAKU.desc()).all()
 
 
+def _format_jam_finger_date(value):
+    """
+    Format tanggal Master Jam Finger menjadi DD-MM-YYYY.
+    Aman untuk datetime/date maupun string legacy dari database.
+    """
+    if value is None:
+        return '-'
+
+    if isinstance(value, str):
+        value = value.strip()
+        if not value or value.startswith('0000-00-00'):
+            return '-'
+
+        for fmt in (
+            '%Y-%m-%d %H:%M:%S',
+            '%Y-%m-%d',
+            '%d-%m-%Y %H:%M:%S',
+            '%d-%m-%Y',
+        ):
+            try:
+                return datetime.strptime(value, fmt).strftime('%d-%m-%Y')
+            except ValueError:
+                continue
+
+        return value
+
+    if hasattr(value, 'strftime'):
+        return value.strftime('%d-%m-%Y')
+
+    return str(value)
+
+
+def _format_jam_finger_time(value):
+    """
+    Format jam Master Jam Finger menjadi HH:MM.
+    Aman untuk datetime/time maupun string legacy dari database.
+    """
+    if value is None:
+        return '-'
+
+    if isinstance(value, str):
+        value = value.strip()
+        if not value or value.startswith('0000-00-00'):
+            return '-'
+
+        for fmt in (
+            '%Y-%m-%d %H:%M:%S',
+            '%H:%M:%S',
+            '%H:%M',
+        ):
+            try:
+                return datetime.strptime(value, fmt).strftime('%H:%M')
+            except ValueError:
+                continue
+
+        return value
+
+    if hasattr(value, 'strftime'):
+        return value.strftime('%H:%M')
+
+    return str(value)
+
+
+def _format_jam_finger_updated(value):
+    """
+    Format UpdateDate menjadi DD-MM-YYYY HH:MM.
+    Menangani datetime normal dan zero-date legacy
+    '0000-00-00 00:00:00' tanpa mengubah data database.
+    """
+    if value is None:
+        return '-'
+
+    if isinstance(value, str):
+        value = value.strip()
+        if not value or value.startswith('0000-00-00'):
+            return '-'
+
+        for fmt in (
+            '%Y-%m-%d %H:%M:%S',
+            '%Y-%m-%d %H:%M',
+            '%d-%m-%Y %H:%M:%S',
+            '%d-%m-%Y %H:%M',
+        ):
+            try:
+                return datetime.strptime(value, fmt).strftime('%d-%m-%Y %H:%M')
+            except ValueError:
+                continue
+
+        return value
+
+    if hasattr(value, 'strftime'):
+        return value.strftime('%d-%m-%Y %H:%M')
+
+    return str(value)
+
+
 def get_jam_finger_list():
     """
     Ambil data Master Jam Finger untuk tabel Cari Master Jam Finger.
@@ -2386,13 +3380,14 @@ def get_jam_finger_list():
     data = [
         {
             'no': idx + 1,
-            'tgl_mulai': row.TGL_MULAI_BERLAKU.strftime('%d-%m-%Y') if row.TGL_MULAI_BERLAKU else '-',
+            'transaksi_id': row.TRAKSAKSI_ID,
+            'tgl_mulai': _format_jam_finger_date(row.TGL_MULAI_BERLAKU),
             'shift': row.SHIFT_KERJA or '-',
-            'start_finger': row.START_FINGER.strftime('%H:%M') if row.START_FINGER else '-',
-            'end_finger': row.END_FINGER.strftime('%H:%M') if row.END_FINGER else '-',
-            'start_finger_out': row.START_FINGER_OUT.strftime('%H:%M') if row.START_FINGER_OUT else '-',
-            'end_finger_out': row.END_FINGER_OUT.strftime('%H:%M') if row.END_FINGER_OUT else '-',
-            'updated': row.UPDATE_DATE.strftime('%d-%m-%Y %H:%M') if row.UPDATE_DATE else '-',
+            'start_finger': _format_jam_finger_time(row.START_FINGER),
+            'end_finger': _format_jam_finger_time(row.END_FINGER),
+            'start_finger_out': _format_jam_finger_time(row.START_FINGER_OUT),
+            'end_finger_out': _format_jam_finger_time(row.END_FINGER_OUT),
+            'updated': _format_jam_finger_updated(row.UPDATE_DATE),
         }
         for idx, row in enumerate(rows)
     ]
@@ -2440,13 +3435,13 @@ def export_jam_finger_excel():
     for idx, row in enumerate(rows):
         ws.append([
             idx + 1,
-            row.TGL_MULAI_BERLAKU.strftime('%d-%m-%Y') if row.TGL_MULAI_BERLAKU else '-',
+            _format_jam_finger_date(row.TGL_MULAI_BERLAKU),
             row.SHIFT_KERJA or '-',
-            row.START_FINGER.strftime('%H:%M') if row.START_FINGER else '-',
-            row.END_FINGER.strftime('%H:%M') if row.END_FINGER else '-',
-            row.START_FINGER_OUT.strftime('%H:%M') if row.START_FINGER_OUT else '-',
-            row.END_FINGER_OUT.strftime('%H:%M') if row.END_FINGER_OUT else '-',
-            row.UPDATE_DATE.strftime('%d-%m-%Y %H:%M') if row.UPDATE_DATE else '-',
+            _format_jam_finger_time(row.START_FINGER),
+            _format_jam_finger_time(row.END_FINGER),
+            _format_jam_finger_time(row.START_FINGER_OUT),
+            _format_jam_finger_time(row.END_FINGER_OUT),
+            _format_jam_finger_updated(row.UPDATE_DATE),
         ])
 
     # Auto-lebar kolom supaya isinya tidak terpotong
@@ -2902,161 +3897,131 @@ def cari_master_uang_makan():
     """Render halaman Cari Master Uang Makan."""
     return render_template('pages/dashboard_1/Cari Master Uang Makan.html')
 
-def get_tunjangan_list():
+def _query_tunjangan():
     """
-    Ambil data MF_TUNJANGAN untuk tabel Cari Master Uang Makan.
+    Query khusus halaman Master Uang Makan.
 
-    Filter opsional (semua bisa kosong -> berlaku seperti klik Refresh biasa):
-      - periode : filter TGL_MULAI pada tanggal tertentu (YYYY-MM-DD)
-      - field1/keyword1 dan field2/keyword2 : dua dropdown "Filter"
-        (Jenis Tunjangan, Nominal, No Surat, Tanggal Mulai), digabung dengan AND
+    Selalu membatasi:
+      JenisTunjangan = U.Makan
+      Activity       = Intern
     """
-    periode_raw = request.args.get('periode', '').strip()
-    field1 = request.args.get('field1')
-    keyword1 = request.args.get('keyword1', '').strip()
-    field2 = request.args.get('field2')
-    keyword2 = request.args.get('keyword2', '').strip()
+    query = (
+        MfTunjangan.query
+        .filter(
+            MfTunjangan.JENIS_TUNJANGAN == "U.Makan",
+            MfTunjangan.ACTIVITY == "Intern",
+        )
+    )
 
-    try:
-        rows = _query_tunjangan(periode_raw, field1, keyword1, field2, keyword2)
-    except ValueError as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 400
+    field_map = {
+        "Jenis Tunjangan": MfTunjangan.JENIS_TUNJANGAN,
+        "Nominal": MfTunjangan.NOMINAL,
+        "No Surat": MfTunjangan.DOKREFF,
+        "Tanggal Mulai": MfTunjangan.TGL_MULAI,
+    }
 
-    data = [
-        {
-            'no': idx + 1,
-            'tunjangan_id': row.TUNJANGAN_ID,
-            'jenis_tunjangan': row.JENIS_TUNJANGAN or '-',
-            'activity': row.ACTIVITY or '-',
-            'nominal': row.NOMINAL if row.NOMINAL is not None else '-',
-            'tgl_mulai': row.TGL_MULAI.strftime('%d-%m-%Y') if row.TGL_MULAI else '-',
-            'hari_kerja': row.HARI_KERJA if row.HARI_KERJA is not None else '-',
-            'shift': row.SHIFT or '-',
-            'fungsional': row.FUNGSIONAL or '-',
-            'no_surat': row.DOKREFF or '-',
-            'updated': row.UPDATE_DATE.strftime('%d-%m-%Y %H:%M') if row.UPDATE_DATE else '-',
-        }
-        for idx, row in enumerate(rows)
-    ]
+    for suffix in ("1", "2"):
+        field = (request.args.get(f"field{suffix}") or "").strip()
+        keyword = (request.args.get(f"keyword{suffix}") or "").strip()
 
-    return jsonify({'status': 'success', 'data': data})
-
-
-def _query_tunjangan(periode_raw, field1, keyword1, field2, keyword2):
-    """
-    Helper bersama untuk get_tunjangan_list() dan export_tunjangan_excel(),
-    supaya logic filter tidak perlu ditulis dua kali dan selalu konsisten
-    antara tampilan tabel dan hasil download Excel.
-    """
-    query = MfTunjangan.query
-
-    # --- Filter Periode: cocokkan TGL_MULAI pada tanggal yang dipilih ---
-    if periode_raw:
-        try:
-            periode_date = datetime.strptime(periode_raw, '%Y-%m-%d').date()
-        except ValueError:
-            raise ValueError('Format periode harus YYYY-MM-DD')
-        query = query.filter(MfTunjangan.TGL_MULAI == periode_date)
-
-    # --- Filter field1/field2 ---
-    # Jenis Tunjangan -> exact match dari JENIS_TUNJANGAN_OPTIONS
-    # No Surat        -> kolom teks (DOKREFF), partial match (ilike)
-    # Nominal         -> kolom Float, exact match angka
-    # Tanggal Mulai   -> exact match tanggal
-    for field, keyword in [(field1, keyword1), (field2, keyword2)]:
         if not field or not keyword:
-            continue  # filter tidak dipakai -> skip, tidak wajib diisi
+            continue
 
-        if field == 'Jenis Tunjangan':
-            if keyword not in JENIS_TUNJANGAN_OPTIONS:
-                raise ValueError(f'Jenis Tunjangan harus salah satu dari: {", ".join(JENIS_TUNJANGAN_OPTIONS)}')
-            query = query.filter(MfTunjangan.JENIS_TUNJANGAN == keyword)
+        column = field_map.get(field)
+        if column is None:
+            continue
 
-        elif field == 'No Surat':
-            query = query.filter(MfTunjangan.DOKREFF.ilike(f'%{keyword}%'))
-
-        elif field == 'Nominal':
+        if field == "Tanggal Mulai":
             try:
-                nilai = float(keyword)
+                value = datetime.strptime(
+                    keyword, "%Y-%m-%d"
+                ).date()
+                query = query.filter(column >= value)
             except ValueError:
-                raise ValueError('Nominal harus berupa angka')
-            query = query.filter(MfTunjangan.NOMINAL == nilai)
-
-        elif field == 'Tanggal Mulai':
+                continue
+        elif field == "Nominal":
             try:
-                tgl = datetime.strptime(keyword, '%Y-%m-%d').date()
+                value = float(keyword)
+                query = query.filter(column == value)
             except ValueError:
-                raise ValueError('Format Tanggal Mulai harus YYYY-MM-DD')
-            query = query.filter(MfTunjangan.TGL_MULAI == tgl)
+                continue
+        else:
+            query = query.filter(column.ilike(f"%{keyword}%"))
 
-    return query.order_by(MfTunjangan.TUNJANGAN_ID.desc()).all()
+    return query.order_by(
+        MfTunjangan.TGL_MULAI.desc(),
+        MfTunjangan.IDTUNJANGAN.desc(),
+    )
 
 
 def export_tunjangan_excel():
     """
-    Export data Master Tunjangan (Uang Makan/Transport/Lembur) ke file
-    Excel (.xlsx), dengan filter yang SAMA PERSIS seperti tabel di layar.
+    Export khusus Master Uang Makan.
     """
-    periode_raw = request.args.get('periode', '').strip()
-    field1 = request.args.get('field1')
-    keyword1 = request.args.get('keyword1', '').strip()
-    field2 = request.args.get('field2')
-    keyword2 = request.args.get('keyword2', '').strip()
-
-    try:
-        rows = _query_tunjangan(periode_raw, field1, keyword1, field2, keyword2)
-    except ValueError as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 400
+    rows = _query_tunjangan().all()
 
     wb = Workbook()
     ws = wb.active
-    ws.title = 'Uang Makan'
+    ws.title = "Master Uang Makan"
 
     headers = [
-        'No', 'Jenis Tunjangan', 'Activity', 'Nominal', 'Tgl Mulai',
-        'Hari Kerja', 'Shift', 'Fungsional', 'No Surat', 'Updated',
+        "No",
+        "ID Tunjangan",
+        "Jenis Tunjangan",
+        "Tanggal Mulai",
+        "Nominal",
+        "Hari Kerja",
+        "Fungsional",
+        "No Surat",
+        "Updated",
     ]
+
     ws.append(headers)
 
-    header_fill = PatternFill(start_color='EB6831', end_color='EB6831', fill_type='solid')
-    header_font = Font(color='FFFFFF', bold=True)
     for cell in ws[1]:
-        cell.fill = header_fill
-        cell.font = header_font
-        cell.alignment = Alignment(horizontal='center')
+        cell.font = Font(bold=True)
+        cell.alignment = Alignment(horizontal="center")
 
-    hari_kerja_label = {0: 'Hari Libur', 1: 'Hari Kerja'}
-
-    for idx, row in enumerate(rows):
+    for idx, row in enumerate(rows, start=1):
         ws.append([
-            idx + 1,
-            row.JENIS_TUNJANGAN or '-',
-            row.ACTIVITY or '-',
-            row.NOMINAL if row.NOMINAL is not None else '-',
-            row.TGL_MULAI.strftime('%d-%m-%Y') if row.TGL_MULAI else '-',
-            hari_kerja_label.get(row.HARI_KERJA, '-'),
-            row.SHIFT or '-',
-            row.FUNGSIONAL or '-',
-            row.DOKREFF or '-',
-            row.UPDATE_DATE.strftime('%d-%m-%Y %H:%M') if row.UPDATE_DATE else '-',
+            idx,
+            row.IDTUNJANGAN,
+            row.JENIS_TUNJANGAN,
+            (
+                row.TGL_MULAI.strftime("%d/%m/%Y")
+                if row.TGL_MULAI else ""
+            ),
+            row.NOMINAL,
+            "Hari Kerja" if row.HARI_KERJA == 1 else "Hari Libur",
+            row.FUNGSIONAL or "",
+            row.DOKREFF or "",
+            (
+                row.UPDATE_DATE.strftime("%d/%m/%Y %H:%M:%S")
+                if row.UPDATE_DATE else ""
+            ),
         ])
 
-    for col_cells in ws.columns:
-        max_length = max(len(str(cell.value)) for cell in col_cells if cell.value is not None)
-        col_letter = col_cells[0].column_letter
-        ws.column_dimensions[col_letter].width = max_length + 4
+    for column_cells in ws.columns:
+        length = max(
+            len(str(cell.value or ""))
+            for cell in column_cells
+        )
+        ws.column_dimensions[
+            column_cells[0].column_letter
+        ].width = min(length + 2, 40)
 
-    buffer = BytesIO()
-    wb.save(buffer)
-    buffer.seek(0)
-
-    filename = f'uang_makan_{datetime.utcnow().strftime("%Y%m%d_%H%M%S")}.xlsx'
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
 
     return send_file(
-        buffer,
+        output,
         as_attachment=True,
-        download_name=filename,
-        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        download_name="master_uang_makan.xlsx",
+        mimetype=(
+            "application/vnd.openxmlformats-officedocument."
+            "spreadsheetml.sheet"
+        ),
     )
 
 def cari_master_unit_kerja():

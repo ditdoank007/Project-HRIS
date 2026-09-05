@@ -5,6 +5,9 @@ from dotenv import load_dotenv
 load_dotenv()  # baca file .env
 
 class Config:
+    AUTH_MODE = os.getenv('AUTH_MODE', 'LOCAL').upper()
+    BDIP_SSO_URL = os.getenv('BDIP_SSO_URL', 'https://bdip.sarsurabaya.id')
+    HRIS_SSO_CALLBACK = os.getenv('HRIS_SSO_CALLBACK', 'http://hris.sarsurabaya.id/api/login/sso')
     DB_USER = os.getenv('DB_USER')
     DB_PASSWORD = os.getenv('DB_PASSWORD')
     DB_HOST = os.getenv('DB_HOST')

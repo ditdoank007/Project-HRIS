@@ -51,8 +51,11 @@ def get_current_level():
 
 
 def is_administrator():
-    """True jika user adalah Administrator HRIS (INIT_LEVEL = 0)."""
+    """True jika user adalah Administrator HRIS atau SYSADMIN bootstrap."""
+    if session.get("sysadmin") is True:
+        return True
     return get_current_level() == 0
+
 
 
 def has_form_access(form_id):

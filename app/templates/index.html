@@ -527,17 +527,22 @@
 
                     const result = await response.json();
 
+                    if (result.sso_redirect) {
+                        window.location.href = result.sso_redirect;
+                        return;
+                    }
+
                     if (!response.ok) {
                         alert(result.message || 'Login gagal.');
                         return;
                     }
 
-                    alert(`Selamat datang, ${result.data.nama}!`);
+                    alert(`Selamat datang, ${result.user.nama}!`);
 
                     const loginModal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
                     loginModal.hide();
 
-                    updateNavbarAfterLogin(result.data.nama);
+                    updateNavbarAfterLogin(result.user.nama);
                     formLogin.reset();
 
                 } catch (error) {
@@ -690,6 +695,11 @@
             try {
                 const response = await fetch('/api/pelanggaran_disiplin');
                 const result = await response.json();
+
+                    if (result.sso_redirect) {
+                        window.location.href = result.sso_redirect;
+                        return;
+                    }
                 if (!result.success) {
                     container.innerHTML = `<div class="alert alert-warning">Gagal memuat data.</div>`;
                     return;
@@ -745,6 +755,11 @@
             try {
                 const response = await fetch(`/api/piket_siaga?tanggal=${tanggal}&shift=${shift}`);
                 const result = await response.json();
+
+                    if (result.sso_redirect) {
+                        window.location.href = result.sso_redirect;
+                        return;
+                    }
 
                 if (!result.success) {
                     container.innerHTML = `<div class="alert alert-warning">${result.message}</div>`;

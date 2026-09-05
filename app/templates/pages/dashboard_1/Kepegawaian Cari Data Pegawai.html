@@ -100,23 +100,24 @@
                     </div>
 
                     <!-- Data Table -->
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-striped text-center align-middle" id="tablePegawai">
-                            <thead style="background:#EB6831;">
+                    <div class="hris-table-wrapper">
+                        <table class="hris-table" id="tablePegawai">
+                            <thead>
                                 <tr>
-                                    <th style="color:white;">No</th>
-                                    <th style="color:white;">NIP</th>
-                                    <th style="color:white;">Nama</th>
-                                    <th style="color:white;">GOL-Pangkat</th>
-                                    <th style="color:white;">Unit Kerja</th>
-                                    <th style="color:white;">Jabatan</th>
-                                    <th style="color:white;">Status Peg</th>
-                                    <th style="color:white;">Keterangan</th>
+                                    <th class="hris-text-center">No</th>
+                                    <th class="hris-text-left">NIP</th>
+                                    <th class="hris-text-left">Nama</th>
+                                    <th class="hris-text-left">Golongan</th>
+                                    <th class="hris-text-left">Pangkat</th>
+                                    <th class="hris-text-left">Jabatan</th>
+                                    <th class="hris-text-left">Unit Kerja</th>
+                                    <th class="hris-text-center">Status</th>
+                                    <th class="hris-text-center">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody id="tableBody">
                                 <tr>
-                                    <td colspan="8" style="padding: 20px;">
+                                    <td colspan="9">
                                         <i class="bi bi-inbox me-2"></i>Klik Refresh untuk menampilkan data
                                     </td>
                                 </tr>
@@ -129,20 +130,6 @@
     </div>
 </div>
 
-<style>
-    .btn-orange-figma {
-        background-color: #e66b30;
-        color: #fff;
-        border: none;
-        border-radius: 5px;
-        font-weight: 600;
-        padding: 6px 16px;
-    }
-    .btn-orange-figma:hover {
-        background-color: #cc5a20;
-        color: #fff;
-    }
-</style>
 {% endblock %}
 
 {% block script %}
@@ -176,17 +163,29 @@ $(document).ready(function() {
         };
         
         $('#btnRefresh').prop('disabled', true).html('<i class="bi bi-hourglass-split me-1"></i>Memuat...');
-        $('#tableBody').html('<tr><td colspan="8"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Memuat data...</td></tr>');
+        $('#tableBody').html('<tr><td colspan="9"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Memuat data...</td></tr>');
         
         $.get('/api/pegawai/cari', params, function(response) {
             if (response.success) {
                 renderTable(response.data);
                 $('#totalRecords').text(`${response.total} data`);
             } else {
-                $('#tableBody').html(`<tr><td colspan="8" class="text-danger">${response.error || 'Gagal memuat'}</td></tr>`);
+                const errorRow = document.createElement('tr');
+                const errorCell = document.createElement('td');
+                errorCell.colSpan = 10;
+                errorCell.className = 'hris-text-left hris-text-danger';
+                errorCell.textContent = response.error || 'Gagal memuat';
+                errorRow.appendChild(errorCell);
+                $('#tableBody').empty().append(errorRow);
             }
         }).fail(function() {
-            $('#tableBody').html('<tr><td colspan="8" class="text-danger">Gagal menghubungi server</td></tr>');
+            const errorRow = document.createElement('tr');
+            const errorCell = document.createElement('td');
+            errorCell.colSpan = 10;
+            errorCell.className = 'hris-text-left hris-text-danger';
+            errorCell.textContent = 'Gagal menghubungi server';
+            errorRow.appendChild(errorCell);
+            $('#tableBody').empty().append(errorRow);
         }).always(function() {
             $('#btnRefresh').prop('disabled', false).html('<i class="bi bi-arrow-clockwise me-1"></i> Refresh');
         });
@@ -195,30 +194,102 @@ $(document).ready(function() {
     function renderTable(data) {
         const $tbody = $('#tableBody');
         $tbody.empty();
-        
+
         if (!data || data.length === 0) {
-            $tbody.html('<tr><td colspan="8">Tidak ada data</td></tr>');
+            const row = document.createElement('tr');
+            const cell = document.createElement('td');
+            cell.colSpan = 10;
+            cell.className = 'hris-text-center';
+            cell.textContent = 'Tidak ada data';
+            row.appendChild(cell);
+            $tbody.append(row);
             return;
         }
-        
+
         data.forEach(function(item) {
-            const row = `
-                <tr>
-                    <td>${item.no}</td>
-                    <td>
-                        <a href="/kepegawaian/data-pegawai?nip=${item.nip}" 
-                           class="text-primary fw-bold text-decoration-none">
-                            ${item.nip}
-                        </a>
-                    </td>
-                    <td class="text-start">${item.nama}</td>
-                    <td>${item.gol_pangkat}</td>
-                    <td>${item.unit_kerja}</td>
-                    <td class="text-start">${item.jabatan}</td>
-                    <td>${item.status_peg}</td>
-                    <td class="text-start"><small>${item.keterangan || '-'}</small></td>
-                </tr>
-            `;
+            const row = document.createElement('tr');
+
+            // ====================================================
+            // AKSI
+            // ====================================================
+            const actionCell = document.createElement('td');
+            actionCell.className = 'hris-text-center';
+
+            const editLink = document.createElement('a');
+            editLink.href =
+                '/kepegawaian/data-pegawai?nip=' +
+                encodeURIComponent(item.nip || '');
+            editLink.className = 'btn btn-sm btn-outline-primary me-1';
+            editLink.title = 'Edit pegawai';
+            editLink.innerHTML = '<i class="bi bi-pencil"></i>';
+            actionCell.appendChild(editLink);
+
+            const deleteButton = document.createElement('button');
+            deleteButton.type = 'button';
+            deleteButton.className = 'btn btn-sm btn-outline-danger';
+            deleteButton.title = 'Hapus pegawai';
+            deleteButton.innerHTML = '<i class="bi bi-trash"></i>';
+
+            deleteButton.addEventListener('click', function() {
+                const nip = item.nip || '';
+
+                if (!confirm('Hapus pegawai ' + nip + '?')) {
+                    return;
+                }
+
+                deleteButton.disabled = true;
+
+                fetch('/api/pegawai/delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ nip: nip })
+                })
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(response) {
+                    if (response.success) {
+                        searchPegawai();
+                    } else {
+                        alert(response.error || 'Gagal menghapus data pegawai.');
+                        deleteButton.disabled = false;
+                    }
+                })
+                .catch(function() {
+                    alert('Gagal menghubungi server.');
+                    deleteButton.disabled = false;
+                });
+            });
+
+            // ====================================================
+            // DATA
+            // ====================================================
+            const values = [
+                [item.no, 'hris-text-center'],
+                [item.nip, 'hris-text-left'],
+                [item.nama, 'hris-text-left'],
+                [item.golongan, 'hris-text-left'],
+                [item.pangkat, 'hris-text-left'],
+                [item.jabatan, 'hris-text-left'],
+                [item.unit_kerja, 'hris-text-left'],
+                [item.status_peg, 'hris-text-center']
+            ];
+
+            values.forEach(function(value) {
+                const cell = document.createElement('td');
+                cell.className = value[1];
+                cell.textContent = value[0] == null ? '' : String(value[0]);
+                row.appendChild(cell);
+            });
+
+            // ====================================================
+            // AKSI - PALING KANAN
+            // ====================================================
+            actionCell.appendChild(deleteButton);
+            row.appendChild(actionCell);
+
             $tbody.append(row);
         });
     }
