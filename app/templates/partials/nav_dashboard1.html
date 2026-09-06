@@ -71,48 +71,61 @@
                         </li>
                         {% endif %}
 
+                        {% if is_administrator() or has_form_access('MFvip.aspx') %}
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_master_pegawai_vip') }}">
                                 <span class="nxl-micon"><i class="ti ti-vip"></i></span>
                                 <span class="nxl-mtext">VIP List</span>
                             </a>
                         </li>
+                        {% endif %}
 
+                        {% if is_administrator() or has_form_access('Kalender.aspx') %}
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_master_kalender') }}">
                                 <span class="nxl-micon"><i class="feather-calendar"></i></span>
                                 <span class="nxl-mtext">Master Kalender</span>
                             </a>
                         </li>
+                        {% endif %}
 
+                        {% if is_administrator() or has_form_access('MFPot.aspx') %}
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_master_potongan') }}">
                                 <span class="nxl-micon"><i class="feather-tag"></i></span>
                                 <span class="nxl-mtext">Master Potongan</span>
                             </a>
                         </li>
+                        {% endif %}
 
+                        {% if is_administrator() or has_form_access('MFUnitKerja.aspx') %}
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_master_unit_kerja') }}">
                                 <span class="nxl-micon"><i class="ti ti-building"></i></span>
                                 <span class="nxl-mtext">Master Unit Kerja</span>
                             </a>
                         </li>
+                        {% endif %}
 
+                        {% if is_administrator() or has_form_access('mfclass.aspx') %}
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_master_tunkin_class') }}">
                                 <span class="nxl-micon"><i class="ti ti-brand-redhat"></i></span>
                                 <span class="nxl-mtext">Master Tunkin/Class</span>
                             </a>
                         </li>
+                        {% endif %}
 
+                        {% if is_administrator() or has_form_access('MFHariKerja.aspx') %}
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_master_jam_kerja') }}">
                                 <span class="nxl-micon"><i class="ti ti-clock-edit"></i></span>
                                 <span class="nxl-mtext">Master Jam Kerja</span>
                             </a>
                         </li>
+                        {% endif %}
 
+                        {% if is_administrator() or has_form_access('MFLoadFinger.aspx') %}
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_master_jam_finger') }}">
                                 <span class="nxl-micon">
@@ -125,29 +138,38 @@
                                 <span class="nxl-mtext">Master Jam Finger</span>
                             </a>
                         </li>
+                        {% endif %}
 
+                        {% if is_administrator() or has_form_access('MFJabatan.aspx') %}
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_master_jabatan') }}">
                                 <span class="nxl-micon"><i class="feather-award"></i></span>
                                 <span class="nxl-mtext">Master Jabatan</span>
                             </a>
                         </li>
+                        {% endif %}
 
+                        {% if is_administrator() or has_form_access('MFUM.aspx') %}
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_master_uang_makan') }}">
                                 <span class="nxl-micon"><i class="ti ti-tools-kitchen-2"></i></span>
                                 <span class="nxl-mtext">Master Uang Makan</span>
                             </a>
                         </li>
+                        {% endif %}
 
+                        {% if is_administrator() or has_form_access('MFTRT.aspx') %}
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_master_trt') }}">
                                 <span class="nxl-micon"><i class="ti ti-cash"></i></span>
                                 <span class="nxl-mtext">Master TRT</span>
                             </a>
                         </li>
+                        {% endif %}
 
                     </ul>
+                </li>
+
                 <li class="nxl-item nxl-hasmenu">
                     <a href="javascript:void(0);" class="nxl-link">
                         <span class="nxl-micon"><i class="ti ti-edit"></i></span>
@@ -155,68 +177,86 @@
                                 class="feather-chevron-right"></i></span>
                     </a>
                     <ul class="nxl-submenu">
+                        {% if is_administrator() or has_form_access('MFPegawai.aspx') %}
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_kepegawaian_data_pegawai') }}">
                                 <span class="nxl-micon"><i class="feather-users"></i></span>
                                 <span class="nxl-mtext">Data Pegawai</span>
                             </a>
                         </li>
+                        {% endif %}
 
+                        {% if is_administrator() or has_form_access('DinasLuar.aspx') %}
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_kepegawaian_dinas_luar_umum') }}">
                                 <span class="nxl-micon"><i class="feather-briefcase"></i></span>
                                 <span class="nxl-mtext">Dinas Luar Umum</span>
                             </a>
                         </li>
+                        {% endif %}
 
+                        {% if is_administrator() or has_form_access('DinasLuar.aspx') %}
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_kepegawaian_dinas_luar_operasi') }}">
                                 <span class="nxl-micon"><i class="feather-activity"></i></span>
                                 <span class="nxl-mtext">Dinas Luar OPS</span>
                             </a>
                         </li>
+                        {% endif %}
 
+                        {% if is_administrator() or has_form_access('DinasLuar.aspx') %}
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_kepegawaian_dinas_luar_pelatihan') }}">
                                 <span class="nxl-micon"><i class="feather-file-text"></i></span>
                                 <span class="nxl-mtext">Dinas Luar SD</span>
                             </a>
                         </li>
+                        {% endif %}
 
+                        {% if is_administrator() or has_form_access('cuti.aspx') %}
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_kepegawaian_pegawai_cuti') }}">
                                 <span class="nxl-micon"><i class="feather-user-x"></i></span>
                                 <span class="nxl-mtext">Pegawai Cuti</span>
                             </a>
                         </li>
+                        {% endif %}
 
+                        {% if is_administrator() or has_form_access('Sakit.aspx') %}
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_kepegawaian_pegawai_sakit') }}">
                                 <span class="nxl-micon"><i class="feather-heart"></i></span>
                                 <span class="nxl-mtext">Pegawai Sakit</span>
                             </a>
                         </li>
+                        {% endif %}
 
+                        {% if is_administrator() or has_form_access('Ijin.aspx') %}
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_kepegawaian_pegawai_tidak_hadir') }}">
                                 <span class="nxl-micon"><i class="feather-user-minus"></i></span>
                                 <span class="nxl-mtext">Pegawai Tidak Hadir</span>
                             </a>
                         </li>
+                        {% endif %}
 
+                        {% if is_administrator() or has_form_access('Updatependukung.aspx') %}
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_kepegawaian_update_pendukung') }}">
                                 <span class="nxl-micon"><i class="feather-upload"></i></span>
                                 <span class="nxl-mtext">Update Pendukung</span>
                             </a>
                         </li>
+                        {% endif %}
 
+                        {% if is_administrator() or has_form_access('PegMutasi.aspx') %}
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_kepegawaian_mutasi_penempatan_pegawai') }}">
                                 <span class="nxl-micon"><i class="feather-repeat"></i></span>
                                 <span class="nxl-mtext">Pegawai Mutasi</span>
                             </a>
                         </li>
+                        {% endif %}
                     </ul>
                 </li>
                 <li class="nxl-item nxl-hasmenu">

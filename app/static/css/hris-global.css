@@ -562,3 +562,20 @@
     color: var(--hris-text-dark) !important;
 }
 
+
+
+/* =====================================================
+   HRIS STANDARD TABLE ALIGNMENT
+   Override global table center
+   ===================================================== */
+
+.table td.text-start,
+.table th.text-start {
+    text-align: left !important;
+}
+
+.table td.text-center,
+.table th.text-center {
+    text-align: center !important;
+}
+

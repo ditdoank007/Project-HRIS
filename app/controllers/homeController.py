@@ -4,6 +4,7 @@ from flask import render_template, request, jsonify
 from datetime import datetime
 from app import db
 from app.models.pegawaiModel import Pegawai
+from app.models.hrisAuthConfigModel import HrisAuthConfig
 from app.models.kalenderModel import MfKalender
 from app.models.timSiagaModel import MfTimSiaga
 from app.models.timSiagaAnggotaModel import MfTimSiagaAnggota
@@ -56,13 +57,22 @@ def home():
         and (kalender_hari_ini.KET or '').strip().upper() == 'WFH'
     )
 
+    auth_config = HrisAuthConfig.query.first()
+
+    auth_mode = (
+        auth_config.AUTH_MODE.upper()
+        if auth_config
+        else "LOCAL"
+    )
+
     return render_template(
         'index.html',
         running_text=running_text,
         hero_images=hero_images,
         is_wfh_today=is_wfh_today,
         online_attendance_code='998' if is_wfh_today else None,
-        server_year=today.year
+        server_year=today.year,
+        auth_mode=auth_mode
     )
 
 def search_pegawai_autocomplete():

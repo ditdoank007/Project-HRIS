@@ -16,11 +16,14 @@ def login_required(view_func):
         if session.get('sysadmin') is True:
             return view_func(*args, **kwargs)
 
-        # User HRIS wajib mempunyai USER_ACCOUNT untuk Modul HRIS.
-        from app.utils.authorization import get_current_user_account
-
-        if not get_current_user_account():
-            return ('Forbidden', 403)
+        # Semua pegawai yang berhasil login diperbolehkan masuk HRIS.
+        #
+        # USER_ACCOUNT hanya digunakan untuk:
+        # - Admin
+        # - Operator
+        # - Hak akses menu/form
+        #
+        # Pegawai biasa tetap dapat membuka Data Pribadi.
 
         return view_func(*args, **kwargs)
     return wrapped_view

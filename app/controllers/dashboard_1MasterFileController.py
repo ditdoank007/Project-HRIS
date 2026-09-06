@@ -1914,11 +1914,38 @@ def _get_operator_forms(nip):
 
     Diurutkan: is_akses desc dulu (yang aktif duluan), lalu nama form.
     """
+    user_account = UserAccount.query.filter(
+        UserAccount.NIP == nip,
+        UserAccount.MODUL == 'HRIS'
+    ).first()
+
+    is_admin = (
+        user_account is not None
+        and user_account.INIT_LEVEL == 0
+    )
+
     existing_access = {
         row.FORM_ID: row
         for row in HakAksesForm.query.filter(
             HakAksesForm.NIP == nip,
-            HakAksesForm.MODUL == 'HRIS'
+            db.or_(
+                HakAksesForm.MODUL == 'HRIS',
+                db.and_(
+                    HakAksesForm.MODUL == 'eDoc',
+                    HakAksesForm.FORM_ID.in_({
+                        'KehadiranPiket.aspx',
+                        'InJadwalSiaga.aspx',
+                        'ReJadwalSiaga.aspx',
+                        'Rekapsiaga.aspx',
+                        'TTUPiket.aspx',
+                        'MFTimSiaga.aspx',
+                        'MFTunjPiket.aspx',
+                        'MFKGR.aspx',
+                        'MFEmail.aspx',
+                        'DaftarLemburSiaga.aspx',
+                    })
+                )
+            )
         ).all()
     }
 
@@ -1958,7 +1985,18 @@ def _get_operator_forms(nip):
     for form in all_forms:
         access = existing_access.get(form.FORM_ID)
 
-        if access is not None:
+        if is_admin:
+            # Administrator selalu memiliki akses penuh.
+            # Tidak bergantung HAK_AKSES_FORM.
+            result.append({
+                'form_id': form.FORM_ID,
+                'form_name': form.FORM_NAME or '-',
+                'form_type': form.FORM_TYPE or '-',
+                'is_akses': True,
+                'type_akses': 'M',
+            })
+
+        elif access is not None:
             # Bagian 1: sudah punya baris akses -> tampil apa adanya
             result.append({
                 'form_id': form.FORM_ID,
@@ -1968,13 +2006,17 @@ def _get_operator_forms(nip):
                 'type_akses': access.TYPE_AKSES or 'M',
             })
         elif form.FORM_TYPE in ('Transaksi', 'Report'):
-            # Bagian 2: belum punya baris akses -> default, HANYA untuk
-            # FormType Transaksi/Report (sesuai filter WHERE VB.NET)
+            # Administrator HRIS (INIT_LEVEL=0)
+            # selalu mempunyai seluruh akses.
+            #
+            # Checkbox hanya representasi visual,
+            # bukan sumber authorization administrator.
+
             result.append({
                 'form_id': form.FORM_ID,
                 'form_name': form.FORM_NAME or '-',
                 'form_type': form.FORM_TYPE or '-',
-                'is_akses': False,
+                'is_akses': True if is_admin else False,
                 'type_akses': 'M',
             })
         # Form lain (bukan Transaksi/Report, belum punya akses) -> di-skip,
@@ -2238,24 +2280,46 @@ def save_user_account():
             user_account.UPDATE_BY = current_nip_login
             user_account.UPDATE_DATE = now
 
-        # --- Bagian 2: hapus semua HAK_AKSES_FORM lama milik NIP ini,
-        #     lalu insert ulang untuk form yang dicentang (delete-then-insert,
-        #     persis seperti Delete() + loop insert di VB.NET) ---
-        HakAksesForm.query.filter(
-            HakAksesForm.NIP == nip,
-            HakAksesForm.MODUL == 'HRIS'
-        ).delete()
+        # --- Bagian 2: HAK_AKSES_FORM hanya untuk Operator ---
+        #
+        # Administrator (INIT_LEVEL=0):
+        #   tidak membutuhkan row HAK_AKSES_FORM.
+        #
+        # Operator (INIT_LEVEL>0):
+        #   mengikuti checkbox menu.
+        #
+        if init_level > 0:
 
-        for item in cleaned_akses:
-            db.session.add(HakAksesForm(
-                NIP=nip,
-                FORM_ID=item['form_id'],
-                IS_AKSES='Y',
-                TYPE_AKSES=item['type_akses'],
-                MODUL='HRIS',
-                UPDATE_BY=current_nip_login,
-                UPDATE_DATE=now,
-            ))
+            HakAksesForm.query.filter(
+                HakAksesForm.NIP == nip,
+                db.or_(
+                    HakAksesForm.MODUL == 'HRIS',
+                    db.and_(
+                        HakAksesForm.MODUL == 'eDoc',
+                        HakAksesForm.FORM_ID.in_(SIAGA_FORM_IDS)
+                    )
+                )
+            ).delete(
+                synchronize_session=False
+            )
+
+            for item in cleaned_akses:
+
+                modul_form = (
+                    'eDoc'
+                    if item['form_id'] in SIAGA_FORM_IDS
+                    else 'HRIS'
+                )
+
+                db.session.add(HakAksesForm(
+                    NIP=nip,
+                    FORM_ID=item['form_id'],
+                    IS_AKSES='Y',
+                    TYPE_AKSES=item['type_akses'],
+                    MODUL=modul_form,
+                    UPDATE_BY=current_nip_login,
+                    UPDATE_DATE=now,
+                ))
 
         db.session.commit()
 

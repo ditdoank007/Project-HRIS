@@ -162,10 +162,10 @@
                     <form id="formLogin" novalidate>
                         <!-- Input NIP -->
                         <div class="mb-3">
-                            <label for="inputNip" class="form-label fw-semibold">NIP</label>
+                            <label for="inputUsername" class="form-label fw-semibold" id="loginUsernameLabel">NIP</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light"><i class="bi bi-person-badge"></i></span>
-                                <input type="text" class="form-control" id="inputNip" name="nip"
+                                <input type="text" class="form-control" id="inputUsername" name="username"
                                     placeholder="Masukkan NIP" required autocomplete="username">
                                 <div class="invalid-feedback">NIP wajib diisi.</div>
                             </div>
@@ -503,16 +503,30 @@
         // =============================================
         // 2. Login & Logout
         // =============================================
+        const loginUsernameLabel = document.getElementById("loginUsernameLabel");
+        const inputUsername = document.getElementById("inputUsername");
+
+        const authMode = "{{ auth_mode | default('LOCAL') }}".toUpperCase();
+
+        if (authMode === "SSO") {
+            loginUsernameLabel.textContent = "Username";
+            inputUsername.placeholder = "Masukkan Username";
+        } else {
+            loginUsernameLabel.textContent = "NIP";
+            inputUsername.placeholder = "Masukkan NIP";
+        }
+
         const formLogin = document.getElementById('formLogin');
         if (formLogin) {
             formLogin.addEventListener('submit', async function(e) {
                 e.preventDefault();
 
-                const nip = document.getElementById('inputNip').value.trim();
+                const username = document.getElementById('inputUsername').value.trim();
                 const password = document.getElementById('inputPassword').value.trim();
 
-                if (!nip || !password) {
-                    alert('NIP dan Password wajib diisi.');
+                if (!username || !password) {
+                    const loginMode = (loginUsernameLabel.textContent || "NIP").trim();
+                    alert(`${loginMode} dan Password wajib diisi.`);
                     return;
                 }
 
@@ -522,7 +536,7 @@
                     const response = await fetch('/api/login', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ nip, password, remember })  // kirimkan juga flag remember
+                        body: JSON.stringify({ username, password, remember })  // kirimkan juga flag remember
                     });
 
                     const result = await response.json();

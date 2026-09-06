@@ -56,6 +56,9 @@ def create_app():
         can_read,
         can_modify,
         is_administrator,
+        has_user_account,
+        is_hris_user,
+        is_hris_operator,
     )
 
     @app.context_processor
@@ -65,6 +68,9 @@ def create_app():
             'can_read': can_read,
             'can_modify': can_modify,
             'is_administrator': is_administrator,
+            'has_user_account': has_user_account,
+            'is_hris_user': is_hris_user,
+            'is_hris_operator': is_hris_operator,
         }
 
     from app.routes.routes import main

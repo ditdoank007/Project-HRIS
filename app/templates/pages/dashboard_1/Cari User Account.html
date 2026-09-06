@@ -76,11 +76,11 @@
                             ㅤ
                         </p>
                         <div class="table-responsive">
-                            <table class="table table-bordered table-striped text-center align-middle">
+                            <table class="table table-bordered table-striped align-middle">
                                 <thead style="background:#EB6831;">
                                     <tr>
                                         <th style="color:white; vertical-align: middle;">No</th>
-                                        <th style="color:white; vertical-align: middle;">User ID</th>
+                                        <th style="color:white; vertical-align: middle;">NIP</th>
                                         <th style="color:white; vertical-align: middle;">Nama</th>
                                         <th style="color:white; vertical-align: middle;">Jabatan</th>
                                         <th style="color:white; vertical-align: middle;">Level</th>
@@ -156,16 +156,16 @@ document.addEventListener('DOMContentLoaded', function () {
         data.forEach(row => {
             tbody.innerHTML += `
                 <tr>
-                    <td>${row.no}</td>
-                    <td>${row.user_id}</td>
-                    <td>${row.nama}</td>
-                    <td>${row.jabatan}</td>
-                    <td>${row.level}</td>
-                    <td>${row.update_by}</td>
+                    <td class="text-center">${row.no}</td>
+                    <td class="text-center">${row.user_id}</td>
+                    <td class="text-start">${row.nama}</td>
+                    <td class="text-start">${row.jabatan}</td>
+                    <td class="text-center">${row.level}</td>
+                    <td class="text-center">${row.update_by}</td>
                     <td style="white-space: nowrap;">
                         <button
                             type="button"
-                            class="btn btn-sm btn-primary me-1"
+                            class="btn btn-sm btn-warning me-1"
                             onclick="editUserAccount('${row.user_id}')"
                             title="Edit User Account">
                             <i class="bi bi-pencil-square"></i>

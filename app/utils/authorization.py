@@ -50,6 +50,49 @@ def get_current_level():
     return user_account.INIT_LEVEL
 
 
+
+
+def is_hris_user():
+    """
+    True jika user mempunyai account HRIS.
+
+    Pegawai biasa:
+        False
+
+    Operator/Admin:
+        True
+    """
+    return get_current_user_account() is not None
+
+
+def is_hris_operator():
+    """
+    True jika user adalah operator HRIS.
+
+    Operator:
+        USER_ACCOUNT HRIS
+        INIT_LEVEL > 0
+    """
+    level = get_current_level()
+
+    if level is None:
+        return False
+
+    return level > 0
+
+
+
+def has_user_account():
+    """
+    True jika user login mempunyai USER_ACCOUNT HRIS.
+
+    Digunakan untuk membedakan:
+    - Pegawai biasa
+    - Operator/Admin HRIS
+    """
+    return get_current_user_account() is not None
+
+
 def is_administrator():
     """True jika user adalah Administrator HRIS atau SYSADMIN bootstrap."""
     if session.get("sysadmin") is True:
