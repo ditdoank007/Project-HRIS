@@ -22,6 +22,54 @@
                     <!-- Alert feedback (sukses / error) dari hasil save/delete -->
                     <div id="formAlert" class="alert d-none" role="alert"></div>
 
+                    <!-- Pegawai Baru dari BDIP - hanya tampil pada mode SSO -->
+                    <div id="bdipEmployeePanel" class="card mb-4 d-none">
+                        <div class="card-header-custom d-flex justify-content-between align-items-center"
+                            style="border-radius: 10px;">
+                            <h6 class="mb-0">
+                                <i class="feather-user-plus me-2"></i>Pegawai Baru dari BDIP
+                            </h6>
+                            <button type="button" id="btnCheckBdip" class="btn btn-sm text-white"
+                                style="background-color:#e66b30;">
+                                <i class="bi bi-arrow-repeat me-1"></i>Cek BDIP
+                            </button>
+                        </div>
+
+                        <div class="card-body">
+                            <div id="bdipEmployeeAlert" class="alert d-none mb-3" role="alert"></div>
+
+                            <div id="bdipEmployeeContent" class="d-none">
+                                <p class="mb-3">
+                                    Ditemukan <strong id="bdipEmployeeCount">0</strong>
+                                    pegawai baru dari BDIP yang belum terdaftar di HRIS.
+                                </p>
+
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover align-middle mb-3">
+                                        <thead>
+                                            <tr>
+                                                <th style="width:40px;">
+                                                    <input type="checkbox" id="bdipSelectAll">
+                                                </th>
+                                                <th>FingerID</th>
+                                                <th>NIP</th>
+                                                <th>Nama Lengkap</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="bdipEmployeeTableBody"></tbody>
+                                    </table>
+                                </div>
+
+                                <div class="d-flex justify-content-end">
+                                    <button type="button" id="btnImportBdip"
+                                        class="btn btn-sm text-white" style="background-color:#e66b30;">
+                                        <i class="bi bi-download me-1"></i>IMPOR PEGAWAI
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="card mb-4 filter-card">
                         <div class="card-header-custom d-flex justify-content-between align-items-center"
                             style="border-radius: 10px;">
@@ -556,6 +604,233 @@ document.addEventListener("DOMContentLoaded", function () {
     if (urlNip) {
         nipField.value = urlNip.trim();
         nipField.dispatchEvent(new Event("blur"));
+    }
+
+    // ============================================================
+    // PEGAWAI BARU DARI BDIP
+    // Hanya aktif jika Master Login = SSO.
+    // Endpoint backend juga tetap memvalidasi mode SSO.
+    // ============================================================
+
+    const bdipEmployeePanel = document.getElementById("bdipEmployeePanel");
+    const btnCheckBdip = document.getElementById("btnCheckBdip");
+    const btnImportBdip = document.getElementById("btnImportBdip");
+    const bdipEmployeeAlert = document.getElementById("bdipEmployeeAlert");
+    const bdipEmployeeContent = document.getElementById("bdipEmployeeContent");
+    const bdipEmployeeCount = document.getElementById("bdipEmployeeCount");
+    const bdipEmployeeTableBody = document.getElementById("bdipEmployeeTableBody");
+    const bdipSelectAll = document.getElementById("bdipSelectAll");
+
+    function showBdipAlert(message, type) {
+        if (!bdipEmployeeAlert) return;
+        bdipEmployeeAlert.textContent = message;
+        bdipEmployeeAlert.className = "alert alert-" + type + " mb-3";
+    }
+
+    function hideBdipAlert() {
+        if (!bdipEmployeeAlert) return;
+        bdipEmployeeAlert.textContent = "";
+        bdipEmployeeAlert.className = "alert d-none mb-3";
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function renderBdipEmployees(rows) {
+        if (!bdipEmployeeTableBody || !bdipEmployeeContent) return;
+
+        bdipEmployeeTableBody.innerHTML = "";
+
+        rows.forEach(function (row, index) {
+            const tr = document.createElement("tr");
+
+            tr.innerHTML = `
+                <td>
+                    <input type="checkbox"
+                           class="bdip-employee-check"
+                           data-index="${index}">
+                </td>
+                <td><strong>${escapeHtml(row.finger_id)}</strong></td>
+                <td>${escapeHtml(row.nip)}</td>
+                <td>${escapeHtml(row.nama)}</td>
+            `;
+
+            bdipEmployeeTableBody.appendChild(tr);
+        });
+
+        bdipEmployeeCount.textContent = rows.length;
+        bdipEmployeeContent.classList.remove("d-none");
+
+        if (bdipSelectAll) {
+            bdipSelectAll.checked = false;
+        }
+
+        window.bdipEmployeeRows = rows;
+    }
+
+    function checkBdipEmployees() {
+        if (!btnCheckBdip) return;
+
+        btnCheckBdip.disabled = true;
+        hideBdipAlert();
+
+        fetch("/api/pegawai/bdip", {
+            method: "GET",
+            headers: {
+                "Accept": "application/json"
+            }
+        })
+        .then(function (res) {
+            return res.json().then(function (data) {
+                return {
+                    status: res.status,
+                    data: data
+                };
+            });
+        })
+        .then(function (result) {
+            const data = result.data;
+
+            if (!data.success) {
+                if (result.status === 403) {
+                    if (bdipEmployeePanel) {
+                        bdipEmployeePanel.classList.add("d-none");
+                    }
+                    return;
+                }
+
+                throw new Error(data.message || "Gagal membaca data BDIP.");
+            }
+
+            if (bdipEmployeePanel) {
+                bdipEmployeePanel.classList.remove("d-none");
+            }
+
+            const rows = data.data || [];
+
+            if (rows.length === 0) {
+                if (bdipEmployeeContent) {
+                    bdipEmployeeContent.classList.add("d-none");
+                }
+
+                showBdipAlert(
+                    "Tidak ada pegawai baru dari BDIP yang perlu diimpor.",
+                    "success"
+                );
+                return;
+            }
+
+            renderBdipEmployees(rows);
+        })
+        .catch(function (error) {
+            console.error("[Kepegawaian] BDIP:", error);
+            showBdipAlert(
+                error.message || "Gagal menghubungi server BDIP.",
+                "danger"
+            );
+        })
+        .finally(function () {
+            btnCheckBdip.disabled = false;
+        });
+    }
+
+    if (bdipSelectAll) {
+        bdipSelectAll.addEventListener("change", function () {
+            document.querySelectorAll(".bdip-employee-check").forEach(function (checkbox) {
+                checkbox.checked = bdipSelectAll.checked;
+            });
+        });
+    }
+
+    if (btnImportBdip) {
+        btnImportBdip.addEventListener("click", function () {
+            const rows = window.bdipEmployeeRows || [];
+
+            const selectedIndexes = Array.from(
+                document.querySelectorAll(".bdip-employee-check:checked")
+            ).map(function (checkbox) {
+                return Number(checkbox.dataset.index);
+            });
+
+            if (selectedIndexes.length === 0) {
+                showBdipAlert(
+                    "Pilih minimal satu pegawai untuk diimpor.",
+                    "warning"
+                );
+                return;
+            }
+
+            const selected = selectedIndexes
+                .map(function (index) {
+                    return rows[index];
+                })
+                .filter(Boolean);
+
+            if (selected.length === 0) {
+                showBdipAlert(
+                    "Data pegawai yang dipilih tidak ditemukan.",
+                    "danger"
+                );
+                return;
+            }
+
+            // Untuk tahap pertama, impor satu pegawai ke form.
+            // Data lain tetap diisi operator dan disimpan melalui API existing.
+            if (selected.length > 1) {
+                showBdipAlert(
+                    "Untuk sementara pilih satu pegawai terlebih dahulu. " +
+                    "Setelah disimpan, lanjutkan ke pegawai berikutnya.",
+                    "warning"
+                );
+                return;
+            }
+
+            const employee = selected[0];
+
+            const fingerField = document.getElementById("fieldFingerId");
+            const namaField = document.querySelector('[data-field="nama"]');
+
+            if (fingerField) {
+                fingerField.value = employee.finger_id || "";
+            }
+
+            if (namaField) {
+                namaField.value = employee.nama || "";
+            }
+
+            if (nipField) {
+                nipField.value = employee.nip || "";
+                nipField.readOnly = false;
+            }
+
+            if (isKeluarField) {
+                isKeluarField.value = "N";
+                toggleFieldKeluar();
+            }
+
+            showAlert(
+                "Data dari BDIP berhasil dimuat ke form. " +
+                "Silakan lengkapi data kepegawaian lainnya lalu Simpan.",
+                "success"
+            );
+
+            window.scrollTo({
+                top: form.offsetTop - 80,
+                behavior: "smooth"
+            });
+        });
+    }
+
+    // Cek otomatis saat halaman Data Pegawai dibuka.
+    // Jika LOCAL, backend akan menolak dan panel tetap tersembunyi.
+    if (bdipEmployeePanel) {
+        checkBdipEmployees();
     }
 
     console.log("[Kepegawaian] Handler terpasang. Siap input/edit!");

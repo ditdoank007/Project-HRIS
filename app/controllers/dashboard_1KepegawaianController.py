@@ -1,6 +1,7 @@
 #  controllers/dashboard_1KepegawaianController.py
 from operator import and_
 import uuid
+from config import Config
 
 from flask import render_template, request, jsonify
 from datetime import datetime
@@ -10,6 +11,7 @@ from sqlalchemy import or_
 from app import db
 from app.models.pegMutasiUnitModel import PegMutasiUnit
 from app.models.pegawaiModel import Pegawai
+from app.models.hrisAuthConfigModel import HrisAuthConfig
 from app.models.potModel import MfPot
 from app.models.sprinHeaderModel import SprinHeader
 from app.models.unitKerjaModel import MfUnitKerja
@@ -34,6 +36,140 @@ from app.utils.pegawaiSortHelper import sort_pegawai_rows
 def kepegawaian_cari_data_pegawai():
     """Render halaman Kepegawaian Cari Data Pegawai."""
     return render_template('pages/dashboard_1/Kepegawaian Cari Data Pegawai.html')
+
+
+def api_pegawai_bdip():
+    """
+    API: Membaca pegawai dari BDIP yang belum ada di HRIS.
+    Hanya aktif ketika Master Login menggunakan SSO.
+    Pencocokan pegawai dilakukan HANYA berdasarkan FingerID.
+    """
+    import json
+    import urllib.error
+    import urllib.request
+
+    auth_config = HrisAuthConfig.query.first()
+
+    if not auth_config or str(auth_config.AUTH_MODE).upper() != 'SSO':
+        return jsonify({
+            'success': False,
+            'message': 'Master Login HRIS saat ini bukan SSO.'
+        }), 403
+
+    bdip_server = str(auth_config.SSO_SERVER or '').strip().rstrip('/')
+    api_key = str(
+        Config.BDIP_HRIS_INTEGRATION_API_KEY or ''
+    ).strip()
+
+    if not bdip_server:
+        return jsonify({
+            'success': False,
+            'message': 'SSO Server BDIP belum dikonfigurasi.'
+        }), 500
+
+    if not api_key:
+        return jsonify({
+            'success': False,
+            'message': 'API key integrasi BDIP belum dikonfigurasi.'
+        }), 500
+
+    url = f'{bdip_server}/api/integration/hris/pegawai'
+
+    req = urllib.request.Request(
+        url,
+        headers={
+            'Accept': 'application/json',
+            'X-BDIP-Integration-Key': api_key,
+        },
+        method='GET',
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=15) as response:
+            raw = response.read().decode('utf-8')
+            result = json.loads(raw)
+
+    except urllib.error.HTTPError as exc:
+        print(f'BDIP integration HTTP error: {exc.code}')
+        return jsonify({
+            'success': False,
+            'message': f'BDIP mengembalikan HTTP {exc.code}.'
+        }), 502
+
+    except urllib.error.URLError as exc:
+        print(f'BDIP integration connection error: {exc}')
+        return jsonify({
+            'success': False,
+            'message': 'Server BDIP tidak dapat dihubungi.'
+        }), 502
+
+    except TimeoutError as exc:
+        print(f'BDIP integration timeout: {exc}')
+        return jsonify({
+            'success': False,
+            'message': 'Koneksi ke BDIP timeout.'
+        }), 502
+
+    except json.JSONDecodeError:
+        return jsonify({
+            'success': False,
+            'message': 'Response dari BDIP bukan JSON yang valid.'
+        }), 502
+
+    if not result.get('success'):
+        return jsonify({
+            'success': False,
+            'message': result.get(
+                'message',
+                'Gagal membaca data pegawai dari BDIP.'
+            )
+        }), 502
+
+    bdip_users = result.get('data') or []
+
+    # ============================================================
+    # MATCHING WAJIB BERDASARKAN FINGER ID
+    # ============================================================
+    existing_finger_ids = {
+        str(row.FINGER_ID).strip()
+        for row in Pegawai.query.with_entities(
+            Pegawai.FINGER_ID
+        ).all()
+        if row.FINGER_ID
+    }
+
+    new_users = []
+
+    for user in bdip_users:
+        finger_id = str(user.get('fingerId') or '').strip()
+
+        if not finger_id:
+            continue
+
+        # Hanya FingerID minimal 8 digit yang dianggap sebagai pegawai HRIS.
+        if len(finger_id) < 8:
+            continue
+
+        if finger_id in existing_finger_ids:
+            continue
+
+        new_users.append({
+            'finger_id': finger_id,
+            'nip': str(user.get('nip') or '').strip(),
+            'nama': str(user.get('fullName') or '').strip(),
+            'email': str(user.get('email') or '').strip(),
+            'unit': str(user.get('unit') or '').strip(),
+            'enabled': bool(user.get('enabled')),
+        })
+
+    return jsonify({
+        'success': True,
+        'message': 'Data pegawai baru dari BDIP berhasil dibaca.',
+        'total_bdip': len(bdip_users),
+        'total_baru': len(new_users),
+        'data': new_users,
+    })
+
 
 def api_pegawai_cari():
     """
@@ -511,7 +647,27 @@ def api_pegawai_save():
         is_update = pegawai is not None
         
         # Data umum
-        unit_kerja_id = _safe_int(data.get('unit_kerja_id'), 1)
+        # Unit Kerja disimpan sebagai ID string sesuai legacy HRIS.
+        # Jangan gunakan fallback ke ID 1 karena dapat memindahkan
+        # pegawai ke unit yang salah secara diam-diam.
+        unit_kerja_id = str(
+            data.get('unit_kerja_id', '') or ''
+        ).strip()
+
+        if not unit_kerja_id:
+            return jsonify({
+                'error': 'Unit Kerja wajib dipilih'
+            })
+
+        unit_kerja = MfUnitKerja.query.filter(
+            MfUnitKerja.UNIT_KERJA_ID == unit_kerja_id
+        ).first()
+
+        if not unit_kerja:
+            return jsonify({
+                'error': 'Unit Kerja tidak valid'
+            })
+
         jabatan_id = _safe_int(data.get('jabatan_id'), None)
         gol_id = data.get('gol_id', '') or ''
         eselon = data.get('eselon', '') or ''

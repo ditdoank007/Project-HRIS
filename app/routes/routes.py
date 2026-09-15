@@ -47,6 +47,7 @@ from app.controllers.dashboard_1KepegawaianController import (
     api_pegawai_delete as master_api_pegawai_delete,
     api_pegawai_cari as master_api_pegawai_cari,
     api_pegawai_get_filter_fields as master_api_pegawai_get_filter_fields,
+    api_pegawai_bdip as master_api_pegawai_bdip,
     api_dinas_luar_search_pegawai as master_api_dinas_luar_search_pegawai,
     api_dinas_luar_save as master_api_dinas_luar_save,
     api_dinas_luar_get as master_api_dinas_luar_get,
@@ -332,6 +333,11 @@ def api_pegawai_cari():
 @login_required
 def api_pegawai_get_filter_fields():
     return master_api_pegawai_get_filter_fields()
+
+@main.route('/api/pegawai/bdip')
+@login_required
+def api_pegawai_bdip():
+    return master_api_pegawai_bdip()
 
 @main.route('/kepegawaian/dinas-luar-umum')
 @login_required
