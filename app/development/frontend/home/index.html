@@ -104,60 +104,182 @@
     <!-- Navbar End -->
 
     <!-- Modal Login Start -->
-    <div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow">
+    <div class="modal fade login-modal" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl login-modal-dialog">
+            <div class="modal-content login-modal-content">
 
-                <!-- Header pakai warna primary biar nyambung sama navbar -->
-                <div class="modal-header" style="background-color: var(--primary); border-bottom: none;">
-                    <h5 class="modal-title text-white" id="loginModalLabel">
-                        <i class="bi bi-shield-lock-fill me-2"></i>Masuk Sistem
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                        aria-label="Tutup"></button>
+                <div class="login-visual">
+                    <div class="login-visual-overlay"></div>
+                    <img src="img/konten3.jpg" alt="Basarnas Surabaya" class="login-visual-image">
+
+                    <div class="login-visual-content">
+                        <span class="login-visual-badge">
+                            <i class="bi bi-shield-check me-2"></i>PORTAL INTERNAL
+                        </span>
+
+                        <h2>Satu Jiwa,<br>Satu Rasa,<br>Satu Pengabdian.</h2>
+
+                        <p>
+                            Bersama Basarnas Surabaya, kita hadir untuk memberikan
+                            pelayanan terbaik bagi masyarakat.
+                        </p>
+
+                        <div class="login-visual-line"></div>
+
+                        <small>
+                            Badan Nasional Pencarian dan Pertolongan<br>
+                            Kantor Pencarian dan Pertolongan Surabaya
+                        </small>
+                    </div>
                 </div>
 
-                <div class="modal-body p-4">
-                    <form id="formLogin" novalidate>
-                        <!-- Input NIP -->
-                        <div class="mb-3">
-                            <label for="inputNip" class="form-label fw-semibold">NIP</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light"><i class="bi bi-person-badge"></i></span>
-                                <input type="text" class="form-control" id="inputNip" name="nip"
-                                    placeholder="Masukkan NIP" required autocomplete="username">
-                                <div class="invalid-feedback">NIP wajib diisi.</div>
+                <div class="login-form-panel">
+
+                    <button
+                        type="button"
+                        class="btn-close login-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Tutup">
+                    </button>
+
+                    <div class="login-brand">
+                        <img
+                            src="img/logo.png"
+                            alt="Basarnas Surabaya"
+                            class="login-brand-logo">
+
+                        <div>
+                            <span class="login-brand-kicker">PORTAL INTERNAL</span>
+
+                            <h2 id="loginModalLabel">
+                                Basarnas Surabaya
+                            </h2>
+
+                            <p>
+                                Silakan masuk untuk mengakses sistem HRIS
+                            </p>
+                        </div>
+                    </div>
+
+                    <form id="formLogin" novalidate data-auth-mode="LOCAL">
+
+                        <div class="mb-4">
+                            <label
+                                for="inputNip"
+                                class="form-label fw-semibold">
+                                NIP
+                            </label>
+
+                            <div class="login-input-group">
+                                <i class="bi bi-person-badge login-input-icon"></i>
+
+                                <input
+                                    type="text"
+                                    class="form-control login-input"
+                                    id="inputNip"
+                                    name="nip"
+                                    placeholder="Masukkan NIP Anda"
+                                    required
+                                    autocomplete="username">
+                            </div>
+
+                            <div class="invalid-feedback">
+                                NIP wajib diisi.
                             </div>
                         </div>
 
-                        <!-- Input Password + toggle show/hide -->
                         <div class="mb-3">
-                            <label for="inputPassword" class="form-label fw-semibold">Password</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light"><i class="bi bi-lock-fill"></i></span>
-                                <input type="password" class="form-control" id="inputPassword" name="password"
-                                    placeholder="Masukkan Password" required autocomplete="current-password">
-                                <button class="btn btn-outline-secondary" type="button" id="togglePassword"
-                                    tabindex="-1">
-                                    <i class="bi bi-eye-fill" id="iconTogglePassword"></i>
+                            <label
+                                for="inputPassword"
+                                class="form-label fw-semibold">
+                                Password
+                            </label>
+
+                            <div class="login-input-group">
+                                <i class="bi bi-lock-fill login-input-icon"></i>
+
+                                <input
+                                    type="password"
+                                    class="form-control login-input login-password-input"
+                                    id="inputPassword"
+                                    name="password"
+                                    placeholder="Masukkan password Anda"
+                                    required
+                                    autocomplete="current-password">
+
+                                <button
+                                    class="login-password-toggle"
+                                    type="button"
+                                    id="togglePassword"
+                                    aria-label="Tampilkan password"
+                                    title="Tampilkan password">
+
+                                    <i
+                                        class="bi bi-eye-fill"
+                                        id="iconTogglePassword">
+                                    </i>
                                 </button>
-                                <div class="invalid-feedback">Password wajib diisi.</div>
+                            </div>
+
+                            <div class="invalid-feedback">
+                                Password wajib diisi.
+                            </div>
+
+                            <div class="login-password-hint">
+                                <i class="bi bi-eye me-1"></i>
+                                Klik ikon mata untuk melihat password sebelum masuk.
                             </div>
                         </div>
 
-                        <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-4 login-options">
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="rememberMe">
-                                <label class="form-check-label" for="rememberMe">Ingat saya</label>
+                                <input
+                                    class="form-check-input"
+                                    type="checkbox"
+                                    id="rememberMe">
+
+                                <label
+                                    class="form-check-label"
+                                    for="rememberMe">
+                                    Ingat saya
+                                </label>
                             </div>
-                            <a href="#" class="small text-decoration-none" style="color: var(--primary);">Lupa
-                                password?</a>
+
+                            <a
+                                href="#"
+                                class="login-forgot">
+                                Lupa password?
+                            </a>
                         </div>
 
-                        <button type="submit" class="btn btn-primary w-100">Sign In</button>
-                    </form>
-                </div>
+                        <button
+                            type="submit"
+                            class="btn login-submit w-100">
 
+                            <i class="bi bi-box-arrow-in-right me-2"></i>
+                            Masuk
+                        </button>
+
+                    </form>
+
+                    <div class="login-divider">
+                        <span>atau</span>
+                    </div>
+
+                    <a
+                        href="/api/login/sso"
+                        class="btn login-sso w-100">
+
+                        <i class="bi bi-building me-2"></i>
+                        Masuk dengan Akun SSO
+                    </a>
+
+                    <div class="login-footer">
+                        © 2026 Kantor Pencarian dan Pertolongan Surabaya<br>
+                        Badan Nasional Pencarian dan Pertolongan
+                    </div>
+
+                </div>
             </div>
         </div>
     </div>

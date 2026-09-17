@@ -1,0 +1,1095 @@
+/* ============================================================
+   HRIS HOME 2.0 — GLASS NAVIGATION
+   Presentation layer only — no menu/backend behavior changed.
+   ============================================================ */
+
+:root {
+    --hris-orange: #FD5D14;
+    --hris-navy: #040F28;
+}
+
+/* ------------------------------------------------------------
+   NAVIGATION LINKS
+   ------------------------------------------------------------ */
+
+.navbar .nav-link {
+    position: relative;
+    transition:
+        transform .25s ease,
+        background .25s ease,
+        color .25s ease,
+        box-shadow .25s ease;
+    transform-origin: center;
+    border-radius: 14px;
+}
+
+.navbar .nav-link:hover,
+.navbar .nav-link:focus,
+.navbar .nav-link.show {
+    transform: scale(1.08);
+    background: rgba(255,255,255,.12);
+    box-shadow:
+        0 0 18px rgba(253,93,20,.28),
+        inset 0 0 12px rgba(255,255,255,.08);
+}
+
+/* ------------------------------------------------------------
+   SPARK / GLITTER EFFECT
+   ------------------------------------------------------------ */
+
+.navbar .nav-link:hover::before,
+.navbar .nav-link.show::before {
+    content: "";
+    position: absolute;
+    width: 7px;
+    height: 7px;
+    top: -3px;
+    right: 5px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow:
+        0 0 5px #fff,
+        0 0 12px var(--hris-orange),
+        0 0 22px var(--hris-orange);
+    animation: hrisSpark .9s ease-in-out infinite alternate;
+}
+
+.navbar .nav-link:hover::after,
+.navbar .nav-link.show::after {
+    content: "";
+    position: absolute;
+    width: 22px;
+    height: 2px;
+    left: 50%;
+    bottom: 2px;
+    transform: translateX(-50%);
+    border-radius: 99px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255,255,255,.95),
+        var(--hris-orange),
+        transparent
+    );
+    box-shadow: 0 0 10px var(--hris-orange);
+    animation: hrisMenuGlow .8s ease-in-out infinite alternate;
+}
+
+@keyframes hrisSpark {
+    from {
+        transform: scale(.7) rotate(0deg);
+        opacity: .55;
+    }
+    to {
+        transform: scale(1.35) rotate(45deg);
+        opacity: 1;
+    }
+}
+
+@keyframes hrisMenuGlow {
+    from {
+        width: 14px;
+        opacity: .45;
+    }
+    to {
+        width: 28px;
+        opacity: 1;
+    }
+}
+
+/* ------------------------------------------------------------
+   GLASS DROPDOWN
+   ------------------------------------------------------------ */
+
+.navbar .dropdown-menu {
+    background: rgba(12, 23, 48, .58) !important;
+    backdrop-filter: blur(22px) saturate(150%);
+    -webkit-backdrop-filter: blur(22px) saturate(150%);
+
+    border: 1px solid rgba(255,255,255,.22) !important;
+    border-radius: 18px !important;
+
+    padding: 9px !important;
+    margin-top: 12px !important;
+
+    box-shadow:
+        0 18px 45px rgba(0,0,0,.35),
+        0 0 30px rgba(253,93,20,.10),
+        inset 0 1px 0 rgba(255,255,255,.16);
+
+    overflow: visible;
+    animation: hrisDropdownIn .22s ease-out;
+}
+
+/* glass highlight di bagian atas dropdown */
+
+.navbar .dropdown-menu::before {
+    content: "";
+    position: absolute;
+    top: -1px;
+    left: 18px;
+    right: 18px;
+    height: 1px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255,255,255,.65),
+        rgba(253,93,20,.8),
+        transparent
+    );
+    box-shadow: 0 0 12px rgba(253,93,20,.45);
+}
+
+/* sparkle dropdown */
+
+.navbar .dropdown-menu::after {
+    content: "✦";
+    position: absolute;
+    top: -13px;
+    right: 14px;
+
+    width: 25px;
+    height: 25px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+    color: #fff;
+    font-size: 12px;
+
+    background: rgba(253,93,20,.88);
+    border: 1px solid rgba(255,255,255,.7);
+
+    box-shadow:
+        0 0 8px rgba(253,93,20,.8),
+        0 0 20px rgba(253,93,20,.4);
+
+    animation: hrisDropdownSpark 1.4s ease-in-out infinite;
+}
+
+@keyframes hrisDropdownIn {
+    from {
+        opacity: 0;
+        transform: translateY(-7px) scale(.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes hrisDropdownSpark {
+    0%, 100% {
+        transform: scale(.9) rotate(0deg);
+        opacity: .75;
+    }
+    50% {
+        transform: scale(1.15) rotate(15deg);
+        opacity: 1;
+    }
+}
+
+/* ------------------------------------------------------------
+   DROPDOWN ITEMS
+   ------------------------------------------------------------ */
+
+.navbar .dropdown-menu .dropdown-item {
+    position: relative;
+
+    color: rgba(255,255,255,.92) !important;
+
+    border-radius: 11px;
+    padding: 11px 14px !important;
+    margin: 2px 0;
+
+    background: transparent !important;
+
+    transition:
+        transform .22s ease,
+        background .22s ease,
+        color .22s ease,
+        box-shadow .22s ease;
+}
+
+.navbar .dropdown-menu .dropdown-item:hover,
+.navbar .dropdown-menu .dropdown-item:focus {
+    color: #fff !important;
+
+    transform:
+        translateX(5px)
+        scale(1.025);
+
+    background:
+        linear-gradient(
+            90deg,
+            rgba(253,93,20,.82),
+            rgba(253,93,20,.38)
+        ) !important;
+
+    box-shadow:
+        0 5px 18px rgba(253,93,20,.25),
+        inset 0 1px 0 rgba(255,255,255,.15);
+}
+
+/* titik orange pada setiap item */
+
+.navbar .dropdown-menu .dropdown-item::before {
+    content: "";
+    display: inline-block;
+
+    width: 5px;
+    height: 5px;
+
+    margin-right: 10px;
+    vertical-align: middle;
+
+    border-radius: 50%;
+    background: var(--hris-orange);
+
+    box-shadow: 0 0 7px rgba(253,93,20,.65);
+
+    transition:
+        transform .2s ease,
+        box-shadow .2s ease;
+}
+
+.navbar .dropdown-menu .dropdown-item:hover::before {
+    transform: scale(1.5);
+    background: #fff;
+    box-shadow:
+        0 0 5px #fff,
+        0 0 12px var(--hris-orange);
+}
+
+/* ------------------------------------------------------------
+   DROPDOWN ARROW
+   ------------------------------------------------------------ */
+
+.navbar .dropdown-toggle::after {
+    transition: transform .25s ease;
+}
+
+.navbar .dropdown-toggle.show::after {
+    transform: rotate(180deg);
+}
+
+/* ------------------------------------------------------------
+   REDUCE MOTION ACCESSIBILITY
+   ------------------------------------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+    .navbar .nav-link,
+    .navbar .dropdown-menu,
+    .navbar .dropdown-menu .dropdown-item {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
+/* ------------------------------------------------------------
+   MOBILE
+   ------------------------------------------------------------ */
+
+@media (max-width: 991.98px) {
+    .navbar .dropdown-menu {
+        margin-top: 6px !important;
+        border-radius: 14px !important;
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+    }
+
+    .navbar .nav-link:hover,
+    .navbar .nav-link:focus {
+        transform: scale(1.03);
+    }
+}
+
+/* ============================================================
+   FINAL GLASS OVERRIDE
+   Bootstrap .show / dropdown variables must not turn white.
+   ============================================================ */
+
+html body .navbar .dropdown-menu,
+html body .navbar .dropdown-menu.show {
+    --bs-dropdown-bg: rgba(4, 15, 40, .72) !important;
+    --bs-dropdown-color: rgba(255,255,255,.95) !important;
+
+    background-color: rgba(4, 15, 40, .72) !important;
+    background-image: none !important;
+
+    color: rgba(255,255,255,.95) !important;
+
+    border: 1px solid rgba(255,255,255,.24) !important;
+
+    backdrop-filter: blur(24px) saturate(160%) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(160%) !important;
+
+    box-shadow:
+        0 20px 50px rgba(0,0,0,.42),
+        0 0 30px rgba(253,93,20,.16),
+        inset 0 1px 0 rgba(255,255,255,.18) !important;
+}
+
+html body .navbar .dropdown-menu.show .dropdown-item {
+    color: rgba(255,255,255,.94) !important;
+    background-color: transparent !important;
+}
+
+html body .navbar .dropdown-menu.show .dropdown-item:hover,
+html body .navbar .dropdown-menu.show .dropdown-item:focus {
+    color: #fff !important;
+    background:
+        linear-gradient(
+            90deg,
+            rgba(253,93,20,.82),
+            rgba(253,93,20,.34)
+        ) !important;
+}
+
+/* Keep the glass effect even when Bootstrap recalculates dropdown state */
+html body .navbar .dropdown-menu[data-bs-popper] {
+    background-color: rgba(4, 15, 40, .72) !important;
+    background-image: none !important;
+}
+
+/* Extra glass highlight */
+html body .navbar .dropdown-menu.show::before {
+    opacity: 1 !important;
+}
+
+
+/* =========================================================
+   MODERN PENGUMUMAN
+   ========================================================= */
+
+.pengumuman-section {
+    position: relative;
+    padding: 72px 24px 78px;
+    background:
+        radial-gradient(circle at 15% 20%, rgba(253, 93, 20, 0.08), transparent 32%),
+        radial-gradient(circle at 85% 80%, rgba(4, 15, 40, 0.10), transparent 35%),
+        #f5f7fa;
+}
+
+.pengumuman-inner {
+    width: min(1180px, 100%);
+    margin: 0 auto;
+}
+
+.pengumuman-heading {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.pengumuman-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: #fd5d14;
+    margin-bottom: 8px;
+}
+
+.judul-pengumuman {
+    margin: 0;
+    color: #071634;
+    font-size: clamp(32px, 4vw, 48px);
+    font-weight: 800;
+    letter-spacing: -1px;
+}
+
+.pengumuman-line {
+    display: block;
+    width: 58px;
+    height: 4px;
+    margin: 14px auto 0;
+    border-radius: 999px;
+    background: #fd5d14;
+    box-shadow: 0 0 18px rgba(253, 93, 20, 0.38);
+}
+
+.absen-online-wrapper {
+    text-align: center;
+    margin-bottom: 22px;
+}
+
+.pengumuman-glass-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    padding: 25px 28px;
+    min-height: 112px;
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.68);
+    box-shadow:
+        0 20px 50px rgba(4, 15, 40, 0.10),
+        inset 0 1px 0 rgba(255, 255, 255, 0.90);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    overflow: hidden;
+}
+
+.pengumuman-glass-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+        115deg,
+        rgba(255,255,255,0.34),
+        transparent 35%,
+        rgba(253,93,20,0.05)
+    );
+}
+
+.pengumuman-icon {
+    position: relative;
+    z-index: 1;
+    flex: 0 0 58px;
+    width: 58px;
+    height: 58px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 18px;
+    color: #fff;
+    font-size: 22px;
+    background: linear-gradient(135deg, #ff6a24, #fd5d14);
+    box-shadow: 0 10px 25px rgba(253, 93, 20, 0.28);
+}
+
+.running-wrapper {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.running-text {
+    color: #071634;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.pengumuman-meta {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+    min-width: 210px;
+}
+
+.status-online,
+.closing-absensi {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    white-space: nowrap;
+}
+
+.status-online {
+    color: #071634;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: .5px;
+}
+
+.status-online .jumlah {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 30px;
+    height: 26px;
+    padding: 0 9px;
+    border-radius: 999px;
+    color: #fff;
+    background: #fd5d14;
+    font-size: 13px;
+}
+
+.online-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #19d67a;
+    box-shadow: 0 0 0 4px rgba(25, 214, 122, 0.13);
+}
+
+.closing-absensi {
+    color: #6c7483;
+    font-size: 11px;
+}
+
+.closing-absensi strong {
+    color: #071634;
+}
+
+@media (max-width: 768px) {
+    .pengumuman-section {
+        padding: 52px 16px 60px;
+    }
+
+    .pengumuman-glass-card {
+        flex-wrap: wrap;
+        padding: 22px;
+    }
+
+    .pengumuman-meta {
+        width: 100%;
+        min-width: 0;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 480px) {
+    .pengumuman-icon {
+        flex-basis: 48px;
+        width: 48px;
+        height: 48px;
+        border-radius: 15px;
+    }
+
+    .pengumuman-glass-card {
+        gap: 14px;
+        border-radius: 20px;
+    }
+
+    .running-text {
+        font-size: 14px;
+    }
+}
+
+
+/* =========================================================
+   PENGUMUMAN - CENTERED CLOSING INFO
+   ========================================================= */
+
+.pengumuman-closing {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    margin-top: 12px;
+    color: #7a8290;
+    font-size: 12px;
+    font-weight: 500;
+    text-align: center;
+}
+
+.pengumuman-closing i {
+    color: #fd5d14;
+    font-size: 12px;
+}
+
+.pengumuman-closing strong {
+    color: #071634;
+    font-weight: 700;
+}
+
+.pengumuman-meta {
+    display: none;
+}
+
+
+/* =========================================================
+   QUICK ACCESS — MODERN GLASS
+   ========================================================= */
+
+.quick-access-section {
+    position: relative;
+    padding: 90px 5vw 100px;
+    background:
+        radial-gradient(circle at 12% 30%, rgba(253, 93, 20, 0.08), transparent 28%),
+        radial-gradient(circle at 88% 70%, rgba(4, 15, 40, 0.08), transparent 32%),
+        #f4f6f9;
+}
+
+.quick-access-inner {
+    max-width: 1380px;
+    margin: 0 auto;
+}
+
+.quick-access-heading {
+    text-align: center;
+    margin-bottom: 48px;
+}
+
+.quick-access-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    color: #fd5d14;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 3px;
+}
+
+.quick-access-title {
+    margin: 0;
+    color: #071936;
+    font-size: clamp(32px, 4vw, 48px);
+    font-weight: 800;
+    letter-spacing: -1.5px;
+}
+
+.quick-access-line {
+    display: block;
+    width: 48px;
+    height: 4px;
+    margin: 16px auto 14px;
+    border-radius: 999px;
+    background: #fd5d14;
+    box-shadow: 0 4px 16px rgba(253, 93, 20, 0.28);
+}
+
+.quick-access-subtitle {
+    margin: 0 auto;
+    max-width: 650px;
+    color: #687386;
+    font-size: 15px;
+}
+
+.quick-access-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 20px;
+}
+
+.quick-access-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    min-height: 180px;
+    padding: 25px 22px;
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    border: 1px solid rgba(255, 255, 255, 0.78);
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.68);
+    box-shadow:
+        0 18px 45px rgba(4, 15, 40, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    transition:
+        transform 0.35s ease,
+        box-shadow 0.35s ease,
+        border-color 0.35s ease,
+        background 0.35s ease;
+}
+
+.quick-access-card::before {
+    content: "";
+    position: absolute;
+    width: 130px;
+    height: 130px;
+    top: -70px;
+    right: -50px;
+    border-radius: 50%;
+    background: rgba(253, 93, 20, 0.12);
+    filter: blur(18px);
+    transition: transform 0.4s ease;
+}
+
+.quick-access-card:hover {
+    transform: translateY(-9px) scale(1.015);
+    border-color: rgba(253, 93, 20, 0.28);
+    background: rgba(255, 255, 255, 0.82);
+    box-shadow:
+        0 25px 55px rgba(4, 15, 40, 0.14),
+        0 0 30px rgba(253, 93, 20, 0.08);
+}
+
+.quick-access-card:hover::before {
+    transform: scale(1.5);
+}
+
+.quick-access-icon {
+    position: relative;
+    z-index: 1;
+    flex: 0 0 58px;
+    width: 58px;
+    height: 58px;
+    display: grid;
+    place-items: center;
+    border-radius: 18px;
+    color: #fff;
+    background: linear-gradient(145deg, #ff6a24, #fd5d14);
+    box-shadow: 0 10px 25px rgba(253, 93, 20, 0.28);
+    font-size: 21px;
+    transition: transform 0.35s ease;
+}
+
+.quick-access-card:hover .quick-access-icon {
+    transform: scale(1.08) rotate(-3deg);
+}
+
+.quick-access-content {
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+}
+
+.quick-access-label {
+    display: block;
+    margin-bottom: 5px;
+    color: #fd5d14;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 1.8px;
+}
+
+.quick-access-content strong {
+    display: block;
+    color: #071936;
+    font-size: 17px;
+    font-weight: 800;
+    line-height: 1.25;
+}
+
+.quick-access-content small {
+    display: block;
+    margin-top: 7px;
+    color: #727b8a;
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.quick-access-arrow {
+    position: absolute;
+    right: 18px;
+    bottom: 17px;
+    color: #fd5d14;
+    font-size: 15px;
+    opacity: 0.55;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.quick-access-card:hover .quick-access-arrow {
+    transform: translate(3px, -3px);
+    opacity: 1;
+}
+
+@media (max-width: 1100px) {
+    .quick-access-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 600px) {
+    .quick-access-section {
+        padding: 65px 20px 75px;
+    }
+
+    .quick-access-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .quick-access-card {
+        min-height: 155px;
+    }
+}
+
+
+/* =========================================================
+   HRIS OFFICE PHOTO
+   ========================================================= */
+
+html body .hris-office-photo-section {
+    position: relative;
+    min-height: 560px;
+    margin: 0;
+    padding: 0 !important;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #07101f;
+}
+
+html body .hris-office-photo-bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center center;
+    transform: scale(1.015);
+}
+
+html body .hris-office-photo-overlay {
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(90deg, rgba(3,10,24,.66) 0%, rgba(3,10,24,.30) 48%, rgba(3,10,24,.42) 100%),
+        linear-gradient(180deg, rgba(3,10,24,.08) 0%, rgba(3,10,24,.58) 100%);
+}
+
+html body .hris-office-photo-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    justify-content: center;
+    padding: 70px 24px;
+}
+
+html body .hris-office-glass-card {
+    width: min(720px, 100%);
+    padding: 38px 44px;
+    text-align: center;
+    color: #fff;
+    background: rgba(5, 16, 37, .60);
+    border: 1px solid rgba(255,255,255,.22);
+    border-radius: 28px;
+    box-shadow: 0 24px 70px rgba(0,0,0,.32);
+    backdrop-filter: blur(18px) saturate(145%);
+    -webkit-backdrop-filter: blur(18px) saturate(145%);
+}
+
+html body .hris-office-badge {
+    width: 54px;
+    height: 54px;
+    margin: 0 auto 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: #fff;
+    background: rgba(245, 112, 48, .95);
+    box-shadow: 0 0 28px rgba(245,112,48,.38);
+    font-size: 23px;
+}
+
+html body .hris-office-kicker {
+    margin-bottom: 9px;
+    color: #ff9a62;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 3px;
+}
+
+html body .hris-office-title {
+    margin: 0;
+    color: #fff !important;
+    font-size: clamp(25px, 3vw, 38px);
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+html body .hris-office-divider {
+    width: 72px;
+    height: 3px;
+    margin: 22px auto;
+    border-radius: 99px;
+    background: #f57030;
+    box-shadow: 0 0 14px rgba(245,112,48,.45);
+}
+
+html body .hris-office-address {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 10px;
+    margin: 0 0 18px;
+    color: rgba(255,255,255,.92);
+    font-size: 16px;
+    line-height: 1.7;
+}
+
+html body .hris-office-address i,
+html body .hris-office-email i {
+    color: #ff8a52;
+    margin-top: 4px;
+}
+
+html body .hris-office-institution {
+    margin: 0 0 9px;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+html body .hris-office-email {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    margin: 0;
+    color: rgba(255,255,255,.78);
+    font-size: 14px;
+}
+
+@media (max-width: 767.98px) {
+    html body .hris-office-photo-section {
+        min-height: 500px;
+    }
+
+    html body .hris-office-photo-content {
+        padding: 45px 18px;
+    }
+
+    html body .hris-office-glass-card {
+        padding: 30px 22px;
+        border-radius: 22px;
+    }
+
+    html body .hris-office-kicker {
+        letter-spacing: 2px;
+    }
+}
+
+/* =========================================================
+   HRIS OFFICE PHOTO
+   ========================================================= */
+
+html body .hris-office-photo-section {
+    position: relative;
+    min-height: 560px;
+    margin: 0;
+    padding: 0 !important;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #07101f;
+}
+
+html body .hris-office-photo-bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center center;
+    transform: scale(1.015);
+}
+
+html body .hris-office-photo-overlay {
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(90deg, rgba(3,10,24,.66) 0%, rgba(3,10,24,.30) 48%, rgba(3,10,24,.42) 100%),
+        linear-gradient(180deg, rgba(3,10,24,.08) 0%, rgba(3,10,24,.58) 100%);
+}
+
+html body .hris-office-photo-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    justify-content: center;
+    padding: 70px 24px;
+}
+
+html body .hris-office-glass-card {
+    width: min(720px, 100%);
+    padding: 38px 44px;
+    text-align: center;
+    color: #fff;
+    background: rgba(5,16,37,.60);
+    border: 1px solid rgba(255,255,255,.22);
+    border-radius: 28px;
+    box-shadow: 0 24px 70px rgba(0,0,0,.32);
+    backdrop-filter: blur(18px) saturate(145%);
+    -webkit-backdrop-filter: blur(18px) saturate(145%);
+}
+
+html body .hris-office-badge {
+    width: 54px;
+    height: 54px;
+    margin: 0 auto 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: #fff;
+    background: rgba(245,112,48,.95);
+    box-shadow: 0 0 28px rgba(245,112,48,.38);
+    font-size: 23px;
+}
+
+html body .hris-office-kicker {
+    margin-bottom: 9px;
+    color: #ff9a62;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 3px;
+}
+
+html body .hris-office-title {
+    margin: 0;
+    color: #fff !important;
+    font-size: clamp(25px,3vw,38px);
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+html body .hris-office-divider {
+    width: 72px;
+    height: 3px;
+    margin: 22px auto;
+    border-radius: 99px;
+    background: #f57030;
+    box-shadow: 0 0 14px rgba(245,112,48,.45);
+}
+
+html body .hris-office-address {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 10px;
+    margin: 0 0 18px;
+    color: rgba(255,255,255,.92);
+    font-size: 16px;
+    line-height: 1.7;
+}
+
+html body .hris-office-address i,
+html body .hris-office-email i {
+    color: #ff8a52;
+    margin-top: 4px;
+}
+
+html body .hris-office-institution {
+    margin: 0 0 9px;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+html body .hris-office-email {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    margin: 0;
+    color: rgba(255,255,255,.78);
+    font-size: 14px;
+}
+
+@media (max-width: 767.98px) {
+    html body .hris-office-photo-section {
+        min-height: 500px;
+    }
+
+    html body .hris-office-photo-content {
+        padding: 45px 18px;
+    }
+
+    html body .hris-office-glass-card {
+        padding: 30px 22px;
+        border-radius: 22px;
+    }
+
+    html body .hris-office-kicker {
+        letter-spacing: 2px;
+    }
+}

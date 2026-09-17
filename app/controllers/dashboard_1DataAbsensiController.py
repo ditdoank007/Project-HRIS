@@ -6,6 +6,7 @@ from collections import defaultdict
 from sqlalchemy import func, text
 from app import db
 from app.helpers.attendanceNormalizationHelper import AttendanceNormalizationEngine
+from app.services.attendanceNormalizationService import AttendanceNormalizationService
 from app.models.absensiModel import Absensi
 from app.models.lemburModel import Lembur
 from app.models.pegawaiModel import Pegawai
@@ -1633,6 +1634,10 @@ def api_normalisasi_process():
             default_tdk_check=default_tdk_check,
         )
 
+        normalization_service = AttendanceNormalizationService(
+            engine=normalization_engine
+        )
+
         result = []
         no = 0
 
@@ -1711,11 +1716,20 @@ def api_normalisasi_process():
                 []
             )
 
-            if not raw_person:
+            # Piket Siaga tetap harus dinormalisasi walaupun
+            # tidak ada RAW fingerprint sama sekali.
+            # Missing IN akan menghasilkan TLM-4 melalui engine.
+            pegawai_siaga = (
+                Pegawai.query
+                .filter(Pegawai.NIP == nip_siaga)
+                .first()
+            )
+
+            if not pegawai_siaga:
                 continue
 
             jam_in_dt, jam_out_dt = (
-                normalization_engine.pair_shift2(
+                normalization_service.pair_shift2(
                     raw_person=raw_person,
                     activity_date=activity_date,
                     target_date=target_date.date(),
@@ -1725,127 +1739,69 @@ def api_normalisasi_process():
             if not jam_in_dt and not jam_out_dt:
                 continue
 
-            source_raw = None
+            # ========================================================
+            # RAW SHIFT 2
+            #
+            # Business rule pairing dan consumed berada di service.
+            # Controller hanya menggunakan hasil service.
+            # ========================================================
 
-            # Cari RAW yang benar-benar digunakan engine.
-            # Ini hanya untuk metadata pegawai dan penandaan
-            # fingerprint agar tidak diproses ulang sebagai reguler.
-            load_finger = normalization_engine.resolve_load_finger(
-                activity_date,
-                '2',
+            consumed_by_service = (
+                normalization_service.shift2_consumed(
+                    raw_person=raw_person,
+                    activity_date=activity_date,
+                    target_date=target_date.date(),
+                )
             )
 
-            if load_finger:
-                activity_date_d = (
-                    activity_date
-                    if hasattr(activity_date, 'year')
-                    else datetime.strptime(
-                        str(activity_date),
-                        '%Y-%m-%d'
-                    ).date()
-                )
+            shift2_consumed.update(
+                consumed_by_service
+            )
 
-                target_date_d = target_date.date()
+            source_raw = None
 
-                start_in = normalization_engine._combine_config(
-                    activity_date_d,
-                    getattr(
-                        load_finger,
-                        'START_FINGER',
-                        None,
-                    ),
-                )
-
-                end_in = normalization_engine._combine_config(
-                    activity_date_d,
-                    getattr(
-                        load_finger,
-                        'END_FINGER',
-                        None,
-                    ),
-                )
-
-                start_out = normalization_engine._combine_config(
-                    target_date_d,
-                    getattr(
-                        load_finger,
-                        'START_FINGER_OUT',
-                        None,
-                    ),
-                )
-
-                end_out = normalization_engine._combine_config(
-                    target_date_d,
-                    getattr(
-                        load_finger,
-                        'END_FINGER_OUT',
-                        None,
-                    ),
-                )
-
-                shift2_in = []
-                shift2_out = []
-
+            # Ambil RAW yang menjadi IN Shift 2 sebagai sumber metadata.
+            if jam_in_dt:
                 for raw in raw_person:
-
                     waktu = normalization_engine._parse_waktu(raw)
 
-                    if not waktu:
-                        continue
+                    if (
+                        waktu == jam_in_dt
+                        and (
+                            raw.get('punch')
+                            if raw.get('punch') is not None
+                            else raw.get('PUNCH')
+                        ) == 0
+                    ):
+                        source_raw = raw
+                        break
 
-                    # RAW dari FINGER_HARVEST_RAW menggunakan
-                    # nama kolom SQL uppercase: PUNCH.
-                    #
-                    # Engine juga mendukung lowercase 'punch',
-                    # tetapi blok controller ini menerima raw_rows
-                    # langsung sehingga harus membaca keduanya.
-                    punch = (
-                        raw.get('punch')
-                        if raw.get('punch') is not None
-                        else raw.get('PUNCH')
-                    )
+            # Jika tidak ada IN, gunakan RAW OUT sebagai fallback metadata.
+            if not source_raw and jam_out_dt:
+                for raw in raw_person:
+                    waktu = normalization_engine._parse_waktu(raw)
 
                     if (
-                        punch == 0
-                        and start_in
-                        and end_in
-                        and start_in <= waktu <= end_in
+                        waktu == jam_out_dt
+                        and (
+                            raw.get('punch')
+                            if raw.get('punch') is not None
+                            else raw.get('PUNCH')
+                        ) == 1
                     ):
-                        shift2_in.append(raw)
-
-                    elif (
-                        punch == 1
-                        and start_out
-                        and end_out
-                        and start_out <= waktu <= end_out
-                    ):
-                        shift2_out.append(raw)
-
-                shift2_in.sort(
-                    key=lambda r: r.get('waktu') or ''
-                )
-
-                shift2_out.sort(
-                    key=lambda r: r.get('waktu') or ''
-                )
-
-                if shift2_in:
-                    source_raw = shift2_in[0]
-                elif shift2_out:
-                    source_raw = shift2_out[-1]
-
-                for raw in shift2_in:
-                    shift2_consumed.add(
-                        _raw_consumed_key(raw)
-                    )
-
-                for raw in shift2_out:
-                    shift2_consumed.add(
-                        _raw_consumed_key(raw)
-                    )
+                        source_raw = raw
+                        break
 
             if not source_raw:
-                source_raw = raw_person[0]
+                if raw_person:
+                    source_raw = raw_person[0]
+                else:
+                    source_raw = {
+                        'FINGER_ID': pegawai_siaga.FINGER_ID,
+                        'NAMA': pegawai_siaga.NAMA,
+                        'GOL': pegawai_siaga.GOL,
+                        'UNIT_KERJA': pegawai_siaga.UNIT_KERJA,
+                    }
 
             is_libur = (
                 kalender_map.get(

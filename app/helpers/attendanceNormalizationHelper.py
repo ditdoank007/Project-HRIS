@@ -891,7 +891,7 @@ class AttendanceNormalizationEngine:
                 _unused_tk_psw,
                 _unused_pot_psw,
             ) = self.resolve_penalty(
-                total_tlm,
+                awal_tlm,
                 0,
                 tgl_kerja,
             )

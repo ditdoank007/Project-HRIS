@@ -17,6 +17,8 @@ from app.controllers.absenOnlineController import (
 from app.controllers.dashboard_1HomeController import (
     dashboard_kgb, dashboard_pangkat, dashboard_pelanggaran, dashboard_pensiun, dashboard_trt)
 from app.controllers.dashboard_1MasterFileController import (
+    get_google_calendar_config, save_google_calendar_config,
+    test_google_calendar_connection,
     create_kalender_tahun, export_jam_finger_excel, export_tunjangan_excel, get_jabatan_list, get_jam_finger_list, get_jam_kerja_list, get_joblist_list, get_kalender_list, save_kalender_changes,
     get_pegawai_vip_list, get_potongan_list, get_tunjangan_list, get_tunkin_class_detail, get_tunkin_class_list,
     delete_user_account, get_unit_kerja_list, get_user_account_detail, get_user_account_list, master_butir_kegiatan, master_jabatan, master_jam_finger, master_jam_kerja,
@@ -89,6 +91,7 @@ from app.controllers.dashboard_1LaporanRekapController import (
 )
 
 from app.controllers.calendarController import (
+    api_calendar_personal,
     api_calendar_my_agenda,
     api_calendar_conflict,
     api_calendar_create_event,
@@ -647,6 +650,23 @@ def api_jam_kerja_save():
 @login_required
 def view_master_kalender():
     return master_kalender()
+
+@main.route('/api/calendar/google-config', methods=['GET'])
+@login_required
+def api_google_calendar_config():
+    return get_google_calendar_config()
+
+
+@main.route('/api/calendar/google-config', methods=['POST'])
+@login_required
+def api_google_calendar_config_save():
+    return save_google_calendar_config()
+
+@main.route('/api/calendar/google-test', methods=['POST'])
+@login_required
+def api_google_calendar_test():
+    return test_google_calendar_connection()
+
 
 @main.route('/api/kalender/list', methods=['GET'])
 @login_required
@@ -1819,6 +1839,16 @@ def view_kirim_forum_media_informasi():
 # ICS Mobile Sync
 #
 # ============================================================
+
+
+@main.route(
+    '/api/calendar/personal',
+    methods=['GET']
+)
+@login_required
+def api_calendar_personal_route():
+
+    return api_calendar_personal()
 
 
 @main.route(

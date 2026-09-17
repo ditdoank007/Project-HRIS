@@ -27,99 +27,259 @@
 
     <link href="{{ url_for('static', filename='static_home/css/bootstrap.min.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='static_home/css/style.css') }}" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/hris-home-glass.css') }}">
+
 </head>
 
 <body>
     <!-- Navbar Start -->
-    <div class="container-fluid sticky-top bg-primary shadow-sm px-5">
-        <nav class="navbar navbar-expand-lg navbar-dark py-3">
-            <a href="index.html" class="navbar-brand d-flex align-items-center">
-                <img src="{{ url_for('static', filename='static_home/img/logo.png') }}" alt="logo" width="60" class="me-3">
-                <div class="">
-                    <h4 class="m-0 text-white">Basarnas</h4>
-                    <h4 class="m-0 text-white">Surabaya</h4>
-                </div>
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarCollapse">
-                <div class="navbar-nav ms-auto align-items-cente">
-                    <a href="{{ url_for('main.index') }}" class="nav-link text-white d-flex align-items-center">HOME</a>
-                    <!-- Dropdown INFORMASI (muncul hanya jika session login aktif) -->
-                    <div href="#" class="nav-item dropdown {% if not session.get('logged_in') %}d-none{% endif %}" id="informasiDropdown">
-                        <a class="nav-link dropdown-toggle text-white d-flex align-items-center"
-                            data-bs-toggle="dropdown" style="cursor: pointer;">
-                            INFORMASI
-                        </a>
-                        <div class="dropdown-menu" >
-                            <a class="dropdown-item info-item" data-info="piket-siaga" style="cursor: pointer;">Piket Siaga</a>
-                            <a class="dropdown-item info-item" data-info="pelanggaran-disiplin" style="cursor: pointer;">Pelanggaran Disiplin</a>
-                            <a class="dropdown-item info-item" data-info="absensi-kantor" style="cursor: pointer;">Absensi Kantor</a>
-                            <a class="dropdown-item info-item" data-info="rekapitulasi-dinas-luar-operasi" style="cursor: pointer;">Rekapitulasi Dinas Luar Operasi</a>
-                            <a class="dropdown-item info-item" data-info="rekapitulasi-dinas-luar-pelatihan" style="cursor: pointer;">Rekapitulasi Dinas Luar Pelatihan</a>
-                            <a class="dropdown-item info-item" data-info="resume-pembuatan-skp" style="cursor: pointer;">Resume Pembuatan SKP</a>
-                            <a class="dropdown-item info-item" data-info="pegawai-login-portal" style="cursor: pointer;">Pegawai Login Portal</a>
-                        </div>
-                    </div>
+    <div class="hris-navbar-wrap" id="hrisNavbar">
+        <nav class="navbar navbar-expand-lg navbar-dark hris-navbar">
 
-                    <div href="#" class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle text-white d-flex align-items-center"
-                            data-bs-toggle="dropdown" style="cursor: pointer;">
-                            UMUM
-                        </a>
-                        <div class="dropdown-menu">
-                            <a href="{{ url_for('main.view_dashboard_pelanggaran') }}" class="dropdown-item">Kepegawaian</a>
-                            <a href="#pencarian-telephone" class="dropdown-item">Buku Telp</a>
-                            <a href="{{ url_for('main.index') }}" class="dropdown-item">Sprin</a>
-                            <a href="{{ url_for('main.index') }}" class="dropdown-item">Surat Masuk/Keluar</a>
-                            <a href="{{ url_for('main.index') }}" class="dropdown-item">Rumta</a>
-                            <a href="{{ url_for('main.index') }}" class="dropdown-item">Koperasi</a>
-                        </div>
-                    </div>
-                    <div href="#" class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle text-white d-flex align-items-center"
-                            data-bs-toggle="dropdown" style="cursor: pointer;">
-                            OPERASI
-                        </a>
-                        <div class="dropdown-menu">
-                            <a href="{{ url_for('main.view_dashboard_tim_siaga') }}" class="dropdown-item">Piket Siaga</a>
-                            <a href="{{ url_for('main.index') }}" class="dropdown-item">Kesiapsiagaan</a>
-                        </div>
-                    </div>
-                    <div class="nav-item dropdown">
-                        <a href="#" class="nav-link dropdown-toggle text-white d-flex align-items-center"
-                            data-bs-toggle="dropdown" style="cursor: pointer;">
-                            POTENSI
-                        </a>
-                        <div class="dropdown-menu">
-                            <a href="{{ url_for('main.index') }}" class="dropdown-item">Pemeliharaan</a>
-                            <a href="" class="dropdown-item">Gudang</a>
-                        </div>
-                    </div>
-                    <a href="{{ url_for('main.view_dashboard_kinerja') }}"
-                        class="nav-link text-white d-flex align-items-center">DATA PRIBADI
-                    </a>
+            <div class="container-fluid px-4 px-xl-5">
 
-                    <div class="nav-item dropdown">
-                        <a href="#" class="nav-link dropdown-toggle text-white d-flex align-items-center profile-toggle"
-                            data-bs-toggle="dropdown" aria-expanded="false">
-                            {% if session.get('logged_in') %}
-                                <span class="text-white">{{ session.get('nama') }}</span>
-                            {% else %}
-                                <i class="bi bi-person-fill fs-3"></i>
-                            {% endif %}
+                <a href="{{ url_for('main.index') }}" class="navbar-brand hris-brand">
+                    <img
+                        src="{{ url_for('static', filename='static_home/img/logo.png') }}"
+                        alt="Basarnas Surabaya"
+                        class="hris-brand-logo">
+
+                    <div class="hris-brand-text">
+                        <span>Basarnas</span>
+                        <strong>Surabaya</strong>
+                    </div>
+                </a>
+
+                <button
+                    class="navbar-toggler hris-navbar-toggler"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#navbarCollapse"
+                    aria-controls="navbarCollapse"
+                    aria-expanded="false"
+                    aria-label="Toggle navigation">
+
+                    <span class="navbar-toggler-icon"></span>
+
+                </button>
+
+                <div class="collapse navbar-collapse" id="navbarCollapse">
+
+                    <div class="navbar-nav ms-auto align-items-lg-center hris-nav">
+
+                        <a
+                            href="{{ url_for('main.index') }}"
+                            class="nav-link hris-nav-link">
+                            <span>HOME</span>
                         </a>
-                        <div class="dropdown-menu dropdown-menu-end" data-bs-display="static">
-                            {% if session.get('logged_in') %}
-                                <a class="dropdown-item" href="/profile"><i class="bi bi-person"></i> Profil</a>
-                                <a class="dropdown-item" href="#" id="logoutBtn"><i class="bi bi-box-arrow-right"></i> Logout</a>
-                            {% else %}
-                                <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#loginModal">
-                                    <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+
+                        <!-- INFORMASI -->
+                        <div
+                            class="nav-item dropdown {% if not session.get('logged_in') %}d-none{% endif %}"
+                            id="informasiDropdown">
+
+                            <a
+                                class="nav-link dropdown-toggle hris-nav-link"
+                                data-bs-toggle="dropdown"
+                                role="button">
+
+                                <span>INFORMASI</span>
+
+                            </a>
+
+                            <div class="dropdown-menu hris-dropdown-menu">
+
+                                <a class="dropdown-item info-item" data-info="piket-siaga">
+                                    Piket Siaga
                                 </a>
-                            {% endif %}
+
+                                <a class="dropdown-item info-item" data-info="pelanggaran-disiplin">
+                                    Pelanggaran Disiplin
+                                </a>
+
+                                <a class="dropdown-item info-item" data-info="absensi-kantor">
+                                    Absensi Kantor
+                                </a>
+
+                                <a class="dropdown-item info-item" data-info="rekapitulasi-dinas-luar-operasi">
+                                    Rekapitulasi Dinas Luar Operasi
+                                </a>
+
+                                <a class="dropdown-item info-item" data-info="rekapitulasi-dinas-luar-pelatihan">
+                                    Rekapitulasi Dinas Luar Pelatihan
+                                </a>
+
+                                <a class="dropdown-item info-item" data-info="resume-pembuatan-skp">
+                                    Resume Pembuatan SKP
+                                </a>
+
+                                <a class="dropdown-item info-item" data-info="pegawai-login-portal">
+                                    Pegawai Login Portal
+                                </a>
+
+                            </div>
                         </div>
+
+                        <!-- UMUM -->
+                        <div class="nav-item dropdown">
+
+                            <a
+                                class="nav-link dropdown-toggle hris-nav-link"
+                                data-bs-toggle="dropdown"
+                                role="button">
+
+                                <span>UMUM</span>
+
+                            </a>
+
+                            <div class="dropdown-menu hris-dropdown-menu">
+
+                                <a href="{{ url_for('main.view_dashboard_pelanggaran') }}" class="dropdown-item">
+                                    Kepegawaian
+                                </a>
+
+                                <a href="#pencarian-telephone" class="dropdown-item">
+                                    Buku Telp
+                                </a>
+
+                                <a href="{{ url_for('main.index') }}" class="dropdown-item">
+                                    Sprin
+                                </a>
+
+                                <a href="{{ url_for('main.index') }}" class="dropdown-item">
+                                    Surat Masuk/Keluar
+                                </a>
+
+                                <a href="{{ url_for('main.index') }}" class="dropdown-item">
+                                    Rumta
+                                </a>
+
+                                <a href="{{ url_for('main.index') }}" class="dropdown-item">
+                                    Koperasi
+                                </a>
+
+                            </div>
+                        </div>
+
+                        <!-- OPERASI -->
+                        <div class="nav-item dropdown">
+
+                            <a
+                                class="nav-link dropdown-toggle hris-nav-link"
+                                data-bs-toggle="dropdown"
+                                role="button">
+
+                                <span>OPERASI</span>
+
+                            </a>
+
+                            <div class="dropdown-menu hris-dropdown-menu">
+
+                                <a href="{{ url_for('main.view_dashboard_tim_siaga') }}" class="dropdown-item">
+                                    Piket Siaga
+                                </a>
+
+                                <a href="{{ url_for('main.index') }}" class="dropdown-item">
+                                    Kesiapsiagaan
+                                </a>
+
+                            </div>
+                        </div>
+
+                        <!-- POTENSI -->
+                        <div class="nav-item dropdown">
+
+                            <a
+                                href="#"
+                                class="nav-link dropdown-toggle hris-nav-link"
+                                data-bs-toggle="dropdown"
+                                role="button">
+
+                                <span>SUMDA</span>
+
+                            </a>
+
+                            <div class="dropdown-menu hris-dropdown-menu">
+
+                                <a href="{{ url_for('main.index') }}" class="dropdown-item">
+                                    Pemeliharaan
+                                </a>
+
+                                <a href="" class="dropdown-item">
+                                    Gudang
+                                </a>
+
+                            </div>
+                        </div>
+
+                        <!-- DATA PRIBADI -->
+                        <a
+                            href="{{ url_for('main.view_dashboard_kinerja') }}"
+                            class="nav-link hris-nav-link">
+
+                            <span>DATA PRIBADI</span>
+
+                        </a>
+
+                        <!-- PROFILE -->
+                        <div class="nav-item dropdown hris-profile">
+
+                            <a
+                                href="#"
+                                class="nav-link dropdown-toggle hris-profile-toggle profile-toggle"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false">
+
+                                {% if session.get('logged_in') %}
+
+                                    <span class="hris-profile-name">
+                                        {{ session.get('nama') }}
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="hris-profile-icon">
+                                        <i class="bi bi-person-fill"></i>
+                                    </span>
+
+                                {% endif %}
+
+                            </a>
+
+                            <div
+                                class="dropdown-menu dropdown-menu-end hris-dropdown-menu"
+                                data-bs-display="static">
+
+                                {% if session.get('logged_in') %}
+
+                                    <a class="dropdown-item" href="/profile">
+                                        <i class="bi bi-person"></i>
+                                        Profil
+                                    </a>
+
+                                    <a class="dropdown-item" href="#" id="logoutBtn">
+                                        <i class="bi bi-box-arrow-right"></i>
+                                        Logout
+                                    </a>
+
+                                {% else %}
+
+                                    <a
+                                        class="dropdown-item"
+                                        href="#"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#loginModal">
+
+                                        <i class="bi bi-box-arrow-in-right me-2"></i>
+                                        Sign In
+
+                                    </a>
+
+                                {% endif %}
+
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -145,56 +305,191 @@
     <!-- Modal Informasi End -->
 
     <!-- Modal Login Start -->
-    <div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow">
+    <div class="modal fade login-modal" id="loginModal" tabindex="-1"
+         aria-labelledby="loginModalLabel" aria-hidden="true">
 
-                <!-- Header pakai warna primary biar nyambung sama navbar -->
-                <div class="modal-header" style="background-color: var(--primary); border-bottom: none;">
-                    <h5 class="modal-title text-white" id="loginModalLabel">
-                        <i class="bi bi-shield-lock-fill me-2"></i>Masuk Sistem
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                        aria-label="Tutup"></button>
+        <div class="modal-dialog modal-dialog-centered modal-xl login-modal-dialog">
+            <div class="modal-content login-modal-content">
+
+                <div class="login-visual">
+                    <div class="login-visual-overlay"></div>
+
+                    <img
+                        src="{{ url_for('static', filename='img/konten3.jpg') }}"
+                        alt="Basarnas Surabaya"
+                        class="login-visual-image">
+
+                    <div class="login-visual-content">
+
+                        <span class="login-visual-badge">
+                            <i class="bi bi-shield-check me-2"></i>
+                            PORTAL INTERNAL
+                        </span>
+
+                        <h2>
+                            Satu Jiwa,<br>
+                            Satu Rasa.
+                        </h2>
+
+                        <p>
+                            Bersama Basarnas Surabaya, kita hadir untuk
+                            memberikan pelayanan terbaik bagi masyarakat.
+                        </p>
+
+                        <div class="login-visual-line"></div>
+
+                        <small>
+                            Badan Nasional Pencarian dan Pertolongan<br>
+                            Kantor Pencarian dan Pertolongan Surabaya
+                        </small>
+
+                    </div>
                 </div>
 
-                <div class="modal-body p-4">
+                <div class="login-form-panel">
+
+                    <button
+                        type="button"
+                        class="btn-close login-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Tutup">
+                    </button>
+
+                    <div class="login-brand">
+
+                        <div>
+                            <span class="login-brand-kicker">
+                                PORTAL INTERNAL
+                            </span>
+
+                            <h2 id="loginModalLabel">
+                                Basarnas Surabaya
+                            </h2>
+
+                            <p>
+                                Masuk menggunakan akun BDIP Anda.
+                            </p>
+                        </div>
+
+                    </div>
+
                     <form id="formLogin" novalidate>
-                        <!-- Input NIP -->
-                        <div class="mb-3">
-                            <label for="inputUsername" class="form-label fw-semibold" id="loginUsernameLabel">NIP</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light"><i class="bi bi-person-badge"></i></span>
-                                <input type="text" class="form-control" id="inputUsername" name="username"
-                                    placeholder="Masukkan NIP" required autocomplete="username">
-                                <div class="invalid-feedback">NIP wajib diisi.</div>
+
+                        <div class="mb-4">
+
+                            <label
+                                for="inputUsername"
+                                class="form-label fw-semibold"
+                                id="loginUsernameLabel">
+                                Username
+                            </label>
+
+                            <div class="login-input-group">
+
+                                <i class="bi bi-person-badge login-input-icon"></i>
+
+                                <input
+                                    type="text"
+                                    class="form-control login-input"
+                                    id="inputUsername"
+                                    name="username"
+                                    placeholder="Masukkan username BDIP"
+                                    required
+                                    autocomplete="username">
+
                             </div>
+
+                            <div class="invalid-feedback">
+                                Username wajib diisi.
+                            </div>
+
                         </div>
 
-                        <!-- Input Password + toggle show/hide -->
                         <div class="mb-3">
-                            <label for="inputPassword" class="form-label fw-semibold">Password</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light"><i class="bi bi-lock-fill"></i></span>
-                                <input type="password" class="form-control" id="inputPassword" name="password"
-                                    placeholder="Masukkan Password" required autocomplete="current-password">
-                                <button class="btn btn-outline-secondary" type="button" id="togglePassword"
-                                    tabindex="-1">
-                                    <i class="bi bi-eye-fill" id="iconTogglePassword"></i>
+
+                            <label
+                                for="inputPassword"
+                                class="form-label fw-semibold">
+                                Password
+                            </label>
+
+                            <div class="login-input-group">
+
+                                <i class="bi bi-lock-fill login-input-icon"></i>
+
+                                <input
+                                    type="password"
+                                    class="form-control login-input login-password-input"
+                                    id="inputPassword"
+                                    name="password"
+                                    placeholder="Masukkan password BDIP"
+                                    required
+                                    autocomplete="current-password">
+
+                                <button
+                                    class="login-password-toggle"
+                                    type="button"
+                                    id="togglePassword"
+                                    aria-label="Tampilkan password"
+                                    title="Tampilkan password">
+
+                                    <i
+                                        class="bi bi-eye-fill"
+                                        id="iconTogglePassword">
+                                    </i>
+
                                 </button>
-                                <div class="invalid-feedback">Password wajib diisi.</div>
+
                             </div>
+
+                            <div class="invalid-feedback">
+                                Password wajib diisi.
+                            </div>
+
+                            <div class="login-password-hint">
+                                <i class="bi bi-shield-check me-1"></i>
+                                Gunakan username dan password BDIP Anda.
+                            </div>
+
                         </div>
 
-                        <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-4 login-options">
+
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="rememberMe">
-                                <label class="form-check-label" for="rememberMe">Ingat saya</label>
+
+                                <input
+                                    class="form-check-input"
+                                    type="checkbox"
+                                    id="rememberMe">
+
+                                <label
+                                    class="form-check-label"
+                                    for="rememberMe">
+                                    Ingat saya
+                                </label>
+
                             </div>
+
                         </div>
 
-                        <button type="submit" class="btn btn-primary w-100">Sign In</button>
+                        <button
+                            type="submit"
+                            class="btn login-submit w-100">
+
+                            <i class="bi bi-box-arrow-in-right me-2"></i>
+                            Masuk
+
+                        </button>
+
                     </form>
+
+                    <div class="login-footer">
+
+                        © 2026 Kantor Pencarian dan Pertolongan Surabaya<br>
+                        Badan Nasional Pencarian dan Pertolongan
+
+                    </div>
+
                 </div>
 
             </div>
@@ -203,96 +498,232 @@
     <!-- Modal Login End -->
 
     <!-- Hero Start -->
-    <div class="container-fluid p-0">
-        <div id="header-carousel" class="carousel slide carousel-fade" data-bs-ride="carousel">
-            <!-- Carousel Indicators (opsional - titik kecil di bawah carousel) -->
-            <div class="carousel-indicators">
-                <button type="button" data-bs-target="#header-carousel" data-bs-slide-to="0" class="active"
-                    aria-current="true" aria-label="Slide 1"></button>
-                <button type="button" data-bs-target="#header-carousel" data-bs-slide-to="1"
-                    aria-label="Slide 2"></button>
-                <button type="button" data-bs-target="#header-carousel" data-bs-slide-to="2"
-                    aria-label="Slide 3"></button>
-                <button type="button" data-bs-target="#header-carousel" data-bs-slide-to="3"
-                    aria-label="Slide 4"></button>
-                <button type="button" data-bs-target="#header-carousel" data-bs-slide-to="4"
-                    aria-label="Slide 5"></button>
+    <section class="hris-hero" id="hrisHero">
+
+        <div class="hris-hero-ambient hris-hero-ambient-one"></div>
+        <div class="hris-hero-ambient hris-hero-ambient-two"></div>
+
+        <div
+            id="header-carousel"
+            class="carousel slide carousel-fade hris-hero-carousel"
+            data-bs-ride="carousel"
+            data-bs-interval="6500">
+
+            <!-- Modern Indicators -->
+            <div class="carousel-indicators hris-hero-indicators">
+
+                {% for hero in hero_images %}
+                <button
+                    type="button"
+                    data-bs-target="#header-carousel"
+                    data-bs-slide-to="{{ loop.index0 }}"
+                    class="{% if loop.first %}active{% endif %}"
+                    aria-current="{% if loop.first %}true{% else %}false{% endif %}"
+                    aria-label="Slide {{ loop.index }}">
+
+                    <span></span>
+
+                </button>
+                {% endfor %}
+
             </div>
 
             <div class="carousel-inner">
+
                 {% for hero in hero_images %}
-                <div class="carousel-item {% if loop.first %}active{% endif %}">
-                    <img class="w-100" src="{{ hero.src }}" alt="Slide {{ hero.slot }}">
-                    <div class="carousel-caption d-flex flex-column align-items-center justify-content-center">
-                        <div class="p-3" style="max-width: 1600px;">
-                            {% if hero.slot == 1 %}
-                            <h3 class="display-2 text-uppercase text-white mb-md-4">BADAN NASIONAL PENCARIAN DAN
-                                PERTOLONGAN</h3>
-                            {% elif hero.slot == 2 %}
-                            <h3 class="display-2 text-uppercase text-white mb-md-4">SIAP SIAGA 24 JAM</h3>
-                            {% elif hero.slot == 3 %}
-                            <h3 class="display-2 text-uppercase text-white mb-md-4">RESPON CEPAT, TEPAT, DAN TERPADU
-                            </h3>
-                            {% elif hero.slot == 4 %}
-                            <h3 class="display-2 text-uppercase text-white mb-md-4">MELAYANI DALAM OPERASI PENCARIAN DAN
-                                PERTOLONGAN
-                            </h3>
-                            {% elif hero.slot == 5 %}
-                            <h3 class="display-2 text-uppercase text-white mb-md-4">PENGABDIAN UNTUK KESELAMATAN BANGSA
-                            </h3>
-                            {% endif %}
+
+                <div
+                    class="carousel-item hris-hero-slide {% if loop.first %}active{% endif %}"
+                    data-slide="{{ hero.slot }}">
+
+                    <div class="hris-hero-image-wrap">
+
+                        <img
+                            class="hris-hero-image"
+                            src="{{ hero.src }}"
+                            alt="Basarnas Surabaya - Slide {{ hero.slot }}">
+
+                    </div>
+
+                    <div class="hris-hero-gradient"></div>
+
+                    <div class="hris-hero-content">
+
+                        <div class="hris-hero-kicker">
+                            <span class="hris-kicker-line"></span>
+                            BASARNAS SURABAYA
                         </div>
+
+                        {% if hero.slot == 1 %}
+
+                            <h1>
+                                BADAN NASIONAL
+                                <span>PENCARIAN DAN PERTOLONGAN</span>
+                            </h1>
+
+                            <p>
+                                Hadir untuk memberikan pelayanan pencarian
+                                dan pertolongan yang cepat, tepat, dan terpadu.
+                            </p>
+
+                        {% elif hero.slot == 2 %}
+
+                            <h1>
+                                SIAP SIAGA
+                                <span>24 JAM</span>
+                            </h1>
+
+                            <p>
+                                Kesiapsiagaan tanpa henti untuk keselamatan
+                                masyarakat.
+                            </p>
+
+                        {% elif hero.slot == 3 %}
+
+                            <h1>
+                                RESPON CEPAT,
+                                <span>TEPAT, DAN TERPADU</span>
+                            </h1>
+
+                            <p>
+                                Bergerak bersama dalam setiap misi
+                                pencarian dan pertolongan.
+                            </p>
+
+                        {% elif hero.slot == 4 %}
+
+                            <h1>
+                                MELAYANI DALAM
+                                <span>OPERASI PENCARIAN DAN PERTOLONGAN</span>
+                            </h1>
+
+                            <p>
+                                Profesional, terlatih, dan selalu siap
+                                memberikan pertolongan.
+                            </p>
+
+                        {% elif hero.slot == 5 %}
+
+                            <h1>
+                                PENGABDIAN UNTUK
+                                <span>KESELAMATAN BANGSA</span>
+                            </h1>
+
+                            <p>
+                                Satu pengabdian untuk kemanusiaan.
+                            </p>
+
+                        {% endif %}
+
+                        <div class="hris-hero-meta">
+
+                            <span>
+                                <i class="bi bi-shield-check"></i>
+                                PORTAL INTERNAL
+                            </span>
+
+                            <span>
+                                <i class="bi bi-geo-alt"></i>
+                                SURABAYA
+                            </span>
+
+                        </div>
+
                     </div>
                 </div>
+
                 {% endfor %}
+
             </div>
 
-            <!-- Carousel Controls (Next/Prev buttons - opsional) -->
-            <button class="carousel-control-prev" type="button" data-bs-target="#header-carousel" data-bs-slide="prev">
-                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            <!-- Modern Controls -->
+            <button
+                class="carousel-control-prev hris-hero-control"
+                type="button"
+                data-bs-target="#header-carousel"
+                data-bs-slide="prev">
+
+                <span class="hris-control-circle">
+                    <i class="bi bi-arrow-left"></i>
+                </span>
+
                 <span class="visually-hidden">Previous</span>
+
             </button>
-            <button class="carousel-control-next" type="button" data-bs-target="#header-carousel" data-bs-slide="next">
-                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+
+            <button
+                class="carousel-control-next hris-hero-control"
+                type="button"
+                data-bs-target="#header-carousel"
+                data-bs-slide="next">
+
+                <span class="hris-control-circle">
+                    <i class="bi bi-arrow-right"></i>
+                </span>
+
                 <span class="visually-hidden">Next</span>
+
             </button>
+
+            <div class="hris-hero-scroll">
+                <span>SCROLL UNTUK MENJELAJAHI</span>
+                <i class="bi bi-chevron-down"></i>
+            </div>
+
         </div>
-    </div>
+    </section>
     <!-- Hero End -->
 
     <!-- Konten Pengumuman Start-->
-    <div class="pengumuman-section text-center">
+    <section class="pengumuman-section">
+        <div class="pengumuman-inner">
 
-        {% if is_wfh_today %}
-        <div class="absen-online-wrapper mb-4">
-            <button
-                type="button"
-                id="btnAbsenOnline"
-                class="btn btn-absen-online">
-                <i class="fas fa-fingerprint me-2"></i>
-                ABSEN ONLINE
-            </button>
-        </div>
-        {% endif %}
+            <div class="pengumuman-heading">
+                <span class="pengumuman-kicker">
+                    <i class="bi bi-megaphone-fill"></i>
+                    INFORMASI TERKINI
+                </span>
+                <h2 class="judul-pengumuman">Pengumuman</h2>
+                <span class="pengumuman-line"></span>
 
-        <h2 class="judul-pengumuman">Pengumuman</h2>
-
-        <div class="running-wrapper">
-            <div class="running-text">
-                {{ running_text }}
+                <div class="pengumuman-closing">
+                    <i class="bi bi-calendar3"></i>
+                    <span>Closing absensi</span>
+                    <strong>30-Nov-2025</strong>
+                </div>
             </div>
-        </div>
 
-        <div class="status-online">
-            <i class="bi bi-bar-chart"></i>
-            <span>online</span>
-            <span class="jumlah">50</span>
-        </div>
+            {% if is_wfh_today %}
+            <div class="absen-online-wrapper">
+                <button
+                    type="button"
+                    id="btnAbsenOnline"
+                    class="btn btn-absen-online">
+                    <i class="fas fa-fingerprint me-2"></i>
+                    ABSEN ONLINE
+                </button>
+            </div>
+            {% endif %}
 
-        <p class="closing-absensi">
-            Tanggal closing absensi 30-Nov-2025
-        </p>
-    </div>
+            <div class="pengumuman-glass-card">
+
+                <div class="pengumuman-icon">
+                    <i class="bi bi-bell-fill"></i>
+                </div>
+
+                <div class="running-wrapper">
+                    <div class="running-text">
+                        {{ running_text }}
+                    </div>
+                </div>
+
+                <div class="pengumuman-meta">
+                </div>
+
+            </div>
+
+        </div>
+    </section>
     <!-- Konten Pengumuman End -->
 
     <!-- =========================================================
@@ -360,8 +791,99 @@
 
 
 
+
+    <!-- =========================================================
+         QUICK ACCESS
+         ========================================================= -->
+    <section id="quick-access-section" class="quick-access-section">
+        <div class="quick-access-inner">
+
+            <div class="quick-access-heading">
+                <span class="quick-access-kicker">
+                    <i class="bi bi-grid-1x2-fill"></i>
+                    AKSES CEPAT
+                </span>
+
+                <h2 class="quick-access-title">
+                    Quick Access
+                </h2>
+
+                <span class="quick-access-line"></span>
+
+                <p class="quick-access-subtitle">
+                    Akses cepat menuju layanan utama Portal Internal Basarnas Surabaya.
+                </p>
+            </div>
+
+            <div class="quick-access-grid">
+
+                <a href="{{ url_for('main.view_dashboard_pelanggaran') }}"
+                   class="quick-access-card">
+                    <div class="quick-access-icon">
+                        <i class="bi bi-people-fill"></i>
+                    </div>
+                    <div class="quick-access-content">
+                        <span class="quick-access-label">KEPEGAWAIAN</span>
+                        <strong>Data &amp; Informasi Pegawai</strong>
+                        <small>Kelola dan lihat informasi kepegawaian.</small>
+                    </div>
+                    <div class="quick-access-arrow">
+                        <i class="bi bi-arrow-up-right"></i>
+                    </div>
+                </a>
+
+                <a href="{{ url_for('main.view_dashboard_tim_siaga') }}"
+                   class="quick-access-card">
+                    <div class="quick-access-icon">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+                    <div class="quick-access-content">
+                        <span class="quick-access-label">OPERASI</span>
+                        <strong>Piket Siaga</strong>
+                        <small>Pantau kesiapsiagaan dan piket operasional.</small>
+                    </div>
+                    <div class="quick-access-arrow">
+                        <i class="bi bi-arrow-up-right"></i>
+                    </div>
+                </a>
+
+                <a href="{{ url_for('main.view_dashboard_kinerja') }}"
+                   class="quick-access-card">
+                    <div class="quick-access-icon">
+                        <i class="bi bi-person-badge-fill"></i>
+                    </div>
+                    <div class="quick-access-content">
+                        <span class="quick-access-label">DATA PRIBADI</span>
+                        <strong>Profil &amp; Kinerja</strong>
+                        <small>Akses informasi pribadi dan kinerja pegawai.</small>
+                    </div>
+                    <div class="quick-access-arrow">
+                        <i class="bi bi-arrow-up-right"></i>
+                    </div>
+                </a>
+
+                <a href="#pencarian-telephone"
+                   class="quick-access-card">
+                    <div class="quick-access-icon">
+                        <i class="bi bi-telephone-fill"></i>
+                    </div>
+                    <div class="quick-access-content">
+                        <span class="quick-access-label">DIREKTORI</span>
+                        <strong>Buku Telepon</strong>
+                        <small>Temukan kontak dan informasi pegawai.</small>
+                    </div>
+                    <div class="quick-access-arrow">
+                        <i class="bi bi-arrow-up-right"></i>
+                    </div>
+                </a>
+
+            </div>
+        </div>
+    </section>
+    <!-- Quick Access End -->
+
     <!-- Konten Profil Basarnas Start -->
-    <div class="container-fluid bg-light py-6 px-5">
+    <div class="container-fluid bg-light py-6 px-5" style="display:none;">
         <div class="text-center mb-5">
             <h2 class="text-uppercase">Profil Basarnas</h2>
         </div>
@@ -453,27 +975,58 @@
     <!-- Konten Profil Basarnas End -->
 
     <!-- Kontak Kantor Start -->
-    <section class="office-contact-section text-center">
-        <div class="container">
-            <h2 class="office-contact-title">
+<section class="office-contact-section hris-office-photo-section">
+
+    <div class="hris-office-photo-bg"
+         style="background-image: url('{{ url_for('static', filename='static_home/img/kantor-sar-surabaya.jpeg') }}');">
+    </div>
+
+    <div class="hris-office-photo-overlay"></div>
+
+    <div class="container hris-office-photo-content">
+        <div class="hris-office-glass-card">
+
+            <div class="hris-office-badge">
+                <i class="bi bi-building-fill"></i>
+            </div>
+
+            <div class="hris-office-kicker">
+                KANTOR PENCARIAN DAN PERTOLONGAN
+            </div>
+
+            <h2 class="hris-office-title">
                 Kantor Pencarian dan Pertolongan Surabaya
             </h2>
 
-            <p class="office-contact-address">
-                Jl. Raya Bandara Juanda<br>
-                Surabaya 61253-A<br>
-                INDONESIA<br>
-                Badan Nasional Pencarian dan Pertolongan<br>
-                Email : sar.surabaya@basarnas.go.id
+            <div class="hris-office-divider"></div>
+
+            <p class="hris-office-address">
+                <i class="bi bi-geo-alt-fill"></i>
+                <span>
+                    Jl. Raya Bandara Juanda<br>
+                    Surabaya 61253-A<br>
+                    INDONESIA
+                </span>
             </p>
+
+            <p class="hris-office-institution">
+                Badan Nasional Pencarian dan Pertolongan
+            </p>
+
+            <p class="hris-office-email">
+                <i class="bi bi-envelope-fill"></i>
+                sar.surabaya@basarnas.go.id
+            </p>
+
         </div>
-    </section>
-    <!-- Kontak Kantor End -->
+    </div>
+
+</section>
+<!-- Kontak Kantor End -->
 
     <!-- Footer Start -->
     <footer class="container-fluid footer-custom text-center py-4">
         <p class="mb-1">
-            Badan Nasional Pencarian dan Pertolongan Republik Indonesia.
             Seluruh Hak Cipta Dilindungi.
         </p>
 
@@ -500,6 +1053,75 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+
+        // =============================================
+        // HRIS HOME 2.0
+        // Navbar scroll + hero mouse movement
+        // =============================================
+
+        const hrisNavbar = document.getElementById('hrisNavbar');
+
+        function updateHrisNavbar() {
+            if (!hrisNavbar) return;
+
+            if (window.scrollY > 35) {
+                hrisNavbar.classList.add('scrolled');
+            } else {
+                hrisNavbar.classList.remove('scrolled');
+            }
+        }
+
+        window.addEventListener('scroll', updateHrisNavbar, {
+            passive: true
+        });
+
+        updateHrisNavbar();
+
+        const hrisHero = document.getElementById('hrisHero');
+
+        if (hrisHero && window.matchMedia('(pointer: fine)').matches) {
+
+            hrisHero.addEventListener('mousemove', function(e) {
+
+                const rect = hrisHero.getBoundingClientRect();
+
+                const x = ((e.clientX - rect.left) / rect.width - 0.5) * -12;
+                const y = ((e.clientY - rect.top) / rect.height - 0.5) * -8;
+
+                hrisHero.style.setProperty('--hero-mouse-x', x.toFixed(2));
+                hrisHero.style.setProperty('--hero-mouse-y', y.toFixed(2));
+
+            });
+
+            hrisHero.addEventListener('mouseleave', function() {
+                hrisHero.style.setProperty('--hero-mouse-x', '0');
+                hrisHero.style.setProperty('--hero-mouse-y', '0');
+            });
+        }
+
+        const hrisCarousel = document.getElementById('header-carousel');
+
+        if (hrisCarousel) {
+
+            hrisCarousel.addEventListener('slid.bs.carousel', function() {
+
+                document.querySelectorAll('.hris-hero-indicators button').forEach(function(button) {
+
+                    const span = button.querySelector('span');
+
+                    if (span) {
+                        span.style.width = button.classList.contains('active')
+                            ? '100%'
+                            : '0';
+                    }
+
+                });
+
+            });
+
+        }
+
+
         // =============================================
         // 2. Login & Logout
         // =============================================
@@ -622,6 +1244,31 @@
                 });
             }
         }
+
+        document.getElementById('togglePassword')?.addEventListener('click', function () {
+            const password = document.getElementById('inputPassword');
+            const icon = document.getElementById('iconTogglePassword');
+
+            if (!password) return;
+
+            if (password.type === 'password') {
+                password.type = 'text';
+                this.setAttribute('aria-label', 'Sembunyikan password');
+                this.setAttribute('title', 'Sembunyikan password');
+                if (icon) {
+                    icon.classList.remove('bi-eye-fill');
+                    icon.classList.add('bi-eye-slash-fill');
+                }
+            } else {
+                password.type = 'password';
+                this.setAttribute('aria-label', 'Tampilkan password');
+                this.setAttribute('title', 'Tampilkan password');
+                if (icon) {
+                    icon.classList.remove('bi-eye-slash-fill');
+                    icon.classList.add('bi-eye-fill');
+                }
+            }
+        });
 
         // =============================================
         // 4. Modal Informasi (termasuk Piket Siaga)
@@ -1008,6 +1655,1355 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 
+
+<!-- ============================================================
+     HRIS HOME 2.0 — HERO ONLINE CARD
+     ============================================================ -->
+<div id="hrisHeroOnlineCard" class="hris-hero-online-card">
+    <div class="hris-online-icon">
+        <i class="bi bi-people-fill"></i>
+        <span class="hris-online-pulse"></span>
+    </div>
+
+    <div class="hris-online-copy">
+        <div class="hris-online-title">
+            <span class="hris-online-dot"></span>
+            Pegawai Online
+        </div>
+
+        <div class="hris-online-number">
+            <span id="hrisHeroOnlineCount">0</span>
+            <small>pegawai sedang online</small>
+        </div>
+
+        <div class="hris-online-status">
+            Siap melayani sepenuh hati
+        </div>
+    </div>
+</div>
+
+<style id="hris-home-2-modern">
+
+/* ============================================================
+   HRIS HOME 2.0 — VISUAL SYSTEM
+   ============================================================ */
+
+:root {
+    --hris-orange: #FD5D14;
+    --hris-orange-soft: #ff7a3d;
+    --hris-navy: #040F28;
+}
+
+/* ============================================================
+   NAVBAR — GLASS
+   ============================================================ */
+
+.navbar {
+    position: absolute !important;
+    top: 18px;
+    left: 18px;
+    right: 18px;
+
+    width: auto !important;
+
+    border-radius: 20px !important;
+
+    background:
+        linear-gradient(
+            100deg,
+            rgba(253,93,20,.78),
+            rgba(253,93,20,.60)
+        ) !important;
+
+    border: 1px solid rgba(255,255,255,.20) !important;
+
+    backdrop-filter:
+        blur(18px)
+        saturate(145%);
+
+    -webkit-backdrop-filter:
+        blur(18px)
+        saturate(145%);
+
+    box-shadow:
+        0 12px 40px rgba(4,15,40,.22),
+        inset 0 1px 0 rgba(255,255,255,.22);
+
+    transition:
+        background .4s ease,
+        box-shadow .4s ease,
+        transform .4s ease,
+        border-radius .4s ease;
+
+    z-index: 1050;
+}
+
+.navbar.hris-navbar-scrolled {
+
+    position: fixed !important;
+    top: 12px;
+
+    background:
+        linear-gradient(
+            100deg,
+            rgba(4,15,40,.91),
+            rgba(7,24,57,.84)
+        ) !important;
+
+    box-shadow:
+        0 16px 45px rgba(4,15,40,.35),
+        0 0 35px rgba(253,93,20,.08);
+
+    backdrop-filter:
+        blur(22px)
+        saturate(150%);
+
+    -webkit-backdrop-filter:
+        blur(22px)
+        saturate(150%);
+}
+
+/* ============================================================
+   NAV MENU — MACOS STYLE MAGNIFICATION
+   ============================================================ */
+
+.navbar .nav-link {
+
+    position: relative;
+
+    border-radius: 13px;
+
+    transition:
+        transform .22s cubic-bezier(.2,.8,.2,1),
+        background .22s ease,
+        box-shadow .22s ease,
+        letter-spacing .22s ease;
+}
+
+.navbar .nav-link:hover,
+.navbar .nav-link.show {
+
+    transform:
+        translateY(-2px)
+        scale(1.08);
+
+    background:
+        rgba(255,255,255,.14);
+
+    box-shadow:
+        0 0 0 1px rgba(255,255,255,.08),
+        0 0 24px rgba(253,93,20,.28);
+}
+
+/* Neighboring menu items slightly react */
+.navbar .nav-link:hover ~ .nav-link {
+    transform: scale(1.025);
+}
+
+/* glowing underline */
+
+.navbar .nav-link::before {
+
+    content: "";
+
+    position: absolute;
+
+    left: 18%;
+    right: 18%;
+    bottom: 5px;
+
+    height: 2px;
+
+    border-radius: 999px;
+
+    background: var(--hris-orange-soft);
+
+    opacity: 0;
+    transform: scaleX(.3);
+
+    box-shadow:
+        0 0 10px rgba(253,93,20,.85);
+
+    transition:
+        opacity .25s ease,
+        transform .25s ease;
+}
+
+.navbar .nav-link:hover::before,
+.navbar .nav-link.show::before {
+
+    opacity: 1;
+    transform: scaleX(1);
+}
+
+/* ============================================================
+   SPARKLE EFFECT
+   ============================================================ */
+
+.navbar .nav-link:hover::after {
+
+    content: "✦";
+
+    position: absolute;
+
+    top: -8px;
+    right: 5px;
+
+    color: white;
+
+    font-size: 11px;
+
+    text-shadow:
+        0 0 5px white,
+        0 0 12px var(--hris-orange-soft),
+        0 0 20px var(--hris-orange);
+
+    animation:
+        hrisSpark 1s ease-in-out infinite;
+}
+
+@keyframes hrisSpark {
+
+    0%, 100% {
+        opacity: .35;
+        transform: scale(.65) rotate(0deg);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.35) rotate(18deg);
+    }
+}
+
+/* ============================================================
+   DROPDOWN
+   ============================================================ */
+
+.navbar .dropdown-menu {
+
+    margin-top: 12px !important;
+
+    padding: 10px !important;
+
+    min-width: 230px;
+
+    border-radius: 18px !important;
+
+    border:
+        1px solid rgba(255,255,255,.45) !important;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(255,255,255,.96),
+            rgba(245,248,253,.91)
+        ) !important;
+
+    backdrop-filter:
+        blur(20px)
+        saturate(140%);
+
+    -webkit-backdrop-filter:
+        blur(20px)
+        saturate(140%);
+
+    box-shadow:
+        0 25px 60px rgba(4,15,40,.28),
+        0 0 30px rgba(253,93,20,.08);
+
+    animation:
+        hrisDropdownOpen .25s
+        cubic-bezier(.2,.8,.2,1)
+        both;
+}
+
+@keyframes hrisDropdownOpen {
+
+    from {
+        opacity: 0;
+        transform:
+            translateY(-12px)
+            scale(.94);
+    }
+
+    to {
+        opacity: 1;
+        transform:
+            translateY(0)
+            scale(1);
+    }
+}
+
+/* sparkle di atas dropdown */
+
+.navbar .dropdown-menu::before {
+
+    content: "✦";
+
+    position: absolute;
+
+    top: -12px;
+    right: 18px;
+
+    width: 25px;
+    height: 25px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    color: var(--hris-orange);
+
+    background: white;
+
+    border-radius: 50%;
+
+    font-size: 16px;
+
+    box-shadow:
+        0 0 10px rgba(253,93,20,.65),
+        0 0 25px rgba(253,93,20,.35);
+
+    animation:
+        hrisSpark 1.4s
+        ease-in-out
+        infinite;
+}
+
+.navbar .dropdown-item {
+
+    position: relative;
+
+    margin: 3px 0;
+
+    padding: 12px 14px;
+
+    border-radius: 12px;
+
+    color: var(--hris-navy) !important;
+
+    font-weight: 600;
+
+    transition:
+        transform .22s ease,
+        background .22s ease,
+        color .22s ease,
+        box-shadow .22s ease;
+}
+
+.navbar .dropdown-item::before {
+
+    content: "•";
+
+    color: var(--hris-orange);
+
+    margin-right: 9px;
+
+    font-size: 17px;
+
+    transition:
+        transform .2s ease;
+}
+
+.navbar .dropdown-item:hover {
+
+    color: white !important;
+
+    transform:
+        translateX(5px)
+        scale(1.025);
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--hris-orange),
+            var(--hris-orange-soft)
+        ) !important;
+
+    box-shadow:
+        0 8px 22px rgba(253,93,20,.30);
+}
+
+.navbar .dropdown-item:hover::before {
+
+    color: white;
+
+    transform: scale(1.4);
+}
+
+/* ============================================================
+   HERO
+   ============================================================ */
+
+#header-carousel {
+
+    position: relative;
+
+    overflow: hidden;
+
+    background: var(--hris-navy);
+}
+
+#header-carousel::before {
+
+    content: "";
+
+    position: absolute;
+
+    inset: 0;
+
+    z-index: 2;
+
+    pointer-events: none;
+
+    background:
+        radial-gradient(
+            circle at 75% 38%,
+            rgba(253,93,20,.15),
+            transparent 30%
+        ),
+        radial-gradient(
+            circle at 18% 72%,
+            rgba(25,73,150,.20),
+            transparent 35%
+        );
+
+    mix-blend-mode: screen;
+}
+
+#header-carousel::after {
+
+    content: "";
+
+    position: absolute;
+
+    inset: 0;
+
+    z-index: 3;
+
+    pointer-events: none;
+
+    background:
+        linear-gradient(
+            90deg,
+            rgba(4,15,40,.78) 0%,
+            rgba(4,15,40,.45) 38%,
+            rgba(4,15,40,.10) 70%,
+            rgba(4,15,40,.32) 100%
+        );
+}
+
+#header-carousel .carousel-item img {
+
+    transform: scale(1.035);
+
+    transition:
+        transform 2.2s
+        cubic-bezier(.2,.75,.2,1),
+        filter 1.2s ease;
+
+    filter:
+        saturate(1.08)
+        contrast(1.04);
+}
+
+#header-carousel .carousel-item.active img {
+
+    animation:
+        hrisHeroZoom 2.1s
+        cubic-bezier(.2,.75,.2,1)
+        both;
+}
+
+@keyframes hrisHeroZoom {
+
+    from {
+        transform: scale(1.025);
+    }
+
+    to {
+        transform: scale(1.065);
+    }
+}
+
+/* ============================================================
+   HERO CAPTION
+   ============================================================ */
+
+#header-carousel .carousel-item.active
+.carousel-caption h1,
+#header-carousel .carousel-item.active
+.carousel-caption h2 {
+
+    animation:
+        hrisHeroTitle .75s
+        cubic-bezier(.2,.8,.2,1)
+        both;
+}
+
+#header-carousel .carousel-item.active
+.carousel-caption p {
+
+    animation:
+        hrisHeroCopy .75s .12s
+        cubic-bezier(.2,.8,.2,1)
+        both;
+}
+
+@keyframes hrisHeroTitle {
+
+    from {
+        opacity: 0;
+        transform:
+            translateY(25px)
+            scale(.97);
+        filter: blur(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform:
+            translateY(0)
+            scale(1);
+        filter: blur(0);
+    }
+}
+
+@keyframes hrisHeroCopy {
+
+    from {
+        opacity: 0;
+        transform: translateY(18px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ============================================================
+   HERO INDICATORS
+   ============================================================ */
+
+#header-carousel .carousel-indicators {
+
+    z-index: 10;
+
+    gap: 7px;
+}
+
+#header-carousel .carousel-indicators
+[data-bs-target] {
+
+    width: 28px;
+    height: 4px;
+
+    margin: 0;
+
+    border: 0;
+
+    border-radius: 999px;
+
+    opacity: .45;
+
+    transition:
+        width .35s ease,
+        opacity .35s ease,
+        box-shadow .35s ease;
+}
+
+#header-carousel .carousel-indicators
+[data-bs-target].active {
+
+    width: 60px;
+
+    opacity: 1;
+
+    box-shadow:
+        0 0 10px rgba(253,93,20,.75),
+        0 0 22px rgba(253,93,20,.25);
+}
+
+/* ============================================================
+   HERO ARROWS
+   ============================================================ */
+
+#header-carousel .carousel-control-prev,
+#header-carousel .carousel-control-next {
+
+    z-index: 10;
+
+    width: 58px;
+    height: 58px;
+
+    top: auto;
+    bottom: 28px;
+
+    opacity: 1;
+
+    border:
+        1px solid rgba(255,255,255,.25);
+
+    border-radius: 50%;
+
+    background:
+        rgba(4,15,40,.35);
+
+    backdrop-filter: blur(12px);
+
+    -webkit-backdrop-filter: blur(12px);
+
+    transition:
+        transform .25s ease,
+        background .25s ease,
+        box-shadow .25s ease;
+}
+
+#header-carousel .carousel-control-prev {
+
+    left: auto;
+    right: 96px;
+}
+
+#header-carousel .carousel-control-next {
+
+    right: 28px;
+}
+
+#header-carousel .carousel-control-prev:hover,
+#header-carousel .carousel-control-next:hover {
+
+    transform:
+        scale(1.10)
+        translateY(-3px);
+
+    background:
+        var(--hris-orange);
+
+    box-shadow:
+        0 10px 30px rgba(253,93,20,.40);
+}
+
+/* ============================================================
+   PEGAWAI ONLINE CARD
+   ============================================================ */
+
+.hris-hero-online-card {
+
+    position: absolute;
+
+    right: 42px;
+    bottom: 92px;
+
+    z-index: 20;
+
+    display: flex;
+    align-items: center;
+
+    min-width: 310px;
+
+    padding: 15px 20px 15px 15px;
+
+    border:
+        1px solid rgba(255,255,255,.25);
+
+    border-radius: 24px;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(4,15,40,.72),
+            rgba(10,31,67,.58)
+        );
+
+    backdrop-filter:
+        blur(18px)
+        saturate(145%);
+
+    -webkit-backdrop-filter:
+        blur(18px)
+        saturate(145%);
+
+    box-shadow:
+        0 18px 50px rgba(4,15,40,.32),
+        inset 0 1px 0 rgba(255,255,255,.12),
+        0 0 35px rgba(253,93,20,.08);
+
+    transition:
+        transform .3s ease,
+        box-shadow .3s ease;
+}
+
+.hris-hero-online-card:hover {
+
+    transform:
+        translateY(-5px)
+        scale(1.025);
+
+    box-shadow:
+        0 25px 60px rgba(4,15,40,.38),
+        0 0 35px rgba(253,93,20,.16);
+}
+
+/* online icon */
+
+.hris-online-icon {
+
+    position: relative;
+
+    width: 56px;
+    height: 56px;
+
+    flex: 0 0 56px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    margin-right: 14px;
+
+    border-radius: 18px;
+
+    color: white;
+
+    font-size: 24px;
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--hris-orange),
+            var(--hris-orange-soft)
+        );
+
+    box-shadow:
+        0 8px 25px rgba(253,93,20,.30);
+}
+
+.hris-online-pulse {
+
+    position: absolute;
+
+    top: -3px;
+    right: -3px;
+
+    width: 12px;
+    height: 12px;
+
+    border-radius: 50%;
+
+    background: #35e27a;
+
+    border: 2px solid var(--hris-navy);
+
+    box-shadow:
+        0 0 0 0 rgba(53,226,122,.65);
+
+    animation:
+        hrisOnlinePulse 1.8s
+        infinite;
+}
+
+@keyframes hrisOnlinePulse {
+
+    0% {
+        box-shadow:
+            0 0 0 0 rgba(53,226,122,.60);
+    }
+
+    70% {
+        box-shadow:
+            0 0 0 9px rgba(53,226,122,0);
+    }
+
+    100% {
+        box-shadow:
+            0 0 0 0 rgba(53,226,122,0);
+    }
+}
+
+.hris-online-title {
+
+    display: flex;
+    align-items: center;
+
+    gap: 7px;
+
+    color: white;
+
+    font-size: 14px;
+
+    font-weight: 700;
+}
+
+.hris-online-dot {
+
+    width: 7px;
+    height: 7px;
+
+    border-radius: 50%;
+
+    background: #35e27a;
+
+    box-shadow:
+        0 0 9px rgba(53,226,122,.75);
+}
+
+.hris-online-number {
+
+    display: flex;
+    align-items: baseline;
+
+    gap: 7px;
+
+    margin-top: 2px;
+
+    color: white;
+
+    font-size: 24px;
+
+    font-weight: 800;
+
+    line-height: 1.1;
+}
+
+.hris-online-number small {
+
+    color: rgba(255,255,255,.70);
+
+    font-size: 11px;
+
+    font-weight: 500;
+}
+
+.hris-online-status {
+
+    margin-top: 4px;
+
+    color: rgba(255,255,255,.60);
+
+    font-size: 11px;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 991.98px) {
+
+    .navbar {
+
+        top: 8px;
+        left: 8px;
+        right: 8px;
+
+        border-radius: 15px !important;
+    }
+
+    .hris-hero-online-card {
+
+        right: 18px;
+        bottom: 80px;
+
+        min-width: 250px;
+
+        padding: 11px;
+    }
+
+    .hris-online-icon {
+
+        width: 46px;
+        height: 46px;
+
+        flex-basis: 46px;
+
+        font-size: 19px;
+    }
+}
+
+@media (max-width: 575.98px) {
+
+    .hris-hero-online-card {
+
+        right: 12px;
+        left: 12px;
+
+        min-width: 0;
+
+        width: auto;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+
+        animation-duration: .01ms !important;
+
+        animation-iteration-count: 1 !important;
+
+        transition-duration: .01ms !important;
+    }
+}
+
+</style>
+
 </body>
 
 </html>
+<style id="hris-home-modern-v2">
+
+/* ============================================================
+   HRIS HOME 2.0
+   Navbar + Hero + Dropdown
+   ============================================================ */
+
+:root {
+    --hris-orange: #FD5D14;
+    --hris-orange-light: #ff7a3d;
+    --hris-navy: #040F28;
+}
+
+/* ---------- NAVBAR ---------- */
+
+.navbar {
+    transition:
+        background .35s ease,
+        box-shadow .35s ease,
+        backdrop-filter .35s ease,
+        transform .35s ease;
+    z-index: 1050;
+}
+
+.navbar.hris-navbar-scrolled {
+    background: rgba(4, 15, 40, .94) !important;
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    box-shadow: 0 12px 35px rgba(4, 15, 40, .28);
+}
+
+/* menu item */
+
+.navbar .nav-link {
+    position: relative;
+    border-radius: 12px;
+    transition:
+        transform .22s ease,
+        background .22s ease,
+        color .22s ease,
+        box-shadow .22s ease;
+}
+
+.navbar .nav-link:hover,
+.navbar .nav-link.show {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, .13);
+    box-shadow:
+        0 0 0 1px rgba(255,255,255,.08),
+        0 8px 22px rgba(253, 93, 20, .20);
+}
+
+.navbar .nav-link::after {
+    transition: transform .25s ease, opacity .25s ease;
+}
+
+.navbar .nav-link:hover::after,
+.navbar .nav-link.show::after {
+    transform: scaleX(1.15);
+}
+
+/* profile button */
+
+.navbar .profile-toggle,
+.navbar .btn,
+.navbar .dropdown-toggle {
+    transition:
+        transform .22s ease,
+        box-shadow .22s ease,
+        background .22s ease;
+}
+
+.navbar .profile-toggle:hover {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 0 24px rgba(253, 93, 20, .35);
+}
+
+/* ---------- DROPDOWN ---------- */
+
+.navbar .dropdown-menu {
+    margin-top: 12px !important;
+    padding: 10px;
+    min-width: 220px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(255,255,255,.97),
+            rgba(246,248,252,.94)
+        ) !important;
+
+    border: 1px solid rgba(255,255,255,.65) !important;
+    border-radius: 18px !important;
+
+    box-shadow:
+        0 20px 50px rgba(4,15,40,.25),
+        0 0 0 1px rgba(4,15,40,.04);
+
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+
+    transform-origin: top right;
+    animation: hrisDropdownIn .24s ease both;
+}
+
+@keyframes hrisDropdownIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px) scale(.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* sparkle */
+
+.navbar .dropdown-menu::before {
+    content: "✦";
+    position: absolute;
+    top: -10px;
+    right: 18px;
+
+    width: 22px;
+    height: 22px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    color: var(--hris-orange);
+    font-size: 16px;
+
+    background: white;
+    border-radius: 50%;
+
+    box-shadow:
+        0 0 14px rgba(253,93,20,.55),
+        0 0 30px rgba(253,93,20,.22);
+
+    animation: hrisSparkle 1.6s ease-in-out infinite;
+}
+
+@keyframes hrisSparkle {
+    0%, 100% {
+        transform: scale(.85) rotate(0deg);
+        opacity: .65;
+    }
+    50% {
+        transform: scale(1.2) rotate(18deg);
+        opacity: 1;
+    }
+}
+
+.navbar .dropdown-item {
+    position: relative;
+    margin: 3px 0;
+    padding: 11px 14px;
+
+    border-radius: 11px;
+
+    color: var(--hris-navy) !important;
+    font-weight: 600;
+
+    transition:
+        transform .2s ease,
+        background .2s ease,
+        color .2s ease,
+        box-shadow .2s ease;
+
+    animation: hrisDropdownItem .3s ease both;
+    animation-delay: calc(var(--dropdown-index, 0) * 45ms);
+}
+
+@keyframes hrisDropdownItem {
+    from {
+        opacity: 0;
+        transform: translateX(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.navbar .dropdown-item:hover {
+    color: white !important;
+    background: linear-gradient(
+        135deg,
+        var(--hris-orange),
+        var(--hris-orange-light)
+    ) !important;
+
+    transform: translateX(5px);
+
+    box-shadow:
+        0 7px 18px rgba(253,93,20,.28);
+}
+
+.navbar .dropdown-item::before {
+    content: "";
+    display: inline-block;
+
+    width: 5px;
+    height: 5px;
+
+    margin-right: 9px;
+
+    vertical-align: middle;
+
+    border-radius: 50%;
+    background: var(--hris-orange);
+
+    transition: transform .2s ease, background .2s ease;
+}
+
+.navbar .dropdown-item:hover::before {
+    background: white;
+    transform: scale(1.6);
+}
+
+/* ---------- HERO ---------- */
+
+#header-carousel {
+    overflow: hidden;
+    position: relative;
+    background: var(--hris-navy);
+}
+
+#header-carousel::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+
+    pointer-events: none;
+
+    background:
+        radial-gradient(
+            circle at 72% 35%,
+            rgba(253,93,20,.12),
+            transparent 32%
+        ),
+        radial-gradient(
+            circle at 15% 80%,
+            rgba(40,90,180,.14),
+            transparent 36%
+        );
+
+    mix-blend-mode: screen;
+    z-index: 2;
+}
+
+#header-carousel .carousel-item {
+    overflow: hidden;
+}
+
+#header-carousel .carousel-item img {
+    transition:
+        transform 2.3s cubic-bezier(.2,.7,.2,1),
+        filter 1.2s ease;
+    transform: scale(1.02);
+    filter: saturate(1.05);
+}
+
+#header-carousel .carousel-item.active img {
+    transform: scale(1.035);
+}
+
+#header-carousel .hris-hero-scene img {
+    animation: hrisHeroZoom 2.2s cubic-bezier(.2,.7,.2,1) both;
+}
+
+@keyframes hrisHeroZoom {
+    from {
+        transform: scale(1.025);
+        filter: saturate(.95);
+    }
+    to {
+        transform: scale(1.06);
+        filter: saturate(1.08);
+    }
+}
+
+/* hero text */
+
+#header-carousel .carousel-caption {
+    z-index: 5;
+}
+
+#header-carousel .carousel-item.active .carousel-caption h1,
+#header-carousel .carousel-item.active .carousel-caption h2,
+#header-carousel .carousel-item.active .carousel-caption p,
+#header-carousel .carousel-item.active .carousel-caption .btn {
+    animation: hrisHeroText .7s cubic-bezier(.2,.8,.2,1) both;
+}
+
+#header-carousel .carousel-item.active .carousel-caption h1,
+#header-carousel .carousel-item.active .carousel-caption h2 {
+    animation-delay: .08s;
+}
+
+#header-carousel .carousel-item.active .carousel-caption p {
+    animation-delay: .16s;
+}
+
+#header-carousel .carousel-item.active .carousel-caption .btn {
+    animation-delay: .24s;
+}
+
+@keyframes hrisHeroText {
+    from {
+        opacity: 0;
+        transform: translateY(18px);
+        filter: blur(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+        filter: blur(0);
+    }
+}
+
+/* carousel indicators */
+
+#header-carousel .carousel-indicators {
+    z-index: 8;
+    gap: 7px;
+}
+
+#header-carousel .carousel-indicators [data-bs-target] {
+    width: 28px;
+    height: 4px;
+
+    margin: 0;
+
+    border: 0;
+    border-radius: 999px;
+
+    opacity: .45;
+
+    transition:
+        width .35s ease,
+        opacity .35s ease,
+        transform .35s ease,
+        background .35s ease;
+}
+
+#header-carousel .carousel-indicators [data-bs-target].active {
+    width: 58px;
+    opacity: 1;
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 0 12px rgba(253,93,20,.7);
+}
+
+/* arrows */
+
+#header-carousel .carousel-control-prev,
+#header-carousel .carousel-control-next {
+    z-index: 8;
+    width: 64px;
+    height: 64px;
+
+    top: auto;
+    bottom: 32px;
+
+    opacity: 1;
+
+    border: 1px solid rgba(255,255,255,.22);
+    border-radius: 50%;
+
+    background: rgba(4,15,40,.30);
+
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+
+    transition:
+        transform .25s ease,
+        background .25s ease,
+        box-shadow .25s ease;
+}
+
+#header-carousel .carousel-control-prev {
+    left: auto;
+    right: 100px;
+}
+
+#header-carousel .carousel-control-next {
+    right: 28px;
+}
+
+#header-carousel .carousel-control-prev:hover,
+#header-carousel .carousel-control-next:hover {
+    background: var(--hris-orange);
+    transform: translateY(-3px) scale(1.05);
+
+    box-shadow:
+        0 10px 28px rgba(253,93,20,.35);
+}
+
+/* ---------- SCROLL REVEAL ---------- */
+
+.hris-reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition:
+        opacity .7s ease,
+        transform .7s cubic-bezier(.2,.8,.2,1);
+}
+
+.hris-reveal.hris-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* ---------- MOBILE ---------- */
+
+@media (max-width: 991.98px) {
+
+    .navbar .dropdown-menu {
+        margin-top: 6px !important;
+        border-radius: 14px !important;
+    }
+
+    #header-carousel .carousel-control-prev,
+    #header-carousel .carousel-control-next {
+        width: 48px;
+        height: 48px;
+        bottom: 20px;
+    }
+
+    #header-carousel .carousel-control-prev {
+        right: 78px;
+    }
+
+    #header-carousel .carousel-control-next {
+        right: 20px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+    }
+}
+
+</style>

@@ -1,7 +1,7 @@
 <!-- pages/dashboard_2/Dashboard_Kinerja.html -->
 {% extends "layout/baseDashboard3.html" %}
 
-{% block title %}- Dashboard Kinerja{% endblock %}
+{% block title %}- Dashboard Pribadi{% endblock %}
 
 {% block content %}
 <div class="nxl-content">
@@ -11,7 +11,7 @@
                 <h5 class="m-b-10">Dashboard</h5>
             </div>
             <ul class="breadcrumb">
-                <li class="breadcrumb-item"><a href="index.html">Dashboard Kinerja</a></li>
+                <li class="breadcrumb-item"><a href="index.html">Dashboard Pribadi</a></li>
             </ul>
         </div>
         <div class="page-header-right ms-auto">
@@ -35,12 +35,129 @@
             <div class="card mb-4">
                 <div class="card-header-custom d-flex justify-content-between align-items-center">
                     <h6 class="mb-0">
-                        <i class="bi bi-people me-2"></i>Dashboard Kinerja tahun 2026
+                        <i class="bi bi-person-circle me-2"></i>Dashboard Pribadi
                     </h6>
                 </div>
             </div>
 
-            <div class="card shadow-sm border-0 mb-4">
+            <!-- ============================================================
+                 PERSONAL CALENDAR
+                 ============================================================ -->
+            <div class="card shadow-sm border-0 mb-4 personal-calendar-card">
+                <div class="personal-calendar-header">
+                    <div class="personal-calendar-title">
+                        <i class="bi bi-calendar3"></i>
+                        <h5>Personal Calendar</h5>
+                    </div>
+
+                    <div class="personal-calendar-navigation">
+                        <div class="personal-calendar-view-switcher">
+                            <button type="button"
+                                class="personal-calendar-view-button active"
+                                id="personalCalendarMonthViewButton">
+                                BULAN
+                            </button>
+                            <button type="button"
+                                class="personal-calendar-view-button"
+                                id="personalCalendarYearViewButton">
+                                TAHUN
+                            </button>
+                        </div>
+
+                        <button type="button"
+                            class="personal-calendar-nav-button"
+                            id="personalCalendarPrev"
+                            title="Bulan sebelumnya">
+                            <i class="bi bi-chevron-left"></i>
+                        </button>
+
+                        <div class="personal-calendar-month-label"
+                            id="personalCalendarMonthLabel">
+                            Memuat...
+                        </div>
+
+                        <button type="button"
+                            class="personal-calendar-nav-button"
+                            id="personalCalendarNext"
+                            title="Bulan berikutnya">
+                            <i class="bi bi-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="personal-calendar-body">
+                    <div id="personalCalendarMonthView">
+
+                    <div class="personal-calendar-weekdays">
+                        <div class="personal-calendar-weekday">Sen</div>
+                        <div class="personal-calendar-weekday">Sel</div>
+                        <div class="personal-calendar-weekday">Rab</div>
+                        <div class="personal-calendar-weekday">Kam</div>
+                        <div class="personal-calendar-weekday">Jum</div>
+                        <div class="personal-calendar-weekday">Sab</div>
+                        <div class="personal-calendar-weekday">Min</div>
+                    </div>
+
+                    <div class="personal-calendar-grid"
+                        id="personalCalendarGrid">
+                        <div class="personal-calendar-loading">
+                            Memuat kalender...
+                        </div>
+                    </div>
+
+                    <div class="personal-calendar-agenda">
+                        <div class="personal-calendar-agenda-header">
+                            <h6 id="personalCalendarAgendaTitle">
+                                Agenda
+                            </h6>
+                            <span class="personal-calendar-agenda-count"
+                                id="personalCalendarAgendaCount">
+                                0 kegiatan
+                            </span>
+                        </div>
+
+                        <div id="personalCalendarAgendaList">
+                            <div class="personal-calendar-empty">
+                                Pilih tanggal untuk melihat agenda.
+                            </div>
+                        </div>
+                    </div>
+
+                    </div>
+
+                    <div id="personalCalendarYearView"
+                        class="personal-calendar-year-view"
+                        style="display:none;">
+                    </div>
+
+                    <div id="personalCalendarYearLegend"
+                        class="personal-calendar-year-legend"
+                        style="display:none;">
+
+                        <span class="personal-calendar-year-legend-item">
+                            <span class="personal-calendar-year-legend-dot dinas-luar"></span>
+                            DINAS LUAR
+                        </span>
+
+                        <span class="personal-calendar-year-legend-item">
+                            <span class="personal-calendar-year-legend-dot cuti"></span>
+                            CUTI
+                        </span>
+
+                        <span class="personal-calendar-year-legend-item">
+                            <span class="personal-calendar-year-legend-dot sakit"></span>
+                            SAKIT
+                        </span>
+
+                        <span class="personal-calendar-year-legend-item">
+                            <span class="personal-calendar-year-legend-dot ijin"></span>
+                            IJIN
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm border-0 mb-4" style="display:none;">
                 <div class="card-header p-0"
                     style="background-color: #EB6831; border-top-left-radius: 12px; border-top-right-radius: 12px; min-height: 50px; display: flex; align-items: center;">
                     <ul class="nav nav-tabs border-0 ps-2" id="skpTab" role="tablist">
@@ -181,6 +298,7 @@
 {% endblock %}
 
 {% block script %}
+<style>#legacy-dashboard-content{display:none!important;}</style>
 <script>
     var options = {
         chart: {
@@ -279,5 +397,671 @@
     );
 
     chart.render();
+</script>
+
+<script>
+(function () {
+    "use strict";
+
+    const monthNames = [
+        "Januari", "Februari", "Maret", "April",
+        "Mei", "Juni", "Juli", "Agustus",
+        "September", "Oktober", "November", "Desember"
+    ];
+
+    const today = new Date();
+
+    let personalCalendarYear = today.getFullYear();
+    let personalCalendarMonth = today.getMonth() + 1;
+    let personalCalendarEvents = [];
+    let personalCalendarSelectedDate =
+        today.getFullYear() + "-" +
+        String(today.getMonth() + 1).padStart(2, "0") + "-" +
+        String(today.getDate()).padStart(2, "0");
+
+    function eventTypeClass(type) {
+        const value = String(type || "").toUpperCase();
+
+        if (value === "CUTI") return "cuti";
+        if (value === "SAKIT") return "sakit";
+        if (value === "IJIN") return "ijin";
+        if (value === "DINAS_LUAR") return "dinas-luar";
+        if (value === "PIKET_SIAGA") return "piket-siaga";
+        if (value === "LIBUR") return "libur";
+        if (value === "WFH") return "wfh";
+
+        return "";
+    }
+
+    function applyPersonalCalendarEventColor(element, event) {
+        if (event && event.color) {
+            element.style.backgroundColor = event.color;
+        }
+    }
+
+    function escapeHtml(value) {
+        return String(value || "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function formatDateRange(event) {
+        if (!event.start) return "";
+
+        if (!event.end || event.start === event.end) {
+            return event.start;
+        }
+
+        return event.start + " s/d " + event.end;
+    }
+
+    function getEventsForDate(dateString) {
+        return personalCalendarEvents.filter(function (event) {
+            return event.start <= dateString &&
+                   event.end >= dateString;
+        });
+    }
+
+    function renderAgenda(dateString) {
+        const title = document.getElementById(
+            "personalCalendarAgendaTitle"
+        );
+        const count = document.getElementById(
+            "personalCalendarAgendaCount"
+        );
+        const list = document.getElementById(
+            "personalCalendarAgendaList"
+        );
+
+        if (!title || !count || !list) return;
+
+        const dateEvents = getEventsForDate(dateString);
+
+        title.textContent = "Agenda " + dateString;
+        count.textContent = dateEvents.length + " kegiatan";
+
+        if (!dateEvents.length) {
+            list.innerHTML =
+                '<div class="personal-calendar-empty">' +
+                'Tidak ada agenda pada tanggal ini.' +
+                '</div>';
+            return;
+        }
+
+        list.innerHTML = dateEvents.map(function (event) {
+            const typeClass = eventTypeClass(event.type);
+
+            let meta = "";
+
+            if (event.location) {
+                meta +=
+                    '<span><i class="bi bi-geo-alt me-1"></i>' +
+                    escapeHtml(event.location) +
+                    '</span>';
+            }
+
+            if (event.no_surat) {
+                meta +=
+                    '<span><i class="bi bi-file-text me-1"></i>' +
+                    escapeHtml(event.no_surat) +
+                    '</span>';
+            }
+
+            return (
+                '<div class="personal-calendar-event ' +
+                typeClass + '">' +
+
+                '<div class="personal-calendar-event-title">' +
+                escapeHtml(event.title) +
+                '</div>' +
+
+                '<div class="personal-calendar-event-description">' +
+                escapeHtml(event.description || "") +
+                '</div>' +
+
+                '<div class="personal-calendar-event-meta">' +
+                '<span><i class="bi bi-calendar-event me-1"></i>' +
+                escapeHtml(formatDateRange(event)) +
+                '</span>' +
+                meta +
+                '</div>' +
+
+                '</div>'
+            );
+        }).join("");
+    }
+
+    function renderCalendar() {
+        const label = document.getElementById(
+            "personalCalendarMonthLabel"
+        );
+        const grid = document.getElementById(
+            "personalCalendarGrid"
+        );
+
+        if (!label || !grid) return;
+
+        label.textContent =
+            monthNames[personalCalendarMonth - 1] +
+            " " +
+            personalCalendarYear;
+
+        grid.innerHTML = "";
+
+        const firstDate = new Date(
+            personalCalendarYear,
+            personalCalendarMonth - 1,
+            1
+        );
+
+        const firstDay = (firstDate.getDay() + 6) % 7;
+
+        const daysInMonth = new Date(
+            personalCalendarYear,
+            personalCalendarMonth,
+            0
+        ).getDate();
+
+        for (let i = 0; i < firstDay; i++) {
+            const empty = document.createElement("div");
+            empty.className = "personal-calendar-day empty";
+            grid.appendChild(empty);
+        }
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            const isoDate =
+                personalCalendarYear + "-" +
+                String(personalCalendarMonth).padStart(2, "0") + "-" +
+                String(day).padStart(2, "0");
+
+            const dayEvents = getEventsForDate(isoDate);
+
+            const cell = document.createElement("div");
+            cell.className = "personal-calendar-day";
+
+            if (
+                isoDate ===
+                today.getFullYear() + "-" +
+                String(today.getMonth() + 1).padStart(2, "0") + "-" +
+                String(today.getDate()).padStart(2, "0")
+            ) {
+                cell.classList.add("today");
+            }
+
+            if (isoDate === personalCalendarSelectedDate) {
+                cell.classList.add("personal-calendar-selected");
+            }
+
+            if (dayEvents.length) {
+                cell.classList.add("has-event");
+
+                const eventTypes = dayEvents.map(function (event) {
+                    return String(event.type || "").toUpperCase();
+                });
+
+                if (eventTypes.includes("DINAS_LUAR")) {
+                    cell.classList.add("has-dinas-luar");
+                } else if (eventTypes.includes("PIKET_SIAGA")) {
+                    cell.classList.add("has-piket-siaga");
+                } else if (eventTypes.includes("CUTI")) {
+                    cell.classList.add("has-cuti");
+                } else if (eventTypes.includes("SAKIT")) {
+                    cell.classList.add("has-sakit");
+                } else if (eventTypes.includes("IJIN")) {
+                    cell.classList.add("has-ijin");
+                } else if (eventTypes.includes("WFH")) {
+                    cell.classList.add("has-wfh");
+                } else if (eventTypes.includes("LIBUR")) {
+                    cell.classList.add("has-libur");
+                }
+            }
+
+            const number = document.createElement("div");
+            number.className = "personal-calendar-day-number";
+            number.textContent = day;
+            cell.appendChild(number);
+
+            if (dayEvents.length) {
+                const dots = document.createElement("div");
+                dots.className = "personal-calendar-event-dots";
+
+                dayEvents.forEach(function (event) {
+                    const dot = document.createElement("span");
+                    dot.className =
+                        "personal-calendar-event-dot " +
+                        eventTypeClass(event.type);
+
+                    applyPersonalCalendarEventColor(dot, event);
+                    dot.title = event.title;
+                    dots.appendChild(dot);
+                });
+
+                cell.appendChild(dots);
+            }
+
+            cell.addEventListener("click", function () {
+                personalCalendarSelectedDate = isoDate;
+                renderCalendar();
+                renderAgenda(isoDate);
+            });
+
+            grid.appendChild(cell);
+        }
+    }
+
+
+    function renderPersonalCalendarYear() {
+        const yearView = document.getElementById(
+            "personalCalendarYearView"
+        );
+
+        if (!yearView) return;
+
+        yearView.innerHTML = "";
+
+        const weekNames = [
+            "Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"
+        ];
+
+        for (let month = 1; month <= 12; month++) {
+            const card = document.createElement("div");
+            card.className =
+                "personal-calendar-year-month";
+
+            const title = document.createElement("div");
+            title.className =
+                "personal-calendar-year-month-title";
+
+            title.textContent =
+                monthNames[month - 1];
+
+            title.addEventListener("click", function () {
+                personalCalendarMonth = month;
+
+                personalCalendarSelectedDate =
+                    personalCalendarYear + "-" +
+                    String(month).padStart(2, "0") +
+                    "-01";
+
+                setPersonalCalendarView("month");
+                loadPersonalCalendar();
+            });
+
+            card.appendChild(title);
+
+            const weekHeader = document.createElement("div");
+            weekHeader.className =
+                "personal-calendar-year-weekdays";
+
+            weekNames.forEach(function (name) {
+                const cell = document.createElement("div");
+                cell.className =
+                    "personal-calendar-year-weekday";
+                cell.textContent = name;
+                weekHeader.appendChild(cell);
+            });
+
+            card.appendChild(weekHeader);
+
+            const daysGrid = document.createElement("div");
+            daysGrid.className =
+                "personal-calendar-year-days";
+
+            const firstDate = new Date(
+                personalCalendarYear,
+                month - 1,
+                1
+            );
+
+            const firstDay =
+                (firstDate.getDay() + 6) % 7;
+
+            const daysInMonth = new Date(
+                personalCalendarYear,
+                month,
+                0
+            ).getDate();
+
+            for (let i = 0; i < firstDay; i++) {
+                const empty =
+                    document.createElement("div");
+
+                empty.className =
+                    "personal-calendar-year-day empty";
+
+                daysGrid.appendChild(empty);
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const isoDate =
+                    personalCalendarYear + "-" +
+                    String(month).padStart(2, "0") + "-" +
+                    String(day).padStart(2, "0");
+
+                const events =
+                    getEventsForDate(isoDate);
+
+                const cell =
+                    document.createElement("div");
+
+                cell.className =
+                    "personal-calendar-year-day";
+
+                const todayIso =
+                    today.getFullYear() + "-" +
+                    String(today.getMonth() + 1).padStart(2, "0") +
+                    "-" +
+                    String(today.getDate()).padStart(2, "0");
+
+                if (isoDate === todayIso) {
+                    cell.classList.add("today");
+                }
+
+                const types = [];
+
+                events.forEach(function (event) {
+                    const type =
+                        String(event.type || "").toUpperCase();
+
+                    if (!types.includes(type)) {
+                        types.push(type);
+                    }
+                });
+
+                if (types.includes("DINAS_LUAR")) {
+                    cell.classList.add("has-dinas-luar");
+                } else if (types.includes("PIKET_SIAGA")) {
+                    cell.classList.add("has-piket-siaga");
+                } else if (types.includes("CUTI")) {
+                    cell.classList.add("has-cuti");
+                } else if (types.includes("SAKIT")) {
+                    cell.classList.add("has-sakit");
+                } else if (types.includes("IJIN")) {
+                    cell.classList.add("has-ijin");
+                } else if (types.includes("WFH")) {
+                    cell.classList.add("has-wfh");
+                } else if (types.includes("LIBUR")) {
+                    cell.classList.add("has-libur");
+                }
+
+                cell.textContent = day;
+
+                if (events.length) {
+                    const dots =
+                        document.createElement("div");
+
+                    dots.className =
+                        "personal-calendar-year-event-dots";
+
+                    events.forEach(function (event) {
+                        const dot =
+                            document.createElement("span");
+
+                        dot.className =
+                            "personal-calendar-year-event-dot " +
+                            eventTypeClass(event.type);
+
+                        applyPersonalCalendarEventColor(dot, event);
+                        dot.title = event.title;
+
+                        dots.appendChild(dot);
+                    });
+
+                    cell.appendChild(dots);
+                }
+
+                cell.addEventListener("click", function () {
+                    personalCalendarMonth = month;
+                    personalCalendarSelectedDate = isoDate;
+
+                    setPersonalCalendarView("month");
+                    loadPersonalCalendar();
+                });
+
+                daysGrid.appendChild(cell);
+            }
+
+            card.appendChild(daysGrid);
+            yearView.appendChild(card);
+        }
+    }
+
+
+    async function loadPersonalCalendarYear() {
+        try {
+            const requests = [];
+
+            for (let month = 1; month <= 12; month++) {
+                requests.push(
+                    fetch(
+                        "/api/calendar/personal?year=" +
+                        personalCalendarYear +
+                        "&month=" +
+                        month,
+                        {
+                            method: "GET",
+                            credentials: "same-origin"
+                        }
+                    ).then(async (response) => {
+                        const result = await response.json();
+
+                        if (
+                            !response.ok ||
+                            result.status !== "success"
+                        ) {
+                            throw new Error(
+                                result.message ||
+                                "Gagal memuat Personal Calendar."
+                            );
+                        }
+
+                        return result.data || [];
+                    })
+                );
+            }
+
+            const monthResults = await Promise.all(requests);
+
+            personalCalendarEvents = monthResults.flat();
+
+            renderPersonalCalendarYear();
+        } catch (error) {
+            console.error(
+                "Gagal memuat Year View Personal Calendar:",
+                error
+            );
+
+            const yearView = document.getElementById(
+                "personalCalendarYearView"
+            );
+
+            if (yearView) {
+                yearView.innerHTML =
+                    '<div class="personal-calendar-loading">' +
+                    'Gagal memuat kalender tahunan.' +
+                    '</div>';
+            }
+        }
+    }
+
+
+    function setPersonalCalendarView(view) {
+        const monthView =
+            document.getElementById(
+                "personalCalendarMonthView"
+            );
+
+        const yearView =
+            document.getElementById(
+                "personalCalendarYearView"
+            );
+
+        const legend =
+            document.getElementById(
+                "personalCalendarYearLegend"
+            );
+
+        const monthButton =
+            document.getElementById(
+                "personalCalendarMonthViewButton"
+            );
+
+        const yearButton =
+            document.getElementById(
+                "personalCalendarYearViewButton"
+            );
+
+        if (
+            !monthView ||
+            !yearView ||
+            !legend ||
+            !monthButton ||
+            !yearButton
+        ) {
+            return;
+        }
+
+        if (view === "year") {
+            monthView.style.display = "none";
+
+            yearView.style.display = "grid";
+            legend.style.display = "flex";
+
+            monthButton.classList.remove("active");
+            yearButton.classList.add("active");
+
+            loadPersonalCalendarYear();
+        } else {
+            monthView.style.display = "block";
+            yearView.style.display = "none";
+            legend.style.display = "none";
+
+            yearButton.classList.remove("active");
+            monthButton.classList.add("active");
+        }
+    }
+
+
+    async function loadPersonalCalendar() {
+        const grid = document.getElementById(
+            "personalCalendarGrid"
+        );
+
+        if (grid) {
+            grid.innerHTML =
+                '<div class="personal-calendar-loading">' +
+                'Memuat kalender...' +
+                '</div>';
+        }
+
+        try {
+            const response = await fetch(
+                "/api/calendar/personal?year=" +
+                personalCalendarYear +
+                "&month=" +
+                personalCalendarMonth,
+                {
+                    method: "GET",
+                    credentials: "same-origin"
+                }
+            );
+
+            const result = await response.json();
+
+            if (!response.ok || result.status !== "success") {
+                throw new Error(
+                    result.message ||
+                    "Gagal memuat Personal Calendar."
+                );
+            }
+
+            personalCalendarEvents = result.data || [];
+
+            const daysInMonth = new Date(
+                personalCalendarYear,
+                personalCalendarMonth,
+                0
+            ).getDate();
+
+            if (
+                personalCalendarSelectedDate.substring(0, 7) !==
+                personalCalendarYear + "-" +
+                String(personalCalendarMonth).padStart(2, "0")
+            ) {
+                personalCalendarSelectedDate =
+                    personalCalendarYear + "-" +
+                    String(personalCalendarMonth).padStart(2, "0") +
+                    "-01";
+            }
+
+            renderCalendar();
+            renderAgenda(personalCalendarSelectedDate);
+
+        } catch (error) {
+            console.error(error);
+
+            if (grid) {
+                grid.innerHTML =
+                    '<div class="personal-calendar-empty">' +
+                    escapeHtml(error.message) +
+                    '</div>';
+            }
+        }
+    }
+
+    document.getElementById(
+        "personalCalendarPrev"
+    ).addEventListener("click", function () {
+        personalCalendarMonth--;
+
+        if (personalCalendarMonth < 1) {
+            personalCalendarMonth = 12;
+            personalCalendarYear--;
+        }
+
+        personalCalendarSelectedDate =
+            personalCalendarYear + "-" +
+            String(personalCalendarMonth).padStart(2, "0") +
+            "-01";
+
+        loadPersonalCalendar();
+    });
+
+    document.getElementById(
+        "personalCalendarNext"
+    ).addEventListener("click", function () {
+        personalCalendarMonth++;
+
+        if (personalCalendarMonth > 12) {
+            personalCalendarMonth = 1;
+            personalCalendarYear++;
+        }
+
+        personalCalendarSelectedDate =
+            personalCalendarYear + "-" +
+            String(personalCalendarMonth).padStart(2, "0") +
+            "-01";
+
+        loadPersonalCalendar();
+    });
+
+    document.getElementById(
+        "personalCalendarMonthViewButton"
+    ).addEventListener("click", function () {
+        setPersonalCalendarView("month");
+    });
+
+    document.getElementById(
+        "personalCalendarYearViewButton"
+    ).addEventListener("click", function () {
+        setPersonalCalendarView("year");
+    });
+
+    loadPersonalCalendar();
+
+})();
 </script>
 {% endblock %}

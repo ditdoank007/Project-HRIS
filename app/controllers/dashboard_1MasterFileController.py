@@ -14,6 +14,7 @@ from app.models.classModel import MfClass
 from app.models.pegawaiModel import Pegawai
 from app.models.unitKerjaModel import MfUnitKerja
 from app.models.kalenderModel import MfKalender
+from app.models.googleCalendarConfigModel import GoogleCalendarConfig
 from app.models.potModel import MfPot
 from app.models.jamKerjaModel import MfJamKerja
 from app.models.jabatanModel import MfJabatan
@@ -864,20 +865,199 @@ def master_kalender():
     """Render halaman Master File Master Kalender."""
     return render_template('pages/dashboard_1/Master File Master Kalender.html')
 
+def _get_google_calendar_config():
+    """Ambil konfigurasi Google Calendar aktif dari database."""
+    return (
+        GoogleCalendarConfig.query
+        .filter(GoogleCalendarConfig.IS_ACTIVE == 'Y')
+        .order_by(GoogleCalendarConfig.ID.desc())
+        .first()
+    )
+
+
+def get_google_calendar_config():
+    """Ambil konfigurasi Google Calendar aktif tanpa membocorkan API key."""
+    config = _get_google_calendar_config()
+
+    if config is None:
+        return jsonify({
+            'status': 'success',
+            'configured': False,
+            'data': None
+        })
+
+    return jsonify({
+        'status': 'success',
+        'configured': True,
+        'data': {
+            'id': config.ID,
+            'google_email': config.GOOGLE_EMAIL,
+            'calendar_id': config.CALENDAR_ID,
+            'api_key_configured': bool(config.API_KEY),
+            'is_active': config.IS_ACTIVE,
+            'last_sync': (
+                config.LAST_SYNC.isoformat()
+                if config.LAST_SYNC else None
+            ),
+            'sync_status': config.SYNC_STATUS,
+            'sync_message': config.SYNC_MESSAGE
+        }
+    })
+
+
+def test_google_calendar_connection():
+    """Test koneksi ke Google Calendar menggunakan konfigurasi tersimpan."""
+    config = _get_google_calendar_config()
+
+    if config is None:
+        return jsonify({
+            'status': 'error',
+            'message': 'Konfigurasi Google Calendar belum tersedia.'
+        }), 400
+
+    if not config.API_KEY:
+        return jsonify({
+            'status': 'error',
+            'message': 'API Key belum tersedia.'
+        }), 400
+
+    calendar_id = quote(config.CALENDAR_ID, safe='')
+
+    url = (
+        'https://www.googleapis.com/calendar/v3/calendars/'
+        f'{calendar_id}/events'
+    )
+
+    params = {
+        'key': config.API_KEY,
+        'maxResults': 1,
+        'singleEvents': 'true'
+    }
+
+    try:
+        resp = requests.get(url, params=params, timeout=10)
+
+        if resp.ok:
+            config.SYNC_STATUS = 'SUCCESS'
+            config.SYNC_MESSAGE = 'Koneksi Google Calendar berhasil.'
+            config.LAST_SYNC = datetime.utcnow()
+            config.UPDATE_BY = session.get('nip', 'system')
+            config.UPDATE_DATE = datetime.utcnow()
+            db.session.commit()
+
+            return jsonify({
+                'status': 'success',
+                'message': 'Koneksi Google Calendar berhasil.'
+            })
+
+        message = resp.json().get('error', {}).get(
+            'message',
+            f'HTTP {resp.status_code}'
+        )
+
+        config.SYNC_STATUS = 'FAILED'
+        config.SYNC_MESSAGE = message[:500]
+        config.LAST_SYNC = datetime.utcnow()
+        db.session.commit()
+
+        return jsonify({
+            'status': 'error',
+            'message': message
+        }), 400
+
+    except requests.RequestException as e:
+        config.SYNC_STATUS = 'FAILED'
+        config.SYNC_MESSAGE = str(e)[:500]
+        config.LAST_SYNC = datetime.utcnow()
+        db.session.commit()
+
+        return jsonify({
+            'status': 'error',
+            'message': 'Gagal menghubungi Google Calendar.'
+        }), 502
+
+
+def save_google_calendar_config():
+    """Simpan konfigurasi Google Calendar."""
+    payload = request.get_json(silent=True) or {}
+
+    google_email = str(
+        payload.get('google_email', '')
+    ).strip() or None
+
+    calendar_id = str(
+        payload.get('calendar_id', '')
+    ).strip()
+
+    api_key = str(
+        payload.get('api_key', '')
+    ).strip()
+
+    if not calendar_id:
+        return jsonify({
+            'status': 'error',
+            'message': 'Calendar ID wajib diisi.'
+        }), 400
+
+    config = _get_google_calendar_config()
+
+    if config is None:
+        if not api_key:
+            return jsonify({
+                'status': 'error',
+                'message': 'API Key wajib diisi untuk konfigurasi baru.'
+            }), 400
+
+        config = GoogleCalendarConfig(
+            GOOGLE_EMAIL=google_email,
+            CALENDAR_ID=calendar_id,
+            API_KEY=api_key,
+            IS_ACTIVE='Y',
+            CREATED_BY=session.get('nip', 'system'),
+            CREATED_DATE=datetime.utcnow(),
+            UPDATE_BY=session.get('nip', 'system'),
+            UPDATE_DATE=datetime.utcnow()
+        )
+
+        db.session.add(config)
+
+    else:
+        config.GOOGLE_EMAIL = google_email
+        config.CALENDAR_ID = calendar_id
+
+        if api_key:
+            config.API_KEY = api_key
+
+        config.IS_ACTIVE = 'Y'
+        config.UPDATE_BY = session.get('nip', 'system')
+        config.UPDATE_DATE = datetime.utcnow()
+
+    db.session.commit()
+
+    return jsonify({
+        'status': 'success',
+        'message': 'Konfigurasi Google Calendar berhasil disimpan.',
+        'api_key_configured': bool(config.API_KEY)
+    })
+
+
 def _get_indonesian_holidays(tahun):
     """
     Ambil daftar hari libur nasional Indonesia untuk 1 tahun tertentu
     dari Google Calendar (public holiday calendar).
     Return: dict { date(YYYY, M, D): "Nama Hari Libur" }
     """
-    api_key = current_app.config.get('GOOGLE_CALENDAR_API_KEY')
-    if not api_key:
-        # Tanpa API key: kalender tetap dibuat, hanya Sabtu/Minggu yang
-        # otomatis ditandai libur — tanggal merah nasional di-skip.
+    config = _get_google_calendar_config()
+
+    if config is None or not config.API_KEY or not config.CALENDAR_ID:
+        # Tanpa konfigurasi Google Calendar: kalender tetap dibuat,
+        # hanya Sabtu/Minggu yang otomatis ditandai libur.
         return {}
 
+    api_key = config.API_KEY
+
     calendar_id = quote(
-        GOOGLE_ID_HOLIDAY_CALENDAR_ID,
+        config.CALENDAR_ID,
         safe=''
     )
 
@@ -955,8 +1135,15 @@ def create_kalender_tahun():
             ))
             inserted += 1
         else:
-            row.IS_LIBUR = is_libur
-            row.KET = ket
+            # Hari libur dari Google Calendar / weekend selalu menjadi LIBUR.
+            # WFH manual yang sudah tersimpan harus dipertahankan pada hari kerja.
+            if holiday_name or is_weekend:
+                row.IS_LIBUR = is_libur
+                row.KET = ket
+            elif str(row.KET or '').strip().upper() != 'WFH':
+                row.IS_LIBUR = 'N'
+                row.KET = None
+
             row.UPDATE_BY = current_nip
             row.UPDATE_DATE = now
             updated += 1
@@ -970,7 +1157,11 @@ def create_kalender_tahun():
         'tahun': tahun,
         'inserted': inserted,
         'updated': updated,
-        'holiday_source_available': bool(current_app.config.get('GOOGLE_CALENDAR_API_KEY')),
+        'holiday_source_available': bool(
+            _get_google_calendar_config()
+            and _get_google_calendar_config().API_KEY
+            and _get_google_calendar_config().CALENDAR_ID
+        ),
     })
 
 

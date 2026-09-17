@@ -164,6 +164,144 @@
     padding: 22px 24px 28px;
 }
 
+/* ============================================================
+   CALENDAR VIEW SWITCHER
+   ============================================================ */
+
+.calendar-view-switcher {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 18px;
+}
+
+.calendar-view-button {
+    border: 1px solid #e6e8ea;
+    background: #fff;
+    color: #697177;
+    border-radius: 9px;
+    padding: 9px 16px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.calendar-view-button:hover {
+    border-color: #f36b2c;
+    color: #f36b2c;
+}
+
+.calendar-view-button.active {
+    background: #f36b2c;
+    color: #fff;
+    border-color: #f36b2c;
+}
+
+
+/* ============================================================
+   YEAR VIEW
+   ============================================================ */
+
+.year-view-container {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.year-month-card {
+    border: 1px solid #eee;
+    border-radius: 12px;
+    background: #fff;
+    overflow: hidden;
+}
+
+.year-month-title {
+    padding: 10px 12px;
+    border-bottom: 1px solid #eee;
+    font-size: 13px;
+    font-weight: 700;
+    color: #263238;
+    cursor: pointer;
+}
+
+.year-month-title:hover {
+    color: #f36b2c;
+}
+
+.year-week-header,
+.year-month-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+}
+
+.year-week-header span {
+    padding: 6px 2px;
+    text-align: center;
+    font-size: 9px;
+    font-weight: 700;
+    color: #9aa0a5;
+}
+
+.year-day {
+    min-height: 27px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: #4d555a;
+    border-radius: 5px;
+    margin: 1px;
+}
+
+.year-day.empty {
+    visibility: hidden;
+}
+
+.year-day.holiday {
+    color: #d93025;
+    font-weight: 700;
+    background: #fff1f0;
+}
+
+.year-day.wfh {
+    color: #5f6368;
+    font-weight: 700;
+    background: #f1f3f4;
+}
+
+.year-day.holiday.wfh {
+    color: #d93025;
+    background: #fff1f0;
+}
+
+
+/* ============================================================
+   RESPONSIVE YEAR VIEW
+   ============================================================ */
+
+@media (max-width: 900px) {
+
+    .year-view-container {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+}
+
+@media (max-width: 560px) {
+
+    .calendar-view-switcher {
+        width: 100%;
+    }
+
+    .calendar-view-button {
+        flex: 1;
+    }
+
+    .year-view-container {
+        grid-template-columns: 1fr;
+    }
+
+}
+
 .month-selector {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
@@ -486,6 +624,44 @@
     color: #fff;
 }
 
+#googleCalendarConfigModal .calendar-modal {
+    max-width: 620px;
+    background: #ffffff;
+    opacity: 1;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+}
+
+#googleCalendarConfigModal small {
+    display: block;
+    margin-top: 6px;
+    color: #8a8f94;
+    line-height: 1.5;
+}
+
+#googleCalendarConfigModal .keterangan-wrapper {
+    margin-bottom: 16px;
+}
+
+#googleCalendarConfigModal .keterangan-wrapper > label {
+    display: block;
+    margin-bottom: 7px;
+    font-weight: 600;
+}
+
+.google-calendar-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.google-calendar-status-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+
 .loading-state,
 .empty-state {
     padding: 36px;
@@ -579,7 +755,7 @@
                         class="year-button"
                         id="yearButton"
                     >
-                        <span id="selectedYear">2026</span>
+                        <span id="selectedYear"></span>
                         <i class="fas fa-chevron-down"></i>
                     </button>
 
@@ -595,8 +771,17 @@
                     class="generate-button"
                     id="generateCalendarButton"
                 >
-                    <i class="fas fa-calendar-plus"></i>
-                    Buat Kalender
+                    <i class="fas fa-sync-alt"></i>
+                    UPDATE NOW
+                </button>
+
+                <button
+                    type="button"
+                    class="generate-button"
+                    id="googleCalendarConfigButton"
+                >
+                    <i class="fab fa-google"></i>
+                    Google Calendar
                 </button>
 
             </div>
@@ -606,13 +791,39 @@
 
         <div class="calendar-body">
 
+            <div class="calendar-view-switcher">
+                <button
+                    type="button"
+                    class="calendar-view-button active"
+                    id="monthViewButton"
+                >
+                    <i class="fas fa-calendar-alt"></i>
+                    BULAN
+                </button>
+
+                <button
+                    type="button"
+                    class="calendar-view-button"
+                    id="yearViewButton"
+                >
+                    <i class="fas fa-calendar"></i>
+                    TAHUN
+                </button>
+            </div>
+
+
             <div
-                class="month-selector"
-                id="monthSelector"
-            ></div>
+                class="month-view-container"
+                id="monthViewContainer"
+            >
+
+                <div
+                    class="month-selector"
+                    id="monthSelector"
+                ></div>
 
 
-            <div class="selected-month-header">
+                <div class="selected-month-header">
 
                 <h4 id="selectedMonthTitle">
                     -
@@ -628,17 +839,27 @@
             </div>
 
 
-            <div
-                class="day-list"
-                id="dayList"
-            >
+                <div
+                    class="day-list"
+                    id="dayList"
+                >
                 <div class="loading-state">
                     Memuat kalender...
                 </div>
             </div>
 
 
-            <div class="legend">
+            </div>
+
+
+            <div
+                class="year-view-container"
+                id="yearViewContainer"
+                style="display:none;"
+            ></div>
+
+
+                <div class="legend">
 
                 <span class="legend-item">
                     <span class="legend-dot work"></span>
@@ -685,11 +906,139 @@
 
 
 <div
-    class="modal-backdrop"
+    class="hris-modal-backdrop"
+    id="googleCalendarConfigModal"
+>
+    <div class="hris-modal">
+        <div class="modal-header">
+            <h4>Google Calendar Configuration</h4>
+
+            <button
+                type="button"
+                class="modal-close"
+                id="googleCalendarConfigCloseButton"
+            >
+                &times;
+            </button>
+        </div>
+
+        <div class="modal-body">
+
+            <div class="keterangan-wrapper">
+                <label for="googleCalendarEmail">
+                    Google Email / Account
+                </label>
+
+                <input
+                    type="email"
+                    id="googleCalendarEmail"
+                    class="keterangan-input"
+                    maxlength="255"
+                    placeholder="contoh@gmail.com"
+                >
+            </div>
+
+            <div class="keterangan-wrapper">
+                <label for="googleCalendarId">
+                    Calendar ID
+                </label>
+
+                <input
+                    type="text"
+                    id="googleCalendarId"
+                    class="keterangan-input"
+                    maxlength="255"
+                    placeholder="Calendar ID Google Calendar"
+                >
+            </div>
+
+            <div class="keterangan-wrapper">
+                <label for="googleCalendarApiKey">
+                    API Key
+                </label>
+
+                <input
+                    type="password"
+                    id="googleCalendarApiKey"
+                    class="keterangan-input"
+                    maxlength="255"
+                    autocomplete="new-password"
+                    placeholder="Masukkan API Key"
+                >
+
+                <small>
+                    API Key tersimpan di server dan tidak ditampilkan kembali.
+                    Kosongkan saat menyimpan jika ingin mempertahankan API Key lama.
+                </small>
+            </div>
+
+            <div class="keterangan-wrapper">
+                <label>Status</label>
+
+                <div id="googleCalendarStatus">
+                    Belum dikonfigurasi
+                </div>
+            </div>
+
+            <div class="keterangan-wrapper">
+                <label>Last Sync</label>
+
+                <div id="googleCalendarLastSync">-</div>
+            </div>
+
+            <div class="keterangan-wrapper">
+                <label>Sync Status</label>
+
+                <div id="googleCalendarSyncStatus">-</div>
+            </div>
+
+            <div class="keterangan-wrapper">
+                <label>Sync Message</label>
+
+                <div id="googleCalendarSyncMessage">-</div>
+            </div>
+
+        </div>
+
+        <div class="modal-footer">
+
+            <button
+                type="button"
+                class="modal-cancel"
+                id="googleCalendarConfigCancelButton"
+            >
+                Tutup
+            </button>
+
+            <button
+                type="button"
+                class="modal-cancel"
+                id="googleCalendarTestButton"
+            >
+                <i class="fas fa-plug"></i>
+                Test Connection
+            </button>
+
+            <button
+                type="button"
+                class="modal-save"
+                id="googleCalendarConfigSaveButton"
+            >
+                <i class="fas fa-save"></i>
+                Simpan Konfigurasi
+            </button>
+
+        </div>
+    </div>
+</div>
+
+
+<div
+    class="hris-modal-backdrop"
     id="editModal"
 >
 
-    <div class="calendar-modal">
+    <div class="hris-modal">
 
         <div class="modal-header">
 
@@ -825,6 +1174,7 @@
     const LIST_URL = "/api/kalender/list";
     const SAVE_URL = "/api/kalender/save";
     const GENERATE_URL = "/api/kalender/generate";
+    const GOOGLE_CONFIG_URL = "/api/calendar/google-config";
 
 
     const monthNames = [
@@ -899,6 +1249,292 @@
 
     const keteranganInput =
         document.getElementById("keteranganInput");
+
+
+    const googleCalendarConfigButton =
+        document.getElementById("googleCalendarConfigButton");
+
+    const googleCalendarConfigModal =
+        document.getElementById("googleCalendarConfigModal");
+
+    const googleCalendarConfigCloseButton =
+        document.getElementById("googleCalendarConfigCloseButton");
+
+    const googleCalendarConfigCancelButton =
+        document.getElementById("googleCalendarConfigCancelButton");
+
+    const googleCalendarEmail =
+        document.getElementById("googleCalendarEmail");
+
+    const googleCalendarId =
+        document.getElementById("googleCalendarId");
+
+    const googleCalendarApiKey =
+        document.getElementById("googleCalendarApiKey");
+
+    const googleCalendarConfigSaveButton =
+        document.getElementById("googleCalendarConfigSaveButton");
+
+    const googleCalendarStatus =
+        document.getElementById("googleCalendarStatus");
+
+    const googleCalendarLastSync =
+        document.getElementById("googleCalendarLastSync");
+
+    const googleCalendarSyncStatus =
+        document.getElementById("googleCalendarSyncStatus");
+
+    const googleCalendarSyncMessage =
+        document.getElementById("googleCalendarSyncMessage");
+
+
+    function openGoogleCalendarConfig() {
+        googleCalendarConfigModal.classList.add("show");
+        loadGoogleCalendarConfig();
+    }
+
+
+    function closeGoogleCalendarConfig() {
+        googleCalendarConfigModal.classList.remove("show");
+    }
+
+
+    async function loadGoogleCalendarConfig() {
+
+        googleCalendarStatus.textContent =
+            "Memuat konfigurasi...";
+
+        try {
+
+            const response =
+                await fetch(
+                    GOOGLE_CONFIG_URL,
+                    {
+                        method: "GET",
+                        credentials: "same-origin"
+                    }
+                );
+
+            const result =
+                await response.json();
+
+            if (!response.ok || result.status !== "success") {
+                throw new Error(
+                    result.message ||
+                    "Gagal mengambil konfigurasi Google Calendar."
+                );
+            }
+
+            if (!result.configured || !result.data) {
+
+                googleCalendarEmail.value = "";
+                googleCalendarId.value = "";
+                googleCalendarApiKey.value = "";
+
+                googleCalendarStatus.textContent =
+                    "Belum dikonfigurasi";
+
+                googleCalendarLastSync.textContent = "-";
+                googleCalendarSyncStatus.textContent = "-";
+                googleCalendarSyncMessage.textContent = "-";
+
+                return;
+            }
+
+            const data = result.data;
+
+            googleCalendarEmail.value =
+                data.google_email || "";
+
+            googleCalendarId.value =
+                data.calendar_id || "";
+
+            googleCalendarApiKey.value = "";
+
+            googleCalendarStatus.textContent =
+                data.is_active === "Y"
+                    ? "Aktif"
+                    : "Tidak aktif";
+
+            googleCalendarLastSync.textContent =
+                data.last_sync || "-";
+
+            googleCalendarSyncStatus.textContent =
+                data.sync_status || "-";
+
+            googleCalendarSyncMessage.textContent =
+                data.sync_message || "-";
+
+        } catch (error) {
+
+            console.error(error);
+
+            googleCalendarStatus.textContent =
+                "Gagal memuat konfigurasi.";
+
+        }
+    }
+
+
+    async function testGoogleCalendarConnection() {
+        const button = document.getElementById(
+            "googleCalendarTestButton"
+        );
+
+        button.disabled = true;
+        button.innerHTML =
+            '<i class="fas fa-spinner fa-spin"></i> Testing...';
+
+        try {
+            const response = await fetch(
+                "/api/calendar/google-test",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                }
+            );
+
+            const result = await response.json();
+
+            alert(result.message || "Test Connection selesai.");
+
+            await loadGoogleCalendarConfig();
+        } catch (error) {
+            alert("Test Connection gagal.");
+            console.error(error);
+        } finally {
+            button.disabled = false;
+            button.innerHTML =
+                '<i class="fas fa-plug"></i> Test Connection';
+        }
+    }
+
+    async function saveGoogleCalendarConfig() {
+
+        const googleEmail =
+            googleCalendarEmail.value.trim();
+
+        const calendarId =
+            googleCalendarId.value.trim();
+
+        const apiKey =
+            googleCalendarApiKey.value.trim();
+
+        if (!calendarId) {
+            alert("Calendar ID wajib diisi.");
+            googleCalendarId.focus();
+            return;
+        }
+
+        if (!apiKey) {
+            alert(
+                "API Key wajib diisi untuk konfigurasi baru."
+            );
+            googleCalendarApiKey.focus();
+            return;
+        }
+
+        googleCalendarConfigSaveButton.disabled = true;
+
+        try {
+
+            const response =
+                await fetch(
+                    GOOGLE_CONFIG_URL,
+                    {
+                        method: "POST",
+                        credentials: "same-origin",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            google_email: googleEmail,
+                            calendar_id: calendarId,
+                            api_key: apiKey
+                        })
+                    }
+                );
+
+            const result =
+                await response.json();
+
+            if (!response.ok || result.status !== "success") {
+                throw new Error(
+                    result.message ||
+                    "Gagal menyimpan konfigurasi Google Calendar."
+                );
+            }
+
+            alert(
+                result.message ||
+                "Konfigurasi Google Calendar berhasil disimpan."
+            );
+
+            googleCalendarApiKey.value = "";
+
+            await loadGoogleCalendarConfig();
+
+        } catch (error) {
+
+            console.error(error);
+
+            alert(
+                error.message ||
+                "Gagal menyimpan konfigurasi Google Calendar."
+            );
+
+        } finally {
+
+            googleCalendarConfigSaveButton.disabled = false;
+
+        }
+    }
+
+
+    googleCalendarConfigButton.addEventListener(
+        "click",
+        openGoogleCalendarConfig
+    );
+
+
+    googleCalendarConfigCloseButton.addEventListener(
+        "click",
+        closeGoogleCalendarConfig
+    );
+
+
+    googleCalendarConfigCancelButton.addEventListener(
+        "click",
+        closeGoogleCalendarConfig
+    );
+
+
+    googleCalendarTestButton.addEventListener(
+        "click",
+        testGoogleCalendarConnection
+    );
+
+
+    googleCalendarConfigSaveButton.addEventListener(
+        "click",
+        saveGoogleCalendarConfig
+    );
+
+
+    googleCalendarConfigModal.addEventListener(
+        "click",
+        function (event) {
+
+            if (
+                event.target === googleCalendarConfigModal
+            ) {
+                closeGoogleCalendarConfig();
+            }
+
+        }
+    );
 
 
     function renderYears() {
@@ -1030,6 +1666,240 @@
 
         }
     );
+
+
+    function renderYearView() {
+
+        const yearView =
+            document.getElementById("yearViewContainer");
+
+        yearView.innerHTML = "";
+
+        const weekNames = [
+            "Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"
+        ];
+
+        for (let month = 0; month < 12; month++) {
+
+            const card =
+                document.createElement("div");
+
+            card.className = "year-month-card";
+
+
+            const title =
+                document.createElement("div");
+
+            title.className = "year-month-title";
+
+            title.textContent =
+                monthNames[month];
+
+            title.addEventListener(
+                "click",
+                function () {
+
+                    selectedMonth = month;
+
+                    document
+                        .getElementById("monthViewButton")
+                        .click();
+
+                    renderMonths();
+                    renderDays();
+
+                }
+            );
+
+            card.appendChild(title);
+
+
+            const weekHeader =
+                document.createElement("div");
+
+            weekHeader.className =
+                "year-week-header";
+
+            weekNames.forEach(
+                function (name) {
+
+                    const cell =
+                        document.createElement("span");
+
+                    cell.textContent = name;
+
+                    weekHeader.appendChild(cell);
+
+                }
+            );
+
+            card.appendChild(weekHeader);
+
+
+            const daysGrid =
+                document.createElement("div");
+
+            daysGrid.className =
+                "year-month-days";
+
+
+            const firstDate =
+                new Date(
+                    selectedYear,
+                    month,
+                    1
+                );
+
+            const firstDay =
+                (firstDate.getDay() + 6) % 7;
+
+            const daysInMonth =
+                new Date(
+                    selectedYear,
+                    month + 1,
+                    0
+                ).getDate();
+
+
+            for (let i = 0; i < firstDay; i++) {
+
+                const empty =
+                    document.createElement("div");
+
+                empty.className =
+                    "year-day empty";
+
+                daysGrid.appendChild(empty);
+
+            }
+
+
+            for (
+                let day = 1;
+                day <= daysInMonth;
+                day++
+            ) {
+
+                const isoDate =
+                    selectedYear +
+                    "-" +
+                    String(month + 1).padStart(2, "0") +
+                    "-" +
+                    String(day).padStart(2, "0");
+
+
+                const originalRow =
+                    calendarData.find(
+                        function (row) {
+                            return row.tanggal_iso === isoDate;
+                        }
+                    );
+
+
+                const cell =
+                    document.createElement("div");
+
+                cell.className =
+                    "year-day";
+
+
+                if (originalRow) {
+
+                    const row =
+                        getEffectiveRow(
+                            originalRow
+                        );
+
+                    const isHoliday =
+                        row.is_libur === "Y";
+
+                    const isWfh =
+                        row.ket === "WFH";
+
+
+                    if (isHoliday) {
+                        cell.classList.add("holiday");
+                    }
+
+                    if (isWfh) {
+                        cell.classList.add("wfh");
+                    }
+
+                    cell.title =
+                        row.ket ||
+                        (
+                            isHoliday
+                                ? "Hari Libur"
+                                : ""
+                        );
+
+                }
+
+
+                cell.textContent = day;
+
+                daysGrid.appendChild(cell);
+
+            }
+
+
+            card.appendChild(daysGrid);
+
+            yearView.appendChild(card);
+
+        }
+
+    }
+
+
+    function setCalendarView(view) {
+
+        const monthView =
+            document.getElementById(
+                "monthViewContainer"
+            );
+
+        const yearView =
+            document.getElementById(
+                "yearViewContainer"
+            );
+
+        const monthButton =
+            document.getElementById(
+                "monthViewButton"
+            );
+
+        const yearButton =
+            document.getElementById(
+                "yearViewButton"
+            );
+
+
+        if (view === "year") {
+
+            monthView.style.display = "none";
+            yearView.style.display = "grid";
+
+            monthButton.classList.remove("active");
+            yearButton.classList.add("active");
+
+            renderYearView();
+
+        } else {
+
+            monthView.style.display = "block";
+            yearView.style.display = "none";
+
+            yearButton.classList.remove("active");
+            monthButton.classList.add("active");
+
+            renderMonths();
+            renderDays();
+            renderYearView();
+
+        }
+
+    }
 
 
     function renderMonths() {
@@ -1168,6 +2038,26 @@
             .replaceAll("'", "&#039;");
 
     }
+
+
+    document
+        .getElementById("monthViewButton")
+        .addEventListener(
+            "click",
+            function () {
+                setCalendarView("month");
+            }
+        );
+
+
+    document
+        .getElementById("yearViewButton")
+        .addEventListener(
+            "click",
+            function () {
+                setCalendarView("year");
+            }
+        );
 
 
     function renderDays() {
