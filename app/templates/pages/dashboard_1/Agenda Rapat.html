@@ -437,6 +437,23 @@
 </div>
 
 <script>
+/*
+ * Bootstrap theme HRIS applies filter: blur(3px) to .nxl-container
+ * while body.modal-open. Because this page lives inside .nxl-container,
+ * the modal itself would also become blurred.
+ *
+ * Move the modal elements to <body> so only the page behind the modal
+ * receives the theme's blur effect.
+ */
+document.addEventListener("DOMContentLoaded", function () {
+    ["modalRapat", "modalDetailRapat"].forEach(function (id) {
+        const modal = document.getElementById(id);
+        if (modal && modal.parentElement !== document.body) {
+            document.body.appendChild(modal);
+        }
+    });
+});
+
 (function () {
     const search = document.getElementById("searchRapat");
     const status = document.getElementById("filterStatusRapat");
