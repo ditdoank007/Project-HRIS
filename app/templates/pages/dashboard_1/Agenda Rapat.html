@@ -1,0 +1,507 @@
+{% extends "layout/baseDashboard1.html" %}
+
+{% block title %}- Agenda Rapat{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='static/css/agenda-rapat.css') }}">
+
+<div class="nxl-content rapat-page">
+    <div class="page-header">
+        <div class="page-header-left d-flex align-items-center">
+            <div class="page-header-title">
+                <h5 class="m-b-10">AGENDA</h5>
+            </div>
+            <ul class="breadcrumb">
+                <li class="breadcrumb-item active">Rapat</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="container-fluid">
+
+            <div class="rapat-hero">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="hero-icon">
+                            <i class="feather-users"></i>
+                        </div>
+                        <div>
+                            <div class="small text-white-50 mb-1">HRIS Reborn</div>
+                            <h4 class="mb-1 text-white">Agenda Rapat</h4>
+                            <div class="small text-white-50">
+                                Kelola jadwal rapat, peserta, absensi QR, dan hasil rapat.
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn btn-light" data-bs-toggle="modal" data-bs-target="#modalRapat">
+                        <i class="feather-plus me-1"></i> Buat Rapat
+                    </button>
+                </div>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="card rapat-stat">
+                        <div class="card-body d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="text-muted small">Rapat Hari Ini</div>
+                                <div class="fs-4 fw-bold mt-1">2</div>
+                            </div>
+                            <div class="stat-icon"><i class="feather-calendar"></i></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="card rapat-stat">
+                        <div class="card-body d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="text-muted small">Terjadwal</div>
+                                <div class="fs-4 fw-bold mt-1">8</div>
+                            </div>
+                            <div class="stat-icon"><i class="feather-clock"></i></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="card rapat-stat">
+                        <div class="card-body d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="text-muted small">Selesai</div>
+                                <div class="fs-4 fw-bold mt-1">14</div>
+                            </div>
+                            <div class="stat-icon"><i class="feather-check-circle"></i></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="card rapat-stat">
+                        <div class="card-body d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="text-muted small">Batal</div>
+                                <div class="fs-4 fw-bold mt-1">1</div>
+                            </div>
+                            <div class="stat-icon"><i class="feather-x-circle"></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header rapat-toolbar d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div>
+                        <h6 class="mb-1">Daftar Rapat</h6>
+                        <small class="text-muted">Agenda yang dibuat melalui HRIS Reborn.</small>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <select id="filterStatusRapat" class="form-select form-select-sm" style="width: 150px;">
+                            <option value="">Semua Status</option>
+                            <option value="TERJADWAL">Terjadwal</option>
+                            <option value="SELESAI">Selesai</option>
+                            <option value="BATAL">Batal</option>
+                            <option value="DRAFT">Draft</option>
+                        </select>
+                        <input id="searchRapat" type="search" class="form-control form-control-sm"
+                               placeholder="Cari rapat..." style="width: 190px;">
+                    </div>
+                </div>
+
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 rapat-table" id="tabelRapat">
+                            <thead>
+                                <tr>
+                                    <th class="ps-3">Tanggal / Waktu</th>
+                                    <th>Agenda Rapat</th>
+                                    <th>Pimpinan</th>
+                                    <th>Peserta</th>
+                                    <th>Status</th>
+                                    <th class="text-end pe-3">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr data-status="TERJADWAL">
+                                    <td class="ps-3">
+                                        <strong>29 Sep 2026</strong>
+                                        <div class="rapat-meta">09:00 - 10:30 WIB</div>
+                                    </td>
+                                    <td>
+                                        <div class="rapat-title">Rapat Koordinasi Operasional</div>
+                                        <div class="rapat-meta"><i class="feather-map-pin me-1"></i> Ruang Rapat Utama</div>
+                                    </td>
+                                    <td>Dityo Mahendro</td>
+                                    <td>6 orang</td>
+                                    <td><span class="rapat-badge rapat-badge-terjadwal">TERJADWAL</span></td>
+                                    <td class="text-end pe-3">
+                                        <button class="btn btn-sm btn-light" onclick="lihatRapat('Rapat Koordinasi Operasional')">
+                                            <i class="feather-eye"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#modalRapat">
+                                            <i class="feather-edit-2"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr data-status="TERJADWAL">
+                                    <td class="ps-3">
+                                        <strong>30 Sep 2026</strong>
+                                        <div class="rapat-meta">13:30 - 15:00 WIB</div>
+                                    </td>
+                                    <td>
+                                        <div class="rapat-title">Evaluasi Program Kerja</div>
+                                        <div class="rapat-meta"><i class="feather-map-pin me-1"></i> Ruang Rapat Bidang</div>
+                                    </td>
+                                    <td>Agus Setiawan</td>
+                                    <td>4 orang</td>
+                                    <td><span class="rapat-badge rapat-badge-terjadwal">TERJADWAL</span></td>
+                                    <td class="text-end pe-3">
+                                        <button class="btn btn-sm btn-light" onclick="lihatRapat('Evaluasi Program Kerja')">
+                                            <i class="feather-eye"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#modalRapat">
+                                            <i class="feather-edit-2"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr data-status="SELESAI">
+                                    <td class="ps-3">
+                                        <strong>25 Sep 2026</strong>
+                                        <div class="rapat-meta">08:30 - 10:00 WIB</div>
+                                    </td>
+                                    <td>
+                                        <div class="rapat-title">Rapat Persiapan Kegiatan</div>
+                                        <div class="rapat-meta"><i class="feather-map-pin me-1"></i> Ruang Kepala Kantor</div>
+                                    </td>
+                                    <td>Rudi Hartono</td>
+                                    <td>8 orang</td>
+                                    <td><span class="rapat-badge rapat-badge-selesai">SELESAI</span></td>
+                                    <td class="text-end pe-3">
+                                        <button class="btn btn-sm btn-light" onclick="lihatRapat('Rapat Persiapan Kegiatan')">
+                                            <i class="feather-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr data-status="BATAL">
+                                    <td class="ps-3">
+                                        <strong>24 Sep 2026</strong>
+                                        <div class="rapat-meta">14:00 - 15:00 WIB</div>
+                                    </td>
+                                    <td>
+                                        <div class="rapat-title">Rapat Evaluasi Internal</div>
+                                        <div class="rapat-meta"><i class="feather-map-pin me-1"></i> Ruang Rapat Utama</div>
+                                    </td>
+                                    <td>Hendra Wijaya</td>
+                                    <td>5 orang</td>
+                                    <td><span class="rapat-badge rapat-badge-batal">BATAL</span></td>
+                                    <td class="text-end pe-3">
+                                        <button class="btn btn-sm btn-light" onclick="lihatRapat('Rapat Evaluasi Internal')">
+                                            <i class="feather-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- MODAL BUAT / EDIT RAPAT -->
+<div class="modal fade" id="modalRapat" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title"><i class="feather-users me-2"></i>Buat / Edit Rapat</h5>
+                    <small class="text-muted">Prototype UI — belum menyimpan ke database.</small>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="alert alert-info py-2">
+                    <i class="feather-info me-1"></i>
+                    Peserta tidak wajib diisi. RSVP dan nomor surat/SPRIN tidak diperlukan.
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-12 col-lg-8">
+                        <label class="form-label">Judul / Agenda Rapat <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" placeholder="Contoh: Rapat Koordinasi Operasional">
+                    </div>
+                    <div class="col-12 col-lg-4">
+                        <label class="form-label">Status</label>
+                        <select class="form-select">
+                            <option>DRAFT</option>
+                            <option>TERJADWAL</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-md-4">
+                        <label class="form-label">Tanggal <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" value="2026-09-29">
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <label class="form-label">Mulai <span class="text-danger">*</span></label>
+                        <input type="time" class="form-control" value="09:00">
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <label class="form-label">Selesai</label>
+                        <input type="time" class="form-control" value="10:30">
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label">Tempat</label>
+                        <input type="text" class="form-control" placeholder="Ruang Rapat Utama / Online">
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label">Pimpinan / Organizer <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" placeholder="Ketik nama pimpinan rapat">
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label">Peserta</label>
+                        <div class="input-group">
+                            <input id="inputPeserta" type="text" class="form-control"
+                                   placeholder="Ketik nama peserta lalu tekan Enter">
+                            <button id="btnTambahPeserta" class="btn btn-outline-primary" type="button">
+                                <i class="feather-plus"></i> Tambah
+                            </button>
+                        </div>
+                        <div id="daftarPeserta" class="rapat-participants mt-2"></div>
+                        <small class="text-muted">Boleh lebih dari satu orang atau dikosongkan.</small>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label">Keterangan / Agenda Pembahasan</label>
+                        <textarea class="form-control" rows="4"
+                                  placeholder="Tuliskan pokok pembahasan rapat..."></textarea>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="card border">
+                            <div class="card-body">
+                                <h6 class="mb-2"><i class="feather-shield me-1"></i> Pemeriksaan Konflik</h6>
+                                <div class="alert alert-success mb-0 py-2">
+                                    <i class="feather-check-circle me-1"></i>
+                                    Status pemeriksaan akan menampilkan benturan Dinas Luar, Piket, Cuti/Sakit/Ijin.
+                                    Rapat berada pada layer paling bawah.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="card border">
+                            <div class="card-body">
+                                <h6 class="mb-2"><i class="feather-file-text me-1"></i> Hasil Rapat / Notulen</h6>
+                                <textarea class="form-control mb-2" rows="3"
+                                          placeholder="Bisa langsung ketik ringkasan/notulen beberapa kalimat..."></textarea>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="feather-paperclip"></i></span>
+                                    <input type="file" class="form-control"
+                                           accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                                </div>
+                                <small class="text-muted">Upload notulen/dokumen atau cukup tuliskan ringkasannya.</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-4">
+
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <div class="small text-muted mb-1">Alur Rapat</div>
+                        <div class="rapat-workflow">
+                            <span class="rapat-step active">DRAFT</span>
+                            <span class="rapat-step-arrow">→</span>
+                            <span class="rapat-step">TERJADWAL</span>
+                            <span class="rapat-step-arrow">→</span>
+                            <span class="rapat-step">RAPAT SELESAI</span>
+                            <span class="rapat-step-arrow">→</span>
+                            <span class="rapat-step">CALENDAR</span>
+                        </div>
+                    </div>
+                    <div class="small text-muted">
+                        <i class="feather-check-circle me-1"></i>
+                        Setelah <strong>Rapat Selesai</strong>, agenda peserta masuk Calendar.
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Tutup</button>
+                <button type="button" class="btn btn-primary" onclick="simpanPrototypeRapat()">
+                    <i class="feather-save me-1"></i> Simpan Agenda
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DETAIL RAPAT -->
+<div class="modal fade" id="modalDetailRapat" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title">Detail Rapat</h5>
+                    <small class="text-muted" id="detailJudul">-</small>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="row g-4">
+                    <div class="col-12 col-lg-7">
+                        <div class="rapat-detail-item">
+                            <div class="rapat-detail-label">Agenda</div>
+                            <div class="rapat-detail-value" id="detailAgenda">-</div>
+                        </div>
+                        <div class="rapat-detail-item">
+                            <div class="rapat-detail-label">Tanggal / Waktu</div>
+                            <div class="rapat-detail-value">29 September 2026, 09:00 - 10:30 WIB</div>
+                        </div>
+                        <div class="rapat-detail-item">
+                            <div class="rapat-detail-label">Tempat</div>
+                            <div class="rapat-detail-value">Ruang Rapat Utama</div>
+                        </div>
+                        <div class="rapat-detail-item">
+                            <div class="rapat-detail-label">Pimpinan</div>
+                            <div class="rapat-detail-value">Dityo Mahendro</div>
+                        </div>
+                        <div class="rapat-detail-item">
+                            <div class="rapat-detail-label">Peserta</div>
+                            <div class="rapat-detail-value">6 orang</div>
+                        </div>
+
+                        <div class="card border mt-4">
+                            <div class="card-body">
+                                <h6><i class="feather-file-text me-1"></i> Notulen / Hasil Rapat</h6>
+                                <p class="text-muted small mb-0">
+                                    Ringkasan hasil rapat akan tampil di area ini setelah Rapat Selesai.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-lg-5">
+                        <div class="card border">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6 class="mb-0"><i class="feather-grid me-1"></i> Absensi Rapat</h6>
+                                    <span class="rapat-badge rapat-badge-terjadwal">QR READY</span>
+                                </div>
+                                <div class="rapat-qr-box">
+                                    <div>
+                                        <i class="feather-grid" style="font-size: 64px;"></i>
+                                        <div class="fw-semibold mt-3">QR Code Absensi</div>
+                                        <div class="text-muted small mt-1">
+                                            QR akan digenerate setelah agenda rapat dibuat.
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-grid mt-3">
+                                    <button class="btn btn-outline-primary" type="button">
+                                        <i class="feather-maximize me-1"></i> Tampilkan QR Fullscreen
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-warning mt-3 mb-0">
+                            <i class="feather-info me-1"></i>
+                            RSVP tidak digunakan. Kehadiran dicatat melalui scan QR.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Tutup</button>
+                <button type="button" class="btn btn-outline-secondary">
+                    <i class="feather-edit-2 me-1"></i> Ubah Jadwal
+                </button>
+                <button type="button" class="btn btn-outline-danger">
+                    <i class="feather-x-circle me-1"></i> Batalkan Rapat
+                </button>
+                <button type="button" class="btn btn-success">
+                    <i class="feather-check-circle me-1"></i> Rapat Selesai
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const search = document.getElementById("searchRapat");
+    const status = document.getElementById("filterStatusRapat");
+    const rows = Array.from(document.querySelectorAll("#tabelRapat tbody tr"));
+
+    function filterRows() {
+        const q = (search?.value || "").toLowerCase().trim();
+        const s = status?.value || "";
+
+        rows.forEach(row => {
+            const text = row.innerText.toLowerCase();
+            const rowStatus = row.dataset.status || "";
+            row.style.display = ((!q || text.includes(q)) && (!s || rowStatus === s)) ? "" : "none";
+        });
+    }
+
+    search?.addEventListener("input", filterRows);
+    status?.addEventListener("change", filterRows);
+
+    const pesertaInput = document.getElementById("inputPeserta");
+    const pesertaList = document.getElementById("daftarPeserta");
+    const peserta = [];
+
+    function renderPeserta() {
+        pesertaList.innerHTML = peserta.map((nama, index) =>
+            '<span class="rapat-participant-chip">' +
+            '<i class="feather-user"></i>' +
+            nama +
+            '<button type="button" onclick="window.hapusPeserta(' + index + ')" aria-label="Hapus">×</button>' +
+            '</span>'
+        ).join("");
+    }
+
+    window.tambahPeserta = function () {
+        const nama = (pesertaInput.value || "").trim();
+        if (!nama) return;
+        peserta.push(nama);
+        pesertaInput.value = "";
+        renderPeserta();
+        pesertaInput.focus();
+    };
+
+    window.hapusPeserta = function (index) {
+        peserta.splice(index, 1);
+        renderPeserta();
+    };
+
+    document.getElementById("btnTambahPeserta")?.addEventListener("click", window.tambahPeserta);
+    pesertaInput?.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            window.tambahPeserta();
+        }
+    });
+
+    window.simpanPrototypeRapat = function () {
+        alert("UI prototype: form belum disimpan ke database. Tahap berikutnya kita sambungkan ke backend Rapat.");
+    };
+
+    window.lihatRapat = function (judul) {
+        document.getElementById("detailJudul").textContent = judul;
+        document.getElementById("detailAgenda").textContent = judul;
+        const modal = new bootstrap.Modal(document.getElementById("modalDetailRapat"));
+        modal.show();
+    };
+})();
+</script>
+{% endblock %}
