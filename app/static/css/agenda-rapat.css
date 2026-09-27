@@ -1,0 +1,179 @@
+/* app/static/css/agenda-rapat.css */
+
+.rapat-page .page-header-title h5 {
+    font-weight: 600;
+}
+
+.rapat-hero {
+    border-radius: 14px;
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+    color: #fff;
+    padding: 22px 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, .12);
+}
+
+.rapat-hero .hero-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,.12);
+    font-size: 24px;
+}
+
+.rapat-stat {
+    border: 0;
+    border-radius: 12px;
+    box-shadow: 0 4px 18px rgba(15,23,42,.07);
+    height: 100%;
+}
+
+.rapat-stat .stat-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #f1f5f9;
+}
+
+.rapat-toolbar {
+    border-radius: 12px 12px 0 0;
+}
+
+.rapat-table th {
+    white-space: nowrap;
+    font-size: .76rem;
+    text-transform: uppercase;
+    letter-spacing: .02em;
+    color: #64748b;
+    background: #f8fafc;
+}
+
+.rapat-table td {
+    vertical-align: middle;
+    font-size: .84rem;
+}
+
+.rapat-title {
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.rapat-meta {
+    color: #64748b;
+    font-size: .76rem;
+}
+
+.rapat-badge {
+    border-radius: 999px;
+    padding: 5px 10px;
+    font-size: .72rem;
+    font-weight: 600;
+}
+
+.rapat-badge-terjadwal { background: #dbeafe; color: #1d4ed8; }
+.rapat-badge-selesai { background: #dcfce7; color: #15803d; }
+.rapat-badge-batal { background: #fee2e2; color: #b91c1c; }
+.rapat-badge-draft { background: #f1f5f9; color: #475569; }
+
+.rapat-participants {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.rapat-participant-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: #f1f5f9;
+    border-radius: 999px;
+    padding: 5px 9px;
+    font-size: .74rem;
+    color: #334155;
+}
+
+.rapat-participant-chip button {
+    border: 0;
+    background: transparent;
+    color: #64748b;
+    padding: 0;
+    line-height: 1;
+}
+
+.rapat-workflow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.rapat-step {
+    padding: 7px 11px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: #475569;
+    font-size: .74rem;
+    font-weight: 600;
+}
+
+.rapat-step.active {
+    background: #2563eb;
+    color: #fff;
+}
+
+.rapat-step-arrow {
+    color: #94a3b8;
+}
+
+.rapat-qr-box {
+    min-height: 230px;
+    border: 1px dashed #cbd5e1;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: #f8fafc;
+}
+
+.rapat-detail-item {
+    padding: 10px 0;
+    border-bottom: 1px solid #eef2f7;
+}
+
+.rapat-detail-item:last-child {
+    border-bottom: 0;
+}
+
+.rapat-detail-label {
+    font-size: .72rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    margin-bottom: 2px;
+}
+
+.rapat-detail-value {
+    color: #334155;
+    font-weight: 500;
+}
+
+@media (max-width: 767.98px) {
+    .rapat-hero {
+        padding: 18px;
+    }
+
+    .rapat-toolbar .btn {
+        width: 100%;
+    }
+
+    .rapat-table {
+        min-width: 920px;
+    }
+}
