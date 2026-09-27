@@ -101,6 +101,8 @@ from app.controllers.calendarController import (
     api_calendar_category,
 )
 
+from app.controllers.dashboard_1AgendaController import agenda_rapat
+
 from app.controllers.dashboard_1DataAbsensiController import (
     data_absensi_non_finger, data_absensi_normalisasi_finger, data_absensi_impor_file, data_absensi_pegawai_manual,
     data_absensi_pegawai_lembur_manual, data_absensi_trace_tunjangan, data_absensi_trace, cari_absensi_non_finger,
@@ -1844,6 +1846,17 @@ def view_kirim_kritik_saran():
 @login_required
 def view_kirim_forum_media_informasi():
     return kirim_forum_media_informasi()
+
+# ============================================================
+# AGENDA RAPAT
+# UI prototype — backend akan disambungkan pada tahap berikutnya.
+# ============================================================
+
+@main.route('/agenda/rapat')
+@login_required
+def view_agenda_rapat():
+    return agenda_rapat()
+
 
 # ============================================================
 # HRIS REBORN CALENDAR API
