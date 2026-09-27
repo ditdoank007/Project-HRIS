@@ -1,0 +1,257 @@
+/* app/static/css/agenda-disposisi.css */
+
+.disposisi-page .page-header-title h5 {
+    font-weight: 600;
+}
+
+.disposisi-hero {
+    border-radius: 14px;
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+    color: #fff;
+    padding: 22px 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, .12);
+}
+
+.disposisi-hero .hero-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,.12);
+    font-size: 24px;
+}
+
+.disposisi-stat {
+    border: 0;
+    border-radius: 12px;
+    box-shadow: 0 4px 18px rgba(15,23,42,.07);
+    height: 100%;
+}
+
+.disposisi-stat .stat-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #f1f5f9;
+}
+
+.disposisi-toolbar {
+    border-radius: 12px 12px 0 0;
+}
+
+.disposisi-table th {
+    white-space: nowrap;
+    font-size: .76rem;
+    text-transform: uppercase;
+    letter-spacing: .02em;
+    color: #64748b;
+    background: #f8fafc;
+}
+
+.disposisi-table td {
+    vertical-align: middle;
+    font-size: .84rem;
+}
+
+.disposisi-title {
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.disposisi-meta {
+    color: #64748b;
+    font-size: .76rem;
+}
+
+.disposisi-badge {
+    border-radius: 999px;
+    padding: 5px 10px;
+    font-size: .72rem;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.disposisi-badge-dl {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.disposisi-badge-non-dl {
+    background: #eef2f7;
+    color: #475569;
+}
+
+.disposisi-badge-aktif {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.disposisi-badge-selesai {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.disposisi-badge-batal {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.disposisi-document {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: #475569;
+    font-size: .76rem;
+}
+
+.disposisi-document i {
+    color: #2563eb;
+}
+
+.disposisi-participants {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.disposisi-participant-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: #f1f5f9;
+    border-radius: 999px;
+    padding: 5px 9px;
+    font-size: .74rem;
+    color: #334155;
+}
+
+.disposisi-participant-chip button {
+    border: 0;
+    background: transparent;
+    color: #64748b;
+    padding: 0;
+    line-height: 1;
+}
+
+.disposisi-type-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 12px 14px;
+    height: 100%;
+    cursor: pointer;
+    transition: .15s ease;
+}
+
+.disposisi-type-card:hover {
+    border-color: #94a3b8;
+}
+
+.disposisi-type-card.active {
+    border-color: #2563eb;
+    background: #eff6ff;
+}
+
+.disposisi-type-card input {
+    margin-right: 7px;
+}
+
+.disposisi-blue-info {
+    border-left: 4px solid #2563eb;
+    background: #eff6ff;
+    color: #1e40af;
+}
+
+.disposisi-detail-item {
+    padding: 10px 0;
+    border-bottom: 1px solid #eef2f7;
+}
+
+.disposisi-detail-item:last-child {
+    border-bottom: 0;
+}
+
+.disposisi-detail-label {
+    font-size: .72rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    margin-bottom: 2px;
+}
+
+.disposisi-detail-value {
+    color: #334155;
+    font-weight: 500;
+}
+
+.disposisi-flow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.disposisi-flow-step {
+    padding: 7px 11px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: #475569;
+    font-size: .74rem;
+    font-weight: 600;
+}
+
+.disposisi-flow-step.active {
+    background: #2563eb;
+    color: #fff;
+}
+
+.disposisi-flow-arrow {
+    color: #94a3b8;
+}
+
+.disposisi-document-box {
+    border: 1px dashed #cbd5e1;
+    border-radius: 10px;
+    padding: 16px;
+    background: #f8fafc;
+}
+
+.disposisi-document-file {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #fff;
+}
+
+.disposisi-document-file .file-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #eff6ff;
+    color: #2563eb;
+}
+
+@media (max-width: 767.98px) {
+    .disposisi-hero {
+        padding: 18px;
+    }
+
+    .disposisi-toolbar .btn {
+        width: 100%;
+    }
+
+    .disposisi-table {
+        min-width: 1100px;
+    }
+}
