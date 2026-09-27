@@ -1,0 +1,579 @@
+{% extends "layout/baseDashboard1.html" %}
+
+{% block title %}- Disposisi{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='static/css/agenda-disposisi.css') }}">
+
+<div class="nxl-content disposisi-page">
+    <div class="page-header">
+        <div class="page-header-left d-flex align-items-center">
+            <div class="page-header-title">
+                <h5 class="m-b-10">AGENDA</h5>
+            </div>
+            <ul class="breadcrumb">
+                <li class="breadcrumb-item active">Disposisi</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="container-fluid">
+
+            <div class="disposisi-hero">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="hero-icon">
+                            <i class="feather-send"></i>
+                        </div>
+                        <div>
+                            <div class="small text-white-50 mb-1">HRIS Reborn</div>
+                            <h4 class="mb-1 text-white">Agenda Disposisi</h4>
+                            <div class="small text-white-50">
+                                Kelola agenda penugasan pegawai berdasarkan Surat Masuk atau SPRIN.
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn btn-light" data-bs-toggle="modal" data-bs-target="#modalDisposisi">
+                        <i class="feather-plus me-1"></i> Buat Disposisi
+                    </button>
+                </div>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="card disposisi-stat">
+                        <div class="card-body d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="text-muted small">Total Agenda</div>
+                                <div class="fs-4 fw-bold mt-1">18</div>
+                            </div>
+                            <div class="stat-icon"><i class="feather-list"></i></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="card disposisi-stat">
+                        <div class="card-body d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="text-muted small">DL</div>
+                                <div class="fs-4 fw-bold mt-1">10</div>
+                            </div>
+                            <div class="stat-icon"><i class="feather-briefcase"></i></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="card disposisi-stat">
+                        <div class="card-body d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="text-muted small">NON DL</div>
+                                <div class="fs-4 fw-bold mt-1">8</div>
+                            </div>
+                            <div class="stat-icon"><i class="feather-calendar"></i></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="card disposisi-stat">
+                        <div class="card-body d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="text-muted small">Hari Ini</div>
+                                <div class="fs-4 fw-bold mt-1">3</div>
+                            </div>
+                            <div class="stat-icon"><i class="feather-clock"></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header disposisi-toolbar d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div>
+                        <h6 class="mb-1">Daftar Disposisi</h6>
+                        <small class="text-muted">Agenda penugasan pegawai.</small>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <select id="filterJenisDisposisi" class="form-select form-select-sm" style="width: 130px;">
+                            <option value="">Semua Jenis</option>
+                            <option value="DL">DL</option>
+                            <option value="NON DL">NON DL</option>
+                        </select>
+                        <select id="filterStatusDisposisi" class="form-select form-select-sm" style="width: 145px;">
+                            <option value="">Semua Status</option>
+                            <option value="AKTIF">Aktif</option>
+                            <option value="SELESAI">Selesai</option>
+                            <option value="BATAL">Batal</option>
+                        </select>
+                        <input id="searchDisposisi" type="search" class="form-control form-control-sm"
+                               placeholder="Cari kegiatan..." style="width: 190px;">
+                    </div>
+                </div>
+
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 disposisi-table" id="tabelDisposisi">
+                            <thead>
+                                <tr>
+                                    <th class="ps-3">Tanggal / Jam</th>
+                                    <th>Kegiatan</th>
+                                    <th>Lokasi</th>
+                                    <th>Penerima</th>
+                                    <th>Dokumen</th>
+                                    <th>Jenis</th>
+                                    <th>Status</th>
+                                    <th class="text-end pe-3">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr data-jenis="DL" data-status="AKTIF">
+                                    <td class="ps-3">
+                                        <strong>29 Sep 2026</strong>
+                                        <div class="disposisi-meta">08:00 WIB</div>
+                                    </td>
+                                    <td>
+                                        <div class="disposisi-title">Survey Lapangan</div>
+                                        <div class="disposisi-meta">SPRIN kegiatan lapangan</div>
+                                    </td>
+                                    <td>
+                                        <i class="feather-map-pin me-1"></i> Sidoarjo
+                                    </td>
+                                    <td>4 orang</td>
+                                    <td>
+                                        <span class="disposisi-document">
+                                            <i class="feather-paperclip"></i> SPRIN_123.pdf
+                                        </span>
+                                    </td>
+                                    <td><span class="disposisi-badge disposisi-badge-dl">DL</span></td>
+                                    <td><span class="disposisi-badge disposisi-badge-aktif">AKTIF</span></td>
+                                    <td class="text-end pe-3">
+                                        <button class="btn btn-sm btn-light" onclick="lihatDisposisi('Survey Lapangan')">
+                                            <i class="feather-eye"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#modalDisposisi">
+                                            <i class="feather-edit-2"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+
+                                <tr data-jenis="NON DL" data-status="AKTIF">
+                                    <td class="ps-3">
+                                        <strong>30 Sep 2026</strong>
+                                        <div class="disposisi-meta">13:00 WIB</div>
+                                    </td>
+                                    <td>
+                                        <div class="disposisi-title">Koordinasi Data Operasional</div>
+                                        <div class="disposisi-meta">Surat masuk nomor 456/2026</div>
+                                    </td>
+                                    <td>
+                                        <i class="feather-map-pin me-1"></i> Kantor SAR Surabaya
+                                    </td>
+                                    <td>2 orang</td>
+                                    <td>
+                                        <span class="disposisi-document">
+                                            <i class="feather-paperclip"></i> Surat_456.pdf
+                                        </span>
+                                    </td>
+                                    <td><span class="disposisi-badge disposisi-badge-non-dl">NON DL</span></td>
+                                    <td><span class="disposisi-badge disposisi-badge-aktif">AKTIF</span></td>
+                                    <td class="text-end pe-3">
+                                        <button class="btn btn-sm btn-light" onclick="lihatDisposisi('Koordinasi Data Operasional')">
+                                            <i class="feather-eye"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#modalDisposisi">
+                                            <i class="feather-edit-2"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+
+                                <tr data-jenis="DL" data-status="SELESAI">
+                                    <td class="ps-3">
+                                        <strong>25 Sep 2026</strong>
+                                        <div class="disposisi-meta">07:30 WIB</div>
+                                    </td>
+                                    <td>
+                                        <div class="disposisi-title">Pengamanan Kegiatan</div>
+                                        <div class="disposisi-meta">Surat tugas kegiatan</div>
+                                    </td>
+                                    <td>
+                                        <i class="feather-map-pin me-1"></i> Gedung Negara
+                                    </td>
+                                    <td>6 orang</td>
+                                    <td>
+                                        <span class="disposisi-document">
+                                            <i class="feather-paperclip"></i> Surat_Tugas.pdf
+                                        </span>
+                                    </td>
+                                    <td><span class="disposisi-badge disposisi-badge-dl">DL</span></td>
+                                    <td><span class="disposisi-badge disposisi-badge-selesai">SELESAI</span></td>
+                                    <td class="text-end pe-3">
+                                        <button class="btn btn-sm btn-light" onclick="lihatDisposisi('Pengamanan Kegiatan')">
+                                            <i class="feather-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+
+                                <tr data-jenis="NON DL" data-status="BATAL">
+                                    <td class="ps-3">
+                                        <strong>24 Sep 2026</strong>
+                                        <div class="disposisi-meta">14:00 WIB</div>
+                                    </td>
+                                    <td>
+                                        <div class="disposisi-title">Rapat Koordinasi Internal</div>
+                                        <div class="disposisi-meta">Surat masuk nomor 789/2026</div>
+                                    </td>
+                                    <td>
+                                        <i class="feather-map-pin me-1"></i> Kantor Pusat
+                                    </td>
+                                    <td>5 orang</td>
+                                    <td>
+                                        <span class="disposisi-document text-muted">Belum ada</span>
+                                    </td>
+                                    <td><span class="disposisi-badge disposisi-badge-non-dl">NON DL</span></td>
+                                    <td><span class="disposisi-badge disposisi-badge-batal">BATAL</span></td>
+                                    <td class="text-end pe-3">
+                                        <button class="btn btn-sm btn-light" onclick="lihatDisposisi('Rapat Koordinasi Internal')">
+                                            <i class="feather-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert disposisi-blue-info mt-3 mb-0">
+                <i class="feather-info me-1"></i>
+                <strong>DL</strong> akan menjadi sumber agenda penugasan yang nantinya dapat diintegrasikan ke rekap absensi.
+                Integrasi absensi belum diaktifkan pada prototype ini.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL BUAT / EDIT DISPOSISI -->
+<div class="modal fade" id="modalDisposisi" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title"><i class="feather-send me-2"></i>Buat / Edit Disposisi</h5>
+                    <small class="text-muted">Prototype UI — belum menyimpan ke database.</small>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="alert alert-info py-2">
+                    <i class="feather-info me-1"></i>
+                    Dokumen Surat Masuk atau SPRIN dapat diupload sekarang atau menyusul melalui Edit.
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label">Nama Kegiatan <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" placeholder="Contoh: Survey Lapangan">
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label">Hari / Tanggal <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" value="2026-09-29">
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label">Jam <span class="text-danger">*</span></label>
+                        <input type="time" class="form-control" value="08:00">
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label">Lokasi Kegiatan <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" placeholder="Contoh: Sidoarjo / Kantor SAR Surabaya">
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label">Pegawai Penerima <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input id="inputPenerimaDisposisi" type="text" class="form-control"
+                                   placeholder="Cari nama pegawai...">
+                            <button id="btnTambahPenerimaDisposisi" class="btn btn-outline-primary" type="button">
+                                <i class="feather-plus"></i> Tambah
+                            </button>
+                        </div>
+                        <div id="daftarPenerimaDisposisi" class="disposisi-participants mt-2"></div>
+                        <small class="text-muted">Satu atau lebih pegawai dapat dipilih.</small>
+                    </div>
+
+                    <div class="col-12 col-lg-6">
+                        <label class="form-label">Jenis Disposisi <span class="text-danger">*</span></label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="disposisi-type-card active" id="cardDL">
+                                    <input type="radio" name="jenisDisposisi" value="DL" checked>
+                                    <strong>DL</strong>
+                                    <div class="small text-muted mt-1">Agenda penugasan / dinas luar.</div>
+                                </label>
+                            </div>
+                            <div class="col-6">
+                                <label class="disposisi-type-card" id="cardNonDL">
+                                    <input type="radio" name="jenisDisposisi" value="NON DL">
+                                    <strong>NON DL</strong>
+                                    <div class="small text-muted mt-1">Agenda tanpa potongan uang makan.</div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-lg-6">
+                        <label class="form-label">Sumber Dokumen</label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="disposisi-type-card active" id="cardSurat">
+                                    <input type="radio" name="sumberDokumen" value="SURAT MASUK" checked>
+                                    <strong>Surat Masuk</strong>
+                                    <div class="small text-muted mt-1">Dokumen surat masuk.</div>
+                                </label>
+                            </div>
+                            <div class="col-6">
+                                <label class="disposisi-type-card" id="cardSprin">
+                                    <input type="radio" name="sumberDokumen" value="SPRIN">
+                                    <strong>SPRIN</strong>
+                                    <div class="small text-muted mt-1">Dokumen SPRIN kegiatan.</div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label">Surat / SPRIN</label>
+                        <div class="disposisi-document-box">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="feather-paperclip"></i></span>
+                                <input type="file" class="form-control"
+                                       accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                            </div>
+                            <small class="text-muted d-block mt-2">
+                                Dokumen boleh diupload sekarang atau menyusul melalui Edit lalu SIMPAN.
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="alert alert-primary mb-0 py-2">
+                            <i class="feather-calendar me-1"></i>
+                            Pegawai penerima akan mendapatkan agenda Disposisi. Integrasi ke rekap absensi
+                            belum diaktifkan pada tahap prototype.
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-4">
+
+                <div>
+                    <div class="small text-muted mb-1">Konsep sumber data</div>
+                    <div class="disposisi-flow">
+                        <span class="disposisi-flow-step active">DISPOSISI</span>
+                        <span class="disposisi-flow-arrow">→</span>
+                        <span class="disposisi-flow-step">AGENDA PEGAWAI</span>
+                        <span class="disposisi-flow-arrow">→</span>
+                        <span class="disposisi-flow-step">REKAP ABSENSI</span>
+                    </div>
+                    <small class="text-muted">
+                        Tahap Rekap Absensi belum diaktifkan dan akan dikerjakan setelah sumber data Disposisi stabil.
+                    </small>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary" onclick="simpanPrototypeDisposisi()">
+                    <i class="feather-save me-1"></i> Simpan Disposisi
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DETAIL DISPOSISI -->
+<div class="modal fade" id="modalDetailDisposisi" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title">Detail Disposisi</h5>
+                    <small class="text-muted" id="detailDisposisiJudul">-</small>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-12 col-lg-7">
+                        <div class="disposisi-detail-item">
+                            <div class="disposisi-detail-label">Nama Kegiatan</div>
+                            <div class="disposisi-detail-value" id="detailDisposisiKegiatan">-</div>
+                        </div>
+                        <div class="disposisi-detail-item">
+                            <div class="disposisi-detail-label">Hari / Tanggal / Jam</div>
+                            <div class="disposisi-detail-value">29 September 2026, 08:00 WIB</div>
+                        </div>
+                        <div class="disposisi-detail-item">
+                            <div class="disposisi-detail-label">Lokasi</div>
+                            <div class="disposisi-detail-value">Sidoarjo</div>
+                        </div>
+                        <div class="disposisi-detail-item">
+                            <div class="disposisi-detail-label">Pegawai Penerima</div>
+                            <div class="disposisi-detail-value">Budi, Andi, Siti, Joko</div>
+                        </div>
+                        <div class="disposisi-detail-item">
+                            <div class="disposisi-detail-label">Jenis</div>
+                            <div class="disposisi-detail-value">
+                                <span class="disposisi-badge disposisi-badge-dl">DL</span>
+                            </div>
+                        </div>
+                        <div class="disposisi-detail-item">
+                            <div class="disposisi-detail-label">Sumber Dokumen</div>
+                            <div class="disposisi-detail-value">SPRIN</div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-lg-5">
+                        <div class="card border">
+                            <div class="card-body">
+                                <h6><i class="feather-file-text me-1"></i> Surat / SPRIN</h6>
+                                <div class="disposisi-document-file mt-3">
+                                    <span class="file-icon"><i class="feather-file"></i></span>
+                                    <div class="flex-grow-1">
+                                        <div class="fw-semibold small">SPRIN_123.pdf</div>
+                                        <div class="text-muted" style="font-size:.72rem;">Dokumen terlampir</div>
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-primary" type="button">
+                                        <i class="feather-download"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert disposisi-blue-info mt-3 mb-0">
+                            <i class="feather-info me-1"></i>
+                            DL ditampilkan sebagai agenda berwarna <strong>BIRU</strong>.
+                            Integrasi pemotongan uang makan belum diaktifkan pada prototype.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Tutup</button>
+                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalDisposisi">
+                    <i class="feather-edit-2 me-1"></i> Edit Disposisi
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+/*
+ * Theme HRIS applies filter: blur(3px) to .nxl-container when modal opens.
+ * Move page modals to <body> so the modal itself remains sharp.
+ */
+document.addEventListener("DOMContentLoaded", function () {
+    ["modalDisposisi", "modalDetailDisposisi"].forEach(function (id) {
+        const modal = document.getElementById(id);
+        if (modal && modal.parentElement !== document.body) {
+            document.body.appendChild(modal);
+        }
+    });
+
+    const search = document.getElementById("searchDisposisi");
+    const jenis = document.getElementById("filterJenisDisposisi");
+    const status = document.getElementById("filterStatusDisposisi");
+    const rows = Array.from(document.querySelectorAll("#tabelDisposisi tbody tr"));
+
+    function filterRows() {
+        const q = (search?.value || "").toLowerCase().trim();
+        const j = jenis?.value || "";
+        const s = status?.value || "";
+
+        rows.forEach(row => {
+            const text = row.innerText.toLowerCase();
+            const rowJenis = row.dataset.jenis || "";
+            const rowStatus = row.dataset.status || "";
+            row.style.display =
+                ((!q || text.includes(q)) &&
+                 (!j || rowJenis === j) &&
+                 (!s || rowStatus === s)) ? "" : "none";
+        });
+    }
+
+    search?.addEventListener("input", filterRows);
+    jenis?.addEventListener("change", filterRows);
+    status?.addEventListener("change", filterRows);
+
+    const penerimaInput = document.getElementById("inputPenerimaDisposisi");
+    const penerimaList = document.getElementById("daftarPenerimaDisposisi");
+    const penerima = [];
+
+    function renderPenerima() {
+        penerimaList.innerHTML = penerima.map((nama, index) =>
+            '<span class="disposisi-participant-chip">' +
+            '<i class="feather-user"></i>' +
+            nama +
+            '<button type="button" onclick="window.hapusPenerimaDisposisi(' + index + ')" aria-label="Hapus">×</button>' +
+            '</span>'
+        ).join("");
+    }
+
+    window.tambahPenerimaDisposisi = function () {
+        const nama = (penerimaInput.value || "").trim();
+        if (!nama) return;
+        if (penerima.includes(nama)) return;
+        penerima.push(nama);
+        penerimaInput.value = "";
+        renderPenerima();
+        penerimaInput.focus();
+    };
+
+    window.hapusPenerimaDisposisi = function (index) {
+        penerima.splice(index, 1);
+        renderPenerima();
+    };
+
+    document.getElementById("btnTambahPenerimaDisposisi")
+        ?.addEventListener("click", window.tambahPenerimaDisposisi);
+
+    penerimaInput?.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            window.tambahPenerimaDisposisi();
+        }
+    });
+
+    function syncChoiceCards(groupName) {
+        document.querySelectorAll('input[name="' + groupName + '"]').forEach(input => {
+            const card = input.closest(".disposisi-type-card");
+            card?.classList.toggle("active", input.checked);
+        });
+    }
+
+    document.querySelectorAll('input[name="jenisDisposisi"], input[name="sumberDokumen"]')
+        .forEach(input => {
+            input.addEventListener("change", function () {
+                syncChoiceCards(this.name);
+            });
+        });
+
+    window.simpanPrototypeDisposisi = function () {
+        alert("UI prototype: form belum disimpan ke database. Tahap berikutnya kita sambungkan ke backend Disposisi.");
+    };
+
+    window.lihatDisposisi = function (judul) {
+        document.getElementById("detailDisposisiJudul").textContent = judul;
+        document.getElementById("detailDisposisiKegiatan").textContent = judul;
+        const modal = new bootstrap.Modal(document.getElementById("modalDetailDisposisi"));
+        modal.show();
+    };
+});
+</script>
+{% endblock %}

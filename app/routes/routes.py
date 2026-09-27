@@ -102,6 +102,7 @@ from app.controllers.calendarController import (
 )
 
 from app.controllers.dashboard_1AgendaController import agenda_rapat
+from app.controllers.dashboard_1DisposisiController import agenda_disposisi
 
 from app.controllers.dashboard_1DataAbsensiController import (
     data_absensi_non_finger, data_absensi_normalisasi_finger, data_absensi_impor_file, data_absensi_pegawai_manual,
@@ -1856,6 +1857,12 @@ def view_kirim_forum_media_informasi():
 @login_required
 def view_agenda_rapat():
     return agenda_rapat()
+
+
+@main.route('/agenda/disposisi')
+@login_required
+def view_agenda_disposisi():
+    return agenda_disposisi()
 
 
 # ============================================================
