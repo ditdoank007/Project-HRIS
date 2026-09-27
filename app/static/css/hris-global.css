@@ -517,6 +517,52 @@
 }
 
 
+
+/* ============================================================
+   13.1 HRIS ACTION BUTTON
+   Tombol aksi standar untuk Edit / Hapus.
+   ============================================================ */
+
+.hris-action-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 32px !important;
+    height: 32px !important;
+    padding: 0 !important;
+    border-radius: 0.25rem !important;
+    font-family: inherit !important;
+    font-weight: 500 !important;
+    line-height: 1 !important;
+}
+
+.hris-action-edit {
+    color: var(--hris-info) !important;
+    border-color: var(--hris-info) !important;
+    background-color: transparent !important;
+}
+
+.hris-action-edit:hover,
+.hris-action-edit:focus {
+    color: #FFFFFF !important;
+    border-color: var(--hris-info-dark) !important;
+    background-color: var(--hris-info) !important;
+}
+
+.hris-action-delete {
+    color: var(--hris-danger) !important;
+    border-color: var(--hris-danger) !important;
+    background-color: transparent !important;
+}
+
+.hris-action-delete:hover,
+.hris-action-delete:focus {
+    color: #FFFFFF !important;
+    border-color: var(--hris-danger-dark) !important;
+    background-color: var(--hris-danger) !important;
+}
+
+
 /* ============================================================
    14. RESPONSIVE
    ============================================================ */
@@ -1147,3 +1193,61 @@
     }
 }
 
+
+
+/* ============================================================
+   GLOBAL FILTER FIELD
+   ============================================================ */
+
+.hris-filter-field {
+    height: 31px;
+    min-height: 31px;
+
+    padding: 4px 30px 4px 8px;
+
+    border: 1px solid var(--hris-border);
+    border-radius: 4px;
+
+    background-color: var(--hris-white);
+    color: var(--hris-text-dark);
+
+    font-family: inherit;
+    font-size: var(--hris-font-size-small);
+
+    outline: none;
+
+    cursor: pointer;
+}
+
+.hris-filter-field:focus {
+    border-color: var(--hris-orange);
+    box-shadow: 0 0 0 0.15rem rgba(235, 104, 49, 0.12);
+}
+
+.hris-filter-field:hover {
+    border-color: var(--hris-border-dark);
+}
+
+.hris-filter-field:disabled {
+    background-color: var(--hris-light);
+    color: var(--hris-muted);
+    cursor: not-allowed;
+}
+
+
+/* Ukuran standar filter kecil */
+.hris-filter-field-sm {
+    width: 120px;
+}
+
+
+/* Ukuran standar filter sedang */
+.hris-filter-field-md {
+    width: 180px;
+}
+
+
+/* Filter yang mengikuti lebar container */
+.hris-filter-field-fluid {
+    width: 100%;
+}

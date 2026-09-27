@@ -24,3 +24,4 @@ class Config:
     GOOGLE_CALENDAR_API_KEY = os.environ.get('GOOGLE_CALENDAR_API_KEY')
 
     SECRET_KEY = os.getenv('SECRET_KEY')
+    CALENDAR_INTERNAL_API_KEY = os.getenv('CALENDAR_INTERNAL_API_KEY')

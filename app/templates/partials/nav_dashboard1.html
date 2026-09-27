@@ -259,6 +259,14 @@
                         {% endif %}
                     </ul>
                 </li>
+                {% if is_administrator()
+                    or has_form_access('AbsensiFP.aspx')
+                    or has_form_access('Absensimanual.aspx')
+                    or has_form_access('TraceAbsensi.aspx')
+                    or has_form_access('TraceTunKin.aspx')
+                    or has_form_access('InjectAbsensi.aspx')
+                    or has_form_access('InjectLembur.aspx')
+                    or has_form_access('MFLoadFinger.aspx') %}
                 <li class="nxl-item nxl-hasmenu">
                     <a href="javascript:void(0);" class="nxl-link">
                         <span class="nxl-micon"><i class="feather-settings"></i></span>
@@ -266,56 +274,84 @@
                                 class="feather-chevron-right"></i></span>
                     </a>
                     <ul class="nxl-submenu">
+
+                        {% if is_administrator() or has_form_access('AbsensiFP.aspx') %}
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_data_absensi_normalisasi_finger') }}">
                                 <span class="nxl-micon"><i class="ti ti-fingerprint"></i></span>
                                 <span class="nxl-mtext">Absensi Finger</span>
                             </a>
                         </li>
+                        {% endif %}
 
+                        {% if is_administrator() or has_form_access('Absensimanual.aspx') %}
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_data_absensi_non_finger') }}">
                                 <span class="nxl-micon"><i class="ti ti-user-check"></i></span>
                                 <span class="nxl-mtext">Absensi Non Finger</span>
                             </a>
                         </li>
+                        {% endif %}
 
+                        {% if is_administrator() or has_form_access('TraceAbsensi.aspx') %}
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_data_absensi_trace') }}">
                                 <span class="nxl-micon"><i class="ti ti-file-text"></i></span>
                                 <span class="nxl-mtext">Detail Absensi</span>
                             </a>
                         </li>
+                        {% endif %}
 
+                        {% if is_administrator() or has_form_access('TraceTunKin.aspx') %}
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_data_absensi_trace_tunjangan') }}">
                                 <span class="nxl-micon"><i class="ti ti-cash"></i></span>
                                 <span class="nxl-mtext">Detail Tunkin</span>
                             </a>
                         </li>
+                        {% endif %}
 
+                        {% if is_administrator() or has_form_access('InjectAbsensi.aspx') %}
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_data_absensi_pegawai_manual') }}">
                                 <span class="nxl-micon"><i class="ti ti-edit"></i></span>
                                 <span class="nxl-mtext">Absensi Manual</span>
                             </a>
                         </li>
+                        {% endif %}
 
+                        {% if is_administrator() or has_form_access('InjectLembur.aspx') %}
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_data_absensi_pegawai_lembur_manual') }}">
                                 <span class="nxl-micon"><i class="ti ti-clock"></i></span>
                                 <span class="nxl-mtext">Lembur Manual</span>
                             </a>
                         </li>
+                        {% endif %}
 
+                        {% if is_administrator() or has_form_access('MFLoadFinger.aspx') %}
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_data_absensi_impor_file') }}">
                                 <span class="nxl-micon"><i class="ti ti-file-import"></i></span>
                                 <span class="nxl-mtext">Impor File</span>
                             </a>
                         </li>
+                        {% endif %}
+
                     </ul>
                 </li>
+                {% endif %}
+
+                {% if is_administrator()
+                    or has_form_access('RAbsensiAll.aspx')
+                    or has_form_access('RAbsensiPerson.aspx')
+                    or has_form_access('RTimerecorder.aspx')
+                    or has_form_access('RDailyabsensi.aspx')
+                    or has_form_access('Rekapsprint.aspx')
+                    or has_form_access('RekapUM.aspx')
+                    or has_form_access('RPelanggaranDis.aspx')
+                    or has_form_access('RRincianBayar.aspx')
+                    or has_form_access('DaftarLembur.aspx') %}
                 <li class="nxl-item nxl-hasmenu">
                     <a href="javascript:void(0);" class="nxl-link">
                         <span class="nxl-micon"><i class="feather-file-text"></i></span>
@@ -323,54 +359,105 @@
                                 class="feather-chevron-right"></i></span>
                     </a>
                     <ul class="nxl-submenu">
+
+                        {% if is_administrator() or has_form_access('RAbsensiAll.aspx') %}
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_laporan_rekap_absensi_all') }}">
                                 <i class="ti ti-checkbox me-2"></i>Rekap Absensi All
                             </a>
                         </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('RAbsensiPerson.aspx') %}
                         <li class="nxl-item">
-                            <!-- Diasumsikan "Rekap Absensi Person" = Laporan Rekap Absensi Individu -->
                             <a class="nxl-link" href="{{ url_for('main.view_laporan_rekap_absensi_individu') }}">
                                 <i class="ti ti-checkbox me-2"></i>Rekap Absensi Person
                             </a>
                         </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('RTimerecorder.aspx') %}
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_laporan_rekap_absensi_log_finger') }}">
                                 <i class="ti ti-checkbox me-2"></i>Rekap History Log Finger
                             </a>
                         </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('RDailyabsensi.aspx') %}
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_laporan_rekap_clock_exception') }}">
                                 <i class="ti ti-checkbox me-2"></i>Rekap Absensi Bulanan
                             </a>
                         </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('Rekapsprint.aspx') %}
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_laporan_rekap_ketidakhadiran_pegawai') }}">
                                 <i class="ti ti-checkbox me-2"></i>Rekap DL, S, I CUTI
                             </a>
                         </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('RekapUM.aspx') %}
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_laporan_rekap_uang_makan') }}">
                                 <i class="ti ti-checkbox me-2"></i>Rekap Uang Makan
                             </a>
                         </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('RPelanggaranDis.aspx') %}
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_laporan_rekap_pelanggaran_disiplin') }}">
                                 <i class="ti ti-checkbox me-2"></i>Rekap Pelanggaran Disiplin
                             </a>
                         </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('RRincianBayar.aspx') %}
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_laporan_rekap_tunjangan_kinerja') }}">
                                 <i class="ti ti-checkbox me-2"></i>Rekap Tunjangan Kinerja
                             </a>
                         </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('DaftarLembur.aspx') %}
                         <li class="nxl-item">
                             <a class="nxl-link" href="{{ url_for('main.view_laporan_cetak_daftar_lembur_umum') }}">
                                 <i class="ti ti-checkbox me-2"></i>Rekap Daftar Lembur
                             </a>
                         </li>
+                        {% endif %}
+
                     </ul>
                 </li>
+                {% endif %}
+
+                <li class="nxl-item nxl-hasmenu">
+                    <a href="javascript:void(0);" class="nxl-link">
+                        <span class="nxl-micon"><i class="feather-calendar"></i></span>
+                        <span class="nxl-mtext">AGENDA</span><span class="nxl-arrow"><i
+                                class="feather-chevron-right"></i></span>
+                    </a>
+                    <ul class="nxl-submenu">
+                        <li class="nxl-item">
+                            <a class="nxl-link" href="#">
+                                <span class="nxl-micon"><i class="feather-users"></i></span>
+                                <span class="nxl-mtext">Rapat</span>
+                            </a>
+                        </li>
+                        <li class="nxl-item">
+                            <a class="nxl-link" href="#">
+                                <span class="nxl-micon"><i class="feather-send"></i></span>
+                                <span class="nxl-mtext">Disposisi</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                {% if is_administrator() or has_form_access('InpPengumuman.aspx') %}
                 <li class="nxl-item nxl-hasmenu">
                     <a href="javascript:void(0);" class="nxl-link">
                         <span class="nxl-micon"><i class="feather-monitor"></i></span>
@@ -386,6 +473,7 @@
                         </li>
                     </ul>
                 </li>
+                {% endif %}
                 <li class="nxl-item nxl-hasmenu">
                     <a href="{{ url_for('main.index') }}" class="nxl-link">
                         <span class="nxl-micon"><i class="bi bi-house-fill"></i></span>

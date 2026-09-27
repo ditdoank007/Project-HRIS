@@ -1,7 +1,10 @@
 <!-- pages/dashboard_1/Kepegawaian Data Pegawai.html -->
 {% extends "layout/baseDashboard1.html" %}
 
-{% block title %}- Kepegawaian Data Pegawai{% endblock %}
+{% block title %}- Kepegawaian Data Pegawai
+
+
+{% endblock %}
 
 {% block content %}
         <div class="nxl-content">
@@ -23,7 +26,7 @@
                     <div id="formAlert" class="alert d-none" role="alert"></div>
 
                     <!-- Pegawai Baru dari BDIP - hanya tampil pada mode SSO -->
-                    <div id="bdipEmployeePanel" class="card mb-4 d-none">
+                    <div id="bdipEmployeePanel" class="card mb-4">
                         <div class="card-header-custom d-flex justify-content-between align-items-center"
                             style="border-radius: 10px;">
                             <h6 class="mb-0">
@@ -146,7 +149,7 @@
                         </style>
 
                         <div class="card-body">
-                            <form id="formDataPegawai">
+                            <form novalidate id="formDataPegawai">
                             <div class="row g-4">
                                 <!-- Card 1: Main Info (Atas Kiri) -->
                                 <div class="col-md-6">
@@ -258,7 +261,7 @@
                                             <div class="row align-items-center mb-2">
                                                 <label class="col-sm-4 form-label-custom">Gol / Pangkat</label>
                                                 <div class="col-sm-8">
-                                                    <select data-field="gol_id" class="input-custom-style" required>
+                                                    <select data-field="gol_id" class="input-custom-style">
                                                         <option value="" disabled selected>Pilih Gol / Pangkat</option>
                                                         {% for gol in golongan_list %}
                                                         <!-- MF_GOL tidak punya kolom gabungan siap pakai:
@@ -296,7 +299,7 @@
                                             <div class="row align-items-center mb-2">
                                                 <label class="col-sm-4 form-label-custom">Class</label>
                                                 <div class="col-sm-8">
-                                                    <select data-field="class_id" class="input-custom-style" required>
+                                                    <select data-field="class_id" class="input-custom-style">
                                                         <option value="" disabled selected>Pilih Class</option>
                                                         {% for cls in class_list %}
                                                         <!-- ASUMSI: label = NAMA_CLASS (sesuaikan jika kolomnya beda) -->
@@ -320,7 +323,7 @@
                                             <div class="row align-items-center mb-2">
                                                 <label class="col-sm-4 form-label-custom">Jabatan</label>
                                                 <div class="col-sm-8">
-                                                    <select data-field="jabatan_id" class="input-custom-style" required>
+                                                    <select data-field="jabatan_id" class="input-custom-style">
                                                         <option value="" disabled selected>Pilih Jabatan</option>
                                                         {% for jab in jabatan_list %}
                                                         <!-- ASUMSI: PK = JABATAN_ID -->
@@ -443,7 +446,7 @@
                                 <button type="button" id="btnDelete" class="btn btn-outline-danger btn-sm d-none">
                                     <i class="bi bi-trash me-1"></i>Hapus
                                 </button>
-                                <button type="submit" id="btnSave" class="btn btn-sm text-white" style="background-color:#e66b30;">
+                                <button type="button" id="btnSave" class="btn btn-sm text-white" style="background-color:#e66b30;">
                                     <i class="bi bi-save me-1"></i>Simpan
                                 </button>
                             </div>
@@ -466,10 +469,10 @@ document.addEventListener("DOMContentLoaded", function () {
     const isKeluarField = document.getElementById("fieldIsKeluar");
     const btnDelete = document.getElementById("btnDelete");
 
-    // Guard: hanya cek elemen penting yang ADA di HTML
+    // Guard form utama.
+    // Jangan menghentikan seluruh script karena BDIP harus tetap berjalan.
     if (!form || !alertBox || !nipField || !isKeluarField) {
-        console.error("[Kepegawaian] Elemen penting tidak ditemukan!");
-        return;
+        console.warn("[Kepegawaian] Elemen form utama tidak lengkap. Fitur BDIP tetap dilanjutkan.");
     }
     console.log("[Kepegawaian] Elemen OK, pasang handler...");
 
@@ -535,41 +538,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    // ✅ SIMPAN (Insert/Update)
-    form.addEventListener("submit", function (e) {
-        e.preventDefault();
-        console.log("[Kepegawaian] Submit ditekan!");
-
-        const payload = collectFormData();
-        console.log("📤 Data dikirim:", payload);
-
-        if (!payload.nip) {
-            showAlert("NIP tidak boleh kosong.", "warning");
-            return;
-        }
-        if (!payload.nama) {
-            showAlert("Nama tidak boleh kosong.", "warning");
-            return;
-        }
-
-        fetch("/api/pegawai/save", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-        })
-            .then(res => res.json())
-            .then(result => {
-                if (result.error) {
-                    showAlert(result.error, "danger");
-                } else {
-                    showAlert(result.message, "success");
-                    nipField.readOnly = true;
-                    if (btnDelete) btnDelete.classList.remove("d-none");
-                }
-            })
-            .catch(() => showAlert("Gagal menghubungi server.", "danger"));
-    });
-
     // ✅ HAPUS
     if (btnDelete) {
         btnDelete.addEventListener("click", function () {
@@ -615,6 +583,10 @@ document.addEventListener("DOMContentLoaded", function () {
     const bdipEmployeePanel = document.getElementById("bdipEmployeePanel");
     const btnCheckBdip = document.getElementById("btnCheckBdip");
     const btnImportBdip = document.getElementById("btnImportBdip");
+
+    if (btnCheckBdip) {
+        btnCheckBdip.addEventListener("click", checkBdipEmployees);
+    }
     const bdipEmployeeAlert = document.getElementById("bdipEmployeeAlert");
     const bdipEmployeeContent = document.getElementById("bdipEmployeeContent");
     const bdipEmployeeCount = document.getElementById("bdipEmployeeCount");
@@ -643,7 +615,15 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function renderBdipEmployees(rows) {
-        if (!bdipEmployeeTableBody || !bdipEmployeeContent) return;
+        if (!bdipEmployeeTableBody) {
+            console.error("[BDIP] bdipEmployeeTableBody tidak ditemukan.");
+            return;
+        }
+
+        if (!bdipEmployeeContent) {
+            console.error("[BDIP] bdipEmployeeContent tidak ditemukan.");
+            return;
+        }
 
         bdipEmployeeTableBody.innerHTML = "";
 
@@ -680,6 +660,10 @@ document.addEventListener("DOMContentLoaded", function () {
         btnCheckBdip.disabled = true;
         hideBdipAlert();
 
+        console.log("[BDIP] checkBdipEmployees() dipanggil");
+        console.log("[BDIP] panel:", bdipEmployeePanel);
+        console.log("[BDIP] tombol:", btnCheckBdip);
+
         fetch("/api/pegawai/bdip", {
             method: "GET",
             headers: {
@@ -688,6 +672,9 @@ document.addEventListener("DOMContentLoaded", function () {
         })
         .then(function (res) {
             return res.json().then(function (data) {
+                console.log("[BDIP] HTTP:", res.status);
+                console.log("[BDIP] RESPONSE:", data);
+
                 return {
                     status: res.status,
                     data: data
@@ -699,9 +686,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
             if (!data.success) {
                 if (result.status === 403) {
-                    if (bdipEmployeePanel) {
-                        bdipEmployeePanel.classList.add("d-none");
-                    }
+                    console.warn("[BDIP] Endpoint menolak akses (HTTP 403). Panel tetap ditampilkan.");
+                    showBdipAlert(
+                        data.message || "Akses BDIP ditolak oleh server.",
+                        "warning"
+                    );
                     return;
                 }
 
@@ -828,12 +817,313 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // Cek otomatis saat halaman Data Pegawai dibuka.
-    // Jika LOCAL, backend akan menolak dan panel tetap tersembunyi.
-    if (bdipEmployeePanel) {
-        checkBdipEmployees();
+    // Pegawai baru dari BDIP langsung ditampilkan.
+    if (bdipEmployeePanel && btnCheckBdip) {
+        setTimeout(function () {
+            checkBdipEmployees();
+        }, 100);
     }
 
     console.log("[Kepegawaian] Handler terpasang. Siap input/edit!");
 });
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const statusField = document.querySelector('[data-field="status_peg"]');
+    const careerFields = [
+        document.querySelector('[data-field="gol_id"]'),
+        document.querySelector('[data-field="class_id"]'),
+        document.querySelector('[data-field="jabatan_id"]')
+    ].filter(Boolean);
+
+    function updateCareerRequired() {
+        const statusValue = String(statusField?.value || "").trim();
+
+        // STATUS_PEG: 1 = PNS, 2 = NON PNS.
+        // NON PNS tidak wajib mengisi Karir Terkini.
+        const isNonPns = statusValue === "2";
+
+        careerFields.forEach(field => {
+            field.required = !isNonPns;
+        });
+    }
+
+    statusField?.addEventListener("change", updateCareerRequired);
+
+    // Saat data pegawai diimpor, status dapat diisi oleh JavaScript
+    // setelah DOMContentLoaded. Pastikan required diperbarui SEBELUM
+    // browser menjalankan HTML5 constraint validation saat SIMPAN diklik.
+    document.addEventListener("click", function (event) {
+        const submitButton = event.target.closest('button[type="submit"], input[type="submit"]');
+        if (submitButton) {
+            updateCareerRequired();
+        }
+    }, true);
+
+    updateCareerRequired();
+});
 </script>
+</script>
+<script>
+document.addEventListener("DOMContentLoaded",function(){
+    const c=document.getElementById("bdipEmployeeContent");
+    const n=document.getElementById("bdipEmployeeCount");
+    const t=document.getElementById("bdipEmployeeTableBody");
+    if(!c||!n||!t){console.error("[BDIP-FIX] elemen tabel tidak ditemukan");return}
+    fetch("/api/pegawai/bdip",{headers:{"Accept":"application/json"},cache:"no-store"})
+    .then(r=>r.json())
+    .then(d=>{
+        console.log("[BDIP-FIX]",d);
+        const rows=Array.isArray(d.data)?d.data:[];
+        t.innerHTML="";
+        n.textContent=rows.length;
+        rows.forEach((r,i)=>{
+            const tr=document.createElement("tr");
+            tr.innerHTML="<td><input type=\"checkbox\" class=\"bdip-employee-check\" data-index=\""+i+"\"></td><td><strong>"+(r.finger_id||"")+"</strong></td><td>"+(r.nip||"")+"</td><td>"+(r.nama||"")+"</td>";
+            t.appendChild(tr);
+        });
+        if(rows.length)c.classList.remove("d-none");
+        window.bdipEmployeeRows=rows;
+    })
+    .catch(e=>console.error("[BDIP-FIX]",e));
+});
+</script>
+\n
+<script>
+/* [BDIP-IMPORT-FIX] Handler impor BDIP independen */
+document.addEventListener("DOMContentLoaded", function () {
+    const btn = document.getElementById("btnImportBdip");
+
+    if (!btn) {
+        console.error("[BDIP-IMPORT-FIX] Tombol IMPOR tidak ditemukan.");
+        return;
+    }
+
+    btn.addEventListener("click", function () {
+        const rows = window.bdipEmployeeRows || [];
+
+        const checked = Array.from(
+            document.querySelectorAll(".bdip-employee-check:checked")
+        );
+
+        if (checked.length === 0) {
+            alert("Pilih minimal satu pegawai untuk diimpor.");
+            return;
+        }
+
+        if (checked.length > 1) {
+            alert("Untuk sementara impor satu pegawai terlebih dahulu.");
+            return;
+        }
+
+        const index = Number(checked[0].dataset.index);
+        const employee = rows[index];
+
+        if (!employee) {
+            alert("Data pegawai BDIP tidak ditemukan.");
+            return;
+        }
+
+        const fingerField = document.getElementById("fieldFingerId");
+        const namaField = document.querySelector('[data-field="nama"]');
+        const nipField = document.getElementById("fieldNip");
+        const statusField = document.querySelector('[data-field="status_peg"]');
+
+        if (fingerField) {
+            fingerField.value = employee.finger_id || "";
+        }
+
+        if (nipField) {
+            nipField.value = employee.nip || "";
+            nipField.readOnly = false;
+        }
+
+        if (namaField) {
+            namaField.value = employee.nama || "";
+        }
+
+        /*
+         * Pegawai dari BDIP yang diimpor pada tahap ini
+         * adalah NON PNS.
+         * Value status:
+         * 1 = PNS
+         * 2 = NON PNS
+         */
+        if (statusField) {
+            statusField.value = "2";
+            statusField.dispatchEvent(new Event("change", {
+                bubbles: true
+            }));
+        }
+
+        const emailField = document.querySelector('[data-field="email"]');
+
+        if (emailField && employee.email) {
+            emailField.value = employee.email;
+        }
+
+        const panel = document.getElementById("bdipEmployeePanel");
+
+        if (panel) {
+            panel.classList.add("d-none");
+        }
+
+        const form = document.getElementById("formDataPegawai");
+
+        if (form) {
+            form.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+        }
+
+        console.log(
+            "[BDIP-IMPORT-FIX] Pegawai berhasil dimuat ke form:",
+            employee
+        );
+    });
+});
+</script>
+
+
+<script>
+/* [SIMPAN-DIRECT-FIX]
+ * Handler SIMPAN independen dari script utama Data Pegawai.
+ */
+document.addEventListener("DOMContentLoaded", function () {
+
+    const btnSave = document.getElementById("btnSave");
+
+    if (!btnSave) {
+        console.error("[SIMPAN-DIRECT-FIX] Tombol SIMPAN tidak ditemukan.");
+        return;
+    }
+
+    btnSave.addEventListener("click", function () {
+
+        const payload = {};
+
+        document.querySelectorAll("[data-field]").forEach(function (el) {
+            payload[el.dataset.field] = el.value;
+        });
+
+        console.log("[SIMPAN-DIRECT-FIX] Payload:", payload);
+
+        if (!payload.nip) {
+            alert("NIP tidak boleh kosong.");
+            return;
+        }
+
+        if (!payload.finger_id) {
+            alert("Finger ID tidak boleh kosong.");
+            return;
+        }
+
+        if (!payload.nama) {
+            alert("Nama tidak boleh kosong.");
+            return;
+        }
+
+        if (!payload.tgl_masuk) {
+            alert("Tanggal Masuk tidak boleh kosong.");
+            return;
+        }
+
+        if (!payload.unit_kerja_id) {
+            alert("Unit Kerja wajib dipilih.");
+            return;
+        }
+
+        /*
+         * STATUS:
+         * 1 = PNS
+         * 2 = NON PNS
+         *
+         * NON PNS tidak diwajibkan mengisi Karir Terkini
+         * maupun Data Recruitment.
+         */
+        if (String(payload.status_peg) === "1") {
+
+            const careerFields = [
+                ["gol_id", "Gol / Pangkat"],
+                ["class_id", "Class"],
+                ["jabatan_id", "Jabatan"]
+            ];
+
+            for (const item of careerFields) {
+                const field = document.querySelector(
+                    '[data-field="' + item[0] + '"]'
+                );
+
+                if (!field || !field.value) {
+                    alert(item[1] + " wajib diisi untuk PNS.");
+                    if (field) field.focus();
+                    return;
+                }
+            }
+        }
+
+        btnSave.disabled = true;
+
+        fetch("/api/pegawai/save", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(function (response) {
+            return response.json().then(function (data) {
+                return {
+                    status: response.status,
+                    data: data
+                };
+            });
+        })
+        .then(function (result) {
+
+            console.log(
+                "[SIMPAN-DIRECT-FIX] HTTP:",
+                result.status,
+                "Response:",
+                result.data
+            );
+
+            const data = result.data || {};
+
+            if (data.error) {
+                alert(data.error);
+                return;
+            }
+
+            if (data.success === false) {
+                alert(data.message || "Data pegawai gagal disimpan.");
+                return;
+            }
+
+            alert(
+                data.message ||
+                "Data pegawai berhasil disimpan."
+            );
+
+            /*
+             * Setelah berhasil simpan, reload agar memastikan
+             * record benar-benar terbaca kembali dari database.
+             */
+            window.location.reload();
+        })
+        .catch(function (error) {
+            console.error("[SIMPAN-DIRECT-FIX]", error);
+            alert("Gagal menghubungi server saat menyimpan data.");
+        })
+        .finally(function () {
+            btnSave.disabled = false;
+        });
+    });
+
+    console.log("[SIMPAN-DIRECT-FIX] Handler SIMPAN terpasang.");
+});
+</script>
+
 {% endblock %}

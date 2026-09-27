@@ -29,6 +29,7 @@ from app.models.absensiModel import Absensi
 from app.models.dinasLuarModel import DinasLuar
 from app.models.pegawaiModel import Pegawai
 from app.models.kalenderModel import MfKalender
+from app.models.calendarSyncTokenModel import CalendarSyncToken
 
 from app.utils.absensiNormalisasiHelper import (
     get_label_dinas_luar,
@@ -48,11 +49,179 @@ from app.services.calendar.ics_service import (
     get_events_by_token,
     generate_ics
 )
+from app.services.calendar.personal_calendar_service import (
+    build_personal_calendar_events
+)
 
 from app.services.calendar.conflict_service import (
     check_employee_conflict
 )
 
+
+
+def get_or_create_calendar_sync_token(nip):
+    sync = (
+        CalendarSyncToken.query
+        .filter(
+            CalendarSyncToken.NIP == nip,
+            CalendarSyncToken.IS_ACTIVE == 'Y'
+        )
+        .first()
+    )
+
+    if sync:
+        return sync
+
+    token = __import__("secrets").token_urlsafe(48)
+
+    sync = CalendarSyncToken(
+        NIP=nip,
+        TOKEN=token,
+        IS_ACTIVE='Y',
+        CREATED_DATE=datetime.utcnow()
+    )
+
+    db.session.add(sync)
+    db.session.commit()
+
+    return sync
+
+
+
+def api_calendar_sync_token_internal():
+    from config import Config
+
+    internal_key = request.headers.get(
+        "X-Calendar-Internal-Key"
+    )
+
+    if not internal_key or internal_key != Config.CALENDAR_INTERNAL_API_KEY:
+        return jsonify({
+            "status": "error",
+            "message": "Unauthorized"
+        }), 401
+
+    nip = request.headers.get("X-Calendar-NIP")
+
+    if not nip:
+        return jsonify({
+            "status": "error",
+            "message": "NIP wajib diisi."
+        }), 400
+
+    try:
+        sync = get_or_create_calendar_sync_token(nip)
+
+        return jsonify({
+            "status": "success",
+            "feed_url": f"/api/calendar/feed/{sync.TOKEN}.ics"
+        })
+
+    except Exception:
+        db.session.rollback()
+
+        return jsonify({
+            "status": "error",
+            "message": "Gagal mendapatkan token kalender"
+        }), 500
+
+
+def api_calendar_personal_sync_token():
+    nip = session.get('nip')
+
+    if not nip:
+        return jsonify({
+            "status": "error",
+            "message": "NIP tidak ditemukan"
+        }), 401
+
+    try:
+        sync = get_or_create_calendar_sync_token(nip)
+
+        return jsonify({
+            "status": "success",
+            "token": sync.TOKEN,
+            "feed_url": f"/api/calendar/feed/{sync.TOKEN}.ics"
+        })
+
+    except Exception:
+        db.session.rollback()
+
+        return jsonify({
+            "status": "error",
+            "message": "Gagal membuat token kalender"
+        }), 500
+
+
+
+def api_calendar_personal_internal():
+
+    from config import Config
+
+    internal_key = request.headers.get(
+        "X-Calendar-Internal-Key"
+    )
+
+    if not internal_key or internal_key != Config.CALENDAR_INTERNAL_API_KEY:
+        return jsonify({
+            "status": "error",
+            "message": "Unauthorized"
+        }), 401
+
+    nip = request.headers.get("X-Calendar-NIP")
+
+    if not nip:
+        return jsonify({
+            "status": "error",
+            "message": "NIP wajib diisi."
+        }), 400
+
+    try:
+        tahun = int(request.args.get("year"))
+        bulan = int(request.args.get("month"))
+    except (TypeError, ValueError):
+        return jsonify({
+            "status": "error",
+            "message": "Parameter year dan month wajib berupa angka."
+        }), 400
+
+    if tahun < 2000 or tahun > 2100:
+        return jsonify({
+            "status": "error",
+            "message": "Tahun tidak valid."
+        }), 400
+
+    if bulan < 1 or bulan > 12:
+        return jsonify({
+            "status": "error",
+            "message": "Bulan tidak valid."
+        }), 400
+
+    from datetime import date
+
+    tanggal_awal = date(tahun, bulan, 1)
+
+    if bulan == 12:
+        tanggal_akhir = date(tahun + 1, 1, 1)
+    else:
+        tanggal_akhir = date(tahun, bulan + 1, 1)
+
+    pegawai, events = build_personal_calendar_events(
+        nip,
+        tanggal_awal,
+        tanggal_akhir
+    )
+
+    if not pegawai:
+        return jsonify({
+            "status": "error",
+            "message": "Data pegawai tidak ditemukan."
+        }), 404
+
+    return jsonify({
+        "status": "success",
+        "data": events
+    })
 
 
 def api_calendar_personal():
@@ -86,7 +255,6 @@ def api_calendar_personal():
             "message": "Bulan tidak valid."
         }), 400
 
-    from calendar import monthrange
     from datetime import date
 
     tanggal_awal = date(tahun, bulan, 1)
@@ -96,10 +264,10 @@ def api_calendar_personal():
     else:
         tanggal_akhir = date(tahun, bulan + 1, 1)
 
-    pegawai = (
-        Pegawai.query
-        .filter(Pegawai.NIP == nip)
-        .first()
+    pegawai, events = build_personal_calendar_events(
+        nip,
+        tanggal_awal,
+        tanggal_akhir,
     )
 
     if not pegawai:
@@ -107,279 +275,6 @@ def api_calendar_personal():
             "status": "error",
             "message": "Data pegawai tidak ditemukan."
         }), 404
-
-    events = []
-
-    # ============================================================
-    # 1. CUTI / SAKIT
-    # ============================================================
-
-    absensi_rows = (
-        Absensi.query
-        .filter(Absensi.FINGER_ID == pegawai.FINGER_ID)
-        .filter(Absensi.TGL_KERJA >= tanggal_awal)
-        .filter(Absensi.TGL_KERJA < tanggal_akhir)
-        .filter(
-            Absensi.TRANSAKSI_IN.in_([
-                "CUTI",
-                "Cuti",
-                "SAKIT",
-                "Sakit"
-            ])
-        )
-        .order_by(Absensi.TGL_KERJA.asc())
-        .all()
-    )
-
-    for row in absensi_rows:
-
-        transaksi = (row.TRANSAKSI_IN or "").strip().upper()
-
-        if transaksi == "CUTI":
-            jenis = "CUTI"
-        elif transaksi == "SAKIT":
-            jenis = "SAKIT"
-        else:
-            continue
-
-        tanggal = row.TGL_KERJA.date()
-
-        events.append({
-            "id": f"ABSENSI-{pegawai.FINGER_ID}-{tanggal.isoformat()}",
-            "title": jenis,
-            "type": jenis,
-            "source": "ABSENSI",
-            "start": tanggal.isoformat(),
-            "end": tanggal.isoformat(),
-            "all_day": True,
-            "description": row.KET_IN,
-            "location": None,
-        })
-
-    # ============================================================
-    # 2. IJIN
-    #
-    # HRIS legacy mengenali IJIN dari:
-    # TRANSAKSI_IN = ALPA
-    # PENDUKUNG_IN = Y
-    # ============================================================
-
-    ijin_rows = (
-        Absensi.query
-        .filter(Absensi.FINGER_ID == pegawai.FINGER_ID)
-        .filter(Absensi.TGL_KERJA >= tanggal_awal)
-        .filter(Absensi.TGL_KERJA < tanggal_akhir)
-        .filter(Absensi.TRANSAKSI_IN.in_(["ALPA", "Alpa"]))
-        .filter(Absensi.PENDUKUNG_IN == "Y")
-        .order_by(Absensi.TGL_KERJA.asc())
-        .all()
-    )
-
-    for row in ijin_rows:
-
-        tanggal = row.TGL_KERJA.date()
-
-        events.append({
-            "id": f"ABSENSI-IJIN-{pegawai.FINGER_ID}-{tanggal.isoformat()}",
-            "title": "IJIN",
-            "type": "IJIN",
-            "source": "ABSENSI",
-            "start": tanggal.isoformat(),
-            "end": tanggal.isoformat(),
-            "all_day": True,
-            "description": row.KET_IN,
-            "location": None,
-        })
-
-    # ============================================================
-    # 3. DINAS LUAR
-    #
-    # Ambil seluruh perjalanan yang bersinggungan dengan bulan
-    # yang sedang diminta.
-    # ============================================================
-
-    dinas_rows = (
-        DinasLuar.query
-        .filter(DinasLuar.FINGER_ID == pegawai.FINGER_ID)
-        .filter(
-            DinasLuar.TGL_AWAL_DINAS_LUAR < tanggal_akhir
-        )
-        .filter(
-            DinasLuar.TGL_AKHIR_DINAS_LUAR >= tanggal_awal
-        )
-        .order_by(
-            DinasLuar.TGL_AWAL_DINAS_LUAR.asc()
-        )
-        .all()
-    )
-
-    for row in dinas_rows:
-
-        if not row.TGL_AWAL_DINAS_LUAR:
-            continue
-
-        start_date = row.TGL_AWAL_DINAS_LUAR.date()
-
-        end_date = (
-            row.TGL_AKHIR_DINAS_LUAR.date()
-            if row.TGL_AKHIR_DINAS_LUAR
-            else start_date
-        )
-
-        events.append({
-            "id": f"DINAS-LUAR-{row.TRANSAKSI_ID}",
-            "title": get_label_dinas_luar(row.JENIS),
-            "type": "DINAS_LUAR",
-            "source": "DINAS_LUAR",
-            "start": start_date.isoformat(),
-            "end": end_date.isoformat(),
-            "all_day": True,
-            "description": row.KETERANGAN_DINAS_LUAR,
-            "location": row.PENEMPATAN_DINAS_LUAR,
-            "no_surat": row.NO_SURAT,
-            "status_um": row.STATUS_UM,
-            "color": get_warna_dinas_luar(row.STATUS_UM),
-        })
-
-    # ============================================================
-    # 4. PIKET SIAGA
-    #
-    # ActivityDate = tanggal siaga (H).
-    # Shift 1 dan Shift 2 ditampilkan pada tanggal H.
-    # Shift 2 tidak digeser ke H+1.
-    #
-    # Priority:
-    # DINAS LUAR > PIKET SIAGA > KALENDER
-    # ============================================================
-
-    piket_rows = db.session.execute(
-        text("""
-            SELECT
-                ActivityDate,
-                Shift,
-                StatusID,
-                shift2
-            FROM LOG_ACTIVITIY
-            WHERE NIP = :nip
-              AND Activity = 'Piket Siaga'
-              AND ActivityDate >= :tanggal_awal
-              AND ActivityDate < :tanggal_akhir
-              AND StatusID = 3
-              AND (
-                    Shift = '1'
-                    OR (Shift = '2' AND shift2 = 1)
-              )
-            ORDER BY ActivityDate ASC, Shift ASC
-        """),
-        {
-            "nip": nip,
-            "tanggal_awal": tanggal_awal,
-            "tanggal_akhir": tanggal_akhir,
-        },
-    ).mappings().all()
-
-    for row in piket_rows:
-        if not row["ActivityDate"]:
-            continue
-
-        tanggal = (
-            row["ActivityDate"].date()
-            if hasattr(row["ActivityDate"], "date")
-            else row["ActivityDate"]
-        )
-
-        shift = str(row["Shift"] or "").strip()
-
-        if shift == "1":
-            warna = "#166534"
-            label = "Piket Siaga Shift 1"
-        elif shift == "2":
-            warna = "#86efac"
-            label = "Piket Siaga Shift 2"
-        else:
-            continue
-
-        events.append({
-            "id": f"PIKET-SIAGA-{shift}-{tanggal.isoformat()}",
-            "title": label,
-            "type": "PIKET_SIAGA",
-            "source": "LOG_ACTIVITIY",
-            "start": tanggal.isoformat(),
-            "end": tanggal.isoformat(),
-            "all_day": True,
-            "description": label,
-            "location": None,
-            "shift": shift,
-            "color": warna,
-        })
-
-    # ============================================================
-    # 4. KALENDER INSTITUSI
-    #
-    # Layer terbawah:
-    # - Sabtu / Minggu
-    # - Hari libur nasional
-    # - Cuti bersama
-    # - WFH
-    #
-    # DINAS LUAR tetap berada di atas layer ini.
-    # ============================================================
-
-    kalender_rows = (
-        MfKalender.query
-        .filter(MfKalender.TGL_KERJA >= tanggal_awal)
-        .filter(MfKalender.TGL_KERJA < tanggal_akhir)
-        .filter(
-            (MfKalender.IS_LIBUR == "Y") |
-            (MfKalender.KET == "WFH")
-        )
-        .order_by(MfKalender.TGL_KERJA.asc())
-        .all()
-    )
-
-    for row in kalender_rows:
-        if not row.TGL_KERJA:
-            continue
-
-        tanggal = row.TGL_KERJA.date()
-        keterangan = str(row.KET or "").strip()
-
-        if keterangan.upper() == "WFH":
-            events.append({
-                "id": f"KALENDER-WFH-{tanggal.isoformat()}",
-                "title": "WFH",
-                "type": "WFH",
-                "source": "KALENDER",
-                "start": tanggal.isoformat(),
-                "end": tanggal.isoformat(),
-                "all_day": True,
-                "description": keterangan,
-                "location": None,
-            })
-        else:
-            events.append({
-                "id": f"KALENDER-LIBUR-{tanggal.isoformat()}",
-                "title": "LIBUR",
-                "type": "LIBUR",
-                "source": "KALENDER",
-                "start": tanggal.isoformat(),
-                "end": tanggal.isoformat(),
-                "all_day": True,
-                "description": keterangan or "Hari Libur",
-                "location": None,
-            })
-
-    # ============================================================
-    # SORT FINAL
-    # ============================================================
-
-    events.sort(
-        key=lambda item: (
-            item["start"],
-            item["type"],
-            item["id"]
-        )
-    )
 
     return jsonify({
         "status": "success",

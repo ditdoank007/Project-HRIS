@@ -1,7 +1,7 @@
 # app/routes/routes.py
 
 from flask import Blueprint, jsonify, render_template
-from app.utils.decorators import login_required, admin_required
+from app.utils.decorators import login_required, admin_required, form_access_required
 from app.controllers.homeController import (
     get_pelanggaran_disiplin,
     get_piket_siaga,
@@ -92,6 +92,7 @@ from app.controllers.dashboard_1LaporanRekapController import (
 
 from app.controllers.calendarController import (
     api_calendar_personal,
+    api_calendar_personal_sync_token,
     api_calendar_my_agenda,
     api_calendar_conflict,
     api_calendar_create_event,
@@ -115,11 +116,13 @@ from app.controllers.dashboard_1DataAbsensiController import (
     api_absensi_non_finger_koreksi as data_absensi_api_non_finger_koreksi,
     api_absensi_non_finger_save as data_absensi_api_non_finger_save,
     api_absensi_non_finger_delete as data_absensi_api_non_finger_delete,
+    api_absensi_non_finger_edit as data_absensi_api_non_finger_edit,
     api_search_pegawai_non_finger as data_absensi_api_search_pegawai,
     api_cari_absensi_non_finger as data_absensi_api_cari_non_finger,
     api_normalisasi_get_fields as data_absensi_api_normalisasi_fields,
     api_normalisasi_import_finger as data_absensi_api_normalisasi_import,
     api_normalisasi_process as data_absensi_api_normalisasi_process,
+    api_normalisasi_legacy_test as data_absensi_api_normalisasi_legacy_test,
     api_normalisasi_upload_dat as data_absensi_api_normalisasi_upload_dat,
     api_normalisasi_commit_dat as data_absensi_api_normalisasi_commit_dat,
     api_normalisasi_export as data_absensi_api_normalisasi_export,
@@ -948,73 +951,73 @@ def view_create_kalender():
 
 # Media Informasi :
 @main.route('/media-informasi')
-@login_required
+@form_access_required('InpPengumuman.aspx')
 def view_media_informasi():
     return media_informasi()
 
 @main.route('/api/media-informasi', methods=['POST'])
-@login_required
+@form_access_required('InpPengumuman.aspx')
 def api_save_media_informasi():
     return save_media_informasi()
 
 @main.route('/api/media-informasi/slide', methods=['POST'])
-@login_required
+@form_access_required('InpPengumuman.aspx')
 def api_save_media_informasi_slide():
     return save_media_informasi_slide()
 
 @main.route('/api/media-informasi/list', methods=['GET'])
-@login_required
+@form_access_required('InpPengumuman.aspx')
 def api_get_media_informasi_list():
     return get_media_informasi_list()
 
 @main.route('/api/media-informasi/<int:med_infor_id>', methods=['GET'])
-@login_required
+@form_access_required('InpPengumuman.aspx')
 def api_get_media_informasi_by_id(med_infor_id):
     return get_media_informasi_by_id(med_infor_id)
 
 @main.route('/api/media-informasi/<int:med_infor_id>', methods=['PUT'])
-@login_required
+@form_access_required('InpPengumuman.aspx')
 def api_update_media_informasi(med_infor_id):
     return update_media_informasi(med_infor_id)
 
 @main.route('/api/media-informasi/<int:med_infor_id>/nonaktif', methods=['POST'])
-@login_required
+@form_access_required('InpPengumuman.aspx')
 def api_nonaktifkan_media_informasi(med_infor_id):
     return nonaktifkan_media_informasi(med_infor_id)
 
 @main.route('/media-informasi/detail')
-@login_required
+@form_access_required('InpPengumuman.aspx')
 def view_media_informasi_detail():
     return media_informasi_detail()
 
 # Laporan Rekap :
 @main.route('/laporan/cetak-daftar-lembur-umum')
-@login_required
+@form_access_required('DaftarLembur.aspx')
 def view_laporan_cetak_daftar_lembur_umum():
     return laporan_cetak_daftar_lembur_umum()
 
 @main.route('/laporan/cetak-daftar-lembur-umum/export', methods=['POST'])
-@login_required
+@form_access_required('DaftarLembur.aspx')
 def export_laporan_cetak_daftar_lembur_umum():
     return export_rekap_daftar_lembur_umum()
 
 @main.route('/laporan/cetak-daftar-lembur-umum/detail', methods=['POST'])
-@login_required
+@form_access_required('DaftarLembur.aspx')
 def export_laporan_detail_jam_lembur_umum():
     return export_detail_jam_lembur_umum()
 
 @main.route('/laporan/rekap-absensi-all')
-@login_required
+@form_access_required('RAbsensiAll.aspx')
 def view_laporan_rekap_absensi_all():
     return laporan_rekap_absensi_all()
 
 @main.route('/laporan/rekap-absensi-all/preview', methods=['POST'])
-@login_required
+@form_access_required('RAbsensiAll.aspx')
 def preview_laporan_rekap_absensi_all():
     return preview_rekap_absensi_all()
 
 @main.route('/laporan/rekap-absensi-all/export', methods=['POST'])
-@login_required
+@form_access_required('RAbsensiAll.aspx')
 def export_laporan_rekap_absensi_all():
     return export_rekap_absensi_all()
 
@@ -1023,37 +1026,37 @@ def export_laporan_rekap_absensi_all():
     '/laporan/rekap-absensi-all/export-pdf',
     methods=['POST']
 )
-@login_required
+@form_access_required('RAbsensiAll.aspx')
 def export_laporan_rekap_absensi_all_pdf():
     return export_rekap_absensi_all_pdf()
 
 @main.route('/laporan/rekap-absensi-individu')
-@login_required
+@form_access_required('RAbsensiPerson.aspx')
 def view_laporan_rekap_absensi_individu():
     return laporan_rekap_absensi_individu()
 
 @main.route('/laporan/rekap-absensi-individu/export', methods=['POST'])
-@login_required
+@form_access_required('RAbsensiPerson.aspx')
 def export_laporan_rekap_absensi_individu():
     return export_rekap_absensi_individu()
 
 @main.route('/api/laporan/search-pegawai')
-@login_required
+@form_access_required('RAbsensiPerson.aspx')
 def api_laporan_search_pegawai():
     return search_pegawai_by_name()
 
 @main.route('/laporan/rekap-absensi-log-finger')
-@login_required
+@form_access_required('RTimerecorder.aspx')
 def view_laporan_rekap_absensi_log_finger():
     return laporan_rekap_absensi_log_finger()
 
 @main.route('/laporan/rekap-absensi-log-finger/export', methods=['POST'])
-@login_required
+@form_access_required('RTimerecorder.aspx')
 def export_laporan_rekap_absensi_log_finger():
     return export_rekap_absensi_log_finger()
 
 @main.route('/laporan/rekap-clock-exception')
-@login_required
+@form_access_required('RDailyabsensi.aspx')
 def view_laporan_rekap_clock_exception():
     return laporan_rekap_clock_exception()
 
@@ -1062,264 +1065,275 @@ def view_laporan_rekap_clock_exception():
     '/laporan/rekap-clock-exception/preview',
     methods=['POST']
 )
+@form_access_required('RDailyabsensi.aspx')
 def preview_laporan_rekap_clock_exception():
     return preview_rekap_clock_exception()
 
 @main.route('/laporan/rekap-clock-exception/export', methods=['POST'])
-@login_required
+@form_access_required('RDailyabsensi.aspx')
 def export_laporan_rekap_clock_exception():
     return export_rekap_clock_exception()
 
 @main.route('/laporan/rekap-ketidakhadiran-pegawai')
-@login_required
+@form_access_required('Rekapsprint.aspx')
 def view_laporan_rekap_ketidakhadiran_pegawai():
     return laporan_rekap_ketidakhadiran_pegawai()
 
 @main.route('/laporan/rekap-ketidakhadiran-pegawai/export', methods=['POST'])
-@login_required
+@form_access_required('Rekapsprint.aspx')
 def export_laporan_rekap_ketidakhadiran_pegawai():
     return export_rekap_ketidakhadiran_pegawai()
 
 @main.route('/laporan/rekap-pelanggaran-disiplin')
-@login_required
+@form_access_required('RPelanggaranDis.aspx')
 def view_laporan_rekap_pelanggaran_disiplin():
     return laporan_rekap_pelanggaran_disiplin()
 
 @main.route('/laporan/rekap-pelanggaran-disiplin/export', methods=['POST'])
-@login_required
+@form_access_required('RPelanggaranDis.aspx')
 def export_laporan_rekap_pelanggaran_disiplin():
     return export_rekap_pelanggaran_disiplin()
 
 @main.route('/laporan/rekap-uang-makan')
-@login_required
+@form_access_required('RekapUM.aspx')
 def view_laporan_rekap_uang_makan():
     return laporan_rekap_uang_makan()
 
 @main.route('/laporan/rekap-uang-makan/preview', methods=['POST'])
-@login_required
+@form_access_required('RekapUM.aspx')
 def preview_laporan_rekap_uang_makan():
     return export_rekap_uang_makan(preview=True)
 
 
 @main.route('/laporan/rekap-uang-makan/export', methods=['POST'])
-@login_required
+@form_access_required('RekapUM.aspx')
 def export_laporan_rekap_uang_makan():
     return export_rekap_uang_makan()
 
 @main.route('/laporan/rekap-tunjangan-kinerja')
-@login_required
+@form_access_required('RRincianBayar.aspx')
 def view_laporan_rekap_tunjangan_kinerja():
     return laporan_rekap_tunjangan_kinerja()
 
 @main.route('/laporan/rekap-tunjangan-kinerja/export', methods=['POST'])
-@login_required
+@form_access_required('RRincianBayar.aspx')
 def export_laporan_rekap_tunjangan_kinerja():
     return export_rekap_tunjangan_kinerja()
 
 # Data Absensi :
 @main.route('/data-absensi/non-finger')
-@login_required
+@form_access_required('Absensimanual.aspx')
 def view_data_absensi_non_finger():
     return data_absensi_non_finger()
 
 @main.route('/api/absensi-non-finger/search')
-@login_required
+@form_access_required('Absensimanual.aspx')
 def api_absensi_non_finger_search():
     return data_absensi_api_non_finger_search()
 
 @main.route('/api/absensi-non-finger/koreksi', methods=['POST'])
-@login_required
+@form_access_required('Absensimanual.aspx')
 def api_absensi_non_finger_koreksi():
     return data_absensi_api_non_finger_koreksi()
 
 @main.route('/api/absensi-non-finger/save', methods=['POST'])
-@login_required
+@form_access_required('Absensimanual.aspx')
 def api_absensi_non_finger_save():
     return data_absensi_api_non_finger_save()
 
 @main.route('/api/absensi-non-finger/delete', methods=['POST'])
-@login_required
+@form_access_required('Absensimanual.aspx')
 def api_absensi_non_finger_delete():
     return data_absensi_api_non_finger_delete()
 
+@main.route('/api/absensi-non-finger/edit', methods=['POST'])
+@form_access_required('Absensimanual.aspx')
+def api_absensi_non_finger_edit():
+    return data_absensi_api_non_finger_edit()
+
 @main.route('/api/absensi-non-finger/search-pegawai')
-@login_required
+@form_access_required('Absensimanual.aspx')
 def api_absensi_non_finger_search_pegawai():
     return data_absensi_api_search_pegawai()
 
 @main.route('/data-absensi/normalisasi-finger')
-@login_required
+@form_access_required('AbsensiFP.aspx')
 def view_data_absensi_normalisasi_finger():
     return data_absensi_normalisasi_finger()
 
 @main.route('/data-absensi/impor-file')
-@login_required
+@form_access_required('MFLoadFinger.aspx')
 def view_data_absensi_impor_file():
     return data_absensi_impor_file()
 
 @main.route('/api/normalisasi/fields', methods=['GET'])
-@login_required
+@form_access_required('AbsensiFP.aspx')
 def api_normalisasi_fields():
     return data_absensi_api_normalisasi_fields()
 
 @main.route('/api/normalisasi/import-finger', methods=['GET'])
-@login_required
+@form_access_required('AbsensiFP.aspx')
 def api_normalisasi_import_finger():
     return data_absensi_api_normalisasi_import()
 
 @main.route('/api/normalisasi/upload-dat', methods=['POST'])
-@login_required
+@form_access_required('AbsensiFP.aspx')
 def api_normalisasi_upload_dat():
     return data_absensi_api_normalisasi_upload_dat()
 
 @main.route('/api/normalisasi/commit-dat', methods=['POST'])
-@login_required
+@form_access_required('AbsensiFP.aspx')
 def api_normalisasi_commit_dat():
     return data_absensi_api_normalisasi_commit_dat()
 
 @main.route('/api/normalisasi/process', methods=['POST'])
-@login_required
+@form_access_required('AbsensiFP.aspx')
 def api_normalisasi_process():
     return data_absensi_api_normalisasi_process()
 
+@main.route('/api/normalisasi/legacy-test', methods=['POST'])
+@form_access_required('AbsensiFP.aspx')
+def api_normalisasi_legacy_test():
+    return data_absensi_api_normalisasi_legacy_test()
+
 @main.route('/api/normalisasi/export', methods=['POST'])
-@login_required
+@form_access_required('AbsensiFP.aspx')
 def api_normalisasi_export():
     return data_absensi_api_normalisasi_export()
 
 @main.route('/api/normalisasi/absensi-view', methods=['GET'])
-@login_required
+@form_access_required('AbsensiFP.aspx')
 def api_normalisasi_absensi_view():
     return data_absensi_api_normalisasi_absensi_view()
 
 @main.route('/api/normalisasi/closing', methods=['GET'])
-@login_required
+@form_access_required('AbsensiFP.aspx')
 def api_normalisasi_closing_get():
     return data_absensi_api_closing_get()
 
 @main.route('/api/normalisasi/closing', methods=['POST'])
-@login_required
+@form_access_required('AbsensiFP.aspx')
 def api_normalisasi_closing_save():
     return data_absensi_api_closing_save()
 
 @main.route('/data-absensi/pegawai-manual')
-@login_required
+@form_access_required('InjectAbsensi.aspx')
 def view_data_absensi_pegawai_manual():
     return data_absensi_pegawai_manual()
 
 @main.route('/api/inject-absensi/pegawai')
-@login_required
+@form_access_required('InjectAbsensi.aspx')
 def api_inject_absensi_pegawai():
     return data_absensi_api_inject_pegawai()
 
 @main.route('/api/inject-absensi/acak-jam', methods=['POST'])
-@login_required
+@form_access_required('InjectAbsensi.aspx')
 def api_inject_absensi_acak_jam():
     return data_absensi_api_acak_jam()
 
 @main.route('/api/inject-absensi/save', methods=['POST'])
-@login_required
+@form_access_required('InjectAbsensi.aspx')
 def api_inject_absensi_save():
     return data_absensi_api_save()
 
 @main.route('/data-absensi/pegawai-lembur-manual')
-@login_required
+@form_access_required('InjectLembur.aspx')
 def view_data_absensi_pegawai_lembur_manual():
     return data_absensi_pegawai_lembur_manual()
 
 @main.route('/data-absensi/trace-tunjangan')
-@login_required
+@form_access_required('TraceTunKin.aspx')
 def view_data_absensi_trace_tunjangan():
     return data_absensi_trace_tunjangan()
 
 @main.route('/api/trace-tunjangan')
-@login_required
+@form_access_required('TraceTunKin.aspx')
 def api_trace_tunjangan():
     return data_absensi_api_trace_tunjangan()
 
 @main.route('/data-absensi/trace')
-@login_required
+@form_access_required('TraceAbsensi.aspx')
 def view_data_absensi_trace():
     return data_absensi_trace()
 
 @main.route('/api/trace-absensi')
-@login_required
+@form_access_required('TraceAbsensi.aspx')
 def api_trace_absensi():
     return data_absensi_api_trace_absensi()
 
 # Cari Absensi :
 @main.route('/data-absensi/cari/non-finger')
-@login_required
+@form_access_required('Absensimanual.aspx')
 def view_cari_absensi_non_finger():
     return cari_absensi_non_finger()
 
 @main.route('/api/cari-absensi-non-finger')
-@login_required
+@form_access_required('Absensimanual.aspx')
 def api_cari_absensi_non_finger():
     return data_absensi_api_cari_non_finger()
 
 @main.route('/data-absensi/cari/normalisasi-finger')
-@login_required
+@form_access_required('AbsensiFP.aspx')
 def view_cari_absensi_normalisasi_finger():
     return cari_absensi_normalisasi_finger()
 
 @main.route('/api/cari-absensi-normalisasi-finger')
-@login_required
+@form_access_required('AbsensiFP.aspx')
 def api_cari_absensi_normalisasi_finger():
     return data_absensi_api_cari_normalisasi_finger()
 
 @main.route('/data-absensi/cari/pegawai-manual')
-@login_required
+@form_access_required('Absensimanual.aspx')
 def view_cari_absensi_pegawai_manual():
     return cari_absensi_pegawai_manual()
 
 @main.route('/api/cari-absensi-manual')
-@login_required
+@form_access_required('Absensimanual.aspx')
 def api_cari_absensi_manual():
     return data_absensi_api_cari_manual()
 
 @main.route('/api/cari-absensi-manual/delete', methods=['POST'])
-@login_required
+@form_access_required('Absensimanual.aspx')
 def api_cari_absensi_manual_delete():
     return data_absensi_api_cari_delete()
 
 @main.route('/api/cari-absensi-manual/update', methods=['POST'])
-@login_required
+@form_access_required('Absensimanual.aspx')
 def api_cari_absensi_manual_update():
     return data_absensi_api_cari_update()
 
 @main.route('/data-absensi/cari/pegawai-lembur-manual')
-@login_required
+@form_access_required('InjectLembur.aspx')
 def view_cari_absensi_pegawai_lembur_manual():
     return cari_absensi_pegawai_lembur_manual()
 
 @main.route('/api/inject-lembur/pegawai')
-@login_required
+@form_access_required('InjectLembur.aspx')
 def api_inject_lembur_pegawai():
     return data_absensi_api_inject_lembur_pegawai()
 
 @main.route('/api/inject-lembur/acak-jam', methods=['POST'])
-@login_required
+@form_access_required('InjectLembur.aspx')
 def api_inject_lembur_acak_jam():
     return data_absensi_api_inject_lembur_acak()
 
 @main.route('/api/inject-lembur/save', methods=['POST'])
-@login_required
+@form_access_required('InjectLembur.aspx')
 def api_inject_lembur_save():
     return data_absensi_api_inject_lembur_save()
 
 @main.route('/api/cari-lembur-manual')
-@login_required
+@form_access_required('InjectLembur.aspx')
 def api_cari_lembur_manual():
     return data_absensi_api_cari_lembur()
 
 @main.route('/api/cari-lembur-manual/delete', methods=['POST'])
-@login_required
+@form_access_required('InjectLembur.aspx')
 def api_cari_lembur_manual_delete():
     return data_absensi_api_cari_lembur_delete()
 
 @main.route('/api/cari-lembur-manual/update', methods=['POST'])
-@login_required
+@form_access_required('InjectLembur.aspx')
 def api_cari_lembur_manual_update():
     return data_absensi_api_cari_lembur_update()
 
@@ -1842,6 +1856,16 @@ def view_kirim_forum_media_informasi():
 
 
 @main.route(
+    '/api/calendar/personal/sync-token',
+    methods=['GET']
+)
+@login_required
+def api_calendar_personal_sync_token_route():
+
+    return api_calendar_personal_sync_token()
+
+
+@main.route(
     '/api/calendar/personal',
     methods=['GET']
 )
@@ -1849,6 +1873,32 @@ def view_kirim_forum_media_informasi():
 def api_calendar_personal_route():
 
     return api_calendar_personal()
+
+
+@main.route(
+    '/api/internal/calendar/sync-token',
+    methods=['GET']
+)
+def api_calendar_sync_token_internal_route():
+
+    from app.controllers.calendarController import (
+        api_calendar_sync_token_internal
+    )
+
+    return api_calendar_sync_token_internal()
+
+
+@main.route(
+    '/api/internal/calendar/personal',
+    methods=['GET']
+)
+def api_calendar_personal_internal_route():
+
+    from app.controllers.calendarController import (
+        api_calendar_personal_internal
+    )
+
+    return api_calendar_personal_internal()
 
 
 @main.route(

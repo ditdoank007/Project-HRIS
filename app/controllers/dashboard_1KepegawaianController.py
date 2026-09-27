@@ -568,7 +568,6 @@ def kepegawaian_data_pegawai():
         class_list=class_list
     )
 
-
 def _safe_int(value, default=None):
     """Helper: konversi ke int dengan aman"""
     try:
@@ -923,7 +922,7 @@ def api_dinas_luar_operasi_save():
             
             # Cek existing
             existing_dl = DinasLuar.query.filter(
-                DinasLuar.DINAS_TRANSAKSI_ID == transaksi_id
+                DinasLuar.TRANSAKSI_ID == transaksi_id
             ).first()
             
             tgl_awal_date = datetime.strptime(tgl_awal, '%Y-%m-%d')
@@ -945,7 +944,7 @@ def api_dinas_luar_operasi_save():
             else:
                 # ✅ Insert baru - NIP adalah NIP asli
                 new_dl = DinasLuar(
-                    DINAS_TRANSAKSI_ID=transaksi_id,
+                    TRANSAKSI_ID=transaksi_id,
                     GUID_SPRIN=guid_sprin,
                     NIP=nip,  # ✅ NIP asli pegawai
                     TGL_AWAL_DINAS_LUAR=tgl_awal_date,
@@ -1023,7 +1022,7 @@ def api_dinas_luar_operasi_save_peserta():
             transaksi_id = f"DLO_{nip}_{tgl_awal}_{tgl_akhir}"
             
             existing = DinasLuar.query.filter(
-                DinasLuar.DINAS_TRANSAKSI_ID == transaksi_id
+                DinasLuar.TRANSAKSI_ID == transaksi_id
             ).first()
             
             tgl_awal_date = datetime.strptime(tgl_awal, '%Y-%m-%d')
@@ -1043,7 +1042,7 @@ def api_dinas_luar_operasi_save_peserta():
                 existing.UPDATE_DATE = datetime.now()
             else:
                 new_dl = DinasLuar(
-                    DINAS_TRANSAKSI_ID=transaksi_id,
+                    TRANSAKSI_ID=transaksi_id,
                     GUID_SPRIN=guid_sprin,
                     NIP=nip,  # NIP asli pegawai
                     TGL_AWAL_DINAS_LUAR=tgl_awal_date,
@@ -1173,7 +1172,7 @@ def api_dinas_luar_operasi_delete():
         if transaksi_id:
             # Delete single peserta
             dinas = DinasLuar.query.filter(
-                DinasLuar.DINAS_TRANSAKSI_ID == transaksi_id
+                DinasLuar.TRANSAKSI_ID == transaksi_id
             ).first()
             
             if dinas:
@@ -1267,7 +1266,7 @@ def api_dinas_luar_pelatihan_save_peserta():
             transaksi_id = f"DLP_{nip}_{tgl_awal}_{tgl_akhir}"
             
             existing = DinasLuar.query.filter(
-                DinasLuar.DINAS_TRANSAKSI_ID == transaksi_id
+                DinasLuar.TRANSAKSI_ID == transaksi_id
             ).first()
             
             tgl_awal_date = datetime.strptime(tgl_awal, '%Y-%m-%d')
@@ -1284,7 +1283,7 @@ def api_dinas_luar_pelatihan_save_peserta():
                 existing.UPDATE_DATE = datetime.now()
             else:
                 new_dl = DinasLuar(
-                    DINAS_TRANSAKSI_ID=transaksi_id,
+                    TRANSAKSI_ID=transaksi_id,
                     GUID_SPRIN=guid_sprin,
                     NIP=nip,
                     TGL_AWAL_DINAS_LUAR=tgl_awal_date,
@@ -1526,9 +1525,13 @@ def api_dinas_luar_save_peserta():
             status_um = peserta.get('status_um', '0')
             
             if not nip or not tgl_awal or not tgl_akhir: continue
+            pegawai = Pegawai.query.filter(Pegawai.NIP == str(nip).strip()).first()
+            if not pegawai: continue
+            finger_id = str(pegawai.FINGER_ID or "").strip()
+            if not finger_id: continue
             
-            transaksi_id = f"DLU_{nip}_{tgl_awal}_{tgl_akhir}"
-            existing = DinasLuar.query.filter(DinasLuar.DINAS_TRANSAKSI_ID == transaksi_id).first()
+            transaksi_id = f"DLU_{finger_id}_{tgl_awal}_{tgl_akhir}"
+            existing = DinasLuar.query.filter(DinasLuar.TRANSAKSI_ID == transaksi_id).first()
             
             if existing:
                 existing.TGL_AWAL_DINAS_LUAR = datetime.strptime(tgl_awal, '%Y-%m-%d')
@@ -1538,7 +1541,7 @@ def api_dinas_luar_save_peserta():
                 existing.UPDATE_DATE = datetime.now()
             else:
                 new_dl = DinasLuar(
-                    DINAS_TRANSAKSI_ID=transaksi_id, GUID_SPRIN=guid_sprin, NIP=nip,
+                    TRANSAKSI_ID=transaksi_id, FINGER_ID=finger_id, GUID_SPRIN=guid_sprin,
                     TGL_AWAL_DINAS_LUAR=datetime.strptime(tgl_awal, '%Y-%m-%d'),
                     TGL_AKHIR_DINAS_LUAR=datetime.strptime(tgl_akhir, '%Y-%m-%d'),
                     KETERANGAN_DINAS_LUAR=header.PERIHAL_SPRIN or '',
@@ -1608,13 +1611,17 @@ def api_dinas_luar_save():
         for peserta in peserta_list:
             nip = peserta.get('nip', '')
             tgl_awal_dl = peserta.get('tgl_awal', '')
+            pegawai = Pegawai.query.filter(Pegawai.NIP == str(nip).strip()).first()
+            if not pegawai: continue
+            finger_id = str(pegawai.FINGER_ID or "").strip()
+            if not finger_id: continue
             tgl_akhir_dl = peserta.get('tgl_akhir', '')
             status_um_peserta = peserta.get('status_um', status_um)
             
             if not nip or not tgl_awal_dl or not tgl_akhir_dl: continue
             
-            transaksi_id = f"DLU_{nip}_{tgl_awal_dl}_{tgl_akhir_dl}"
-            existing = DinasLuar.query.filter(DinasLuar.DINAS_TRANSAKSI_ID == transaksi_id).first()
+            transaksi_id = f"DLU_{finger_id}_{tgl_awal_dl}_{tgl_akhir_dl}"
+            existing = DinasLuar.query.filter(DinasLuar.TRANSAKSI_ID == transaksi_id).first()
             
             if existing:
                 existing.TGL_AWAL_DINAS_LUAR = datetime.strptime(tgl_awal_dl, '%Y-%m-%d')
@@ -1626,7 +1633,7 @@ def api_dinas_luar_save():
                 existing.UPDATE_DATE = datetime.now()
             else:
                 new_dl = DinasLuar(
-                    DINAS_TRANSAKSI_ID=transaksi_id, GUID_SPRIN=guid_sprin, NIP=nip,
+                    TRANSAKSI_ID=transaksi_id, FINGER_ID=finger_id, GUID_SPRIN=guid_sprin,
                     TGL_AWAL_DINAS_LUAR=datetime.strptime(tgl_awal_dl, '%Y-%m-%d'),
                     TGL_AKHIR_DINAS_LUAR=datetime.strptime(tgl_akhir_dl, '%Y-%m-%d'),
                     KETERANGAN_DINAS_LUAR=keterangan, PENEMPATAN_DINAS_LUAR=penempatan,
@@ -1674,9 +1681,12 @@ def api_dinas_luar_get():
         
         peserta = []
         for dl in dinas_list:
-            peg = Pegawai.query.filter(Pegawai.NIP == dl.NIP).first()
+            peg = Pegawai.query.filter(
+                db.func.trim(Pegawai.FINGER_ID) == db.func.trim(dl.FINGER_ID)
+            ).first()
             peserta.append({
-                'transaksi_id': dl.DINAS_TRANSAKSI_ID, 'nip': dl.NIP,
+                'transaksi_id': dl.TRANSAKSI_ID,
+                'nip': peg.NIP if peg else '',
                 'nama': peg.NAMA if peg else '-',
                 'tgl_awal': dl.TGL_AWAL_DINAS_LUAR.strftime('%Y-%m-%d') if dl.TGL_AWAL_DINAS_LUAR else '',
                 'tgl_akhir': dl.TGL_AKHIR_DINAS_LUAR.strftime('%Y-%m-%d') if dl.TGL_AKHIR_DINAS_LUAR else '',
@@ -1698,14 +1708,29 @@ def api_dinas_luar_delete():
         transaksi_id = data.get('transaksi_id', '')
         
         if transaksi_id:
-            DinasLuar.query.filter(DinasLuar.DINAS_TRANSAKSI_ID == transaksi_id).delete()
+            query = DinasLuar.query.filter(
+                DinasLuar.TRANSAKSI_ID == transaksi_id
+            )
         elif guid_sprin:
-            DinasLuar.query.filter(DinasLuar.GUID_SPRIN == guid_sprin).delete()
+            query = DinasLuar.query.filter(
+                DinasLuar.GUID_SPRIN == guid_sprin
+            )
         else:
             return jsonify({'error': 'Parameter tidak lengkap'})
+
+        deleted_ids = [
+            row.TRANSAKSI_ID
+            for row in query.with_entities(DinasLuar.TRANSAKSI_ID).all()
+        ]
+
+        query.delete(synchronize_session=False)
         
         db.session.commit()
-        return jsonify({'success': True, 'message': 'Data berhasil dihapus'})
+        return jsonify({
+            'success': True,
+            'message': 'Data berhasil dihapus',
+            'deleted_transaksi_ids': deleted_ids
+        })
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)})
@@ -2668,7 +2693,7 @@ def api_update_pendukung_save():
                     dinas = DinasLuar.query.filter(
                         DinasLuar.NIP == nip,
                         DinasLuar.TRANSAKSI == transac,
-                        DinasLuar.DINAS_TRANSAKSI_ID == transaksi_id_from
+                        DinasLuar.TRANSAKSI_ID == transaksi_id_from
                     ).first()
                     
                     if dinas:

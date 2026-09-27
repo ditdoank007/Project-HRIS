@@ -54,12 +54,12 @@
                         <div class="col-12 d-md-flex align-items-center">
                             <label class="col-md-2 filter-label-wide mb-1 mb-md-0 text-nowrap">Filter</label>
                             <div class="d-flex flex-wrap flex-md-nowrap align-items-center gap-2">
-                                <select id="filterField1" class="form-select-sm border custom-select" style="width: 120px;">
+                                <select id="filterField1" class="hris-filter-field hris-filter-field-sm">
                                     <option value="">- Pilih Field -</option>
                                 </select>
                                 <input type="text" id="filterValue1" class="form-control-sm border" style="width: 110px; outline: none;">
                                 <span class="mx-1 fw-bold text-dan text-nowrap text-center" style="min-width: 30px;">Dan</span>
-                                <select id="filterField2" class="form-select-sm border custom-select" style="width: 120px;">
+                                <select id="filterField2" class="hris-filter-field hris-filter-field-sm">
                                     <option value="">- Pilih Field -</option>
                                 </select>
                                 <input type="text" id="filterValue2" class="form-control-sm border" style="width: 110px; outline: none;">
@@ -402,40 +402,12 @@ document.addEventListener('DOMContentLoaded', function () {
         tbody.innerHTML = `<tr><td colspan="${colspan}" style="padding:25px;" class="text-start text-muted ps-3">${msg}</td></tr>`;
     }
 
-    // ---------- load field filter dropdown ----------
-    fetch('/api/normalisasi/fields')
-        .then(r => r.json())
-        .then(res => {
-            if (!res.success) return;
-            [filterField1, filterField2].forEach(sel => {
-                sel.innerHTML = '<option value="">- Pilih Field -</option>';
-                res.data.forEach(f => {
-                    const opt = document.createElement('option');
-                    opt.value = f.field_id;
-                    opt.textContent = f.field_name;
-                    sel.appendChild(opt);
-                });
-            });
-        })
-        .catch(() => {
-            // Fallback fields
-            const fields = [
-                {field_id: 'NIP', field_name: 'NIP'},
-                {field_id: 'Nama', field_name: 'Nama'},
-                {field_id: 'UnitKerjaName', field_name: 'Unit Kerja'},
-                {field_id: 'Status', field_name: 'Status'},
-                {field_id: 'FingerID', field_name: 'Finger ID'},
-            ];
-            [filterField1, filterField2].forEach(sel => {
-                sel.innerHTML = '<option value="">- Pilih Field -</option>';
-                fields.forEach(f => {
-                    const opt = document.createElement('option');
-                    opt.value = f.field_id;
-                    opt.textContent = f.field_name;
-                    sel.appendChild(opt);
-                });
-            });
-        });
+    // ---------- global field filter ----------
+    // Standar field filter berasal dari HRIS Global UI.
+    // Tidak ada lagi daftar field lokal di halaman ini.
+    if (window.HRISGlobal) {
+        HRISGlobal.initFilterFields('.hris-filter-field');
+    }
 
     // ================= IMPORT FILE FINGER (.DAT) =================
     // Fungsi ini TERPISAH dari btnImpor existing.
@@ -622,6 +594,21 @@ document.addEventListener('DOMContentLoaded', function () {
         return hariIndonesia[value] || value;
     }
 
+    function formatStatusHari(row) {
+        const isDl =
+            row.dinas_luar === true ||
+            row.transaksi_in === 'DinasLuar' ||
+            row.transaksi_out === 'DinasLuar';
+
+        if (isDl) {
+            return 'DL';
+        }
+
+        return row.is_libur === true
+            ? 'Libur'
+            : 'Hari Kerja';
+    }
+
     // ================= TAB 1: VIEW DATA =================
 
     const tbodyFinger =
@@ -761,7 +748,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 <td class="normalisasi-left">${formatDateTimeID(r.activity_date_siaga || r.tgl_kerja)}</td>
                 <td>${r.shift_kerja || r.shift || '1'}</td>
                 <td class="normalisasi-left">${formatDateTimeID(r.tgl_kerja)}</td>
-                <td class="normalisasi-left">${formatHariIndonesia(r.hari)} / ${r.is_libur || ''}</td>
+                <td class="normalisasi-left">${formatHariIndonesia(r.hari)} / ${formatStatusHari(r)}</td>
                 <td>-</td>
                 <td>${r.jam_baku_in || '-'}</td>
                 <td>${r.jam_baku_out || '-'}</td>
@@ -926,6 +913,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     document.getElementById('export-tab');
 
                 if (exportTab) {
+                    // Tandai bahwa tab ini baru saja menerima
+                    // hasil EXPORT langsung dari server.
+                    // Event shown.bs.tab tidak boleh query ulang ABSENSI.
+                    exportTab.dataset.skipReload = '1';
+
                     bootstrap.Tab.getOrCreateInstance(
                         exportTab
                     ).show();
@@ -957,6 +949,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (exportTab) {
         exportTab.addEventListener('shown.bs.tab', function () {
+
+            // ----------------------------------------------------
+            // Jika tab dibuka langsung setelah EXPORT berhasil,
+            // hasil export sudah dirender dari res.data.
+            //
+            // JANGAN query ulang ABSENSI karena akan menimpa
+            // hasil export dengan dataset lain.
+            // ----------------------------------------------------
+            if (exportTab.dataset.skipReload === '1') {
+                delete exportTab.dataset.skipReload;
+                return;
+            }
 
             const params = getFilterParams();
 

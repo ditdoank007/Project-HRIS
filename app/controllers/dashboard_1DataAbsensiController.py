@@ -1037,33 +1037,382 @@ def api_absensi_non_finger_save():
 
 
 def api_absensi_non_finger_delete():
-    """API: Delete absensi non finger"""
+    """API: Hapus SATU transaksi Absensi Non Finger berdasarkan FingerID + waktu + status + mesin."""
     try:
-        data = request.get_json()
-        nip = data.get('finger_id', '')  # ✅ NIP
-        tgl = data.get('tgl', '')
-        
-        if not nip or not tgl:
-            return jsonify({'error': 'Data tidak lengkap'})
-        
-        tgl_date = datetime.strptime(tgl, '%Y-%m-%d')
-        
-        # ✅ Delete by NIP di KET_INJECT
-        result = TimeRecorder.query.filter(
-            TimeRecorder.KET_INJECT == nip,
-            TimeRecorder.MESIN == '999',
-            db.func.date(TimeRecorder.WAKTU) == tgl_date.date(),
+        data = request.get_json() or {}
+
+        finger_id = str(data.get('finger_id', '')).strip()
+        waktu_raw = str(data.get('waktu', '')).strip()
+        status = str(data.get('status', '')).strip().upper()
+        mesin = str(data.get('mesin', '')).strip()
+
+        if not finger_id or not waktu_raw or not status or not mesin:
+            return jsonify({
+                'success': False,
+                'error': 'FingerID, waktu, status, dan mesin harus diisi'
+            }), 400
+
+        if mesin != '999':
+            return jsonify({
+                'success': False,
+                'error': 'Hanya data Absensi Non Finger (MESIN=999) yang dapat dihapus'
+            }), 400
+
+        if status not in ('IN', 'OUT'):
+            return jsonify({
+                'success': False,
+                'error': 'Status transaksi tidak valid'
+            }), 400
+
+        try:
+            waktu = datetime.strptime(
+                waktu_raw,
+                '%Y-%m-%d %H:%M:%S'
+            )
+        except ValueError:
+            return jsonify({
+                'success': False,
+                'error': 'Format waktu tidak valid'
+            }), 400
+
+        # ============================================================
+        # IDENTITAS UTAMA = FingerID.
+        # NIP tidak digunakan sebagai kunci transaksi.
+        # ============================================================
+        pegawai = (
+            Pegawai.query
+            .filter(Pegawai.FINGER_ID == finger_id)
+            .first()
+        )
+
+        if not pegawai:
+            return jsonify({
+                'success': False,
+                'error': f'Pegawai dengan FingerID {finger_id} tidak ditemukan'
+            }), 404
+
+        punch = 0 if status == 'IN' else 1
+
+        # ============================================================
+        # 1. Hapus RAW exact.
+        # ============================================================
+        raw_result = db.session.execute(
+            text("""
+                DELETE FROM FINGER_HARVEST_RAW
+                WHERE USER_ID = :finger_id
+                  AND DEVICE_IP = '999'
+                  AND WAKTU = :waktu
+                  AND PUNCH = :punch
+            """),
+            {
+                'finger_id': finger_id,
+                'waktu': waktu,
+                'punch': punch,
+            }
+        )
+
+        # ============================================================
+        # 2. Hapus TIME_RECORDER exact.
+        #
+        # PK legacy:
+        # FingerID + Waktu + Status + Mesin
+        # ============================================================
+        tr_result = db.session.query(TimeRecorder).filter(
+            TimeRecorder.FINGER_ID == finger_id,
+            TimeRecorder.WAKTU == waktu,
+            TimeRecorder.STATUS == status,
+            TimeRecorder.MESIN == mesin,
             TimeRecorder.TRANSAKSI == 'MANUAL'
-        ).delete()
-        
+        ).delete(synchronize_session=False)
+
+        # ============================================================
+        # KEDUA tabel wajib memiliki transaksi.
+        # Jangan pernah commit kondisi parsial.
+        # ============================================================
+        if raw_result.rowcount != 1 or tr_result != 1:
+            db.session.rollback()
+
+            return jsonify({
+                'success': False,
+                'error': (
+                    'Transaksi manual tidak dapat dihapus karena '
+                    'data RAW dan TIME_RECORDER tidak berpasangan '
+                    f'(RAW={raw_result.rowcount or 0}, '
+                    f'TIME_RECORDER={tr_result or 0})'
+                )
+            }), 409
+
         db.session.commit()
-        
-        return jsonify({'success': True, 'message': f'{result} data berhasil dihapus'})
-        
+
+        return jsonify({
+            'success': True,
+            'message': (
+                f'Transaksi FingerID {finger_id} '
+                f'{waktu.strftime("%d/%m/%Y %H:%M:%S")} {status} berhasil dihapus'
+            ),
+            'raw_deleted': raw_result.rowcount or 0,
+            'time_recorder_deleted': tr_result or 0
+        })
+
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)})
+        import traceback
+        traceback.print_exc()
 
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+def api_absensi_non_finger_edit():
+    """API: Edit SATU transaksi Absensi Non Finger berdasarkan FingerID."""
+    try:
+        data = request.get_json() or {}
+
+        finger_id = str(data.get('finger_id', '')).strip()
+
+        old_waktu_raw = str(data.get('old_waktu', '')).strip()
+        old_status = str(data.get('old_status', '')).strip().upper()
+        old_mesin = str(data.get('old_mesin', '')).strip()
+
+        new_waktu_raw = str(data.get('new_waktu', '')).strip()
+        new_status = str(data.get('new_status', '')).strip().upper()
+
+        if not all([
+            finger_id,
+            old_waktu_raw,
+            old_status,
+            old_mesin,
+            new_waktu_raw,
+            new_status
+        ]):
+            return jsonify({
+                'success': False,
+                'error': 'Data transaksi belum lengkap'
+            }), 400
+
+        if old_mesin != '999':
+            return jsonify({
+                'success': False,
+                'error': 'Hanya data Absensi Non Finger (MESIN=999) yang dapat diedit'
+            }), 400
+
+        if old_status not in ('IN', 'OUT') or new_status not in ('IN', 'OUT'):
+            return jsonify({
+                'success': False,
+                'error': 'Status transaksi tidak valid'
+            }), 400
+
+        try:
+            # Terima format dari tabel maupun input datetime-local browser.
+            old_waktu_raw = old_waktu_raw.replace('T', ' ')
+            new_waktu_raw = new_waktu_raw.replace('T', ' ')
+
+            try:
+                old_waktu = datetime.strptime(
+                    old_waktu_raw,
+                    '%Y-%m-%d %H:%M:%S'
+                )
+            except ValueError:
+                old_waktu = datetime.strptime(
+                    old_waktu_raw,
+                    '%Y-%m-%d %H:%M'
+                )
+
+            try:
+                new_waktu = datetime.strptime(
+                    new_waktu_raw,
+                    '%Y-%m-%d %H:%M:%S'
+                )
+            except ValueError:
+                new_waktu = datetime.strptime(
+                    new_waktu_raw,
+                    '%Y-%m-%d %H:%M'
+                )
+
+        except ValueError:
+            return jsonify({
+                'success': False,
+                'error': 'Format waktu tidak valid'
+            }), 400
+
+        # ============================================================
+        # IDENTITAS UTAMA = FingerID.
+        # FingerID TIDAK boleh berubah melalui Edit transaksi.
+        # ============================================================
+        pegawai = (
+            Pegawai.query
+            .filter(Pegawai.FINGER_ID == finger_id)
+            .first()
+        )
+
+        if not pegawai:
+            return jsonify({
+                'success': False,
+                'error': f'Pegawai dengan FingerID {finger_id} tidak ditemukan'
+            }), 404
+
+        # ============================================================
+        # Cari transaksi lama secara EXACT.
+        # ============================================================
+        old_tr = (
+            TimeRecorder.query
+            .filter(
+                TimeRecorder.FINGER_ID == finger_id,
+                TimeRecorder.WAKTU == old_waktu,
+                TimeRecorder.STATUS == old_status,
+                TimeRecorder.MESIN == old_mesin,
+                TimeRecorder.TRANSAKSI == 'MANUAL'
+            )
+            .first()
+        )
+
+        if not old_tr:
+            return jsonify({
+                'success': False,
+                'error': 'Transaksi TIME_RECORDER lama tidak ditemukan'
+            }), 404
+
+        old_punch = 0 if old_status == 'IN' else 1
+        new_punch = 0 if new_status == 'IN' else 1
+
+        # ============================================================
+        # Jangan izinkan bentrok dengan transaksi manual lain.
+        # ============================================================
+        if (
+            new_waktu != old_waktu
+            or new_status != old_status
+        ):
+            duplicate_tr = (
+                TimeRecorder.query
+                .filter(
+                    TimeRecorder.FINGER_ID == finger_id,
+                    TimeRecorder.WAKTU == new_waktu,
+                    TimeRecorder.STATUS == new_status,
+                    TimeRecorder.MESIN == old_mesin,
+                    TimeRecorder.TRANSAKSI == 'MANUAL'
+                )
+                .first()
+            )
+
+            if duplicate_tr:
+                return jsonify({
+                    'success': False,
+                    'error': 'Sudah ada transaksi manual pada FingerID, waktu, status, dan mesin tersebut'
+                }), 409
+
+        # ============================================================
+        # Cari RAW lama secara EXACT.
+        # ============================================================
+        raw_old = db.session.execute(
+            text("""
+                SELECT ID
+                FROM FINGER_HARVEST_RAW
+                WHERE USER_ID = :finger_id
+                  AND DEVICE_IP = '999'
+                  AND WAKTU = :waktu
+                  AND PUNCH = :punch
+                ORDER BY ID DESC
+                LIMIT 1
+            """),
+            {
+                'finger_id': finger_id,
+                'waktu': old_waktu,
+                'punch': old_punch,
+            }
+        ).mappings().first()
+
+        # ============================================================
+        # RAW wajib ada.
+        # TIME_RECORDER sudah diverifikasi di atas.
+        #
+        # Jika salah satu tidak ada, jangan ubah apa pun.
+        # ============================================================
+        if not raw_old:
+            db.session.rollback()
+
+            return jsonify({
+                'success': False,
+                'error': (
+                    'Transaksi FINGER_HARVEST_RAW lama tidak ditemukan. '
+                    'Edit dibatalkan agar RAW dan TIME_RECORDER tetap sinkron.'
+                )
+            }), 409
+
+        # ============================================================
+        # UPDATE TIME_RECORDER.
+        #
+        # Karena PK TIME_RECORDER berubah bila waktu/status berubah,
+        # record lama dihapus lalu record baru dibuat dalam transaction.
+        # ============================================================
+        old_ket = old_tr.KET
+        old_transaksi = old_tr.TRANSAKSI
+        old_update_by = old_tr.UPDATE_IN_BY
+        old_ket_inject = old_tr.KET_INJECT
+        old_ref_inject = old_tr.REF_INJECT
+        old_trx = old_tr.TRX
+
+        db.session.delete(old_tr)
+        db.session.flush()
+
+        db.session.add(
+            TimeRecorder(
+                FINGER_ID=finger_id,
+                WAKTU=new_waktu,
+                STATUS=new_status,
+                MESIN=old_mesin,
+                KET=old_ket or 'MANUAL',
+                TRANSAKSI=old_transaksi or 'MANUAL',
+                UPDATE_IN_BY=old_update_by or 'admin',
+                UPDATE_DATE=datetime.now(),
+                KET_INJECT=old_ket_inject,
+                REF_INJECT=old_ref_inject,
+                TRX=old_trx
+            )
+        )
+
+        # ============================================================
+        # UPDATE RAW.
+        # ============================================================
+        if raw_old:
+            db.session.execute(
+                text("""
+                    UPDATE FINGER_HARVEST_RAW
+                    SET WAKTU = :new_waktu,
+                        HARVEST_DATE = :new_harvest_date,
+                        STATUS = :new_status,
+                        PUNCH = :new_punch
+                    WHERE ID = :raw_id
+                """),
+                {
+                    'new_waktu': new_waktu,
+                    'new_harvest_date': new_waktu.date(),
+                    'new_status': new_status,
+                    'new_punch': new_punch,
+                    'raw_id': raw_old['ID'],
+                }
+            )
+
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': (
+                f'Transaksi FingerID {finger_id} berhasil diubah '
+                f'menjadi {new_waktu.strftime("%d/%m/%Y %H:%M:%S")} {new_status}'
+            )
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        import traceback
+        traceback.print_exc()
+
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 def data_absensi_normalisasi_finger():
     """
@@ -1162,6 +1511,8 @@ def api_normalisasi_import_finger():
         field_mapping = {
             'NIP': 'p.NIP',
             'Nama': 'p.Nama',
+            'FingerID': 'p.FingerID',
+            'UnitKerja': 'p.UnitKerja',
             'UnitKerjaName': 'p.UnitKerja',
         }
 
@@ -1354,6 +1705,7 @@ def api_normalisasi_process():
             'NIP': 'p.NIP',
             'Nama': 'p.Nama',
             'NAMA': 'p.Nama',
+            'FingerID': 'p.FingerID',
             'UnitKerja': 'p.UnitKerja',
             'Unit Kerja': 'p.UnitKerja',
             'Gol': 'p.Gol',
@@ -1388,6 +1740,7 @@ def api_normalisasi_process():
         raw_sql = text(f"""
             SELECT
                 r.FINGER_ID,
+                p.FingerID AS PEGAWAI_FINGER_ID,
                 r.USER_ID,
                 r.WAKTU,
                 r.STATUS,
@@ -1419,13 +1772,13 @@ def api_normalisasi_process():
             query_params
         ).mappings().all()
 
+        # FINGER_HARVEST_RAW boleh kosong.
+        #
+        # Dinas Luar StatusUM 1/2 tetap harus dapat
+        # menghasilkan row normalisasi walaupun tidak
+        # ada fingerprint.
         if not raw_rows:
-            return jsonify({
-                'error': (
-                    'Data FINGER_HARVEST_RAW kosong '
-                    'untuk periode yang dipilih.'
-                )
-            })
+            raw_rows = []
 
         # ============================================================
         # Kelompokkan log per (finger_id, tanggal)
@@ -1457,11 +1810,15 @@ def api_normalisasi_process():
 
             grouped[
                 (
-                    str(r['FINGER_ID']),
+                    str(r['PEGAWAI_FINGER_ID']),
                     waktu.strftime('%Y-%m-%d')
                 )
             ].append({
-                'finger_id': str(r['FINGER_ID']),
+                # Business identity = FingerID pegawai.
+                'finger_id': str(r['PEGAWAI_FINGER_ID']),
+                # Raw machine UID tetap dipertahankan untuk
+                # identitas record saat Shift 2 dikonsumsi.
+                'FINGER_ID': r['FINGER_ID'],
                 'nip': r['NIP'] or '',
                 'nama': r['NAMA'] or '',
                 'gol': r['GOL'] or '',
@@ -1472,13 +1829,12 @@ def api_normalisasi_process():
                 'device_ip': r['DEVICE_IP'] or '',
             })
 
+        # grouped boleh kosong.
+        #
+        # Dinas Luar StatusUM 1/2 dapat menghasilkan
+        # row normalisasi walaupun tidak ada fingerprint.
         if not grouped:
-            return jsonify({
-                'error': (
-                    'Tidak ada log fingerprint valid '
-                    'yang dapat dinormalisasi.'
-                )
-            })
+            grouped = {}
 
         # ============================================================
         # SHIFT 2 SIAGA
@@ -1933,6 +2289,283 @@ def api_normalisasi_process():
         # 1. SHIFT 2 SIAGA
         # ============================================================
 
+        # ============================================================
+        # DINAS LUAR
+        #
+        # Layer transaksi khusus.
+        #
+        # Identity attendance = FingerID.
+        #
+        # StatusUM:
+        #   0 = Tdk Terpotong, wajib cari fingerprint
+        #   1 = Terpotong, tidak wajib fingerprint
+        #   2 = Tdk Terpotong Penempatan, tidak wajib fingerprint
+        #
+        # DL tetap berlaku pada hari kerja maupun hari libur.
+        #
+        # Layer ini TIDAK mengubah FINGER_HARVEST_RAW.
+        # ============================================================
+
+        dinas_luar_rows = (
+            db.session.query(
+                DinasLuar,
+                Pegawai
+            )
+            .join(
+                Pegawai,
+                db.func.trim(DinasLuar.FINGER_ID)
+                == db.func.trim(Pegawai.FINGER_ID)
+            )
+            .filter(
+                DinasLuar.TRANSAKSI == 'DinasLuar',
+                DinasLuar.TGL_AWAL_DINAS_LUAR <= tgl_akhir,
+                DinasLuar.TGL_AKHIR_DINAS_LUAR >= tgl_awal,
+            )
+            .all()
+        )
+
+        def _dl_filter_match(pegawai):
+            for field, value in (
+                (filter_field1, filter_value1),
+                (filter_field2, filter_value2),
+            ):
+                if not field or not value:
+                    continue
+
+                value_text = str(value).strip().lower()
+
+                if field == 'NIP':
+                    candidate = str(
+                        pegawai.NIP or ''
+                    ).strip().lower()
+                elif field in ('Nama', 'NAMA'):
+                    candidate = str(
+                        pegawai.NAMA or ''
+                    ).strip().lower()
+                elif field == 'FingerID':
+                    candidate = str(
+                        pegawai.FINGER_ID or ''
+                    ).strip().lower()
+                elif field in ('UnitKerja', 'Unit Kerja'):
+                    candidate = str(
+                        pegawai.UNIT_KERJA or ''
+                    ).strip().lower()
+                elif field in ('Gol', 'Gol-Pangkat'):
+                    candidate = str(
+                        pegawai.GOL or ''
+                    ).strip().lower()
+                else:
+                    continue
+
+                if value_text not in candidate:
+                    return False
+
+            return True
+
+        def _dl_mark_existing_row(row, dl):
+            row['transaksi_in'] = 'DinasLuar'
+            row['transaksi_out'] = 'DinasLuar'
+            row['status_um'] = int(
+                dl.STATUS_UM
+                if dl.STATUS_UM is not None
+                else 0
+            )
+            row['dinas_luar'] = True
+            row['dinas_luar_transaksi_id'] = (
+                str(dl.TRANSAKSI_ID or '').strip()
+            )
+            row['dinas_luar_jenis'] = (
+                str(dl.JENIS or '').strip()
+            )
+            row['dinas_luar_keterangan'] = (
+                str(
+                    dl.KETERANGAN_DINAS_LUAR
+                    or ''
+                ).strip()
+            )
+
+        for dl, pegawai_dl in dinas_luar_rows:
+
+            if not _dl_filter_match(pegawai_dl):
+                continue
+
+            finger_id_dl = str(
+                pegawai_dl.FINGER_ID or ''
+            ).strip()
+
+            if not finger_id_dl:
+                continue
+
+            nip_dl = str(
+                pegawai_dl.NIP or ''
+            ).strip()
+
+            if not nip_dl:
+                continue
+
+            status_um_dl = int(
+                dl.STATUS_UM
+                if dl.STATUS_UM is not None
+                else 0
+            )
+
+            # ========================================================
+            # STATUSUM 0
+            #
+            # Wajib mencari fingerprint.
+            #
+            # Jika hasil fingerprint sudah ada di result,
+            # cukup tandai sebagai Dinas Luar.
+            #
+            # Jika fingerprint tidak ada, JANGAN membuat
+            # fingerprint palsu.
+            # ========================================================
+            if status_um_dl == 0:
+
+                for row in result:
+                    row_finger = str(
+                        row.get('finger_id') or ''
+                    ).strip()
+
+                    row_date = str(
+                        row.get('tgl_kerja') or ''
+                    ).strip()
+
+                    if (
+                        row_finger == finger_id_dl
+                        and row_date >= (
+                            dl.TGL_AWAL_DINAS_LUAR
+                            .strftime('%Y-%m-%d')
+                        )
+                        and row_date <= (
+                            dl.TGL_AKHIR_DINAS_LUAR
+                            .strftime('%Y-%m-%d')
+                        )
+                    ):
+                        _dl_mark_existing_row(
+                            row,
+                            dl
+                        )
+
+                continue
+
+            # ========================================================
+            # STATUSUM 1 / 2
+            #
+            # Tidak wajib fingerprint.
+            #
+            # DL harus dibuat untuk SETIAP tanggal dalam periode,
+            # termasuk hari libur.
+            #
+            # Hasil fingerprint reguler pada tanggal yang sama
+            # tidak boleh menang.
+            # ========================================================
+
+            dl_start = max(
+                dl.TGL_AWAL_DINAS_LUAR.date(),
+                tgl_awal.date()
+            )
+
+            dl_end = min(
+                dl.TGL_AKHIR_DINAS_LUAR.date(),
+                tgl_akhir.date()
+            )
+
+            if dl_start > dl_end:
+                continue
+
+            current_date = dl_start
+
+            while current_date <= dl_end:
+
+                tgl_str_dl = current_date.strftime(
+                    '%Y-%m-%d'
+                )
+
+                # Hapus hasil fingerprint reguler
+                # pada tanggal yang sedang ditangani.
+                result[:] = [
+                    row
+                    for row in result
+                    if not (
+                        str(
+                            row.get('finger_id') or ''
+                        ).strip()
+                        == finger_id_dl
+                        and str(
+                            row.get('tgl_kerja') or ''
+                        ).strip()
+                        == tgl_str_dl
+                    )
+                ]
+
+                is_libur_dl = (
+                    kalender_map.get(
+                        tgl_str_dl,
+                        'N'
+                    ) == 'Y'
+                )
+
+                jam_baku_in_dl = ''
+                jam_baku_out_dl = ''
+
+                row_dl = {
+                    'no': 0,
+                    'finger_id': finger_id_dl,
+                    'nip': nip_dl,
+                    'nama': str(
+                        pegawai_dl.NAMA or ''
+                    ),
+                    'gol': str(
+                        pegawai_dl.GOL or ''
+                    ),
+                    'unit_kerja': str(
+                        pegawai_dl.UNIT_KERJA or ''
+                    ),
+                    'tgl_kerja': tgl_str_dl,
+                    'hari': current_date.strftime('%A'),
+                    'jam_baku_in': jam_baku_in_dl,
+                    'jam_baku_out': jam_baku_out_dl,
+                    'jam_in': '',
+                    'jam_out': '',
+                    'awal_tlm': 0,
+                    'total_tlm': 0,
+                    'total_psw': 0,
+                    'tingkat_tlm': '',
+                    'tingkat_psw': '',
+                    'persen_pot_tlm': 0,
+                    'persen_pot_psw': 0,
+                    'is_valid_in': True,
+                    'is_valid_out': True,
+                    'is_libur': is_libur_dl,
+                    'shift': '1',
+                    'shift_kerja': '1',
+                    'shift2_siaga': False,
+                    'transaksi_in': 'DinasLuar',
+                    'transaksi_out': 'DinasLuar',
+                    'status_um': status_um_dl,
+                    'dinas_luar': True,
+                    'dinas_luar_transaksi_id': (
+                        str(
+                            dl.TRANSAKSI_ID or ''
+                        ).strip()
+                    ),
+                    'dinas_luar_jenis': str(
+                        dl.JENIS or ''
+                    ).strip(),
+                    'dinas_luar_keterangan': str(
+                        dl.KETERANGAN_DINAS_LUAR
+                        or ''
+                    ).strip(),
+                    'dinas_luar_pendukung': str(
+                        dl.PENDUKUNG or ''
+                    ).strip(),
+                }
+
+                result.append(row_dl)
+
+                current_date += timedelta(days=1)
+
         def _normalisasi_sort_key(r):
             unit = str(
                 r.get('unit_kerja') or ''
@@ -1967,6 +2600,77 @@ def api_normalisasi_process():
         import traceback
         traceback.print_exc()
         return jsonify({'error': str(e)})
+
+
+def api_normalisasi_legacy_test():
+    """
+    EXPERIMENT - Legacy Compatibility Test.
+
+    Tujuan:
+        Menjalankan NORMALISASI EXISTING tanpa melakukan EXPORT
+        ke tabel ABSENSI.
+
+    Endpoint ini hanya mengambil hasil dari:
+        api_normalisasi_process()
+
+    lalu memfilter hasil berdasarkan NIP jika diberikan.
+
+    Tidak:
+        - INSERT ABSENSI
+        - UPDATE ABSENSI
+        - DELETE RAW
+        - mengubah TIME_RECORDER
+    """
+    try:
+        data = request.get_json(silent=True) or {}
+
+        nip_test = str(
+            data.get('nip') or ''
+        ).strip()
+
+        if not nip_test:
+            return jsonify({
+                'error': 'Parameter nip wajib diisi untuk Legacy Test.'
+            }), 400
+
+        # Jalankan NORMALISASI EXISTING menggunakan payload yang sama.
+        # Kita tidak membuat engine/service baru di sini.
+        response = api_normalisasi_process()
+
+        # Flask jsonify() menghasilkan Response.
+        response_data = response.get_json()
+
+        if not response_data:
+            return jsonify({
+                'error': 'Response normalisasi kosong.'
+            }), 500
+
+        if not response_data.get('success'):
+            return jsonify(response_data), response.status_code
+
+        rows = response_data.get('data') or []
+
+        matched = [
+            row
+            for row in rows
+            if str(row.get('nip') or '').strip() == nip_test
+        ]
+
+        return jsonify({
+            'success': True,
+            'mode': 'legacy-test',
+            'nip': nip_test,
+            'total_normalisasi': len(rows),
+            'total_match': len(matched),
+            'data': matched,
+        })
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'error': str(e)
+        }), 500
 
 
 def api_normalisasi_export():
@@ -2189,14 +2893,30 @@ def api_normalisasi_export():
                 tanggal_baku_in = tgl_kerja_str
                 tanggal_baku_out = tgl_kerja_str
 
-            tgl_jam_baku_in = datetime.strptime(
-                f"{tanggal_baku_in} {r['jam_baku_in']}",
-                '%Y-%m-%d %H:%M'
+            jam_baku_in = str(
+                r.get('jam_baku_in') or ''
+            ).strip()
+
+            jam_baku_out = str(
+                r.get('jam_baku_out') or ''
+            ).strip()
+
+            tgl_jam_baku_in = (
+                datetime.strptime(
+                    f"{tanggal_baku_in} {jam_baku_in}",
+                    '%Y-%m-%d %H:%M'
+                )
+                if jam_baku_in
+                else None
             )
 
-            tgl_jam_baku_out = datetime.strptime(
-                f"{tanggal_baku_out} {r['jam_baku_out']}",
-                '%Y-%m-%d %H:%M'
+            tgl_jam_baku_out = (
+                datetime.strptime(
+                    f"{tanggal_baku_out} {jam_baku_out}",
+                    '%Y-%m-%d %H:%M'
+                )
+                if jam_baku_out
+                else None
             )
 
             # --------------------------------------------------------
@@ -2445,6 +3165,7 @@ def api_normalisasi_absensi_view():
             'NAMA': Pegawai.NAMA,
             'UnitKerja': MfUnitKerja.NAMA_UNIT_KERJA,
             'Unit Kerja': MfUnitKerja.NAMA_UNIT_KERJA,
+            'FingerID': Absensi.FINGER_ID,
             'Finger ID': Absensi.FINGER_ID,
             'Fingerid': Absensi.FINGER_ID,
             'FINGER_ID': Absensi.FINGER_ID,

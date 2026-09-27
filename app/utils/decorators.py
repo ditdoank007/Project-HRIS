@@ -45,3 +45,33 @@ def admin_required(view_func):
         return view_func(*args, **kwargs)
 
     return wrapped_view
+
+def form_access_required(form_id):
+    """
+    Decorator untuk route yang membutuhkan hak akses FormID HRIS.
+
+    Administrator:
+        selalu diperbolehkan.
+
+    Operator:
+        harus mempunyai HAK_AKSES_FORM dengan IS_AKSES='Y'.
+
+    Pegawai biasa:
+        ditolak dengan HTTP 403.
+    """
+    def decorator(view_func):
+        @wraps(view_func)
+        def wrapped_view(*args, **kwargs):
+            if not session.get('logged_in'):
+                return redirect(url_for('main.index'))
+
+            from app.utils.authorization import has_form_access, is_administrator
+
+            if not (is_administrator() or has_form_access(form_id)):
+                return ('Forbidden', 403)
+
+            return view_func(*args, **kwargs)
+
+        return wrapped_view
+
+    return decorator

@@ -152,7 +152,7 @@ def login():
 
             if not pegawai and sso_finger_id:
                 pegawai = Pegawai.query.filter(
-                    Pegawai.FingerID == sso_finger_id
+                    Pegawai.FINGER_ID == sso_finger_id
                 ).first()
 
             if not pegawai:
