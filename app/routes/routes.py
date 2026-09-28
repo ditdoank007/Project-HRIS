@@ -101,8 +101,15 @@ from app.controllers.calendarController import (
     api_calendar_category,
 )
 
-from app.controllers.dashboard_1AgendaController import agenda_rapat
-from app.controllers.dashboard_1DisposisiController import agenda_disposisi
+from app.controllers.dashboard_1AgendaController import (
+    agenda_rapat, api_agenda_rapat_list, api_agenda_rapat_save,
+    api_agenda_rapat_detail, api_agenda_rapat_cancel,
+    api_pegawai_agenda_search,
+)
+from app.controllers.dashboard_1DisposisiController import (
+    agenda_disposisi, api_agenda_disposisi_list, api_agenda_disposisi_save,
+    api_agenda_disposisi_detail, api_agenda_disposisi_cancel,
+)
 
 from app.controllers.dashboard_1DataAbsensiController import (
     data_absensi_non_finger, data_absensi_normalisasi_finger, data_absensi_impor_file, data_absensi_pegawai_manual,
@@ -1863,6 +1870,64 @@ def view_agenda_rapat():
 @login_required
 def view_agenda_disposisi():
     return agenda_disposisi()
+
+
+# ============================================================
+# AGENDA LIVE API
+# ============================================================
+
+@main.route('/api/agenda/rapat', methods=['GET'])
+@login_required
+def api_agenda_rapat_route():
+    return api_agenda_rapat_list()
+
+
+@main.route('/api/agenda/rapat', methods=['POST'])
+@login_required
+def api_agenda_rapat_save_route():
+    return api_agenda_rapat_save()
+
+
+@main.route('/api/agenda/rapat/<int:event_id>', methods=['GET'])
+@login_required
+def api_agenda_rapat_detail_route(event_id):
+    return api_agenda_rapat_detail(event_id)
+
+
+@main.route('/api/agenda/rapat/<int:event_id>/cancel', methods=['POST'])
+@login_required
+def api_agenda_rapat_cancel_route(event_id):
+    return api_agenda_rapat_cancel(event_id)
+
+
+@main.route('/api/agenda/pegawai/search', methods=['GET'])
+@login_required
+def api_agenda_pegawai_search_route():
+    return api_pegawai_agenda_search()
+
+
+@main.route('/api/agenda/disposisi', methods=['GET'])
+@login_required
+def api_agenda_disposisi_list_route():
+    return api_agenda_disposisi_list()
+
+
+@main.route('/api/agenda/disposisi', methods=['POST'])
+@login_required
+def api_agenda_disposisi_save_route():
+    return api_agenda_disposisi_save()
+
+
+@main.route('/api/agenda/disposisi/<int:agenda_id>', methods=['GET'])
+@login_required
+def api_agenda_disposisi_detail_route(agenda_id):
+    return api_agenda_disposisi_detail(agenda_id)
+
+
+@main.route('/api/agenda/disposisi/<int:agenda_id>/cancel', methods=['POST'])
+@login_required
+def api_agenda_disposisi_cancel_route(agenda_id):
+    return api_agenda_disposisi_cancel(agenda_id)
 
 
 # ============================================================
