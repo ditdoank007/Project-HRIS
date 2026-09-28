@@ -18,7 +18,8 @@ from flask import (
     request,
     jsonify,
     Response,
-    session
+    session,
+    send_file,
 )
 
 
@@ -30,6 +31,11 @@ from app.models.dinasLuarModel import DinasLuar
 from app.models.pegawaiModel import Pegawai
 from app.models.kalenderModel import MfKalender
 from app.models.calendarSyncTokenModel import CalendarSyncToken
+from app.models.calendarEventModel import CalendarEvent
+from app.models.calendarParticipantModel import CalendarParticipant
+from app.models.agendaRapatAttendanceModel import AgendaRapatAttendance
+from app.models.agendaRapatMetaModel import AgendaRapatMeta
+from app.models.hrisDocumentModel import HrisDocument
 
 from app.utils.absensiNormalisasiHelper import (
     get_label_dinas_luar,
@@ -56,6 +62,7 @@ from app.services.calendar.personal_calendar_service import (
 from app.services.calendar.conflict_service import (
     check_employee_conflict
 )
+from app.services.document_storage import notulen_absolute_path, notulen_relative_path
 
 
 
@@ -408,6 +415,211 @@ def api_calendar_feed(token):
     return Response(
         content,
         mimetype='text/calendar'
+    )
+
+
+
+# ============================================================
+# AGENDA RAPAT FOR CALENDAR PORTAL
+#
+# TERJADWAL -> visible to all employees as a pending agenda.
+# SELESAI -> visible only to employees recorded HADIR by QR.
+# BATAL -> retained in AgendaKu history, but not Personal Calendar.
+# ============================================================
+
+def _calendar_internal_authorized():
+    from config import Config
+    return (
+        request.headers.get("X-Calendar-Internal-Key")
+        and request.headers.get("X-Calendar-Internal-Key")
+        == Config.CALENDAR_INTERNAL_API_KEY
+    )
+
+
+def _calendar_rapat_visible_to_employee(event, nip):
+    if event.STATUS in ("TERJADWAL", "BATAL"):
+        return True
+
+    if event.STATUS != "SELESAI":
+        return False
+
+    return (
+        AgendaRapatAttendance.query
+        .filter(
+            AgendaRapatAttendance.EVENT_ID == event.EVENT_ID,
+            AgendaRapatAttendance.NIP == nip,
+            AgendaRapatAttendance.STATUS == "HADIR",
+        )
+        .first()
+        is not None
+    )
+
+
+def _calendar_rapat_rows(nip):
+    events = (
+        CalendarEvent.query
+        .filter(CalendarEvent.EVENT_TYPE == "RAPAT")
+        .order_by(CalendarEvent.START_DATE.desc())
+        .all()
+    )
+
+    data = []
+
+    for event in events:
+        if not _calendar_rapat_visible_to_employee(event, nip):
+            continue
+
+        meta = (
+            AgendaRapatMeta.query
+            .filter(AgendaRapatMeta.EVENT_ID == event.EVENT_ID)
+            .first()
+        )
+
+        organizer_nip = meta.ORGANIZER_NIP if meta else event.CREATED_BY
+        organizer = (
+            Pegawai.query
+            .filter(Pegawai.NIP == organizer_nip)
+            .first()
+        )
+
+        attendance = (
+            db.session.query(AgendaRapatAttendance, Pegawai)
+            .join(Pegawai, Pegawai.NIP == AgendaRapatAttendance.NIP)
+            .filter(
+                AgendaRapatAttendance.EVENT_ID == event.EVENT_ID,
+                AgendaRapatAttendance.STATUS == "HADIR",
+            )
+            .order_by(AgendaRapatAttendance.SCANNED_DATE.asc())
+            .all()
+        )
+
+        document = (
+            HrisDocument.query
+            .filter(
+                HrisDocument.DOCUMENT_TYPE == "NOTULEN_RAPAT",
+                HrisDocument.ENTITY_TYPE == "CALENDAR_EVENT",
+                HrisDocument.ENTITY_ID == str(event.EVENT_ID),
+            )
+            .first()
+        )
+
+        data.append({
+            "event_id": event.EVENT_ID,
+            "title": event.TITLE,
+            "description": event.DESCRIPTION,
+            "start": event.START_DATE.isoformat() if event.START_DATE else None,
+            "end": event.END_DATE.isoformat() if event.END_DATE else None,
+            "location": event.LOCATION,
+            "status": event.STATUS,
+            "organizer_nip": organizer_nip,
+            "organizer_name": organizer.NAMA if organizer else organizer_nip,
+            "attendance_count": len(attendance),
+            "attendance": [
+                {
+                    "nip": p.NIP,
+                    "nama": p.NAMA,
+                    "scanned_date": a.SCANNED_DATE.isoformat(),
+                }
+                for a, p in attendance
+            ],
+            "notulen_available": bool(document),
+        })
+
+    return data
+
+
+def api_calendar_agenda_rapat_internal():
+    if not _calendar_internal_authorized():
+        return jsonify({
+            "status": "error",
+            "message": "Unauthorized"
+        }), 401
+
+    nip = str(request.headers.get("X-Calendar-NIP") or "").strip()
+    if not nip:
+        return jsonify({
+            "status": "error",
+            "message": "NIP wajib diisi."
+        }), 400
+
+    return jsonify({
+        "status": "success",
+        "data": _calendar_rapat_rows(nip),
+    })
+
+
+def api_calendar_agenda_rapat_notulen_internal(event_id):
+    if not _calendar_internal_authorized():
+        return jsonify({
+            "status": "error",
+            "message": "Unauthorized"
+        }), 401
+
+    nip = str(request.headers.get("X-Calendar-NIP") or "").strip()
+    if not nip:
+        return jsonify({
+            "status": "error",
+            "message": "NIP wajib diisi."
+        }), 400
+
+    event = (
+        CalendarEvent.query
+        .filter(
+            CalendarEvent.EVENT_ID == event_id,
+            CalendarEvent.EVENT_TYPE == "RAPAT",
+        )
+        .first()
+    )
+
+    if not event:
+        return jsonify({
+            "status": "error",
+            "message": "Agenda rapat tidak ditemukan."
+        }), 404
+
+    if not _calendar_rapat_visible_to_employee(event, nip):
+        return jsonify({
+            "status": "error",
+            "message": "Anda tidak berhak mengakses Notulen rapat ini."
+        }), 403
+
+    document = (
+        HrisDocument.query
+        .filter(
+            HrisDocument.DOCUMENT_TYPE == "NOTULEN_RAPAT",
+            HrisDocument.ENTITY_TYPE == "CALENDAR_EVENT",
+            HrisDocument.ENTITY_ID == str(event_id),
+        )
+        .first()
+    )
+
+    if not document:
+        return jsonify({
+            "status": "error",
+            "message": "Notulen belum tersedia."
+        }), 404
+
+    expected_path = notulen_absolute_path(event.START_DATE, event.EVENT_ID)
+    expected_relative = notulen_relative_path(event.START_DATE, event.EVENT_ID)
+
+    if document.STORAGE_PATH != expected_relative:
+        return jsonify({
+            "status": "error",
+            "message": "Metadata storage Notulen tidak valid."
+        }), 409
+
+    if not os.path.isfile(expected_path):
+        return jsonify({
+            "status": "error",
+            "message": "File Notulen tidak ditemukan di central storage."
+        }), 404
+
+    return send_file(
+        expected_path,
+        mimetype=document.MIME_TYPE or "application/pdf",
+        as_attachment=False,
+        download_name=document.ORIGINAL_FILENAME,
+        max_age=0,
     )
 
 
