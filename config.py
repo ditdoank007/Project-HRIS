@@ -25,3 +25,4 @@ class Config:
 
     SECRET_KEY = os.getenv('SECRET_KEY')
     CALENDAR_INTERNAL_API_KEY = os.getenv('CALENDAR_INTERNAL_API_KEY')
+    HRIS_DATA_ROOT = os.getenv('HRIS_DATA_ROOT', '/mnt/hris-data')
