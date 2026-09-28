@@ -26,6 +26,7 @@ from app.services.document_storage import (
     save_notulen,
 )
 from app.utils.authorization import is_administrator, is_hris_operator
+from config import Config
 
 
 def agenda_rapat():
@@ -428,7 +429,7 @@ def api_agenda_rapat_scan(token):
     New QR codes always point to the public Calendar gateway.
     """
     calendar_base = (
-        getattr(__import__("config").Config, "CALENDAR_PUBLIC_BASE_URL", None)
+        getattr(Config, "CALENDAR_PUBLIC_BASE_URL", None)
         or "https://calendar.sarsurabaya.id"
     ).rstrip("/")
     return redirect(
