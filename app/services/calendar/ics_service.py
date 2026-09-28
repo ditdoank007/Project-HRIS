@@ -85,15 +85,6 @@ def generate_ics(events):
         if not start_text:
             continue
 
-        start = date.fromisoformat(start_text)
-        end_text = event.get("end") or start_text
-        end = date.fromisoformat(end_text)
-
-        # iCalendar DTEND untuk all-day event bersifat exclusive.
-        # Karena HRIS menyimpan tanggal akhir sebagai inclusive,
-        # tambahkan satu hari.
-        dtend = end + timedelta(days=1)
-
         event_id = _ics_escape(event.get("id"))
         title = _ics_escape(event.get("title"))
         description = _ics_escape(event.get("description"))
@@ -102,8 +93,28 @@ def generate_ics(events):
         lines.extend([
             "BEGIN:VEVENT",
             f"UID:{event_id}@hris",
-            f"DTSTART;VALUE=DATE:{start.strftime('%Y%m%d')}",
-            f"DTEND;VALUE=DATE:{dtend.strftime('%Y%m%d')}",
+        ])
+
+        if event.get("all_day", True):
+            start = date.fromisoformat(start_text[:10])
+            end_text = event.get("end") or start_text
+            end = date.fromisoformat(end_text[:10])
+            dtend = end + timedelta(days=1)
+            lines.extend([
+                f"DTSTART;VALUE=DATE:{start.strftime('%Y%m%d')}",
+                f"DTEND;VALUE=DATE:{dtend.strftime('%Y%m%d')}",
+            ])
+        else:
+            from datetime import datetime as dt
+            start_dt = dt.fromisoformat(start_text.replace("Z", "+00:00"))
+            end_text = event.get("end") or start_text
+            end_dt = dt.fromisoformat(end_text.replace("Z", "+00:00"))
+            lines.extend([
+                f"DTSTART;TZID=Asia/Jakarta:{start_dt.strftime('%Y%m%dT%H%M%S')}",
+                f"DTEND;TZID=Asia/Jakarta:{end_dt.strftime('%Y%m%dT%H%M%S')}",
+            ])
+
+        lines.extend([
             f"SUMMARY:{title}",
             f"DESCRIPTION:{description}",
             f"LOCATION:{location}",
