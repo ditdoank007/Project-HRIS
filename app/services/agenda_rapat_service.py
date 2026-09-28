@@ -98,7 +98,11 @@ def _role_priority(pegawai):
     if "kepala kantor" in text_value or "kakansar" in text_value:
         return 10
 
-    if "kasubbag umum" in text_value or "kasubbag" in text_value and "umum" in text_value:
+    if (
+        "kasubbag umum" in text_value
+        or "kepala subbagian umum" in text_value
+        or ("kasubbag" in text_value and "umum" in text_value)
+    ):
         return 20
 
     if (
