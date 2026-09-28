@@ -1,8 +1,6 @@
 import hashlib
 import os
 import tempfile
-from datetime import datetime
-
 from flask import current_app
 from werkzeug.datastructures import FileStorage
 
@@ -46,6 +44,8 @@ def validate_notulen(file_storage: FileStorage):
         raise ValueError("File Notulen PDF wajib dipilih.")
 
     filename = file_storage.filename.strip()
+    if len(filename) > 255:
+        raise ValueError("Nama file Notulen maksimal 255 karakter.")
     if not filename.lower().endswith(".pdf"):
         raise ValueError("Notulen hanya boleh berupa file PDF.")
 
