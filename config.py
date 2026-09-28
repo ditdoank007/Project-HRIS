@@ -28,3 +28,4 @@ class Config:
     HRIS_DATA_ROOT = os.getenv('HRIS_DATA_ROOT', '/mnt/hris-data')
     HRIS_TTD_ROOT = os.getenv('HRIS_TTD_ROOT', '/mnt/hris-data/TTD_PEGAWAI')
     HRIS_PUBLIC_BASE_URL = os.getenv('HRIS_PUBLIC_BASE_URL', '')
+    CALENDAR_PUBLIC_BASE_URL = os.getenv('CALENDAR_PUBLIC_BASE_URL', 'https://calendar.sarsurabaya.id')
