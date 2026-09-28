@@ -377,7 +377,10 @@ def api_agenda_rapat_complete(event_id):
     event.UPDATE_DATE = datetime.utcnow()
     meta = get_meta(event.EVENT_ID)
     if meta:
-        meta.QR_ACTIVE = "Y"
+        # Rapat selesai = attendance ditutup.
+        # Hanya pegawai yang sudah scan sampai titik finalisasi
+        # yang mendapatkan rapat secara permanen di kalender pribadi.
+        meta.QR_ACTIVE = "N"
         meta.UPDATE_BY = session.get("nip", "system")
         meta.UPDATE_DATE = datetime.utcnow()
     db.session.commit()
