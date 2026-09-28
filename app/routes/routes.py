@@ -99,6 +99,8 @@ from app.controllers.calendarController import (
     api_calendar_feed,
     api_calendar_user_agenda,
     api_calendar_category,
+    api_calendar_agenda_rapat_internal,
+    api_calendar_agenda_rapat_notulen_internal,
 )
 
 from app.controllers.dashboard_1AgendaController import (
@@ -2035,6 +2037,24 @@ def api_calendar_personal_internal_route():
     )
 
     return api_calendar_personal_internal()
+
+
+@main.route(
+    '/api/internal/calendar/agenda/rapat',
+    methods=['GET']
+)
+def api_calendar_agenda_rapat_internal_route():
+
+    return api_calendar_agenda_rapat_internal()
+
+
+@main.route(
+    '/api/internal/calendar/agenda/rapat/<int:event_id>/notulen',
+    methods=['GET']
+)
+def api_calendar_agenda_rapat_notulen_internal_route(event_id):
+
+    return api_calendar_agenda_rapat_notulen_internal(event_id)
 
 
 @main.route(
