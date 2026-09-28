@@ -132,14 +132,29 @@
 }
 
 .rapat-qr-box {
-    min-height: 230px;
+    min-height: 300px;
     border: 1px dashed #cbd5e1;
     border-radius: 12px;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
     background: #f8fafc;
+    padding: 18px !important;
+}
+
+.rapat-qr-image {
+    width: min(320px, 82%);
+    max-width: 320px;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}
+
+.rapat-qr-help {
+    text-align: center;
+    max-width: 320px;
 }
 
 .rapat-detail-item {
