@@ -523,13 +523,17 @@ document.addEventListener("DOMContentLoaded", function () {
                     <div class="fw-semibold mb-2">Hadir: ${attendance.length} orang</div>
                     <div class="small">
                         ${attendance.map((p, i) =>
-                            (i + 1) + ". " + esc(p.nama || p.nip) +
-                            ' <span class="text-muted">(' + esc(p.nip) + ')</span>'
+                            (i + 1) + ". " + esc(p.nama || p.nip || "-") +
+                            ' <span class="text-muted">(' +
+                            esc((p.attendee_type === "NON_PEGAWAI" ? "Non Pegawai" : "Pegawai")) +
+                            (p.nip ? " · " + p.nip : "") +
+                            (p.email ? " · " + p.email : "") +
+                            ')</span>'
                         ).join("<br>")}
                     </div>
                 </div>
             `
-            : '<div class="text-muted small mt-3">Belum ada pegawai yang melakukan scan QR.</div>';
+            : '<div class="text-muted small mt-3">Belum ada peserta yang melakukan absensi.</div>';
 
         document.getElementById("detailRapatBody").innerHTML = `
             <div class="row g-4">
