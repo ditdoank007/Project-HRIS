@@ -483,8 +483,7 @@ def _calendar_rapat_rows(nip):
         )
 
         attendance = (
-            db.session.query(AgendaRapatAttendance, Pegawai)
-            .join(Pegawai, Pegawai.NIP == AgendaRapatAttendance.NIP)
+            AgendaRapatAttendance.query
             .filter(
                 AgendaRapatAttendance.EVENT_ID == event.EVENT_ID,
                 AgendaRapatAttendance.STATUS == "HADIR",
@@ -516,17 +515,31 @@ def _calendar_rapat_rows(nip):
             "attendance_count": len(attendance),
             "attendance": [
                 {
-                    "nip": p.NIP,
-                    "nama": p.NAMA,
+                    "attendee_type": a.ATTENDEE_TYPE,
+                    "nip": a.NIP,
+                    "nama": (
+                        p.NAMA
+                        if p
+                        else (a.NAME or a.NAME_RAW or "-")
+                    ),
+                    "email": (
+                        p.MAIL
+                        if p and p.MAIL
+                        else a.EMAIL
+                    ),
                     "scanned_date": a.SCANNED_DATE.isoformat(),
                 }
-                for a, p in attendance
+                for a in attendance
+                for p in [
+                    Pegawai.query.filter(Pegawai.NIP == a.NIP).first()
+                    if a.ATTENDEE_TYPE == "PEGAWAI" and a.NIP
+                    else None
+                ]
             ],
             "notulen_available": bool(document),
         })
 
     return data
-
 
 def api_calendar_agenda_rapat_internal():
     if not _calendar_internal_authorized():
