@@ -53,8 +53,27 @@ def normalize_display_name(value):
     value = re.sub(r"\s+", " ", str(value or "").strip())
     if not value:
         return ""
-    return " ".join(part[:1].upper() + part[1:].lower() for part in value.split(" "))
 
+    parts = [part.strip() for part in value.split(",")]
+    name_part = " ".join(
+        "-".join(
+            piece[:1].upper() + piece[1:].lower()
+            for piece in token.split("-")
+            if piece
+        )
+        for token in parts[0].split()
+    )
+
+    suffixes = [
+        re.sub(r"\s+", " ", part).strip()
+        for part in parts[1:]
+        if part.strip()
+    ]
+
+    if suffixes:
+        return ", ".join([name_part, *suffixes])
+
+    return name_part
 
 def get_or_create_meta(event, organizer_nip, created_by):
     meta = AgendaRapatMeta.query.filter_by(EVENT_ID=event.EVENT_ID).first()
@@ -147,10 +166,8 @@ def attendance_rows(event_id):
         if attendance.ATTENDEE_TYPE == "PEGAWAI" and not pegawai:
             continue
 
-        display_name = (
-            pegawai.NAMA
-            if pegawai
-            else normalize_display_name(attendance.NAME or attendance.NAME_RAW or "-")
+        display_name = normalize_display_name(
+            pegawai.NAMA if pegawai else (attendance.NAME or attendance.NAME_RAW or "-")
         )
 
         identity = (
@@ -477,7 +494,7 @@ def generate_daftar_hadir_pdf(event):
         Spacer(1, 7 * mm),
     ]
 
-    data = [["No.", "Nama", "NIP / Finger ID", "Email", "Tanda Tangan"]]
+    data = [["No.", "Nama", "NIP", "Email", "Tanda Tangan"]]
 
     for index, item in enumerate(rows, start=1):
         signature = item["signature_path"]
