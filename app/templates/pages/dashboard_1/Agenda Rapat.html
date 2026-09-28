@@ -451,6 +451,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function renderDetail(x){
         currentDetailRapatId=Number(x.event_id);
+        document.getElementById("detailJudul").textContent=x.title||"-";
         const notulen=x.notulen;
         const notulenHtml=notulen
             ? '<div class="card border mt-4"><div class="card-body"><div class="d-flex justify-content-between align-items-start gap-2 flex-wrap"><div><h6 class="mb-1"><i class="feather-file-text me-1"></i> Notulen Rapat</h6><div class="fw-semibold">'+esc(notulen.original_filename)+'</div><div class="text-muted small mt-1">'+Number(notulen.file_size).toLocaleString("id-ID")+' byte · PDF</div><div class="text-muted small">SHA-256: '+esc(notulen.sha256)+'</div></div><a class="btn btn-sm btn-outline-primary" href="/api/agenda/rapat/'+Number(x.event_id)+'/notulen" target="_blank" rel="noopener"><i class="feather-eye me-1"></i> Buka PDF</a></div></div></div>'
