@@ -574,13 +574,14 @@ document.addEventListener("DOMContentLoaded", function () {
                             <div class="rapat-qr-box p-3">
                                 <img src="/api/agenda/rapat/${Number(x.event_id)}/qr?ts=${Date.now()}"
                                      alt="QR Absensi Rapat"
-                                     style="max-width:240px;width:100%;height:auto;">
-                                <div class="fw-semibold mt-3">Scan untuk mencatat kehadiran</div>
-                                <div class="text-muted small mt-1">
-                                    Pegawai yang scan otomatis masuk ke daftar hadir aktual.
+                                     class="rapat-qr-image">
+                                <div class="rapat-qr-help mt-3">
+                                    <div class="fw-semibold">Scan untuk mencatat kehadiran</div>
+                                    <div class="text-muted small mt-1">
+                                        Pegawai yang scan otomatis masuk ke daftar hadir aktual.
+                                    </div>
                                 </div>
                             </div>
-
                             <div class="d-grid gap-2 mt-3">
                                 <button class="btn btn-outline-primary"
                                         type="button"
