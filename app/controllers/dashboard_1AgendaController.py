@@ -268,19 +268,28 @@ def api_agenda_rapat_update(event_id):
         event.UPDATE_BY = session.get("nip")
         event.UPDATE_DATE = datetime.utcnow()
 
+        attended_nips = {
+            row.NIP
+            for row in AgendaRapatAttendance.query.filter(
+                AgendaRapatAttendance.EVENT_ID == event.EVENT_ID,
+                AgendaRapatAttendance.STATUS == "HADIR",
+            ).all()
+        }
+
         CalendarParticipant.query.filter(
             CalendarParticipant.EVENT_ID == event.EVENT_ID
         ).delete(synchronize_session=False)
 
         now = datetime.utcnow()
-        for nip in dict.fromkeys(nips):
-            if nip == organizer_nip:
+        planned_nips = set(dict.fromkeys(nips))
+        for nip in sorted(planned_nips | attended_nips):
+            if nip == organizer_nip and nip not in attended_nips:
                 continue
             db.session.add(CalendarParticipant(
                 EVENT_ID=event.EVENT_ID,
                 NIP=nip,
-                ROLE="PESERTA",
-                STATUS="INVITED",
+                ROLE="HADIR" if nip in attended_nips else "PESERTA",
+                STATUS="ATTENDED" if nip in attended_nips else "INVITED",
                 CREATED_DATE=now,
             ))
 
