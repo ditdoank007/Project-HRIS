@@ -281,20 +281,39 @@ def build_personal_calendar_events(
             })
 
     # ============================================================
-    # 6. RAPAT YANG DIHADIRI
+    # 6. AGENDA RAPAT
+    #
+    # FASE 1 - TERJADWAL:
+    #   Semua pegawai melihat agenda rapat yang akan datang.
+    #
+    # FASE 2 - SELESAI:
+    #   Hanya pegawai yang tercatat HADIR melalui QR yang
+    #   mendapatkan rapat tersebut secara permanen.
+    #
+    # RAPAT BATAL tidak masuk Personal Calendar.
     # ============================================================
 
-    rapat_rows = (
-        db.session.query(AgendaRapatAttendance, CalendarEvent)
-        .join(
-            CalendarEvent,
-            CalendarEvent.EVENT_ID == AgendaRapatAttendance.EVENT_ID
-        )
-        .filter(
+    from sqlalchemy import or_, and_, exists
+
+    attendance_exists = exists().where(
+        and_(
+            AgendaRapatAttendance.EVENT_ID == CalendarEvent.EVENT_ID,
             AgendaRapatAttendance.NIP == nip,
             AgendaRapatAttendance.STATUS == "HADIR",
+        )
+    )
+
+    rapat_rows = (
+        CalendarEvent.query
+        .filter(
             CalendarEvent.EVENT_TYPE == "RAPAT",
-            CalendarEvent.STATUS != "BATAL",
+            or_(
+                CalendarEvent.STATUS == "TERJADWAL",
+                and_(
+                    CalendarEvent.STATUS == "SELESAI",
+                    attendance_exists,
+                ),
+            ),
             CalendarEvent.START_DATE >= tanggal_awal,
             CalendarEvent.START_DATE < tanggal_akhir,
         )
@@ -302,9 +321,20 @@ def build_personal_calendar_events(
         .all()
     )
 
-    for attendance, event in rapat_rows:
+    for event in rapat_rows:
+        attendance = (
+            AgendaRapatAttendance.query
+            .filter(
+                AgendaRapatAttendance.EVENT_ID == event.EVENT_ID,
+                AgendaRapatAttendance.NIP == nip,
+                AgendaRapatAttendance.STATUS == "HADIR",
+            )
+            .order_by(AgendaRapatAttendance.SCANNED_DATE.asc())
+            .first()
+        )
+
         events.append({
-            "id": f"RAPAT-HADIR-{event.EVENT_ID}-{nip}",
+            "id": f"RAPAT-{event.EVENT_ID}-{nip}",
             "title": event.TITLE,
             "type": "RAPAT",
             "source": "AGENDA_RAPAT",
@@ -316,7 +346,11 @@ def build_personal_calendar_events(
             "description": event.DESCRIPTION,
             "location": event.LOCATION,
             "event_id": event.EVENT_ID,
-            "attendance_at": attendance.SCANNED_DATE.isoformat(),
+            "status": event.STATUS,
+            "attendance_at": (
+                attendance.SCANNED_DATE.isoformat()
+                if attendance else None
+            ),
         })
 
     # ============================================================
