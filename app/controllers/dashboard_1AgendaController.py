@@ -358,6 +358,11 @@ def api_agenda_rapat_cancel(event_id):
     event.STATUS = "BATAL"
     event.UPDATE_BY = session.get("nip", "system")
     event.UPDATE_DATE = datetime.utcnow()
+    meta = get_meta(event.EVENT_ID)
+    if meta:
+        meta.QR_ACTIVE = "N"
+        meta.UPDATE_BY = session.get("nip", "system")
+        meta.UPDATE_DATE = datetime.utcnow()
     db.session.commit()
     return jsonify({"status": "success", "data": _serialize_event(event)})
 
