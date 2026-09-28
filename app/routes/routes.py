@@ -103,7 +103,7 @@ from app.controllers.calendarController import (
 
 from app.controllers.dashboard_1AgendaController import (
     agenda_rapat, api_agenda_rapat_list, api_agenda_rapat_save,
-    api_agenda_rapat_detail, api_agenda_rapat_cancel,
+    api_agenda_rapat_detail, api_agenda_rapat_cancel, api_agenda_rapat_complete,
     api_pegawai_agenda_search, api_agenda_rapat_notulen_upload,
     api_agenda_rapat_notulen_download,
 )
