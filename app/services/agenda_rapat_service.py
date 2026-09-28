@@ -151,12 +151,28 @@ def record_attendance(event, nip, method="QR"):
     return row, pegawai, True
 
 
+def _employee_identity(pegawai):
+    """
+    Identitas yang ditampilkan pada Daftar Hadir.
+    PNS menggunakan NIP; pegawai non-PNS menggunakan FingerID
+    (sesuai aturan HRIS: NIP = FingerID untuk non-PNS).
+    """
+    nip = (pegawai.NIP or "").strip()
+    finger_id = (pegawai.FINGER_ID or "").strip()
+    return nip or finger_id or "-"
+    
+
 def _signature_path(pegawai):
     root = Path(Config.HRIS_TTD_ROOT)
-    candidates = [
-        root / f"{pegawai.NIP}.png",
-        root / f"{pegawai.FINGER_ID}.png",
-    ]
+    candidates = []
+    nip = (pegawai.NIP or "").strip()
+    finger_id = (pegawai.FINGER_ID or "").strip()
+
+    if nip:
+        candidates.append(root / f"{nip}.png")
+    if finger_id:
+        candidates.append(root / f"{finger_id}.png")
+
     for path in candidates:
         if path.is_file():
             return path
@@ -219,7 +235,7 @@ def generate_daftar_hadir_pdf(event):
         Spacer(1, 7 * mm),
     ]
 
-    data = [["No", "Nama Pegawai", "NIP", "Tanda Tangan"]]
+    data = [["No", "Nama Pegawai", "NIP / FingerID", "Tanda Tangan"]]
 
     for index, item in enumerate(rows, start=1):
         pegawai = item["pegawai"]
@@ -234,7 +250,7 @@ def generate_daftar_hadir_pdf(event):
         data.append([
             str(index),
             Paragraph(escape(pegawai.NAMA or "-"), normal),
-            Paragraph(escape(pegawai.NIP or "-"), normal),
+            Paragraph(escape(_employee_identity(pegawai)), normal),
             signature_cell,
         ])
 
