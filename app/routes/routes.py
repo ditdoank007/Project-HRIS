@@ -103,6 +103,12 @@ from app.controllers.calendarController import (
     api_calendar_agenda_rapat_notulen_internal,
 )
 
+from app.controllers.calendarAttendanceController import (
+    api_calendar_rapat_attendance_info,
+    api_calendar_rapat_employee_attendance,
+    api_calendar_rapat_guest_attendance,
+)
+
 from app.controllers.dashboard_1AgendaController import (
     agenda_rapat, api_agenda_rapat_list, api_agenda_rapat_save,
     api_agenda_rapat_detail, api_agenda_rapat_update,
@@ -2037,6 +2043,30 @@ def api_calendar_personal_internal_route():
     )
 
     return api_calendar_personal_internal()
+
+
+@main.route(
+    '/api/internal/calendar/agenda/rapat/attendance-info',
+    methods=['GET']
+)
+def api_calendar_rapat_attendance_info_route():
+    return api_calendar_rapat_attendance_info()
+
+
+@main.route(
+    '/api/internal/calendar/agenda/rapat/attendance/employee',
+    methods=['POST']
+)
+def api_calendar_rapat_employee_attendance_route():
+    return api_calendar_rapat_employee_attendance()
+
+
+@main.route(
+    '/api/internal/calendar/agenda/rapat/attendance/guest',
+    methods=['POST']
+)
+def api_calendar_rapat_guest_attendance_route():
+    return api_calendar_rapat_guest_attendance()
 
 
 @main.route(
