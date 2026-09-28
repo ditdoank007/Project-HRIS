@@ -100,6 +100,7 @@ from app.controllers.calendarController import (
     api_calendar_user_agenda,
     api_calendar_category,
     api_calendar_agenda_rapat_internal,
+    api_calendar_my_agenda_internal,
     api_calendar_agenda_rapat_notulen_internal,
 )
 
@@ -2076,6 +2077,15 @@ def api_calendar_rapat_guest_attendance_route():
 def api_calendar_agenda_rapat_internal_route():
 
     return api_calendar_agenda_rapat_internal()
+
+
+@main.route(
+    '/api/internal/calendar/my-agenda',
+    methods=['GET']
+)
+def api_calendar_my_agenda_internal_route():
+
+    return api_calendar_my_agenda_internal()
 
 
 @main.route(
