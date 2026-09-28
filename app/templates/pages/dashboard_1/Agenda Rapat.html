@@ -220,12 +220,11 @@
                                 <h6 class="mb-2"><i class="feather-file-text me-1"></i> Hasil Rapat / Notulen</h6>
                                 <textarea class="form-control mb-2" rows="3"
                                           placeholder="Bisa langsung ketik ringkasan/notulen beberapa kalimat..."></textarea>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="feather-paperclip"></i></span>
-                                    <input type="file" class="form-control"
-                                           accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                                <div class="alert alert-light border mb-0">
+                                    <i class="feather-info me-1"></i>
+                                    Notulen disimpan sebagai <strong>PDF maksimal 5 MB</strong> ke central storage HRIS-DATA
+                                    setelah agenda rapat berhasil dibuat.
                                 </div>
-                                <small class="text-muted">Upload notulen/dokumen atau cukup tuliskan ringkasannya.</small>
                             </div>
                         </div>
                     </div>
@@ -403,7 +402,120 @@ document.addEventListener("DOMContentLoaded", function () {
         const payload={title:document.getElementById("rapatTitle").value.trim(),status:document.getElementById("rapatStatus").value,start_date:tanggal+"T"+mulai,end_date:selesai?tanggal+"T"+selesai:null,location:document.getElementById("rapatLokasi").value.trim(),description:document.getElementById("rapatDescription").value,participants};
         const r=await fetch("/api/agenda/rapat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)}); const j=await r.json(); if(!r.ok){alert(j.message||"Gagal menyimpan.");return;} bootstrap.Modal.getInstance(document.getElementById("modalRapat"))?.hide(); document.getElementById("rapatTitle").value=""; document.getElementById("rapatDescription").value=""; participants.splice(0); renderParticipants(); await load(); alert("Agenda rapat berhasil disimpan.");
     };
-    window.lihatRapat=async function(id){ const r=await fetch("/api/agenda/rapat/"+id); const j=await r.json(); if(!r.ok){alert(j.message||"Gagal memuat detail.");return;} const x=j.data; document.getElementById("detailJudul").textContent=x.title; const modalEl=document.getElementById("modalDetailRapat"); const bodyEl=modalEl.querySelector(".modal-body"); bodyEl.innerHTML='<div class="row g-3"><div class="col-md-7"><div class="rapat-detail-item"><div class="rapat-detail-label">Agenda</div><div class="rapat-detail-value">'+esc(x.title)+'</div></div><div class="rapat-detail-item"><div class="rapat-detail-label">Waktu</div><div class="rapat-detail-value">'+fmtDate(x.start)+' '+fmtTime(x.start)+' - '+fmtTime(x.end)+'</div></div><div class="rapat-detail-item"><div class="rapat-detail-label">Lokasi</div><div class="rapat-detail-value">'+esc(x.location||"-")+'</div></div><div class="rapat-detail-item"><div class="rapat-detail-label">Peserta</div><div class="rapat-detail-value">'+x.participants.map(p=>esc(p.nama)).join(", ")+'</div></div></div><div class="col-md-5"><div class="card border"><div class="card-body"><h6>Status</h6>'+badge(x.status)+'</div></div></div></div>'; new bootstrap.Modal(modalEl).show(); };
+    window.lihatRapat=async function(id){
+        const r=await fetch("/api/agenda/rapat/"+id);
+        const j=await r.json();
+        if(!r.ok){alert(j.message||"Gagal memuat detail.");return;}
+        const x=j.data;
+        document.getElementById("detailJudul").textContent=x.title;
+
+        const notulen=x.notulen;
+        const notulenHtml=notulen
+            ? `<div class="card border mt-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">
+                            <div>
+                                <h6 class="mb-1"><i class="feather-file-text me-1"></i> Notulen Rapat</h6>
+                                <div class="fw-semibold">${esc(notulen.original_filename)}</div>
+                                <div class="text-muted small mt-1">${Number(notulen.file_size).toLocaleString("id-ID")} byte · PDF · SHA-256: ${esc(notulen.sha256)}</div>
+                            </div>
+                            <a class="btn btn-sm btn-outline-primary" href="/api/agenda/rapat/${Number(x.event_id)}/notulen" target="_blank" rel="noopener">
+                                <i class="feather-eye me-1"></i> Buka PDF
+                            </a>
+                        </div>
+                    </div>
+                </div>`
+            : `<div class="card border mt-4">
+                    <div class="card-body">
+                        <h6><i class="feather-file-text me-1"></i> Notulen Rapat</h6>
+                        <p class="text-muted small mb-0">Belum ada Notulen PDF untuk rapat ini.</p>
+                    </div>
+                </div>`;
+
+        const uploadHtml=x.can_upload_notulen
+            ? `<div class="card border mt-3">
+                    <div class="card-body">
+                        <h6><i class="feather-upload me-1"></i> ${notulen ? "Ganti Notulen PDF" : "Upload Notulen PDF"}</h6>
+                        <div class="input-group">
+                            <input id="notulenFile_${Number(x.event_id)}" type="file" class="form-control" accept=".pdf,application/pdf">
+                            <button class="btn btn-primary" type="button" onclick="uploadNotulen(${Number(x.event_id)})">
+                                <i class="feather-upload me-1"></i> Upload
+                            </button>
+                        </div>
+                        <small class="text-muted">Hanya PDF, maksimal 5 MB. Validasi MIME dan magic bytes dilakukan di server.</small>
+                    </div>
+                </div>`
+            : "";
+
+        document.getElementById("modalDetailRapat").querySelector(".modal-body").innerHTML=`
+            <div class="row g-4">
+                <div class="col-12 col-lg-7">
+                    <div class="rapat-detail-item">
+                        <div class="rapat-detail-label">Agenda</div>
+                        <div class="rapat-detail-value">${esc(x.title)}</div>
+                    </div>
+                    <div class="rapat-detail-item">
+                        <div class="rapat-detail-label">Tanggal / Waktu</div>
+                        <div class="rapat-detail-value">${fmtDate(x.start)} ${fmtTime(x.start)} - ${fmtTime(x.end)} WIB</div>
+                    </div>
+                    <div class="rapat-detail-item">
+                        <div class="rapat-detail-label">Tempat</div>
+                        <div class="rapat-detail-value">${esc(x.location||"-")}</div>
+                    </div>
+                    <div class="rapat-detail-item">
+                        <div class="rapat-detail-label">Pimpinan</div>
+                        <div class="rapat-detail-value">${esc(x.organizer_name||x.organizer_nip||"-")}</div>
+                    </div>
+                    <div class="rapat-detail-item">
+                        <div class="rapat-detail-label">Peserta</div>
+                        <div class="rapat-detail-value">${x.participants.map(p=>esc(p.nama)).join(", ") || "Tidak ada peserta"}</div>
+                    </div>
+                    ${notulenHtml}
+                    ${uploadHtml}
+                </div>
+
+                <div class="col-12 col-lg-5">
+                    <div class="card border">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="mb-0"><i class="feather-grid me-1"></i> Absensi Rapat</h6>
+                                ${badge(x.status)}
+                            </div>
+                            <div class="rapat-qr-box">
+                                <div>
+                                    <i class="feather-grid" style="font-size: 64px;"></i>
+                                    <div class="fw-semibold mt-3">QR Code Absensi</div>
+                                    <div class="text-muted small mt-1">QR akan digenerate setelah agenda rapat dibuat.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="alert alert-warning mt-3 mb-0">
+                        <i class="feather-info me-1"></i>
+                        RSVP tidak digunakan. Kehadiran dicatat melalui scan QR.
+                    </div>
+                </div>
+            </div>`;
+        new bootstrap.Modal(document.getElementById("modalDetailRapat")).show();
+    };
+
+    window.uploadNotulen=async function(id){
+        const input=document.getElementById("notulenFile_"+Number(id));
+        const file=input?.files?.[0];
+        if(!file){alert("Pilih file Notulen PDF terlebih dahulu.");return;}
+        if(file.size>5*1024*1024){alert("Ukuran Notulen maksimal 5 MB.");return;}
+        if((file.type||"").toLowerCase()!=="application/pdf"){alert("File harus terdeteksi sebagai application/pdf.");return;}
+
+        const form=new FormData();
+        form.append("notulen",file);
+        const r=await fetch("/api/agenda/rapat/"+Number(id)+"/notulen",{method:"POST",body:form});
+        const j=await r.json();
+        if(!r.ok){alert(j.message||"Gagal mengunggah Notulen.");return;}
+        alert(j.message||"Notulen PDF berhasil disimpan.");
+        await load();
+        await lihatRapat(id);
+    };
+
     document.getElementById("modalRapat")?.addEventListener("show.bs.modal",()=>{document.getElementById("rapatTanggal").value=new Date().toISOString().slice(0,10);});
     load().catch(e=>{body.innerHTML='<tr><td colspan="6" class="text-center text-danger py-4">'+esc(e.message)+'</td></tr>';});
 });
