@@ -31,6 +31,7 @@ from app.models.tunjanganModel import MfTunjangan
 from app.models.userAccountModel import UserAccount
 from app.models.formModel import MfForm
 from app.models.hakAksesFormModel import HakAksesForm
+from app.models.agendaDisposisiModel import AgendaDisposisi, AgendaDisposisiPeserta
 
 
 def create_app():
