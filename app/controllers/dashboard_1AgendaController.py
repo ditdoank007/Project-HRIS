@@ -259,6 +259,21 @@ def api_agenda_rapat_update(event_id):
         nips = [x.get("nip") if isinstance(x, dict) else x for x in participants]
         _participant_rows(nips)
 
+        old_start = event.START_DATE
+        document = _get_notulen(event.EVENT_ID)
+        moved_notulen = None
+
+        if document and old_start and start.date() != old_start.date():
+            old_path = notulen_absolute_path(old_start, event.EVENT_ID)
+            new_path = notulen_absolute_path(start, event.EVENT_ID)
+            if os.path.isfile(old_path):
+                os.makedirs(os.path.dirname(new_path), exist_ok=True)
+                os.replace(old_path, new_path)
+                moved_notulen = (old_path, new_path)
+            document.STORAGE_PATH = notulen_relative_path(start, event.EVENT_ID)
+            document.UPDATE_BY = session.get("nip")
+            document.UPDATE_DATE = datetime.utcnow()
+
         event.TITLE = title
         event.DESCRIPTION = payload.get("description")
         event.START_DATE = start
@@ -302,9 +317,17 @@ def api_agenda_rapat_update(event_id):
         return jsonify({"status": "success", "data": _serialize_event(event)})
     except ValueError as exc:
         db.session.rollback()
+        if 'moved_notulen' in locals() and moved_notulen:
+            old_path, new_path = moved_notulen
+            if os.path.isfile(new_path):
+                os.replace(new_path, old_path)
         return jsonify({"status": "error", "message": str(exc)}), 400
     except Exception:
         db.session.rollback()
+        if 'moved_notulen' in locals() and moved_notulen:
+            old_path, new_path = moved_notulen
+            if os.path.isfile(new_path):
+                os.replace(new_path, old_path)
         return jsonify({"status": "error", "message": "Gagal memperbarui agenda rapat."}), 500
 
 
