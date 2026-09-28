@@ -266,10 +266,11 @@ def api_agenda_rapat_update(event_id):
         if document and old_start and start.date() != old_start.date():
             old_path = notulen_absolute_path(old_start, event.EVENT_ID)
             new_path = notulen_absolute_path(start, event.EVENT_ID)
-            if os.path.isfile(old_path):
-                os.makedirs(os.path.dirname(new_path), exist_ok=True)
-                os.replace(old_path, new_path)
-                moved_notulen = (old_path, new_path)
+            if not os.path.isfile(old_path):
+                raise ValueError("File Notulen yang tersimpan tidak ditemukan di central storage.")
+            os.makedirs(os.path.dirname(new_path), exist_ok=True)
+            os.replace(old_path, new_path)
+            moved_notulen = (old_path, new_path)
             document.STORAGE_PATH = notulen_relative_path(start, event.EVENT_ID)
             document.UPDATE_BY = session.get("nip")
             document.UPDATE_DATE = datetime.utcnow()
