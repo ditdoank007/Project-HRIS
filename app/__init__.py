@@ -33,6 +33,8 @@ from app.models.formModel import MfForm
 from app.models.hakAksesFormModel import HakAksesForm
 from app.models.agendaDisposisiModel import AgendaDisposisi, AgendaDisposisiPeserta
 from app.models.hrisDocumentModel import HrisDocument
+from app.models.agendaRapatMetaModel import AgendaRapatMeta
+from app.models.agendaRapatAttendanceModel import AgendaRapatAttendance
 
 
 def create_app():
