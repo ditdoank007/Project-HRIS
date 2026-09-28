@@ -125,8 +125,10 @@ def _serialize_event(event):
     attendance = attendance_rows(event.EVENT_ID)
     attendance_data = [
         {
-            "nip": item["pegawai"].NIP,
-            "nama": item["pegawai"].NAMA,
+            "attendee_type": item["attendance"].ATTENDEE_TYPE,
+            "nip": item["identity"],
+            "nama": item["display_name"],
+            "email": item["email"],
             "scanned_date": item["attendance"].SCANNED_DATE.isoformat(),
             "method": item["attendance"].METHOD,
         }
@@ -492,8 +494,10 @@ def api_agenda_rapat_attendance(event_id):
         "status": "success",
         "data": [
             {
-                "nip": item["pegawai"].NIP,
-                "nama": item["pegawai"].NAMA,
+                "attendee_type": item["attendance"].ATTENDEE_TYPE,
+                "nip": item["identity"],
+                "nama": item["display_name"],
+                "email": item["email"],
                 "scanned_date": item["attendance"].SCANNED_DATE.isoformat(),
                 "method": item["attendance"].METHOD,
             }
