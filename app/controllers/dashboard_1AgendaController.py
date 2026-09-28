@@ -197,6 +197,30 @@ def api_agenda_rapat_cancel(event_id):
     return jsonify({"status": "success", "data": _serialize_event(event)})
 
 
+def api_agenda_rapat_complete(event_id):
+    event = CalendarEvent.query.filter(
+        CalendarEvent.EVENT_ID == event_id,
+        CalendarEvent.EVENT_TYPE == "RAPAT",
+    ).first()
+    if not event:
+        return jsonify({"status": "error", "message": "Agenda rapat tidak ditemukan."}), 404
+
+    if not _can_upload_event_document(event):
+        return jsonify({"status": "error", "message": "Anda tidak berwenang menyelesaikan rapat ini."}), 403
+
+    if event.STATUS == "BATAL":
+        return jsonify({"status": "error", "message": "Rapat yang dibatalkan tidak dapat diselesaikan."}), 400
+
+    if event.STATUS == "SELESAI":
+        return jsonify({"status": "success", "data": _serialize_event(event)})
+
+    event.STATUS = "SELESAI"
+    event.UPDATE_BY = session.get("nip", "system")
+    event.UPDATE_DATE = datetime.utcnow()
+    db.session.commit()
+    return jsonify({"status": "success", "data": _serialize_event(event)})
+
+
 def api_pegawai_agenda_search():
     q = str(request.args.get("q") or "").strip()
     query = Pegawai.query
