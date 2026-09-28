@@ -1,14 +1,24 @@
 from datetime import datetime
 import os
 
-from flask import jsonify, render_template, request, send_file, session
+from flask import jsonify, render_template, request, send_file, session, Response
 
 from app import db
 from app.models.calendarEventModel import CalendarEvent
 from app.models.calendarParticipantModel import CalendarParticipant
+from app.models.agendaRapatMetaModel import AgendaRapatMeta
+from app.models.agendaRapatAttendanceModel import AgendaRapatAttendance
 from app.models.hrisDocumentModel import HrisDocument
 from app.models.pegawaiModel import Pegawai
 from app.services.calendar.event_service import create_event
+from app.services.agenda_rapat_service import (
+    attendance_rows,
+    build_qr_svg,
+    generate_daftar_hadir_pdf,
+    get_meta,
+    get_or_create_meta,
+    record_attendance,
+)
 from app.services.document_storage import (
     notulen_absolute_path,
     notulen_relative_path,
@@ -47,13 +57,34 @@ def _participant_rows(nips):
     return rows
 
 
+def _get_organizer(event):
+    meta = get_meta(event.EVENT_ID)
+    if not meta:
+        return None
+    return Pegawai.query.filter(Pegawai.NIP == meta.ORGANIZER_NIP).first()
+
+
+def _can_manage_event(event):
+    nip = session.get("nip")
+    if not nip:
+        return False
+    meta = get_meta(event.EVENT_ID)
+    organizer_nip = meta.ORGANIZER_NIP if meta else event.CREATED_BY
+    return (
+        is_administrator()
+        or is_hris_operator()
+        or event.CREATED_BY == nip
+        or organizer_nip == nip
+    )
+
+
 def _can_view_event_document(event):
     nip = session.get("nip")
     if not nip:
         return False
     if is_administrator() or is_hris_operator():
         return True
-    if event.CREATED_BY == nip:
+    if _can_manage_event(event):
         return True
     return CalendarParticipant.query.filter(
         CalendarParticipant.EVENT_ID == event.EVENT_ID,
@@ -62,14 +93,7 @@ def _can_view_event_document(event):
 
 
 def _can_upload_event_document(event):
-    nip = session.get("nip")
-    if not nip:
-        return False
-    return (
-        is_administrator()
-        or is_hris_operator()
-        or event.CREATED_BY == nip
-    )
+    return _can_manage_event(event)
 
 
 def _get_notulen(event_id):
@@ -92,8 +116,22 @@ def _serialize_event(event):
         for p in Pegawai.query.filter(Pegawai.NIP.in_(nips)).all()
     } if nips else {}
 
+    meta = get_meta(event.EVENT_ID)
+    organizer_nip = meta.ORGANIZER_NIP if meta else event.CREATED_BY
+    organizer = Pegawai.query.filter(Pegawai.NIP == organizer_nip).first()
     can_view_notulen = _can_view_event_document(event)
-    notulen = _get_notulen(event) if can_view_notulen else None
+    notulen = _get_notulen(event.EVENT_ID) if can_view_notulen else None
+
+    attendance = attendance_rows(event.EVENT_ID)
+    attendance_data = [
+        {
+            "nip": item["pegawai"].NIP,
+            "nama": item["pegawai"].NAMA,
+            "scanned_date": item["attendance"].SCANNED_DATE.isoformat(),
+            "method": item["attendance"].METHOD,
+        }
+        for item in attendance
+    ]
 
     return {
         "event_id": event.EVENT_ID,
@@ -104,15 +142,28 @@ def _serialize_event(event):
         "location": event.LOCATION,
         "status": event.STATUS,
         "event_type": event.EVENT_TYPE,
-        "organizer_nip": event.CREATED_BY,
-        "organizer_name": names.get(event.CREATED_BY, event.CREATED_BY),
+        "created_by": event.CREATED_BY,
+        "created_by_name": (
+            Pegawai.query.filter(Pegawai.NIP == event.CREATED_BY).first().NAMA
+            if Pegawai.query.filter(Pegawai.NIP == event.CREATED_BY).first()
+            else event.CREATED_BY
+        ),
+        "organizer_nip": organizer_nip,
+        "organizer_name": organizer.NAMA if organizer else organizer_nip,
         "participants": [
-            {"nip": nip, "nama": names.get(nip, nip)} for nip in nips
+            {"nip": nip, "nama": names.get(nip, nip)}
+            for nip in nips
         ],
+        "attendance": attendance_data,
+        "attendance_count": len(attendance_data),
+        "qr_active": bool(meta and meta.QR_ACTIVE == "Y"),
         "notulen": notulen.to_dict() if notulen else None,
         "can_view_notulen": can_view_notulen,
         "can_upload_notulen": _can_upload_event_document(event),
+        "can_edit": _can_manage_event(event) and event.STATUS not in ("SELESAI", "BATAL"),
+        "can_complete": _can_manage_event(event) and event.STATUS not in ("SELESAI", "BATAL"),
     }
+
 
 def api_agenda_rapat_list():
     rows = (
@@ -132,8 +183,13 @@ def api_agenda_rapat_save():
 
     try:
         title = str(payload.get("title") or "").strip()
+        organizer_nip = str(payload.get("organizer_nip") or "").strip()
         if not title:
             raise ValueError("Judul / agenda rapat wajib diisi.")
+        if not organizer_nip:
+            raise ValueError("Pimpinan rapat wajib dipilih.")
+        _participant_rows([organizer_nip])
+
         start = _parse_datetime(payload.get("start_date"))
         end = _parse_datetime(payload.get("end_date")) if payload.get("end_date") else None
         if end and end <= start:
@@ -143,11 +199,8 @@ def api_agenda_rapat_save():
         nips = [x.get("nip") if isinstance(x, dict) else x for x in participants]
         _participant_rows(nips)
 
-        category_id = None
         from app.models.calendarCategoryModel import CalendarCategory
         category = CalendarCategory.query.filter(CalendarCategory.CODE == "RAPAT").first()
-        if category:
-            category_id = category.ID
 
         event = create_event({
             "title": title,
@@ -155,15 +208,19 @@ def api_agenda_rapat_save():
             "start_date": start,
             "end_date": end,
             "location": payload.get("location"),
-            "category_id": category_id,
+            "category_id": category.ID if category else None,
             "event_type": "RAPAT",
             "source": "AGENDA_RAPAT",
             "status": payload.get("status") or "TERJADWAL",
             "participants": [
-                {"nip": nip, "role": "ORGANIZER" if nip == user else "PESERTA"}
-                for nip in dict.fromkeys([user] + nips)
+                {"nip": nip, "role": "PESERTA"}
+                for nip in dict.fromkeys(nips)
+                if nip != organizer_nip
             ],
         }, user)
+
+        get_or_create_meta(event, organizer_nip, user)
+        db.session.commit()
         return jsonify({"status": "success", "data": _serialize_event(event)})
     except ValueError as exc:
         db.session.rollback()
@@ -171,6 +228,75 @@ def api_agenda_rapat_save():
     except Exception:
         db.session.rollback()
         return jsonify({"status": "error", "message": "Gagal menyimpan agenda rapat."}), 500
+
+
+def api_agenda_rapat_update(event_id):
+    event = CalendarEvent.query.filter(
+        CalendarEvent.EVENT_ID == event_id,
+        CalendarEvent.EVENT_TYPE == "RAPAT",
+    ).first()
+    if not event:
+        return jsonify({"status": "error", "message": "Agenda rapat tidak ditemukan."}), 404
+    if event.STATUS in ("SELESAI", "BATAL"):
+        return jsonify({"status": "error", "message": "Rapat yang sudah SELESAI/BATAL tidak dapat mengubah data kejadian rapat."}), 409
+    if not _can_manage_event(event):
+        return jsonify({"status": "error", "message": "Anda tidak berwenang mengubah rapat ini."}), 403
+
+    payload = request.get_json(silent=True) or {}
+    try:
+        title = str(payload.get("title") or "").strip()
+        organizer_nip = str(payload.get("organizer_nip") or "").strip()
+        if not title or not organizer_nip:
+            raise ValueError("Judul dan Pimpinan rapat wajib diisi.")
+
+        _participant_rows([organizer_nip])
+        start = _parse_datetime(payload.get("start_date"))
+        end = _parse_datetime(payload.get("end_date")) if payload.get("end_date") else None
+        if end and end <= start:
+            raise ValueError("Waktu selesai harus lebih besar dari waktu mulai.")
+
+        participants = payload.get("participants") or []
+        nips = [x.get("nip") if isinstance(x, dict) else x for x in participants]
+        _participant_rows(nips)
+
+        event.TITLE = title
+        event.DESCRIPTION = payload.get("description")
+        event.START_DATE = start
+        event.END_DATE = end
+        event.LOCATION = payload.get("location")
+        event.STATUS = payload.get("status") or event.STATUS
+        event.UPDATE_BY = session.get("nip")
+        event.UPDATE_DATE = datetime.utcnow()
+
+        CalendarParticipant.query.filter(
+            CalendarParticipant.EVENT_ID == event.EVENT_ID
+        ).delete(synchronize_session=False)
+
+        now = datetime.utcnow()
+        for nip in dict.fromkeys(nips):
+            if nip == organizer_nip:
+                continue
+            db.session.add(CalendarParticipant(
+                EVENT_ID=event.EVENT_ID,
+                NIP=nip,
+                ROLE="PESERTA",
+                STATUS="INVITED",
+                CREATED_DATE=now,
+            ))
+
+        meta = get_meta(event.EVENT_ID) or get_or_create_meta(event, organizer_nip, session.get("nip"))
+        meta.ORGANIZER_NIP = organizer_nip
+        meta.UPDATE_BY = session.get("nip")
+        meta.UPDATE_DATE = now
+
+        db.session.commit()
+        return jsonify({"status": "success", "data": _serialize_event(event)})
+    except ValueError as exc:
+        db.session.rollback()
+        return jsonify({"status": "error", "message": str(exc)}), 400
+    except Exception:
+        db.session.rollback()
+        return jsonify({"status": "error", "message": "Gagal memperbarui agenda rapat."}), 500
 
 
 def api_agenda_rapat_detail(event_id):
@@ -190,6 +316,10 @@ def api_agenda_rapat_cancel(event_id):
     ).first()
     if not event:
         return jsonify({"status": "error", "message": "Agenda rapat tidak ditemukan."}), 404
+    if event.STATUS == "SELESAI":
+        return jsonify({"status": "error", "message": "Rapat yang sudah SELESAI tidak dapat dibatalkan."}), 409
+    if not _can_manage_event(event):
+        return jsonify({"status": "error", "message": "Anda tidak berwenang membatalkan rapat ini."}), 403
     event.STATUS = "BATAL"
     event.UPDATE_BY = session.get("nip", "system")
     event.UPDATE_DATE = datetime.utcnow()
@@ -204,19 +334,19 @@ def api_agenda_rapat_complete(event_id):
     ).first()
     if not event:
         return jsonify({"status": "error", "message": "Agenda rapat tidak ditemukan."}), 404
-
-    if not _can_upload_event_document(event):
+    if not _can_manage_event(event):
         return jsonify({"status": "error", "message": "Anda tidak berwenang menyelesaikan rapat ini."}), 403
-
     if event.STATUS == "BATAL":
         return jsonify({"status": "error", "message": "Rapat yang dibatalkan tidak dapat diselesaikan."}), 400
-
-    if event.STATUS == "SELESAI":
-        return jsonify({"status": "success", "data": _serialize_event(event)})
 
     event.STATUS = "SELESAI"
     event.UPDATE_BY = session.get("nip", "system")
     event.UPDATE_DATE = datetime.utcnow()
+    meta = get_meta(event.EVENT_ID)
+    if meta:
+        meta.QR_ACTIVE = "Y"
+        meta.UPDATE_BY = session.get("nip", "system")
+        meta.UPDATE_DATE = datetime.utcnow()
     db.session.commit()
     return jsonify({"status": "success", "data": _serialize_event(event)})
 
@@ -228,6 +358,133 @@ def api_pegawai_agenda_search():
         query = query.filter((Pegawai.NIP.like(f"%{q}%")) | (Pegawai.NAMA.like(f"%{q}%")))
     rows = query.filter((Pegawai.IS_KELUAR.is_(None)) | (Pegawai.IS_KELUAR != "Y")).order_by(Pegawai.NAMA.asc()).limit(20).all()
     return jsonify({"status": "success", "data": [{"nip": x.NIP, "nama": x.NAMA, "jabatan": x.JABATAN, "unit_kerja": x.UNIT_KERJA} for x in rows]})
+
+
+def api_agenda_rapat_qr(event_id):
+    event = CalendarEvent.query.filter(
+        CalendarEvent.EVENT_ID == event_id,
+        CalendarEvent.EVENT_TYPE == "RAPAT",
+    ).first()
+    if not event:
+        return jsonify({"status": "error", "message": "Agenda rapat tidak ditemukan."}), 404
+    if not _can_manage_event(event):
+        return jsonify({"status": "error", "message": "Anda tidak berwenang melihat QR rapat ini."}), 403
+
+    meta = get_meta(event.EVENT_ID)
+    if not meta:
+        meta = get_or_create_meta(event, event.CREATED_BY, session.get("nip"))
+        db.session.commit()
+
+    svg, scan_url = build_qr_svg(meta.QR_TOKEN)
+    return Response(svg, mimetype="image/svg+xml", headers={"Cache-Control": "no-store", "X-QR-Scan-URL": scan_url})
+
+
+def api_agenda_rapat_scan(token):
+    meta = AgendaRapatMeta.query.filter(
+        AgendaRapatMeta.QR_TOKEN == token,
+        AgendaRapatMeta.QR_ACTIVE == "Y",
+    ).first()
+    if not meta:
+        return render_template(
+            "pages/dashboard_1/Agenda Rapat Scan.html",
+            success=False,
+            message="QR rapat tidak valid atau sudah tidak aktif.",
+            event=None,
+            pegawai=None,
+        ), 404
+
+    event = CalendarEvent.query.filter(
+        CalendarEvent.EVENT_ID == meta.EVENT_ID,
+        CalendarEvent.EVENT_TYPE == "RAPAT",
+    ).first()
+    if not event or event.STATUS == "BATAL":
+        return render_template(
+            "pages/dashboard_1/Agenda Rapat Scan.html",
+            success=False,
+            message="Rapat tidak ditemukan atau sudah dibatalkan.",
+            event=event,
+            pegawai=None,
+        ), 404
+
+    nip = session.get("nip")
+    if not nip:
+        return render_template(
+            "pages/dashboard_1/Agenda Rapat Scan.html",
+            success=False,
+            message="Silakan login ke HRIS terlebih dahulu, lalu scan QR rapat kembali.",
+            event=event,
+            pegawai=None,
+        ), 401
+
+    try:
+        attendance, pegawai, created = record_attendance(event, nip, "QR")
+        message = (
+            "Kehadiran berhasil dicatat."
+            if created
+            else "Kehadiran Anda untuk rapat ini sudah tercatat sebelumnya."
+        )
+        return render_template(
+            "pages/dashboard_1/Agenda Rapat Scan.html",
+            success=True,
+            message=message,
+            event=event,
+            pegawai=pegawai,
+            attendance=attendance,
+        )
+    except ValueError as exc:
+        db.session.rollback()
+        return render_template(
+            "pages/dashboard_1/Agenda Rapat Scan.html",
+            success=False,
+            message=str(exc),
+            event=event,
+            pegawai=None,
+        ), 400
+
+
+def api_agenda_rapat_attendance(event_id):
+    event = CalendarEvent.query.filter(
+        CalendarEvent.EVENT_ID == event_id,
+        CalendarEvent.EVENT_TYPE == "RAPAT",
+    ).first()
+    if not event:
+        return jsonify({"status": "error", "message": "Agenda rapat tidak ditemukan."}), 404
+    if not _can_manage_event(event):
+        return jsonify({"status": "error", "message": "Anda tidak berwenang melihat daftar hadir."}), 403
+
+    return jsonify({
+        "status": "success",
+        "data": [
+            {
+                "nip": item["pegawai"].NIP,
+                "nama": item["pegawai"].NAMA,
+                "scanned_date": item["attendance"].SCANNED_DATE.isoformat(),
+                "method": item["attendance"].METHOD,
+            }
+            for item in attendance_rows(event.EVENT_ID)
+        ],
+    })
+
+
+def api_agenda_rapat_daftar_hadir_pdf(event_id):
+    event = CalendarEvent.query.filter(
+        CalendarEvent.EVENT_ID == event_id,
+        CalendarEvent.EVENT_TYPE == "RAPAT",
+    ).first()
+    if not event:
+        return jsonify({"status": "error", "message": "Agenda rapat tidak ditemukan."}), 404
+    if not _can_manage_event(event):
+        return jsonify({"status": "error", "message": "Anda tidak berwenang mengunduh Daftar Hadir."}), 403
+
+    pdf = generate_daftar_hadir_pdf(event)
+    safe_name = f"daftar-hadir-rapat-{event.EVENT_ID}.pdf"
+    return send_file(
+        pdf,
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name=safe_name,
+        max_age=0,
+    )
 
 
 def api_agenda_rapat_notulen_upload(event_id):
