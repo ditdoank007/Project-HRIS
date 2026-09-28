@@ -103,7 +103,9 @@ from app.controllers.calendarController import (
 
 from app.controllers.dashboard_1AgendaController import (
     agenda_rapat, api_agenda_rapat_list, api_agenda_rapat_save,
-    api_agenda_rapat_detail, api_agenda_rapat_cancel, api_agenda_rapat_complete,
+    api_agenda_rapat_detail, api_agenda_rapat_save, api_agenda_rapat_update,
+    api_agenda_rapat_cancel, api_agenda_rapat_complete, api_agenda_rapat_qr,
+    api_agenda_rapat_scan, api_agenda_rapat_attendance, api_agenda_rapat_daftar_hadir_pdf,
     api_pegawai_agenda_search, api_agenda_rapat_notulen_upload,
     api_agenda_rapat_notulen_download,
 )
@@ -1889,6 +1891,12 @@ def api_agenda_rapat_save_route():
     return api_agenda_rapat_save()
 
 
+@main.route('/api/agenda/rapat/<int:event_id>', methods=['PUT'])
+@login_required
+def api_agenda_rapat_update_route(event_id):
+    return api_agenda_rapat_update(event_id)
+
+
 @main.route('/api/agenda/rapat/<int:event_id>', methods=['GET'])
 @login_required
 def api_agenda_rapat_detail_route(event_id):
@@ -1905,6 +1913,30 @@ def api_agenda_rapat_cancel_route(event_id):
 @login_required
 def api_agenda_rapat_complete_route(event_id):
     return api_agenda_rapat_complete(event_id)
+
+
+@main.route('/api/agenda/rapat/<int:event_id>/qr', methods=['GET'])
+@login_required
+def api_agenda_rapat_qr_route(event_id):
+    return api_agenda_rapat_qr(event_id)
+
+
+@main.route('/api/agenda/rapat/<int:event_id>/attendance', methods=['GET'])
+@login_required
+def api_agenda_rapat_attendance_route(event_id):
+    return api_agenda_rapat_attendance(event_id)
+
+
+@main.route('/api/agenda/rapat/<int:event_id>/daftar-hadir', methods=['GET'])
+@login_required
+def api_agenda_rapat_daftar_hadir_pdf_route(event_id):
+    return api_agenda_rapat_daftar_hadir_pdf(event_id)
+
+
+@main.route('/rapat/scan/<token>', methods=['GET'])
+@login_required
+def api_agenda_rapat_scan_route(token):
+    return api_agenda_rapat_scan(token)
 
 
 @main.route('/api/agenda/rapat/<int:event_id>/notulen', methods=['POST'])
