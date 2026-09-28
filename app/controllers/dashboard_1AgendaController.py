@@ -111,7 +111,10 @@ def api_agenda_rapat_save():
             "event_type": "RAPAT",
             "source": "AGENDA_RAPAT",
             "status": payload.get("status") or "TERJADWAL",
-            "participants": [{"nip": nip, "role": "PESERTA"} for nip in dict.fromkeys(nips)],
+            "participants": [
+                {"nip": nip, "role": "ORGANIZER" if nip == user else "PESERTA"}
+                for nip in dict.fromkeys([user] + nips)
+            ],
         }, user)
         return jsonify({"status": "success", "data": _serialize_event(event)})
     except ValueError as exc:
