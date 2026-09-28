@@ -1901,6 +1901,12 @@ def api_agenda_rapat_cancel_route(event_id):
     return api_agenda_rapat_cancel(event_id)
 
 
+@main.route('/api/agenda/rapat/<int:event_id>/complete', methods=['POST'])
+@login_required
+def api_agenda_rapat_complete_route(event_id):
+    return api_agenda_rapat_complete(event_id)
+
+
 @main.route('/api/agenda/rapat/<int:event_id>/notulen', methods=['POST'])
 @login_required
 def api_agenda_rapat_notulen_upload_route(event_id):
