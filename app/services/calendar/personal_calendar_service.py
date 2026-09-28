@@ -21,6 +21,8 @@ from app.models.absensiModel import Absensi
 from app.models.dinasLuarModel import DinasLuar
 from app.models.pegawaiModel import Pegawai
 from app.models.kalenderModel import MfKalender
+from app.models.agendaRapatAttendanceModel import AgendaRapatAttendance
+from app.models.calendarEventModel import CalendarEvent
 
 from app.utils.absensiNormalisasiHelper import (
     get_label_dinas_luar,
@@ -277,6 +279,45 @@ def build_personal_calendar_events(
                 "description": keterangan or "Hari Libur",
                 "location": None,
             })
+
+    # ============================================================
+    # 6. RAPAT YANG DIHADIRI
+    # ============================================================
+
+    rapat_rows = (
+        db.session.query(AgendaRapatAttendance, CalendarEvent)
+        .join(
+            CalendarEvent,
+            CalendarEvent.EVENT_ID == AgendaRapatAttendance.EVENT_ID
+        )
+        .filter(
+            AgendaRapatAttendance.NIP == nip,
+            AgendaRapatAttendance.STATUS == "HADIR",
+            CalendarEvent.EVENT_TYPE == "RAPAT",
+            CalendarEvent.STATUS != "BATAL",
+            CalendarEvent.START_DATE >= tanggal_awal,
+            CalendarEvent.START_DATE < tanggal_akhir,
+        )
+        .order_by(CalendarEvent.START_DATE.asc())
+        .all()
+    )
+
+    for attendance, event in rapat_rows:
+        events.append({
+            "id": f"RAPAT-HADIR-{event.EVENT_ID}-{nip}",
+            "title": event.TITLE,
+            "type": "RAPAT",
+            "source": "AGENDA_RAPAT",
+            "start": event.START_DATE.isoformat() if event.START_DATE else None,
+            "end": event.END_DATE.isoformat() if event.END_DATE else (
+                event.START_DATE.isoformat() if event.START_DATE else None
+            ),
+            "all_day": False,
+            "description": event.DESCRIPTION,
+            "location": event.LOCATION,
+            "event_id": event.EVENT_ID,
+            "attendance_at": attendance.SCANNED_DATE.isoformat(),
+        })
 
     # ============================================================
     # SORT FINAL
