@@ -32,6 +32,7 @@ from app.models.userAccountModel import UserAccount
 from app.models.formModel import MfForm
 from app.models.hakAksesFormModel import HakAksesForm
 from app.models.agendaDisposisiModel import AgendaDisposisi, AgendaDisposisiPeserta
+from app.models.hrisDocumentModel import HrisDocument
 
 
 def create_app():
