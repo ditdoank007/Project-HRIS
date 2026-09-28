@@ -104,7 +104,8 @@ from app.controllers.calendarController import (
 from app.controllers.dashboard_1AgendaController import (
     agenda_rapat, api_agenda_rapat_list, api_agenda_rapat_save,
     api_agenda_rapat_detail, api_agenda_rapat_cancel,
-    api_pegawai_agenda_search,
+    api_pegawai_agenda_search, api_agenda_rapat_notulen_upload,
+    api_agenda_rapat_notulen_download,
 )
 from app.controllers.dashboard_1DisposisiController import (
     agenda_disposisi, api_agenda_disposisi_list, api_agenda_disposisi_save,
@@ -1898,6 +1899,18 @@ def api_agenda_rapat_detail_route(event_id):
 @login_required
 def api_agenda_rapat_cancel_route(event_id):
     return api_agenda_rapat_cancel(event_id)
+
+
+@main.route('/api/agenda/rapat/<int:event_id>/notulen', methods=['POST'])
+@login_required
+def api_agenda_rapat_notulen_upload_route(event_id):
+    return api_agenda_rapat_notulen_upload(event_id)
+
+
+@main.route('/api/agenda/rapat/<int:event_id>/notulen', methods=['GET'])
+@login_required
+def api_agenda_rapat_notulen_download_route(event_id):
+    return api_agenda_rapat_notulen_download(event_id)
 
 
 @main.route('/api/agenda/pegawai/search', methods=['GET'])
