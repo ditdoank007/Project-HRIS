@@ -9,6 +9,7 @@ Business services for Agenda Rapat:
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
+from html import escape
 import secrets
 
 import qrcode
@@ -200,7 +201,7 @@ def generate_daftar_hadir_pdf(event):
 
     story = [
         Paragraph("DAFTAR HADIR RAPAT", title),
-        Paragraph(f"<b>Judul Rapat:</b> {event.TITLE}", normal),
+        Paragraph(f"<b>Judul Rapat:</b> {escape(event.TITLE or '-')}", normal),
         Paragraph(
             f"<b>Hari / Tanggal:</b> {event.START_DATE.strftime('%A, %d-%m-%Y') if event.START_DATE else '-'}",
             normal,
@@ -210,9 +211,9 @@ def generate_daftar_hadir_pdf(event):
             f" - {event.END_DATE.strftime('%H:%M') if event.END_DATE else '-'} WIB",
             normal,
         ),
-        Paragraph(f"<b>Tempat:</b> {event.LOCATION or '-'}", normal),
+        Paragraph(f"<b>Tempat:</b> {escape(event.LOCATION or '-')}", normal),
         Paragraph(
-            f"<b>Pimpinan Rapat:</b> {organizer.NAMA if organizer else (meta.ORGANIZER_NIP if meta else '-')}",
+            f"<b>Pimpinan Rapat:</b> {escape(organizer.NAMA if organizer else (meta.ORGANIZER_NIP if meta else '-'))}",
             normal,
         ),
         Spacer(1, 7 * mm),
@@ -232,8 +233,8 @@ def generate_daftar_hadir_pdf(event):
 
         data.append([
             str(index),
-            Paragraph(pegawai.NAMA or "-", normal),
-            Paragraph(pegawai.NIP or "-", normal),
+            Paragraph(escape(pegawai.NAMA or "-"), normal),
+            Paragraph(escape(pegawai.NIP or "-"), normal),
             signature_cell,
         ])
 
