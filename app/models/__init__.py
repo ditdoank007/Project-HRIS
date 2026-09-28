@@ -22,3 +22,4 @@ from app.models.formModel import MfForm
 from app.models.hakAksesFormModel import HakAksesForm
 # HRIS Reborn - Master Jabatan Siaga
 from app.models.jabatanSiagaModel import MfJabatanSiaga
+from app.models.hrisDocumentModel import HrisDocument
