@@ -294,6 +294,52 @@ def api_calendar_personal():
     })
 
 
+
+def api_calendar_my_agenda_internal():
+    from config import Config
+
+    internal_key = request.headers.get(
+        "X-Calendar-Internal-Key"
+    )
+
+    if not internal_key or internal_key != Config.CALENDAR_INTERNAL_API_KEY:
+        return jsonify({
+            "status": "error",
+            "message": "Unauthorized"
+        }), 401
+
+    nip = str(request.headers.get("X-Calendar-NIP") or "").strip()
+    if not nip:
+        return jsonify({
+            "status": "error",
+            "message": "NIP wajib diisi."
+        }), 400
+
+    rows = get_my_agenda_detail(nip)
+
+    return jsonify({
+        "status": "success",
+        "data": [
+            {
+                "event_id": x.EVENT_ID,
+                "title": x.TITLE,
+                "description": x.DESCRIPTION,
+                "start_date": x.START_DATE.isoformat() if x.START_DATE else None,
+                "end_date": x.END_DATE.isoformat() if x.END_DATE else None,
+                "location": x.LOCATION,
+                "status": x.STATUS,
+                "event_type": x.EVENT_TYPE,
+                "category": {
+                    "code": x.CODE,
+                    "name": x.NAME,
+                    "color": x.COLOR,
+                },
+                "participant_status": x.participant_status,
+            }
+            for x in rows
+        ]
+    })
+
 def api_calendar_my_agenda():
 
     nip = session.get(
