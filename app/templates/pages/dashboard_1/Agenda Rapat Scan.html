@@ -1,0 +1,52 @@
+{% extends "layout/baseDashboard1.html" %}
+
+{% block title %}- Absensi Rapat{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-body text-center p-5">
+                    <div class="mb-3">
+                        <i class="{{ 'feather-check-circle text-success' if success else 'feather-alert-circle text-danger' }}"
+                           style="font-size: 64px;"></i>
+                    </div>
+
+                    <h3 class="mb-3">
+                        {{ "Kehadiran Rapat" if success else "Absensi Rapat" }}
+                    </h3>
+
+                    {% if event %}
+                        <div class="fw-semibold">{{ event.TITLE }}</div>
+                        <div class="text-muted small mt-1">
+                            {{ event.START_DATE.strftime("%d-%m-%Y %H:%M") if event.START_DATE else "-" }}
+                            WIB
+                        </div>
+                    {% endif %}
+
+                    <div class="alert {{ 'alert-success' if success else 'alert-danger' }} mt-4">
+                        {{ message }}
+                    </div>
+
+                    {% if success and pegawai %}
+                        <div class="mt-3">
+                            <div class="fw-semibold">{{ pegawai.NAMA }}</div>
+                            <div class="text-muted">{{ pegawai.NIP }}</div>
+                            {% if attendance %}
+                                <div class="small text-muted mt-2">
+                                    Dicatat {{ attendance.SCANNED_DATE.strftime("%d-%m-%Y %H:%M:%S") }} WIB
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+
+                    <a href="/agenda/rapat" class="btn btn-primary mt-4">
+                        Kembali ke HRIS
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
