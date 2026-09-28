@@ -412,13 +412,14 @@ document.addEventListener("DOMContentLoaded", function () {
         };
         const url=currentEditRapatId ? "/api/agenda/rapat/"+currentEditRapatId : "/api/agenda/rapat";
         const method=currentEditRapatId ? "PUT" : "POST";
+        const editing=Boolean(currentEditRapatId);
         const r=await fetch(url,{method,headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
         const j=await r.json();
         if(!r.ok){alert(j.message||"Gagal menyimpan agenda.");return;}
         bootstrap.Modal.getOrCreateInstance(rapatModalEl).hide();
         resetEditor();
         await load();
-        alert(currentEditRapatId ? "Agenda rapat berhasil diperbarui." : "Agenda rapat berhasil disimpan.");
+        alert(editing ? "Agenda rapat berhasil diperbarui." : "Agenda rapat berhasil disimpan.");
     };
 
     window.ubahRapat=async function(){
@@ -442,7 +443,8 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById("rapatDescription").value=x.description||"";
         organizerNip.value=x.organizer_nip||"";
         organizerInput.value=x.organizer_name||x.organizer_nip||"";
-        participants.splice(0,...(x.participants||[]));
+        participants.splice(0,participants.length);
+        participants.push(...(x.participants||[]));
         renderParticipants();
         bootstrap.Modal.getOrCreateInstance(detailModalEl).hide();
         bootstrap.Modal.getOrCreateInstance(rapatModalEl).show();
