@@ -1261,3 +1261,5 @@
 .hris-access-hidden {
     display: none !important;
 }
+
+.kesamaptaan-attendance-name { text-align: left !important; }
