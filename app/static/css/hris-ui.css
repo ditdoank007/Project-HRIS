@@ -749,3 +749,13 @@
     padding: 14px;
   }
 }
+
+/* The new shell already has the HRIS brand in its topbar.
+   Keep the legacy sidebar menu, but remove its duplicate logo header. */
+.hris-shell .custom-nav-header .header-container:first-child {
+  display: none;
+}
+
+.hris-shell .custom-nav-header {
+  padding-top: 4px;
+}
