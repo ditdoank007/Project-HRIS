@@ -118,6 +118,13 @@ from app.controllers.dashboard_1AgendaController import (
     api_pegawai_agenda_search, api_agenda_rapat_notulen_upload,
     api_agenda_rapat_notulen_download,
 )
+from app.controllers.kesamaptaanController import (
+    kesamaptaan, api_kesamaptaan_list, api_kesamaptaan_save,
+    api_kesamaptaan_detail, api_kesamaptaan_update, api_kesamaptaan_cancel,
+    api_kesamaptaan_complete, api_kesamaptaan_qr, api_kesamaptaan_attendance,
+    api_kesamaptaan_photos, api_kesamaptaan_pdf,
+    api_kesamaptaan_internal_info, api_kesamaptaan_internal_employee_attendance,
+)
 from app.controllers.dashboard_1DisposisiController import (
     agenda_disposisi, api_agenda_disposisi_list, api_agenda_disposisi_save,
     api_agenda_disposisi_detail, api_agenda_disposisi_cancel,
@@ -1988,6 +1995,86 @@ def api_agenda_disposisi_detail_route(agenda_id):
 @login_required
 def api_agenda_disposisi_cancel_route(agenda_id):
     return api_agenda_disposisi_cancel(agenda_id)
+
+
+# ============================================================
+# KESAMAPTAAN
+# ============================================================
+
+@main.route('/kesamaptaan')
+@login_required
+def view_kesamaptaan():
+    return kesamaptaan()
+
+
+@main.route('/api/kesamaptaan', methods=['GET'])
+@login_required
+def api_kesamaptaan_list_route():
+    return api_kesamaptaan_list()
+
+
+@main.route('/api/kesamaptaan', methods=['POST'])
+@login_required
+def api_kesamaptaan_save_route():
+    return api_kesamaptaan_save()
+
+
+@main.route('/api/kesamaptaan/<int:kegiatan_id>', methods=['GET'])
+@login_required
+def api_kesamaptaan_detail_route(kegiatan_id):
+    return api_kesamaptaan_detail(kegiatan_id)
+
+
+@main.route('/api/kesamaptaan/<int:kegiatan_id>', methods=['PUT'])
+@login_required
+def api_kesamaptaan_update_route(kegiatan_id):
+    return api_kesamaptaan_update(kegiatan_id)
+
+
+@main.route('/api/kesamaptaan/<int:kegiatan_id>/cancel', methods=['POST'])
+@login_required
+def api_kesamaptaan_cancel_route(kegiatan_id):
+    return api_kesamaptaan_cancel(kegiatan_id)
+
+
+@main.route('/api/kesamaptaan/<int:kegiatan_id>/complete', methods=['POST'])
+@login_required
+def api_kesamaptaan_complete_route(kegiatan_id):
+    return api_kesamaptaan_complete(kegiatan_id)
+
+
+@main.route('/api/kesamaptaan/<int:kegiatan_id>/qr', methods=['GET'])
+@login_required
+def api_kesamaptaan_qr_route(kegiatan_id):
+    return api_kesamaptaan_qr(kegiatan_id)
+
+
+@main.route('/api/kesamaptaan/<int:kegiatan_id>/attendance', methods=['GET'])
+@login_required
+def api_kesamaptaan_attendance_route(kegiatan_id):
+    return api_kesamaptaan_attendance(kegiatan_id)
+
+
+@main.route('/api/kesamaptaan/<int:kegiatan_id>/photos', methods=['POST'])
+@login_required
+def api_kesamaptaan_photos_route(kegiatan_id):
+    return api_kesamaptaan_photos(kegiatan_id)
+
+
+@main.route('/api/kesamaptaan/<int:kegiatan_id>/pdf', methods=['GET'])
+@login_required
+def api_kesamaptaan_pdf_route(kegiatan_id):
+    return api_kesamaptaan_pdf(kegiatan_id)
+
+
+@main.route('/api/internal/calendar/kesamaptaan/attendance-info', methods=['GET'])
+def api_calendar_kesamaptaan_attendance_info_route():
+    return api_kesamaptaan_internal_info()
+
+
+@main.route('/api/internal/calendar/kesamaptaan/attendance/employee', methods=['POST'])
+def api_calendar_kesamaptaan_employee_attendance_route():
+    return api_kesamaptaan_internal_employee_attendance()
 
 
 # ============================================================
