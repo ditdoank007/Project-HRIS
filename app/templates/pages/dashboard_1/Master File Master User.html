@@ -128,6 +128,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         inputNip.value = '';
         displayNama.textContent = '-';
+        displayNama.classList.add('is-empty');
 
         if (autocompleteTimer) {
             clearTimeout(autocompleteTimer);
@@ -135,6 +136,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (keyword.length < 1) {
             pegawaiSuggestion.innerHTML = '';
+            pegawaiSuggestion.hidden = true;
             return;
         }
 
@@ -149,20 +151,21 @@ document.addEventListener('DOMContentLoaded', function () {
                 pegawaiSuggestion.innerHTML = '';
 
                 if (!json.data || json.data.length === 0) {
+                    pegawaiSuggestion.hidden = true;
                     return;
                 }
+
+                pegawaiSuggestion.hidden = false;
 
                 json.data.forEach(p => {
                     const item = document.createElement('button');
 
                     item.type = 'button';
-                    item.className = 'list-group-item list-group-item-action';
+                    item.className = 'hris-autocomplete-item';
 
                     item.innerHTML = `
                         <strong>${p.nama}</strong>
-                        <small class="text-muted">
-                            (${p.nip})
-                        </small>
+                        <small>${p.nip}</small>
                     `;
 
                     item.addEventListener('click', function () {
@@ -171,6 +174,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         inputNip.value = p.nip;
 
                         pegawaiSuggestion.innerHTML = '';
+                        pegawaiSuggestion.hidden = true;
 
                         loadUserAccount();
                     });
@@ -196,6 +200,7 @@ document.addEventListener('DOMContentLoaded', function () {
             !e.target.closest('#pegawaiSuggestion')
         ) {
             pegawaiSuggestion.innerHTML = '';
+            pegawaiSuggestion.hidden = true;
         }
 
     });
@@ -213,12 +218,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 <td>${form.form_type}</td>
                 <td>
                     <input type="checkbox"
-                           class="akses-checkbox"
+                           class="hris-access-checkbox"
                            data-form-id="${form.form_id}"
                            ${form.is_akses ? 'checked' : ''}>
                 </td>
                 <td>
-                    <select class="form-select form-select-sm type-akses-select" data-form-id="${form.form_id}">
+                    <select class="hris-select type-akses-select" data-form-id="${form.form_id}">
                         <option value="M" ${form.type_akses === 'M' ? 'selected' : ''}>Modify</option>
                         <option value="R" ${form.type_akses === 'R' ? 'selected' : ''}>Read Only</option>
                     </select>
@@ -241,11 +246,13 @@ document.addEventListener('DOMContentLoaded', function () {
             if (json.status !== 'success') {
                 alert(json.message || 'Pegawai tidak ditemukan');
                 displayNama.textContent = '-';
+                displayNama.classList.add('is-empty');
                 renderOperatorForms([]);
                 return;
             }
 
             displayNama.textContent = json.data.nama;
+            displayNama.classList.remove('is-empty');
             selectLevel.value = json.data.init_level === 0 ? 'admin' : 'operator';
             renderOperatorForms(json.data.operator_forms);
 
@@ -259,7 +266,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Hanya ambil form yang checkbox-nya DICENTANG -- form yang
         // tidak dicentang tidak dikirim sama sekali (sesuai logic
         // delete-then-insert di backend)
-        const checkedBoxes = tbodyForms.querySelectorAll('.akses-checkbox:checked');
+        const checkedBoxes = tbodyForms.querySelectorAll('.hris-access-checkbox:checked');
         return Array.from(checkedBoxes).map(checkbox => {
             const formId = checkbox.dataset.formId;
             const select = tbodyForms.querySelector(`.type-akses-select[data-form-id="${formId}"]`);
