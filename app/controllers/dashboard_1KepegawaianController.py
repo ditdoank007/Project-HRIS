@@ -31,6 +31,7 @@ from app.utils.pegawaiHelper import (
     is_operational_pegawai,
 )
 from app.utils.pegawaiSortHelper import sort_pegawai_rows
+from app.utils.pegawaiLegacyHelper import derive_employee_metrics
 
 
 def kepegawaian_cari_data_pegawai():
@@ -637,6 +638,18 @@ def api_pegawai_get():
 
         pegawai, unit, gol, jabatan = result
         data = pegawai.to_dict()
+
+        # Derived metrics mengikuti business rule NIP HRIS 2013.
+        # Nilai ini hanya untuk konsumsi UI/infografis dan tidak menimpa
+        # data legacy PEGAWAI.
+        data.update(
+            derive_employee_metrics(
+                pegawai.NIP,
+                pegawai.STATUS_PEG,
+                pegawai.TGL_LAHIR,
+                pegawai.TMTCPNS,
+            )
+        )
 
         # Nama master mengikuti pola FillData() HRIS 2013.
         data.update({
