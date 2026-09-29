@@ -1,139 +1,104 @@
 <!-- pages/dashboard_1/Master File Master User.html -->
-{% extends "layout/baseDashboard1.html" %}
+{% extends "layout/baseHRIS.html" %}
 
 {% block title %}- User Account{% endblock %}
+{% block header_kicker %}MASTER FILE{% endblock %}
+{% block header_title %}User Account{% endblock %}
 
 {% block content %}
-<div class="nxl-content">
-    <div class="page-header">
-        <div class="page-header-left d-flex align-items-center">
-            <div class="page-header-title">
-                <h5 class="m-b-10">Master File</h5>
-            </div>
-            <ul class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url_for('main.view_master_user') }}">User Account</a></li>
-            </ul>
+<div class="hris-page">
+    <div class="hris-page-header">
+        <div>
+            <h2 class="hris-page-title">Master User HRIS</h2>
+            <p class="hris-page-subtitle">Kelola level akun dan hak akses menu pegawai.</p>
         </div>
+
+        <a href="{{ url_for('main.view_cari_user_account') }}" class="hris-btn hris-btn-secondary">
+            <i class="feather-search"></i>
+            <span>Cari User</span>
+        </a>
     </div>
 
-    <div class="main-content">
-        <div class="container-fluid">
-            <div class="card mb-4 shadow-sm" style="border-radius: 10px; overflow: hidden; border: none;">
-                <div class="card-header-custom d-flex justify-content-between align-items-center"
-                    style="border-radius: 10px;">
-                    <h6 class="mb-0">
-                        <i class="ti ti-calendar-plus me-2"></i> Master User HRIS
-                    </h6>
+    <div class="hris-card">
+        <div class="hris-card-header">
+            <div>
+                <h3 class="hris-card-title">Data User Account</h3>
+                <p class="hris-section-subtitle">Pilih pegawai untuk melihat dan mengatur akses HRIS.</p>
+            </div>
+        </div>
 
-                    <div class="header-actions">
-                        <button class="btn p-0 border-0 bg-transparent shadow-none d-md-none" type="button"
-                            data-bs-toggle="collapse" data-bs-target="#headerIconsCollapse">
-                            <i class="bi bi-three-dots-vertical" style="font-size: 1.5rem; color: #333;"></i>
-                        </button>
+        <div class="hris-card-body">
+            <div class="hris-form-row">
+                <label class="hris-form-row-label" for="inputNamaPegawai">Cari Pegawai</label>
+                <div class="hris-autocomplete">
+                    <div class="hris-input-group" style="max-width: 560px;">
+                        <input
+                            type="text"
+                            class="hris-input"
+                            id="inputNamaPegawai"
+                            placeholder="Ketik nama lengkap atau NIP..."
+                            autocomplete="off">
+                        <span class="hris-input-addon">
+                            <i class="feather-search"></i>
+                        </span>
+                    </div>
+                    <div id="pegawaiSuggestion" class="hris-autocomplete-menu" hidden></div>
+                    <input type="hidden" id="inputNip">
+                </div>
+            </div>
 
-                        <div class="collapse d-md-flex align-items-center" id="headerIconsCollapse">
-                            <div class="header-icons-wrapper d-flex gap-3 p-2 p-md-0 mt-2 mt-md-0">
-                                <a href="{{ url_for('main.view_cari_user_account') }}"
-                                    class="btn p-0 border-0 bg-transparent shadow-none text-decoration-none">
-                                    <i class="bi bi-search" style="color: #333; font-size: 1.1rem;"></i>
-                                </a>
-                            </div>
-                        </div>
+            <div class="hris-form-row">
+                <span class="hris-form-row-label">Nama</span>
+                <div class="hris-display-value is-empty" id="displayNama">-</div>
+            </div>
+
+            <div class="hris-form-row">
+                <label class="hris-form-row-label" for="selectLevel">Level</label>
+                <div style="max-width: 320px;">
+                    <select class="hris-select" id="selectLevel">
+                        <option value="operator">Operator</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="hris-section" style="margin-top: 18px;">
+                <div class="hris-section-header">
+                    <div>
+                        <h3 class="hris-section-title">Hak Akses Menu</h3>
+                        <p class="hris-section-subtitle">Centang menu yang dapat diakses oleh akun ini.</p>
                     </div>
                 </div>
 
-                <div class="card-body p-4">
-                    <div class="row mb-4 align-items-center">
-                        <label class="col-md-2 fw-bold text-dark">Cari Pegawai</label>
-                        <div class="col-md-10">
-                            <div class="input-group" style="max-width: 500px;">
-                                <input
-                                    type="text"
-                                    class="form-control bg-white"
-                                    placeholder="Ketik nama pegawai..."
-                                    id="inputNamaPegawai"
-                                    autocomplete="off">
-
-                                <span class="input-group-text bg-light">
-                                    <i class="bi bi-search text-muted"></i>
-                                </span>
-                            </div>
-
-                            <div id="pegawaiSuggestion"
-                                 class="list-group position-absolute"
-                                 style="z-index:999; max-width:500px;">
-                            </div>
-
-                            <input type="hidden" id="inputNip">
-                        </div>
-                    </div>
-
-                    <div class="row mb-4 align-items-center">
-                        <label class="col-md-2 fw-bold text-dark">Nama</label>
-                        <div class="col-md-10">
-                            <div class="border-bottom py-2 text-primary" style="min-height: 38px;" id="displayNama">-</div>
-                        </div>
-                    </div>
-
-                    <div class="row mb-4 align-items-center">
-                        <label class="col-md-2 fw-bold text-dark">Level</label>
-                        <div class="col-md-4">
-                            <div class="input-group">
-                                <select class="form-select" id="selectLevel">
-                                    <option value="operator">Operator</option>
-                                    <option value="admin">Admin</option>
-                                </select>
-                                <span class="input-group-text bg-light"><i class="bi bi-diagram-3 text-muted"></i></span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row mb-4">
-                        <label class="col-md-2 fw-bold text-dark">Hak Akses Menu</label>
-                        <div class="col-md-10">
-                            <div class="table-responsive border" style="border-radius: 5px;">
-                                <div class="table-responsive">
-                                    <table class="table table-bordered table-striped text-center align-middle">
-                                        <thead style="background:#EB6831;">
-                                            <tr>
-                                                <th style="color:white; vertical-align: middle;">Nama</th>
-                                                <th style="color:white; vertical-align: middle;">Type</th>
-                                                <th style="color:white; vertical-align: middle;">Isi Akses</th>
-                                                <th style="color:white; vertical-align: middle;">Type Akses</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="operatorFormsTableBody">
-                                            <tr>
-                                                <td colspan="4" style="vertical-align: middle; padding: 20px;">
-                                                    Cari pegawai terlebih dahulu.</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Tombol aksi form -->
-                    <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
-                        <button
-                            type="button"
-                            id="btnBatalUser"
-                            class="btn btn-secondary px-4"
-                            style="min-width: 110px;">
-                            <i class="bi bi-x-circle me-1"></i>BATAL
-                        </button>
-
-                        <button
-                            type="button"
-                            id="btnSimpanUser"
-                            class="btn text-white px-4"
-                            style="background-color:#e66b30; min-width:110px;">
-                            <i class="bi bi-save me-1"></i>SIMPAN
-                        </button>
-                    </div>
-
+                <div class="hris-table-wrap">
+                    <table class="hris-table-modern">
+                        <thead>
+                            <tr>
+                                <th>Nama</th>
+                                <th>Type</th>
+                                <th>Isi Akses</th>
+                                <th>Type Akses</th>
+                            </tr>
+                        </thead>
+                        <tbody id="operatorFormsTableBody">
+                            <tr>
+                                <td colspan="4" class="hris-empty">Cari pegawai terlebih dahulu.</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
+            </div>
+
+            <div class="hris-form-actions">
+                <button type="button" id="btnBatalUser" class="hris-btn hris-btn-secondary">
+                    <i class="feather-x-circle"></i>
+                    <span>Batal</span>
+                </button>
+
+                <button type="button" id="btnSimpanUser" class="hris-btn hris-btn-primary">
+                    <i class="feather-save"></i>
+                    <span>Simpan</span>
+                </button>
             </div>
         </div>
     </div>
@@ -141,7 +106,6 @@
 {% endblock %}
 
 {% block script %}
-<script>
 document.addEventListener('DOMContentLoaded', function () {
     const inputNip = document.getElementById('inputNip');
     const inputNamaPegawai = document.getElementById('inputNamaPegawai');
@@ -365,5 +329,4 @@ document.addEventListener('DOMContentLoaded', function () {
         loadUserAccount();
     }
 });
-</script>
 {% endblock %}
