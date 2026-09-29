@@ -1947,6 +1947,7 @@ def get_potongan_list():
     data = [
         {
             'no': idx + 1,
+            'potongan_id': row.POTONGAN_ID,
             'kategori': row.KATEGORI or '-',
             'tingkat': row.TINGKAT or '-',
             'deskripsi': row.NAMA_POT or '-',
