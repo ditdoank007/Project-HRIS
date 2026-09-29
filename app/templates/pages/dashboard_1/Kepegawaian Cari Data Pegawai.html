@@ -1,10 +1,88 @@
 <!-- pages/dashboard_1/Kepegawaian Cari Data Pegawai.html -->
-{% extends "layout/baseDashboard1.html" %}
+{% extends "layout/baseHRIS.html" %}
 
 {% block title %}- Cari Pegawai{% endblock %}
 
+{% block styles %}
+<style>
+    .pegawai-search-page .card {
+        border:1px solid var(--ui-border) !important;
+        border-radius:13px !important;
+        background:#fff !important;
+        box-shadow:var(--ui-shadow) !important;
+    }
+    .pegawai-search-page .card-header-custom {
+        color:var(--ui-ink);
+        border-bottom:1px solid var(--ui-border) !important;
+        background:#fff !important;
+    }
+    .pegawai-search-page .filter-section {
+        padding:16px;
+        border:1px solid #edf0f3;
+        border-radius:10px;
+        background:#fafbfc;
+    }
+    .pegawai-search-page .form-select-sm,
+    .pegawai-search-page .form-control-sm {
+        min-height:36px;
+        padding:7px 10px;
+        border:1px solid var(--ui-border-strong) !important;
+        border-radius:8px;
+        color:var(--ui-ink);
+        background:#fff;
+        outline:0;
+    }
+    .pegawai-search-page .form-select-sm:focus,
+    .pegawai-search-page .form-control-sm:focus {
+        border-color:var(--ui-brand) !important;
+        box-shadow:0 0 0 3px rgba(235,104,49,.12);
+    }
+    .pegawai-search-page .btn-orange-figma {
+        display:inline-flex; align-items:center; gap:6px;
+        min-height:36px; padding:8px 13px;
+        border:1px solid var(--ui-brand);
+        border-radius:8px;
+        color:#fff; background:var(--ui-brand);
+        font-size:12px; font-weight:700;
+    }
+    .pegawai-search-page .btn-orange-figma:hover { background:var(--ui-brand-dark); }
+    .pegawai-search-page .hris-table-wrapper { overflow-x:auto; }
+    .pegawai-search-page .hris-table {
+        width:100%; border-collapse:collapse; font-size:12px;
+    }
+    .pegawai-search-page .hris-table th {
+        padding:11px 10px; color:#69727c; background:#f6f7f8;
+        border-bottom:1px solid var(--ui-border);
+        text-align:left; font-size:10px; text-transform:uppercase;
+        letter-spacing:.03em; white-space:nowrap;
+    }
+    .pegawai-search-page .hris-table td {
+        padding:11px 10px; border-bottom:1px solid #edf0f3;
+        color:#47515d; vertical-align:middle;
+    }
+    .pegawai-search-page .hris-table tbody tr:hover td { background:#fbfbfc; }
+    .pegawai-search-page .badge.bg-primary {
+        display:inline-flex; padding:4px 8px; border-radius:999px;
+        color:#fff; background:#252a31 !important; font-size:10px;
+    }
+    .pegawai-search-page .form-check-input { accent-color:var(--ui-brand); }
+    .pegawai-search-page .btn-outline-primary {
+        color:var(--ui-brand); border:1px solid var(--ui-brand);
+        background:#fff; border-radius:7px;
+    }
+    .pegawai-search-page .btn-outline-danger {
+        color:#b91c1c; border:1px solid #fecaca;
+        background:#fff; border-radius:7px;
+    }
+    .pegawai-search-page .btn-close-custom { color:#64748b; }
+    @media(max-width:720px) {
+        .pegawai-search-page .filter-section { padding:12px; }
+    }
+</style>
+<script src="{{ url_for('static', filename='static_dashboard_1/assets/vendors/js/jquery.min.js') }}">{% endblock %}
+
 {% block content %}
-<div class="nxl-content">
+<div class="nxl-content pegawai-search-page">
     <div class="page-header">
         <div class="page-header-left d-flex align-items-center">
             <div class="page-header-title">
@@ -133,7 +211,7 @@
 {% endblock %}
 
 {% block script %}
-<script>
+
 $(document).ready(function() {
     // Load filter fields
     loadFilterFields();
