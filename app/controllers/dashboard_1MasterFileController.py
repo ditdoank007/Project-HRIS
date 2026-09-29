@@ -4298,8 +4298,22 @@ def get_jam_kerja_list():
         except AttributeError:
             return str(value)
 
-    data = [
-        {
+    data = []
+    for idx, row in enumerate(jam_kerja_list):
+        by_nip = (row.UPDATE_BY or '').strip()
+        by_label = by_nip or '-'
+
+        if by_nip:
+            pegawai = (
+                Pegawai.query
+                .filter(Pegawai.NIP == by_nip)
+                .order_by(Pegawai.NAMA.asc())
+                .first()
+            )
+            if pegawai:
+                by_label = f"{pegawai.NAMA} ({by_nip})"
+
+        data.append({
             'no': idx + 1,
             'id_jkerja': row.IDJKERJA,
             'tgl_mulai': row.TGL_MULAI_BERLAKU.strftime('%d-%m-%Y') if row.TGL_MULAI_BERLAKU else '-',
@@ -4321,9 +4335,8 @@ def get_jam_kerja_list():
             'jam_pulang': _format_jam(row.STD_JAM_OUT),
             'penggantian_tlm1': tlm1_label.get(row.PENGGANTIAN_TLM1, '-'),
             'updated': _format_updated(row.UPDATE_DATE),
-        }
-        for idx, row in enumerate(jam_kerja_list)
-    ]
+            'by': by_label,
+        })
 
     return jsonify({'status': 'success', 'data': data})
 
