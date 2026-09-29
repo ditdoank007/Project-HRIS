@@ -19,6 +19,7 @@
                     <div class="nav-separator"></div>
                 </div>
                 <li class="nxl-item nxl-caption"><label>SUMDA</label></li>
+{% if is_administrator() or has_form_access('SUMDA_KESAMAPTAAN') %}
                 <li class="nxl-item nxl-hasmenu">
                     <a href="javascript:void(0);" class="nxl-link">
                         <span class="nxl-micon"><i class="bi bi-people-fill"></i></span>
@@ -33,6 +34,7 @@
                         </li>
                     </ul>
                 </li>
+{% endif %}
                 <li class="nxl-item nxl-hasmenu">
                     <a href="{{ url_for('main.index') }}" class="nxl-link">
                         <span class="nxl-micon"><i class="bi bi-house-fill"></i></span>
