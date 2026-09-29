@@ -122,7 +122,7 @@ from app.controllers.kesamaptaanController import (
     kesamaptaan, api_kesamaptaan_list, api_kesamaptaan_save,
     api_kesamaptaan_detail, api_kesamaptaan_update, api_kesamaptaan_cancel,
     api_kesamaptaan_complete, api_kesamaptaan_qr, api_kesamaptaan_attendance,
-    api_kesamaptaan_photos, api_kesamaptaan_pdf,
+    api_kesamaptaan_photos, api_kesamaptaan_pdf, api_kesamaptaan_signature,
     api_kesamaptaan_internal_info, api_kesamaptaan_internal_employee_attendance,
 )
 from app.controllers.dashboard_1DisposisiController import (
@@ -2059,6 +2059,12 @@ def api_kesamaptaan_attendance_route(kegiatan_id):
 @login_required
 def api_kesamaptaan_photos_route(kegiatan_id):
     return api_kesamaptaan_photos(kegiatan_id)
+
+
+@main.route('/api/kesamaptaan/<int:kegiatan_id>/signature/<path:nip>', methods=['GET'])
+@login_required
+def api_kesamaptaan_signature_route(kegiatan_id, nip):
+    return api_kesamaptaan_signature(kegiatan_id, nip)
 
 
 @main.route('/api/kesamaptaan/<int:kegiatan_id>/pdf', methods=['GET'])
