@@ -1,25 +1,56 @@
+<!-- pages/dashboard_1/Master File Master Unit Kerja.html -->
 {% extends "layout/baseHRIS.html" %}
-{% block title %}- Master Unit Kerja{% endblock %}
+
+{% block title %}- Unit Kerja{% endblock %}
+
 {% block header_kicker %}MASTER FILE{% endblock %}
 {% block header_title %}Master Unit Kerja{% endblock %}
 
 {% block content %}
-
 <div class="hris-page">
-    <div class="hris-page-header">
-        <div>
-            <h2 class="hris-page-title">Master Unit Kerja</h2>
-            <p class="hris-page-subtitle">Kelola data Master Unit Kerja HRIS.</p>
+    <div class="page-header">
+        <div class="page-header-left d-flex align-items-center">
+            <div class="page-header-title">
+                <h5 class="m-b-10">Master File</h5>
+            </div>
+            <ul class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.view_master_unit_kerja') }}">Master Unit Kerja</a></li>
+            </ul>
         </div>
     </div>
-    
-<div class="hris-page">
-    <div class="hris-card-body">
-                    <div class="hris-form-stack">
+
+    <div class="main-content master-siaga">
+        <div class="container-fluid">
+            <div class="hris-card">
+                <div class="hris-card-header"
+                    style="border-radius: 10px;">
+                    <h6 class="mb-0">
+                        <i class="ti ti-building me-2"></i> Master Unit Kerja
+                    </h6>
+
+                    <div class="header-actions">
+                        <button class="btn p-0 border-0 bg-transparent shadow-none d-md-none" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#headerIconsCollapse">
+                            <i class="bi bi-three-dots-vertical" style="font-size: 1.5rem; color: #333;"></i>
+                        </button>
+
+                        <div class="collapse d-md-flex align-items-center" id="headerIconsCollapse">
+                            <div class="header-icons-wrapper d-flex gap-3 p-2 p-md-0 mt-2 mt-md-0">
+                                <a href="{{ url_for('main.view_cari_master_unit_kerja') }}"
+                                    class="btn p-0 border-0 bg-transparent shadow-none text-decoration-none">
+                                    <i class="bi bi-search" style="color: #333; font-size: 1.1rem;"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hris-card-body">
+                    <div class="row g-3">
                         <div class="col-12 d-md-flex align-items-center">
-                            
-                            <label class="hris-form-row-label">Unit Kerja ID</label>
-                            <div class="hris-form-control">
+                            <div class="col-md-1"></div>
+                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Unit Kerja ID</label>
+                            <div class="col-md-7">
                                 <div class="hris-input-group w-100">
                                     <input type="number" class="hris-input w-100" id="inputUnitKerjaId">
                                     <span class="hris-input-addon"><i class="bi bi-pencil-fill"></i></span>
@@ -28,9 +59,9 @@
                         </div>
 
                         <div class="col-12 d-md-flex align-items-center">
-                            
-                            <label class="hris-form-row-label">Nama Unit Kerja</label>
-                            <div class="hris-form-control">
+                            <div class="col-md-1"></div>
+                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Nama Unit Kerja</label>
+                            <div class="col-md-7">
                                 <div class="hris-input-group w-100">
                                     <input type="text" class="hris-input w-100" id="inputNamaUnitKerja">
                                     <span class="hris-input-addon"><i class="bi bi-pencil-fill"></i></span>
@@ -39,9 +70,9 @@
                         </div>
 
                         <div class="col-12 d-md-flex align-items-center">
-                            
-                            <label class="hris-form-row-label">Urut Report</label>
-                            <div class="hris-form-control">
+                            <div class="col-md-1"></div>
+                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Urut Report</label>
+                            <div class="col-md-7">
                                 <div class="hris-input-group w-100">
                                     <input type="number" class="hris-input w-100 text-end" min="0" step="1"
                                         value="0" id="inputUrutReport">
@@ -53,9 +84,9 @@
                         </div>
 
                         <div class="col-12 d-md-flex align-items-center mb-2">
-                            
-                            <label class="hris-form-row-label">Tipe</label>
-                            <div class="hris-form-control">
+                            <div class="col-md-1"></div>
+                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Tipe</label>
+                            <div class="col-md-7 d-flex align-items-center gap-2 flex-wrap">
                                 <select class="hris-select flex-grow-1" style="min-width: 150px;" id="inputTipe">
                                     <option value="">Pilih</option>
                                     <option value="Pusat">Pusat</option>
@@ -103,10 +134,6 @@
                         </div>
                     </div>
                 </div>
-
-</div>
-
-
 
 </div>
 {% endblock %}
