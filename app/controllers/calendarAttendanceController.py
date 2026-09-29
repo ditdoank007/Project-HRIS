@@ -47,6 +47,37 @@ def _event_from_token(token):
     return meta, event
 
 
+def _kesamaptaan_from_token(token):
+    kegiatan = KesamaptaanKegiatan.query.filter(
+        KesamaptaanKegiatan.QR_TOKEN == str(token or "").strip()
+    ).first()
+    return kegiatan
+
+
+def _kesamaptaan_payload(kegiatan, nip=None):
+    employee = employee_for_nip(nip) if nip else None
+    own = KesamaptaanKehadiran.query.filter(
+        KesamaptaanKehadiran.KEGIATAN_ID == kegiatan.KEGIATAN_ID,
+        KesamaptaanKehadiran.NIP == nip,
+        KesamaptaanKehadiran.STATUS == "HADIR",
+    ).first() if nip else None
+    return {
+        "activity_type": "KESAMAPTAAN",
+        "event_id": kegiatan.KEGIATAN_ID,
+        "title": kegiatan.JUDUL,
+        "description": "",
+        "start": f"{kegiatan.TANGGAL.isoformat()}T{kegiatan.JAM.strftime('%H:%M')}:00",
+        "end": f"{kegiatan.TANGGAL.isoformat()}T{kegiatan.JAM.strftime('%H:%M')}:00",
+        "location": "Kantor SAR Surabaya",
+        "status": kegiatan.STATUS,
+        "organizer_name": "Kantor SAR Surabaya",
+        "qr_active": kegiatan.QR_ACTIVE == "Y",
+        "employee_eligible": bool(employee),
+        "employee_attended": bool(own),
+        "employee_attendance_at": own.SCANNED_DATE.isoformat() if own else None,
+    }
+
+
 def _event_payload(event, meta, nip=None):
     employee_attendance = None
     if nip:
@@ -100,6 +131,15 @@ def api_calendar_rapat_attendance_info():
 
     nip = str(request.headers.get("X-Calendar-NIP") or "").strip() or None
 
+    if not meta or not event:
+        kegiatan = _kesamaptaan_from_token(token)
+        if not kegiatan:
+            return jsonify({"status": "error", "message": "QR kegiatan tidak ditemukan."}), 404
+        return jsonify({
+            "status": "success",
+            "data": _kesamaptaan_payload(kegiatan, nip),
+        })
+
     return jsonify({
         "status": "success",
         "data": _event_payload(event, meta, nip),
@@ -121,7 +161,32 @@ def api_calendar_rapat_employee_attendance():
 
     meta, event = _event_from_token(token)
     if not meta or not event:
-        return jsonify({"status": "error", "message": "QR rapat tidak ditemukan."}), 404
+        kegiatan = _kesamaptaan_from_token(token)
+        if not kegiatan:
+            return jsonify({"status": "error", "message": "QR kegiatan tidak ditemukan."}), 404
+        try:
+            attendance, pegawai, created = record_kesamaptaan_attendance(kegiatan, nip, "QR")
+            return jsonify({
+                "status": "success",
+                "created": created,
+                "data": {
+                    "event_id": kegiatan.KEGIATAN_ID,
+                    "attendee_type": "PEGAWAI",
+                    "nip": pegawai.NIP,
+                    "nama": pegawai.NAMA,
+                    "scanned_date": attendance.SCANNED_DATE.isoformat(),
+                },
+                "message": (
+                    "Kehadiran Kesamaptaan berhasil dicatat."
+                    if created else "Kehadiran Kesamaptaan Anda sudah tercatat sebelumnya."
+                ),
+            })
+        except ValueError as exc:
+            db.session.rollback()
+            return jsonify({"status": "error", "message": str(exc)}), 400
+        except Exception:
+            db.session.rollback()
+            return jsonify({"status": "error", "message": "Gagal mencatat kehadiran Kesamaptaan."}), 500
 
     try:
         attendance, pegawai, created = record_employee_attendance(event, nip, "QR")
