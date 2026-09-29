@@ -436,20 +436,7 @@
                 </li>
                 {% endif %}
 
-                <li class="nxl-item nxl-hasmenu">
-                    <a href="javascript:void(0);" class="nxl-link">
-                        <span class="nxl-micon"><i class="feather-activity"></i></span>
-                        <span class="nxl-mtext">SUMDA</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
-                    </a>
-                    <ul class="nxl-submenu">
-                        <li class="nxl-item">
-                            <a class="nxl-link" href="{{ url_for('main.view_kesamaptaan') }}">
-                                <span class="nxl-micon"><i class="feather-activity"></i></span>
-                                <span class="nxl-mtext">Kesamaptaan</span>
-                            </a>
-                        </li>
-                    </ul>
-                </li>
+                {% if is_administrator() or has_form_access('AGENDA_RAPAT') or has_form_access('AGENDA_DISPOSISI') %}
                 <li class="nxl-item nxl-hasmenu">
                     <a href="javascript:void(0);" class="nxl-link">
                         <span class="nxl-micon"><i class="feather-calendar"></i></span>
@@ -471,6 +458,7 @@
                         </li>
                     </ul>
                 </li>
+                {% endif %}
                 {% if is_administrator() or has_form_access('InpPengumuman.aspx') %}
                 <li class="nxl-item nxl-hasmenu">
                     <a href="javascript:void(0);" class="nxl-link">
