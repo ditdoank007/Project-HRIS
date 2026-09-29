@@ -1478,6 +1478,26 @@ body.hris-sidebar-mini .hris-submenu {
   background: #fecaca;
 }
 
+.hris-form-inline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.hris-form-inline > .hris-input,
+.hris-form-inline > .hris-select {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.hris-form-inline-separator {
+  flex: 0 0 auto;
+  color: var(--ui-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
 /* Form actions */
 .hris-form-actions {
   display: flex;
