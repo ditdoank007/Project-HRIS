@@ -124,7 +124,7 @@ def dashboard_infografis():
             age_unknown += 1
         elif age < 20:
             age_buckets['<20 Tahun'] += 1
-        elif age <= 30:
+        elif 21 <= age <= 30:
             age_buckets['21 s/d 30 Tahun'] += 1
         elif age <= 40:
             age_buckets['31 s/d 40 Tahun'] += 1
