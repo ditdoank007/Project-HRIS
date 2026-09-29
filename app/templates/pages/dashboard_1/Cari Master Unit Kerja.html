@@ -1,99 +1,92 @@
-<!-- pages/dashboard_1/Cari Master Unit Kerja.html -->
 {% extends "layout/baseHRIS.html" %}
 
-{% block title %}- Unit Kerja{% endblock %}
-
+{% block title %}- Cari Unit Kerja{% endblock %}
 {% block header_kicker %}MASTER FILE{% endblock %}
-{% block header_title %}Cari Master Unit Kerja{% endblock %}
+{% block header_title %}Cari Unit Kerja{% endblock %}
 
 {% block content %}
-<div class="nxl-content">
-    <div class="page-header">
-        <div class="page-header-left d-flex align-items-center">
-            <div class="page-header-title">
-                <h5 class="m-b-10">Master File</h5>
-            </div>
-            <ul class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url_for('main.view_master_unit_kerja') }}">Master Unit Kerja</a></li>
-                <li class="breadcrumb-item">Cari Unit Kerja</li>
-            </ul>
+<div class="hris-page">
+    <div class="hris-page-header">
+        <div>
+            <h2 class="hris-page-title">Cari Master Unit Kerja</h2>
+            <p class="hris-page-subtitle">Cari dan kelola data Unit Kerja yang sudah tersimpan.</p>
         </div>
+        <a href="{{ url_for('main.view_master_unit_kerja') }}" class="hris-btn hris-btn-secondary">
+            <i class="feather-arrow-left"></i>
+            <span>Kembali</span>
+        </a>
     </div>
 
-    <div class="main-content master-siaga">
-        <div class="container-fluid">
-            <div class="card mb-4 shadow-sm" style="border-radius: 10px; overflow: hidden; border: none;">
-                <div class="card-header-custom d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0"><i class="bi bi-search me-2"></i> Cari Transaksi</h6>
-                    <a href="{{ url_for('main.view_master_unit_kerja') }}" class="btn-close-custom">
-                        <i class="bi bi-x-lg"></i>
-                    </a>
+    <div class="hris-card">
+        <div class="hris-card-header">
+            <div>
+                <h3 class="hris-card-title">Data Master Unit Kerja</h3>
+                <p class="hris-section-subtitle">Gunakan filter untuk menemukan Unit Kerja yang akan diedit.</p>
+            </div>
+            <button type="button" class="hris-btn hris-btn-secondary" id="btnRefreshUnitKerja">
+                <i class="feather-refresh-cw"></i>
+                <span>Refresh</span>
+            </button>
+        </div>
+
+        <div class="hris-card-body">
+            <div class="hris-form-stack">
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="periodeInput">Periode</label>
+                    <input type="date" class="hris-input" id="periodeInput">
                 </div>
 
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-12 mb-3 d-flex flex-column flex-md-row align-items-start align-items-md-center gap-2">
-                            <label class="filter-label-wide">Periode</label>
-                            <div class="input-group-custom w-mobile-100">
-                                <input type="date" class="form-control-sm border" id="periodeInput">
-                                <span class="icon-append"><i class="bi bi-calendar3"></i></span>
-                            </div>
-                        </div>
-
-                        <div class="col-md-12 d-flex flex-column flex-md-row align-items-start align-items-md-center flex-wrap gap-2">
-                            <label class="filter-label-wide">Filter</label>
-
-                            <select class="form-select-sm border custom-select w-mobile-100" id="filterField1">
-                                <option value="">- Pilih Field -</option>
-                                <option>Nama Unit Kerja</option>
-                                <option>Unit Kerja ID</option>
-                            </select>
-
-                            <div class="input-group-custom w-mobile-100">
-                                <input type="text" class="form-control-sm border" id="filterKeyword1">
-                                <span class="icon-append"><i class="bi bi-pencil-fill"></i></span>
-                            </div>
-
-                            <span class="mx-md-2 fw-bold text-dan">Dan</span>
-
-                            <select class="form-select-sm border custom-select w-mobile-100" id="filterField2">
-                                <option value="">- Pilih Field -</option>
-                                <option>Nama Unit Kerja</option>
-                                <option>Unit Kerja ID</option>
-                            </select>
-
-                            <div class="input-group-custom w-mobile-100">
-                                <input type="text" class="form-control-sm border" id="filterKeyword2">
-                                <span class="icon-append"><i class="bi bi-pencil-fill"></i></span>
-                            </div>
-
-                            <button class="btn-refresh-custom ms-md-auto mt-2 mt-md-0 w-mobile-100" id="btnRefreshUnitKerja">
-                                <i class="bi bi-arrow-clockwise"></i> Refresh
-                            </button>
-                        </div>
-                        <p class="mb-1 fw-semibold text-dark" style="font-size: 12px;">
-                            ㅤ
-                        </p>
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-striped text-center align-middle">
-                                <thead style="background:#EB6831;">
-                                    <tr>
-                                        <th style="color:white; vertical-align: middle;">No</th>
-                                        <th style="color:white; vertical-align: middle;">Unit Kerja ID</th>
-                                        <th style="color:white; vertical-align: middle;">Nama Unit Kerja</th>
-                                        <th style="color:white; vertical-align: middle;">Tipe</th>
-                                        <th style="color:white; vertical-align: middle;">Urut Report</th>
-                                        <th style="color:white; vertical-align: middle;">Updated</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="unitKerjaTableBody">
-                                    <tr>
-                                        <td colspan="6" style="vertical-align: middle; padding: 20px;">No records to display.</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="filterField1">Filter 1</label>
+                    <div class="hris-form-inline">
+                        <select class="hris-select" id="filterField1">
+                            <option value="">- Pilih Field -</option>
+                            <option>Nama Unit Kerja</option>
+                            <option>Unit Kerja ID</option>
+                        </select>
+                        <input type="text" class="hris-input" id="filterKeyword1" placeholder="Kata kunci...">
                     </div>
+                </div>
+
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="filterField2">Filter 2</label>
+                    <div class="hris-form-inline">
+                        <select class="hris-select" id="filterField2">
+                            <option value="">- Pilih Field -</option>
+                            <option>Nama Unit Kerja</option>
+                            <option>Unit Kerja ID</option>
+                        </select>
+                        <input type="text" class="hris-input" id="filterKeyword2" placeholder="Kata kunci...">
+                    </div>
+                </div>
+            </div>
+
+            <div class="hris-section" style="margin-top: 18px;">
+                <div class="hris-section-header">
+                    <div>
+                        <h3 class="hris-section-title">Hasil Pencarian</h3>
+                        <p class="hris-section-subtitle">Edit data atau aktifkan/nonaktifkan Unit Kerja.</p>
+                    </div>
+                </div>
+
+                <div class="hris-table-wrap">
+                    <table class="hris-table-modern">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Unit Kerja ID</th>
+                                <th>Nama Unit Kerja</th>
+                                <th>Tipe</th>
+                                <th>Urut Report</th>
+                                <th>Status</th>
+                                <th>Updated</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="unitKerjaTableBody">
+                            <tr><td colspan="8" class="hris-empty">Memuat data...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -102,76 +95,160 @@
 {% endblock %}
 
 {% block script %}
-
 document.addEventListener('DOMContentLoaded', function () {
     const tbody = document.getElementById('unitKerjaTableBody');
-    const btnRefresh = document.getElementById('btnRefreshUnitKerja');
-
-    const periodeInput = document.getElementById('periodeInput');
-    const filterField1 = document.getElementById('filterField1');
-    const filterKeyword1 = document.getElementById('filterKeyword1');
-    const filterField2 = document.getElementById('filterField2');
-    const filterKeyword2 = document.getElementById('filterKeyword2');
 
     function buildQueryParams() {
         const params = new URLSearchParams();
 
-        if (periodeInput.value) {
-            params.set('periode', periodeInput.value);
-        }
+        const periode = document.getElementById('periodeInput').value;
+        const field1 = document.getElementById('filterField1').value;
+        const keyword1 = document.getElementById('filterKeyword1').value.trim();
+        const field2 = document.getElementById('filterField2').value;
+        const keyword2 = document.getElementById('filterKeyword2').value.trim();
 
-        if (filterField1.value && filterKeyword1.value.trim()) {
-            params.set('field1', filterField1.value);
-            params.set('keyword1', filterKeyword1.value.trim());
+        if (periode) params.set('periode', periode);
+        if (field1 && keyword1) {
+            params.set('field1', field1);
+            params.set('keyword1', keyword1);
         }
-
-        if (filterField2.value && filterKeyword2.value.trim()) {
-            params.set('field2', filterField2.value);
-            params.set('keyword2', filterKeyword2.value.trim());
+        if (field2 && keyword2) {
+            params.set('field2', field2);
+            params.set('keyword2', keyword2);
         }
 
         return params;
     }
 
     async function loadUnitKerjaList() {
-        tbody.innerHTML = `<tr><td colspan="6" style="padding:20px;">Memuat data...</td></tr>`;
+        tbody.innerHTML = '<tr><td colspan="8" class="hris-empty">Memuat data...</td></tr>';
 
         try {
-            const params = buildQueryParams();
-            const res = await fetch(`/api/unit-kerja/list?${params.toString()}`);
+            const res = await fetch('/api/unit-kerja/list?' + buildQueryParams().toString());
             const json = await res.json();
 
-            if (json.status !== 'success') {
-                tbody.innerHTML = `<tr><td colspan="6" style="padding:20px;">${json.message || 'Gagal memuat data.'}</td></tr>`;
+            if (!res.ok || json.status !== 'success') {
+                tbody.innerHTML = '<tr><td colspan="8" class="hris-empty">' +
+                    (json.message || 'Gagal memuat data.') + '</td></tr>';
                 return;
             }
 
-            if (json.data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" style="padding:20px;">No records to display.</td></tr>`;
+            if (!json.data || json.data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="hris-empty">No records to display.</td></tr>';
                 return;
             }
 
-            tbody.innerHTML = json.data.map(row => `
-                <tr>
-                    <td>${row.no}</td>
-                    <td>${row.unit_kerja_id}</td>
-                    <td>${row.nama_unit_kerja}</td>
-                    <td>${row.tipe}</td>
-                    <td>${row.urut_report}</td>
-                    <td>${row.updated}</td>
-                </tr>
-            `).join('');
+            tbody.innerHTML = json.data.map(row => {
+                const active = String(row.is_aktif || row.is_use || '').toUpperCase() === 'Y';
 
+                return `
+                    <tr>
+                        <td>${row.no}</td>
+                        <td>${row.unit_kerja_id ?? '-'}</td>
+                        <td>${row.nama_unit_kerja ?? '-'}</td>
+                        <td>${row.tipe ?? '-'}</td>
+                        <td>${row.urut_report ?? '-'}</td>
+                        <td>
+                            <label class="hris-toggle">
+                                <input type="checkbox"
+                                       class="unit-use-toggle"
+                                       data-unit-id="${row.unit_kerja_id}"
+                                       ${active ? 'checked' : ''}>
+                                <span class="hris-toggle-slider"></span>
+                            </label>
+                            <span class="hris-toggle-label unit-status-label">
+                                ${active ? 'Aktif' : 'Nonaktif'}
+                            </span>
+                        </td>
+                        <td>${row.updated ?? '-'}</td>
+                        <td style="white-space: nowrap;">
+                            <button type="button"
+                                    class="hris-btn hris-btn-secondary hris-btn-icon btn-edit-unit"
+                                    data-id="${row.unit_kerja_id}"
+                                    title="Edit">
+                                <i class="feather-edit-2"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            tbody.querySelectorAll('.unit-use-toggle').forEach(toggle => {
+                toggle.addEventListener('change', toggleUnitKerja);
+            });
         } catch (err) {
-            console.error('Gagal memuat data unit kerja:', err);
-            tbody.innerHTML = `<tr><td colspan="6" style="padding:20px;">Gagal memuat data.</td></tr>`;
+            console.error(err);
+            tbody.innerHTML = '<tr><td colspan="8" class="hris-empty">Gagal memuat data.</td></tr>';
         }
     }
 
-    btnRefresh.addEventListener('click', loadUnitKerjaList);
+    async function toggleUnitKerja(event) {
+        const checkbox = event.target;
+        const previousState = !checkbox.checked;
+        const unitKerjaId = checkbox.dataset.unitId;
+        const isAktif = checkbox.checked ? 'Y' : 'N';
 
-    // Muat data otomatis saat halaman pertama kali dibuka (tanpa filter)
+        checkbox.disabled = true;
+
+        try {
+            const res = await fetch('/api/unit-kerja/toggle', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    unit_kerja_id: unitKerjaId,
+                    is_aktif: isAktif
+                })
+            });
+
+            const json = await res.json();
+
+            if (!res.ok || json.status !== 'success') {
+                throw new Error(json.message || 'Gagal mengubah status Unit Kerja.');
+            }
+
+            checkbox.checked = String(json.data?.is_aktif || isAktif).toUpperCase() === 'Y';
+
+            const label = checkbox.closest('td')?.querySelector('.unit-status-label');
+            if (label) {
+                label.textContent = checkbox.checked ? 'Aktif' : 'Nonaktif';
+            }
+        } catch (err) {
+            checkbox.checked = previousState;
+            const label = checkbox.closest('td')?.querySelector('.unit-status-label');
+            if (label) {
+                label.textContent = checkbox.checked ? 'Aktif' : 'Nonaktif';
+            }
+            alert(err.message || 'Gagal mengubah status Unit Kerja.');
+        } finally {
+            checkbox.disabled = false;
+        }
+    }
+
+    tbody.addEventListener('click', function (e) {
+        const editButton = e.target.closest('.btn-edit-unit');
+        if (!editButton) return;
+
+        window.location.href =
+            '{{ url_for("main.view_master_unit_kerja") }}?id=' +
+            encodeURIComponent(editButton.dataset.id);
+    });
+
+    document.getElementById('btnRefreshUnitKerja').addEventListener('click', loadUnitKerjaList);
+
+    ['periodeInput', 'filterField1', 'filterField2'].forEach(id => {
+        document.getElementById(id).addEventListener('change', loadUnitKerjaList);
+    });
+
+    ['filterKeyword1', 'filterKeyword2'].forEach(id => {
+        document.getElementById(id).addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') loadUnitKerjaList();
+        });
+    });
+
     loadUnitKerjaList();
 });
-
 {% endblock %}
