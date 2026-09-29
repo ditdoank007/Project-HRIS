@@ -1,0 +1,489 @@
+<!-- partials/nav_dashboard1.html -->
+<aside class="hris-sidebar-v2" id="hrisSidebar">
+    
+            <ul class="hris-nav-list">
+                
+    <div class="hris-sidebar-brand">
+        <a href="{{ url_for('main.view_dashboard_infografis') }}" class="hris-sidebar-brand-link">
+            <img src="{{ url_for('static', filename='static_dashboard_1/assets/images/logo-full.png') }}"
+                 alt="HRIS Kansar">
+            <span class="hris-sidebar-brand-text">
+                <strong>HRIS Kansar</strong>
+                <small>Basarnas Surabaya</small>
+            </span>
+        </a>
+        <button type="button" class="hris-sidebar-toggle" id="hrisSidebarToggle"
+                aria-label="Minimize sidebar" title="Minimize sidebar">
+            <i class="feather-chevron-left"></i>
+        </button>
+    </div>
+
+                <li class="hris-nav-item hris-nav-group">
+                    <a href="{{ url_for('main.view_dashboard_infografis') }}" class="hris-nav-link">
+                        <span class="hris-nav-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                fill="currentColor">
+                                <path d="M4 4h6v6h-6zM14 4h6v4h-6zM14 10h6v10h-6zM4 14h6v6h-6z" />
+                            </svg>
+                        </span>
+                        <span class="hris-nav-text">Dashboard</span><span class="hris-nav-arrow"><i
+                                class="feather-chevron-right"></i></span>
+                    </a>
+                    <ul class="hris-submenu">
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_dashboard_infografis') }}">
+                                <span class="hris-nav-icon"><i class="ti ti-chart-donut"></i></span>
+                                <span class="hris-nav-text">Infografis Pegawai</span>
+                            </a>
+                        </li>
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_dashboard_pelanggaran') }}">
+                                <span class="hris-nav-icon"><i class="ti ti-alert-triangle"></i></span>
+                                <span class="hris-nav-text">Pelanggaran Disiplin</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="hris-nav-item hris-nav-group">
+                    <a href="javascript:void(0);" class="hris-nav-link">
+                        <span class="hris-nav-icon"><i class="feather-layers"></i></span>
+                        <span class="hris-nav-text">Master File</span><span class="hris-nav-arrow"><i
+                                class="feather-chevron-right"></i></span>
+                    </a>
+                    <ul class="hris-submenu">
+
+                        {% if has_form_access('Mfuser.aspx') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_master_user') }}">
+                                <span class="hris-nav-icon"><i class="feather-user"></i></span>
+                                <span class="hris-nav-text">User Account</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if is_administrator() %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_master_login') }}">
+                                <span class="hris-nav-icon"><i class="feather-lock"></i></span>
+                                <span class="hris-nav-text">Master Login</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('MFvip.aspx') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_master_pegawai_vip') }}">
+                                <span class="hris-nav-icon"><i class="ti ti-vip"></i></span>
+                                <span class="hris-nav-text">VIP List</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('Kalender.aspx') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_master_kalender') }}">
+                                <span class="hris-nav-icon"><i class="feather-calendar"></i></span>
+                                <span class="hris-nav-text">Master Kalender</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('MFPot.aspx') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_master_potongan') }}">
+                                <span class="hris-nav-icon"><i class="feather-tag"></i></span>
+                                <span class="hris-nav-text">Master Potongan</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('MFUnitKerja.aspx') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_master_unit_kerja') }}">
+                                <span class="hris-nav-icon"><i class="ti ti-building"></i></span>
+                                <span class="hris-nav-text">Master Unit Kerja</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('mfclass.aspx') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_master_tunkin_class') }}">
+                                <span class="hris-nav-icon"><i class="ti ti-brand-redhat"></i></span>
+                                <span class="hris-nav-text">Master Tunkin/Class</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('MFHariKerja.aspx') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_master_jam_kerja') }}">
+                                <span class="hris-nav-icon"><i class="ti ti-clock-edit"></i></span>
+                                <span class="hris-nav-text">Master Jam Kerja</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('MFLoadFinger.aspx') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_master_jam_finger') }}">
+                                <span class="hris-nav-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path
+                                            d="M12 2a7 7 0 0 0-7 7v3a5 5 0 0 0 10 0v-3a3 3 0 0 0-6 0v3a1 1 0 0 0 2 0v-3a1 1 0 0 1 2 0v3a3 3 0 0 1-6 0v-3a5 5 0 0 1 10 0v3a7 7 0 0 1-14 0v-3a9 9 0 0 1 18 0v3c0 5-4 9-9 9" />
+                                    </svg>
+                                </span>
+                                <span class="hris-nav-text">Master Jam Finger</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('MFJabatan.aspx') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_master_jabatan') }}">
+                                <span class="hris-nav-icon"><i class="feather-award"></i></span>
+                                <span class="hris-nav-text">Master Jabatan</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('MFUM.aspx') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_master_uang_makan') }}">
+                                <span class="hris-nav-icon"><i class="ti ti-tools-kitchen-2"></i></span>
+                                <span class="hris-nav-text">Master Uang Makan</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('MFTRT.aspx') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_master_trt') }}">
+                                <span class="hris-nav-icon"><i class="ti ti-cash"></i></span>
+                                <span class="hris-nav-text">Master TRT</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                    </ul>
+                </li>
+
+                <li class="hris-nav-item hris-nav-group">
+                    <a href="javascript:void(0);" class="hris-nav-link">
+                        <span class="hris-nav-icon"><i class="feather-users"></i></span>
+                        <span class="hris-nav-text">Kepegawaian</span><span class="hris-nav-arrow"><i
+                                class="feather-chevron-right"></i></span>
+                    </a>
+                    <ul class="hris-submenu">
+                        {% if is_administrator() or has_form_access('MFPegawai.aspx') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_kepegawaian_data_pegawai') }}">
+                                <span class="hris-nav-icon"><i class="feather-users"></i></span>
+                                <span class="hris-nav-text">Data Pegawai</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('DinasLuar.aspx') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_kepegawaian_dinas_luar_umum') }}">
+                                <span class="hris-nav-icon"><i class="feather-briefcase"></i></span>
+                                <span class="hris-nav-text">Dinas Luar Umum</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('DinasLuar.aspx') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_kepegawaian_dinas_luar_operasi') }}">
+                                <span class="hris-nav-icon"><i class="feather-activity"></i></span>
+                                <span class="hris-nav-text">Dinas Luar OPS</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('DinasLuar.aspx') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_kepegawaian_dinas_luar_pelatihan') }}">
+                                <span class="hris-nav-icon"><i class="feather-file-text"></i></span>
+                                <span class="hris-nav-text">Dinas Luar SD</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('cuti.aspx') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_kepegawaian_pegawai_cuti') }}">
+                                <span class="hris-nav-icon"><i class="feather-user-x"></i></span>
+                                <span class="hris-nav-text">Pegawai Cuti</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('Sakit.aspx') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_kepegawaian_pegawai_sakit') }}">
+                                <span class="hris-nav-icon"><i class="feather-heart"></i></span>
+                                <span class="hris-nav-text">Pegawai Sakit</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('Ijin.aspx') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_kepegawaian_pegawai_tidak_hadir') }}">
+                                <span class="hris-nav-icon"><i class="feather-user-minus"></i></span>
+                                <span class="hris-nav-text">Pegawai Tidak Hadir</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('Updatependukung.aspx') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_kepegawaian_update_pendukung') }}">
+                                <span class="hris-nav-icon"><i class="feather-upload"></i></span>
+                                <span class="hris-nav-text">Update Pendukung</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('PegMutasi.aspx') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_kepegawaian_mutasi_penempatan_pegawai') }}">
+                                <span class="hris-nav-icon"><i class="feather-repeat"></i></span>
+                                <span class="hris-nav-text">Pegawai Mutasi</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </li>
+                {% if is_administrator()
+                    or has_form_access('AbsensiFP.aspx')
+                    or has_form_access('Absensimanual.aspx')
+                    or has_form_access('TraceAbsensi.aspx')
+                    or has_form_access('TraceTunKin.aspx')
+                    or has_form_access('InjectAbsensi.aspx')
+                    or has_form_access('InjectLembur.aspx')
+                    or has_form_access('MFLoadFinger.aspx') %}
+                <li class="hris-nav-item hris-nav-group">
+                    <a href="javascript:void(0);" class="hris-nav-link">
+                        <span class="hris-nav-icon"><i class="feather-settings"></i></span>
+                        <span class="hris-nav-text">Data Absensi</span><span class="hris-nav-arrow"><i
+                                class="feather-chevron-right"></i></span>
+                    </a>
+                    <ul class="hris-submenu">
+
+                        {% if is_administrator() or has_form_access('AbsensiFP.aspx') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_data_absensi_normalisasi_finger') }}">
+                                <span class="hris-nav-icon"><i class="ti ti-fingerprint"></i></span>
+                                <span class="hris-nav-text">Absensi Finger</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('Absensimanual.aspx') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_data_absensi_non_finger') }}">
+                                <span class="hris-nav-icon"><i class="ti ti-user-check"></i></span>
+                                <span class="hris-nav-text">Absensi Non Finger</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('TraceAbsensi.aspx') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_data_absensi_trace') }}">
+                                <span class="hris-nav-icon"><i class="ti ti-file-text"></i></span>
+                                <span class="hris-nav-text">Detail Absensi</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('TraceTunKin.aspx') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_data_absensi_trace_tunjangan') }}">
+                                <span class="hris-nav-icon"><i class="ti ti-cash"></i></span>
+                                <span class="hris-nav-text">Detail Tunkin</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('InjectAbsensi.aspx') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_data_absensi_pegawai_manual') }}">
+                                <span class="hris-nav-icon"><i class="ti ti-edit"></i></span>
+                                <span class="hris-nav-text">Absensi Manual</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('InjectLembur.aspx') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_data_absensi_pegawai_lembur_manual') }}">
+                                <span class="hris-nav-icon"><i class="ti ti-clock"></i></span>
+                                <span class="hris-nav-text">Lembur Manual</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('MFLoadFinger.aspx') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_data_absensi_impor_file') }}">
+                                <span class="hris-nav-icon"><i class="ti ti-file-import"></i></span>
+                                <span class="hris-nav-text">Impor File</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                    </ul>
+                </li>
+                {% endif %}
+
+                {% if is_administrator()
+                    or has_form_access('RAbsensiAll.aspx')
+                    or has_form_access('RAbsensiPerson.aspx')
+                    or has_form_access('RTimerecorder.aspx')
+                    or has_form_access('RDailyabsensi.aspx')
+                    or has_form_access('Rekapsprint.aspx')
+                    or has_form_access('RekapUM.aspx')
+                    or has_form_access('RPelanggaranDis.aspx')
+                    or has_form_access('RRincianBayar.aspx')
+                    or has_form_access('DaftarLembur.aspx') %}
+                <li class="hris-nav-item hris-nav-group">
+                    <a href="javascript:void(0);" class="hris-nav-link">
+                        <span class="hris-nav-icon"><i class="feather-file-text"></i></span>
+                        <span class="hris-nav-text">Laporan</span><span class="hris-nav-arrow"><i
+                                class="feather-chevron-right"></i></span>
+                    </a>
+                    <ul class="hris-submenu">
+
+                        {% if is_administrator() or has_form_access('RAbsensiAll.aspx') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_laporan_rekap_absensi_all') }}">
+                                <i class="ti ti-checkbox me-2"></i>Rekap Absensi All
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('RAbsensiPerson.aspx') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_laporan_rekap_absensi_individu') }}">
+                                <i class="ti ti-checkbox me-2"></i>Rekap Absensi Person
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('RTimerecorder.aspx') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_laporan_rekap_absensi_log_finger') }}">
+                                <i class="ti ti-checkbox me-2"></i>Rekap History Log Finger
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('RDailyabsensi.aspx') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_laporan_rekap_clock_exception') }}">
+                                <i class="ti ti-checkbox me-2"></i>Rekap Absensi Bulanan
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('Rekapsprint.aspx') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_laporan_rekap_ketidakhadiran_pegawai') }}">
+                                <i class="ti ti-checkbox me-2"></i>Rekap DL, S, I CUTI
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('RekapUM.aspx') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_laporan_rekap_uang_makan') }}">
+                                <i class="ti ti-checkbox me-2"></i>Rekap Uang Makan
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('RPelanggaranDis.aspx') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_laporan_rekap_pelanggaran_disiplin') }}">
+                                <i class="ti ti-checkbox me-2"></i>Rekap Pelanggaran Disiplin
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('RRincianBayar.aspx') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_laporan_rekap_tunjangan_kinerja') }}">
+                                <i class="ti ti-checkbox me-2"></i>Rekap Tunjangan Kinerja
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('DaftarLembur.aspx') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_laporan_cetak_daftar_lembur_umum') }}">
+                                <i class="ti ti-checkbox me-2"></i>Rekap Daftar Lembur
+                            </a>
+                        </li>
+                        {% endif %}
+
+                    </ul>
+                </li>
+                {% endif %}
+
+                {% if is_administrator() or has_form_access('AGENDA_RAPAT') or has_form_access('AGENDA_DISPOSISI') %}
+                <li class="hris-nav-item hris-nav-group">
+                    <a href="javascript:void(0);" class="hris-nav-link">
+                        <span class="hris-nav-icon"><i class="feather-calendar"></i></span>
+                        <span class="hris-nav-text">AGENDA</span><span class="hris-nav-arrow"><i
+                                class="feather-chevron-right"></i></span>
+                    </a>
+                    <ul class="hris-submenu">
+                        {% if is_administrator() or has_form_access('AGENDA_RAPAT') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_agenda_rapat') }}">
+                                <span class="hris-nav-icon"><i class="feather-users"></i></span>
+                                <span class="hris-nav-text">Rapat</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% if is_administrator() or has_form_access('AGENDA_DISPOSISI') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_agenda_disposisi') }}">
+                                <span class="hris-nav-icon"><i class="feather-send"></i></span>
+                                <span class="hris-nav-text">Disposisi</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </li>
+                {% endif %}
+                {% if is_administrator() or has_form_access('InpPengumuman.aspx') %}
+                <li class="hris-nav-item hris-nav-group">
+                    <a href="javascript:void(0);" class="hris-nav-link">
+                        <span class="hris-nav-icon"><i class="feather-monitor"></i></span>
+                        <span class="hris-nav-text">Media Informasi</span><span class="hris-nav-arrow"><i
+                                class="feather-chevron-right"></i></span>
+                    </a>
+                    <ul class="hris-submenu">
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_media_informasi') }}">
+                                <span class="hris-nav-icon"><i class="ti ti-file-export"></i></span>
+                                <span class="hris-nav-text">Inp Pengumuman</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                {% endif %}
+                <li class="hris-nav-item hris-nav-group">
+                    <a href="{{ url_for('main.index') }}" class="hris-nav-link">
+                        <span class="hris-nav-icon"><i class="bi bi-house-fill"></i></span>
+                        <span class="hris-nav-text">Portal</span>
+                    </a>
+                </li>
+            </ul>
+</aside>
