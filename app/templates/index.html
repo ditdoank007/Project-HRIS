@@ -201,12 +201,10 @@
 
                             <div class="dropdown-menu hris-dropdown-menu">
 
-                                {% if is_administrator() or has_form_access('SUMDA_KESAMAPTAAN') %}
-                                <a href="{{ url_for('main.view_kesamaptaan') }}" class="dropdown-item">
+                                {% set kes_access = is_administrator() or has_form_access('SUMDA_KESAMAPTAAN') %}
+                                <a id="sumdaKesamaptaanItem" href="{{ url_for('main.view_kesamaptaan') }}" class="dropdown-item{% if not kes_access %} hris-access-hidden{% endif %}">
                                     Kesamaptaan
                                 </a>
-
-                                {% endif %}
 
                                 <a href="{{ url_for('main.index') }}" class="dropdown-item">
                                     Pemeliharaan
@@ -1185,7 +1183,7 @@
                     const loginModal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
                     loginModal.hide();
 
-                    updateNavbarAfterLogin(result.user.nama);
+                    updateNavbarAfterLogin(result.user.nama, result.user.menu_access || {});
                     formLogin.reset();
 
                 } catch (error) {
@@ -1195,7 +1193,11 @@
             });
         }
 
-        function updateNavbarAfterLogin(nama) {
+        function updateNavbarAfterLogin(nama, menuAccess) {
+            const kesamaptaanItem = document.getElementById('sumdaKesamaptaanItem');
+            if (kesamaptaanItem) {
+                kesamaptaanItem.classList.toggle('hris-access-hidden', !menuAccess.SUMDA_KESAMAPTAAN);
+            }
             const infoDropdown = document.getElementById('informasiDropdown');
             if (infoDropdown) infoDropdown.classList.remove('d-none');
 
