@@ -106,7 +106,7 @@
 {% endblock %}
 
 {% block script %}
-<script>
+
 document.addEventListener('DOMContentLoaded', function () {
     const tbody = document.getElementById('potonganTableBody');
     const btnRefresh = document.getElementById('btnRefreshPotongan');
@@ -179,5 +179,5 @@ document.addEventListener('DOMContentLoaded', function () {
     // Muat data otomatis saat halaman pertama kali dibuka (tanpa filter)
     loadPotonganList();
 });
-</script>
+
 {% endblock %}
