@@ -168,7 +168,7 @@ def api_calendar_rapat_employee_attendance():
         if not kegiatan:
             return jsonify({"status": "error", "message": "QR kegiatan tidak ditemukan."}), 404
         try:
-            attendance, pegawai, created = record_kesamaptaan_attendance(kegiatan, nip, "QR")
+            attendance, pegawai, created = record_kesamaptaan_attendance(kegiatan, nip)
             return jsonify({
                 "status": "success",
                 "created": created,
