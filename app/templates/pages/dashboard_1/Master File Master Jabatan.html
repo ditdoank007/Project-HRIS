@@ -29,7 +29,7 @@
                     </h6>
 
                     <div class="header-actions">
-                        <button class="btn p-0 border-0 bg-transparent shadow-none d-md-none" type="button"
+                        <button class="hris-btn hris-btn-ghost hris-btn-icon d-md-none" type="button"
                             data-bs-toggle="collapse" data-bs-target="#headerIconsCollapse">
                             <i class="bi bi-three-dots-vertical" style="font-size: 1.5rem; color: #333;"></i>
                         </button>
@@ -37,7 +37,7 @@
                         <div class="collapse d-md-flex align-items-center" id="headerIconsCollapse">
                             <div class="header-icons-wrapper d-flex gap-3 p-2 p-md-0 mt-2 mt-md-0">
                                 <a href="{{ url_for('main.view_cari_master_jabatan') }}"
-                                    class="btn p-0 border-0 bg-transparent shadow-none text-decoration-none">
+                                    class="hris-btn hris-btn-ghost hris-btn-icon text-decoration-none">
                                     <i class="bi bi-search" style="color: #333; font-size: 1.1rem;"></i>
                                 </a>
                             </div>
@@ -46,12 +46,12 @@
                 </div>
 
                 <div class="hris-card-body">
-                    <div class="row g-3">
+                    <div class="hris-form-stack">
                         <!-- Dropdown Group Jabatan: diisi dari server, tersimpan sebagai <select> -->
-                        <div class="col-12 d-md-flex align-items-center mb-3">
-                            <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Group jabatan</label>
-                            <div class="col-md-7">
+                        <div class="hris-form-control align-items-center mb-3">
+                            <div class="hris-form-control"></div>
+                            <label class="hris-form-row-label">Group jabatan</label>
+                            <div class="hris-form-control">
                                 <select id="selectGroupJabatan" class="hris-select w-100">
                                     <option value="">Pilih</option>
                                     {% for g in group_jabatan_list %}
@@ -62,10 +62,10 @@
                         </div>
 
                         <!-- Dropdown SubGroup Jabatan: diisi dari server -->
-                        <div class="col-12 d-md-flex align-items-center mb-3">
-                            <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">SubGroup Jabatan</label>
-                            <div class="col-md-7">
+                        <div class="hris-form-control align-items-center mb-3">
+                            <div class="hris-form-control"></div>
+                            <label class="hris-form-row-label">SubGroup Jabatan</label>
+                            <div class="hris-form-control">
                                 <select id="selectSubGroupJabatan" class="hris-select w-100">
                                     <option value="">Pilih</option>
                                     {% for sg in sub_group_jabatan_list %}
@@ -75,10 +75,10 @@
                             </div>
                         </div>
 
-                        <div class="col-12 d-md-flex align-items-center">
-                            <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Jabatan ID</label>
-                            <div class="col-md-7">
+                        <div class="hris-form-control align-items-center">
+                            <div class="hris-form-control"></div>
+                            <label class="hris-form-row-label">Jabatan ID</label>
+                            <div class="hris-form-control">
                                 <div class="hris-input-group w-100">
                                     <input type="number" id="inputJabatanId" class="hris-input w-100 text-end" min="0" step="1" value="0">
                                     <span class="hris-input-addon"><i class="bi bi-sort-numeric-down"></i></span>
@@ -86,10 +86,10 @@
                             </div>
                         </div>
 
-                        <div class="col-12 d-md-flex align-items-center">
-                            <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Nama Jabatan</label>
-                            <div class="col-md-7">
+                        <div class="hris-form-control align-items-center">
+                            <div class="hris-form-control"></div>
+                            <label class="hris-form-row-label">Nama Jabatan</label>
+                            <div class="hris-form-control">
                                 <div class="hris-input-group w-100">
                                     <input type="text" id="inputNamaJabatan" class="hris-input w-100">
                                     <span class="hris-input-addon"><i class="bi bi-pencil-fill"></i></span>
@@ -97,10 +97,10 @@
                             </div>
                         </div>
 
-                        <div class="col-12 d-md-flex align-items-center">
-                            <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Parent Jabatan ID</label>
-                            <div class="col-md-7">
+                        <div class="hris-form-control align-items-center">
+                            <div class="hris-form-control"></div>
+                            <label class="hris-form-row-label">Parent Jabatan ID</label>
+                            <div class="hris-form-control">
                                 <div class="hris-input-group w-100">
                                     <input type="number" id="inputParentJabatanId" class="hris-input w-100 text-end" min="0" step="1" value="0">
                                     <span class="hris-input-addon"><i class="bi bi-sort-numeric-down"></i></span>
@@ -108,10 +108,10 @@
                             </div>
                         </div>
 
-                        <div class="col-12 d-md-flex align-items-center">
-                            <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Level Jabatan</label>
-                            <div class="col-md-7">
+                        <div class="hris-form-control align-items-center">
+                            <div class="hris-form-control"></div>
+                            <label class="hris-form-row-label">Level Jabatan</label>
+                            <div class="hris-form-control">
                                 <div class="hris-input-group w-100">
                                     <input type="number" id="inputLevelJabatan" class="hris-input w-100 text-end" min="0" step="1" value="0">
                                     <span class="hris-input-addon"><i class="bi bi-sort-numeric-down"></i></span>
@@ -119,10 +119,10 @@
                             </div>
                         </div>
 
-                        <div class="col-12 d-md-flex align-items-center">
-                            <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Type</label>
-                            <div class="col-md-7">
+                        <div class="hris-form-control align-items-center">
+                            <div class="hris-form-control"></div>
+                            <label class="hris-form-row-label">Type</label>
+                            <div class="hris-form-control">
                                 <select id="selectType" class="hris-select w-100">
                                     <option value="">Pilih</option>
                                     <option value="FT">FT</option>
@@ -131,10 +131,10 @@
                             </div>
                         </div>
 
-                        <div class="col-12 d-md-flex align-items-center">
-                            <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Isi Aktif</label>
-                            <div class="col-md-7">
+                        <div class="hris-form-control align-items-center">
+                            <div class="hris-form-control"></div>
+                            <label class="hris-form-row-label">Isi Aktif</label>
+                            <div class="hris-form-control">
                                 <select id="selectIsAktif" class="hris-select w-100">
                                     <option value="">Pilih</option>
                                     <option value="1">Aktif</option>
@@ -159,7 +159,7 @@
                     <h6 class="mb-0">Item Kegiatan</h6>
                 </div>
                 <div class="hris-card-body">
-                    <div class="row g-3">
+                    <div class="hris-form-stack">
                         <div class="hris-table-wrap">
                             <table class="table table-bordered table-striped text-center align-middle">
                                 <thead>
