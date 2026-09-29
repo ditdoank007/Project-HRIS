@@ -102,7 +102,7 @@
 {% endblock %}
 
 {% block script %}
-<script>
+
 document.addEventListener('DOMContentLoaded', function () {
     const tbody = document.getElementById('unitKerjaTableBody');
     const btnRefresh = document.getElementById('btnRefreshUnitKerja');
@@ -173,5 +173,5 @@ document.addEventListener('DOMContentLoaded', function () {
     // Muat data otomatis saat halaman pertama kali dibuka (tanpa filter)
     loadUnitKerjaList();
 });
-</script>
+
 {% endblock %}
