@@ -112,6 +112,7 @@ def dashboard_infografis():
         'IV/a', 'IV/b', 'IV/c', 'IV/d', 'IV/e',
     ]
     golongan_counts = {label: 0 for label in golongan_labels}
+    golongan_employees = {label: [] for label in golongan_labels}
 
     unit_counts = {}
 
@@ -142,6 +143,10 @@ def dashboard_infografis():
             for label in golongan_labels:
                 if normalized_golongan == label.lower():
                     golongan_counts[label] += 1
+                    golongan_employees[label].append({
+                        'nama': str(row.NAMA or '').strip(),
+                        'nip': str(row.NIP or '').strip(),
+                    })
                     break
 
         unit_id = str(row.UNIT_KERJA_ID or '').strip()
@@ -149,6 +154,11 @@ def dashboard_infografis():
             row.UNIT_KERJA or ''
         ).strip() or 'Belum diisi'
         unit_counts[unit_name] = unit_counts.get(unit_name, 0) + 1
+
+    for label in golongan_labels:
+        golongan_employees[label].sort(
+            key=lambda item: item['nama'].lower()
+        )
 
     unit_distribution = sorted(
         [
@@ -169,5 +179,6 @@ def dashboard_infografis():
         age_unknown=age_unknown,
         golongan_labels=golongan_labels,
         golongan_counts=golongan_counts,
+        golongan_employees=golongan_employees,
         unit_distribution=unit_distribution,
     )
