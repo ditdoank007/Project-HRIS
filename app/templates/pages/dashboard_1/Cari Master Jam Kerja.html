@@ -1,102 +1,94 @@
-<!-- pages/dashboard_1/Cari Master Jam Kerja.html -->
 {% extends "layout/baseHRIS.html" %}
 
-{% block title %}- Jam Kerja{% endblock %}
-
+{% block title %}- Cari Jam Kerja{% endblock %}
 {% block header_kicker %}MASTER FILE{% endblock %}
-{% block header_title %}Cari Master Jam Kerja{% endblock %}
+{% block header_title %}Cari Jam Kerja{% endblock %}
 
 {% block content %}
-<div class="nxl-content">
-    <div class="page-header">
-        <div class="page-header-left d-flex align-items-center">
-            <div class="page-header-title">
-                <h5 class="m-b-10">Master File</h5>
-            </div>
-            <ul class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url_for('main.view_master_jam_kerja') }}">Master Jam Kerja</a></li>
-                <li class="breadcrumb-item">Cari Master Jam Kerja</li>
-            </ul>
+<div class="hris-page">
+    <div class="hris-page-header">
+        <div>
+            <h2 class="hris-page-title">Cari Master Jam Kerja</h2>
+            <p class="hris-page-subtitle">Cari, edit, atau hapus data Jam Kerja yang sudah tersimpan.</p>
         </div>
+        <a href="{{ url_for('main.view_master_jam_kerja') }}" class="hris-btn hris-btn-secondary">
+            <i class="feather-arrow-left"></i>
+            <span>Kembali</span>
+        </a>
     </div>
 
-    <div class="main-content master-siaga">
-        <div class="container-fluid">
-            <div class="card mb-4 shadow-sm" style="border-radius: 10px; overflow: hidden; border: none;">
-                <div class="card-header-custom d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0"><i class="bi bi-search me-2"></i> Cari Transaksi</h6>
-                    <a href="{{ url_for('main.view_master_jam_kerja') }}" class="btn-close-custom">
-                        <i class="bi bi-x-lg"></i>
-                    </a>
+    <div class="hris-card">
+        <div class="hris-card-header">
+            <div>
+                <h3 class="hris-card-title">Data Master Jam Kerja</h3>
+                <p class="hris-section-subtitle">Gunakan filter untuk menemukan data yang akan dikelola.</p>
+            </div>
+            <button type="button" class="hris-btn hris-btn-secondary" id="btnRefreshJamKerja">
+                <i class="feather-refresh-cw"></i>
+                <span>Refresh</span>
+            </button>
+        </div>
+
+        <div class="hris-card-body">
+            <div class="hris-form-stack">
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="filterPeriode">Periode</label>
+                    <input type="date" id="filterPeriode" class="hris-input">
                 </div>
 
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-12 mb-3 d-flex flex-column flex-md-row align-items-start align-items-md-center gap-2">
-                            <label class="filter-label-wide">Periode</label>
-                            <div class="input-group-custom w-mobile-100">
-                                <input type="date" id="filterPeriode" class="form-control-sm border w-100" style="outline: none;">
-                                <span class="icon-append"><i class="bi bi-calendar3"></i></span>
-                            </div>
-                        </div>
-
-                        <div class="col-md-12 d-flex flex-column flex-md-row align-items-start align-items-md-center flex-wrap gap-2">
-                            <label class="filter-label-wide">Filter</label>
-
-                            <select id="filterField1" class="form-select-sm border custom-select w-mobile-100">
-                                <option value="">- Pilih Field -</option>
-                                <option value="Hari Kerja Senin-Kamis(1)/Jumat(2)">Hari Kerja Senin-Kamis(1)/Jumat(2)</option>
-                                <option value="Tanggal(yyyy-mm-dd)">Tanggal(yyyy-mm-dd)</option>
-                            </select>
-
-                            <div class="input-group-custom w-mobile-100">
-                                <input type="text" id="filterKeyword1" class="form-control-sm border">
-                                <span class="icon-append"><i class="bi bi-pencil-fill"></i></span>
-                            </div>
-
-                            <span class="mx-md-2 fw-bold text-dan">Dan</span>
-
-                            <select id="filterField2" class="form-select-sm border custom-select w-mobile-100">
-                                <option value="">- Pilih Field -</option>
-                                <option value="Hari Kerja Senin-Kamis(1)/Jumat(2)">Hari Kerja Senin-Kamis(1)/Jumat(2)</option>
-                                <option value="Tanggal(yyyy-mm-dd)">Tanggal(yyyy-mm-dd)</option>
-                            </select>
-
-                            <div class="input-group-custom w-mobile-100">
-                                <input type="text" id="filterKeyword2" class="form-control-sm border">
-                                <span class="icon-append"><i class="bi bi-pencil-fill"></i></span>
-                            </div>
-
-                            <button id="btnRefreshJamKerja" class="btn-refresh-custom ms-md-auto mt-2 mt-md-0 w-mobile-100">
-                                <i class="bi bi-arrow-clockwise"></i> Refresh
-                            </button>
-                        </div>
-                        <p class="mb-1 fw-semibold text-dark" style="font-size: 12px;">
-                            ㅤ
-                        </p>
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-striped text-center align-middle">
-                                <thead style="background:#EB6831;">
-                                    <tr>
-                                        <th style="color:white; vertical-align: middle;">No</th>
-                                        <th style="color:white; vertical-align: middle;">Tanggal Mulai</th>
-                                        <th style="color:white; vertical-align: middle;">Hari Kerja</th>
-                                        <th style="color:white; vertical-align: middle;">Shift</th>
-                                        <th style="color:white; vertical-align: middle;">Jam Masuk</th>
-                                        <th style="color:white; vertical-align: middle;">Jam Pulang</th>
-                                        <th style="color:white; vertical-align: middle;">Ada Pengganti TLM1</th>
-                                        <th style="color:white; vertical-align: middle;">Updated</th>
-                                        <th style="color:white; vertical-align: middle;">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="jamKerjaTableBody">
-                                    <tr>
-                                        <td colspan="9" style="vertical-align: middle; padding: 20px;">No records to display.</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="filterField1">Filter 1</label>
+                    <div class="hris-form-inline">
+                        <select id="filterField1" class="hris-select">
+                            <option value="">- Pilih Field -</option>
+                            <option value="Hari Kerja Senin-Kamis(1)/Jumat(2)">Hari Kerja Senin-Kamis(1)/Jumat(2)</option>
+                            <option value="Tanggal(yyyy-mm-dd)">Tanggal(yyyy-mm-dd)</option>
+                        </select>
+                        <input type="text" id="filterKeyword1" class="hris-input" placeholder="Kata kunci...">
                     </div>
+                </div>
+
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="filterField2">Filter 2</label>
+                    <div class="hris-form-inline">
+                        <select id="filterField2" class="hris-select">
+                            <option value="">- Pilih Field -</option>
+                            <option value="Hari Kerja Senin-Kamis(1)/Jumat(2)">Hari Kerja Senin-Kamis(1)/Jumat(2)</option>
+                            <option value="Tanggal(yyyy-mm-dd)">Tanggal(yyyy-mm-dd)</option>
+                        </select>
+                        <input type="text" id="filterKeyword2" class="hris-input" placeholder="Kata kunci...">
+                    </div>
+                </div>
+            </div>
+
+            <div class="hris-section" style="margin-top: 18px;">
+                <div class="hris-section-header">
+                    <div>
+                        <h3 class="hris-section-title">Hasil Pencarian</h3>
+                        <p class="hris-section-subtitle">Data terbaru ditampilkan paling atas.</p>
+                    </div>
+                </div>
+
+                <div class="hris-table-wrap">
+                    <table class="hris-table-modern">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Tanggal Mulai</th>
+                                <th>Hari Kerja</th>
+                                <th>Shift</th>
+                                <th>Jam Masuk</th>
+                                <th>Jam Pulang</th>
+                                <th>Pengganti TLM1</th>
+                                <th>Updated</th>
+                                <th>BY</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="jamKerjaTableBody">
+                            <tr><td colspan="10" class="hris-empty">Memuat data...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -105,125 +97,136 @@
 {% endblock %}
 
 {% block script %}
+document.addEventListener('DOMContentLoaded', function () {
+    const tbody = document.getElementById('jamKerjaTableBody');
 
-function loadJamKerjaList() {
-    const periode  = document.getElementById('filterPeriode').value;
-    const field1   = document.getElementById('filterField1').value;
-    const keyword1 = document.getElementById('filterKeyword1').value.trim();
-    const field2   = document.getElementById('filterField2').value;
-    const keyword2 = document.getElementById('filterKeyword2').value.trim();
+    function buildQueryParams() {
+        const params = new URLSearchParams();
+        const periode = document.getElementById('filterPeriode').value;
+        const field1 = document.getElementById('filterField1').value;
+        const keyword1 = document.getElementById('filterKeyword1').value.trim();
+        const field2 = document.getElementById('filterField2').value;
+        const keyword2 = document.getElementById('filterKeyword2').value.trim();
 
-    const params = new URLSearchParams();
-    if (periode) params.append('periode', periode);
-    if (field1 && keyword1) {
-        params.append('field1', field1);
-        params.append('keyword1', keyword1);
-    }
-    if (field2 && keyword2) {
-        params.append('field2', field2);
-        params.append('keyword2', keyword2);
-    }
-
-    fetch("{{ url_for('main.api_jam_kerja_list') }}?" + params.toString())
-        .then(res => res.json())
-        .then(data => {
-            const tbody = document.getElementById('jamKerjaTableBody');
-            tbody.innerHTML = '';
-
-            if (data.status !== 'success') {
-                tbody.innerHTML = `<tr><td colspan="9" style="padding:20px;">${data.message || 'Terjadi kesalahan'}</td></tr>`;
-                return;
-            }
-
-            if (data.data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" style="padding:20px;">No records to display.</td></tr>';
-                return;
-            }
-
-            data.data.forEach(row => {
-                tbody.insertAdjacentHTML('beforeend', `
-                    <tr>
-                        <td>${row.no}</td>
-                        <td>${row.tgl_mulai}</td>
-                        <td>${row.hari_kerja}</td>
-                        <td>${row.shift}</td>
-                        <td>${row.jam_masuk}</td>
-                        <td>${row.jam_pulang}</td>
-                        <td>${row.penggantian_tlm1}</td>
-                        <td>${row.updated}</td>
-                        <td>
-                            <div class="d-flex justify-content-center gap-1">
-                                <button type="button"
-                                        class="btn btn-sm btn-warning"
-                                        title="Edit"
-                                        onclick="editJamKerja(${row.id_jkerja})">
-                                    <i class="bi bi-pencil-square"></i>
-                                </button>
-                                <button type="button"
-                                        class="btn btn-sm btn-danger"
-                                        title="Hapus"
-                                        onclick="hapusJamKerja(${row.id_jkerja})">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                `);
-            });
-        })
-        .catch(err => {
-            console.error(err);
-            const tbody = document.getElementById('jamKerjaTableBody');
-            tbody.innerHTML = '<tr><td colspan="9" style="padding:20px;">Gagal memuat data.</td></tr>';
-        });
-}
-
-
-async function editJamKerja(idJkerja) {
-    window.location.href =
-        "{{ url_for('main.view_master_jam_kerja') }}?edit_id=" +
-        encodeURIComponent(idJkerja);
-}
-
-async function hapusJamKerja(idJkerja) {
-    if (!confirm(
-        'Apakah Anda yakin ingin menghapus Master Jam Kerja ID ' +
-        idJkerja + '?'
-    )) {
-        return;
-    }
-
-    try {
-        const res = await fetch(
-            "{{ url_for('main.api_jam_kerja_delete') }}",
-            {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    id_jkerja: idJkerja
-                })
-            }
-        );
-
-        const data = await res.json();
-
-        if (data.status === 'success') {
-            alert(data.message);
-            loadJamKerjaList();
-        } else {
-            alert('Gagal: ' + (data.message || 'Tidak dapat menghapus data.'));
+        if (periode) params.set('periode', periode);
+        if (field1 && keyword1) {
+            params.set('field1', field1);
+            params.set('keyword1', keyword1);
         }
-    } catch (err) {
-        console.error(err);
-        alert('Terjadi kesalahan saat menghapus data.');
+        if (field2 && keyword2) {
+            params.set('field2', field2);
+            params.set('keyword2', keyword2);
+        }
+
+        return params;
     }
-}
 
-document.getElementById('btnRefreshJamKerja').addEventListener('click', loadJamKerjaList);
+    async function loadJamKerjaList() {
+        tbody.innerHTML = '<tr><td colspan="10" class="hris-empty">Memuat data...</td></tr>';
 
-// Load semua data begitu halaman dibuka (sama seperti klik Refresh dengan filter kosong)
-document.addEventListener('DOMContentLoaded', loadJamKerjaList);
+        try {
+            const res = await fetch('{{ url_for("main.api_jam_kerja_list") }}?' + buildQueryParams().toString());
+            const json = await res.json();
 
+            if (!res.ok || json.status !== 'success') {
+                tbody.innerHTML = '<tr><td colspan="10" class="hris-empty">' +
+                    (json.message || 'Gagal memuat data.') + '</td></tr>';
+                return;
+            }
+
+            if (!json.data || json.data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" class="hris-empty">No records to display.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = json.data.map(row => `
+                <tr>
+                    <td>${row.no}</td>
+                    <td>${row.tgl_mulai}</td>
+                    <td>${row.hari_kerja}</td>
+                    <td>${row.shift}</td>
+                    <td>${row.jam_masuk}</td>
+                    <td>${row.jam_pulang}</td>
+                    <td>${row.penggantian_tlm1}</td>
+                    <td>${row.updated}</td>
+                    <td>${row.by || '-'}</td>
+                    <td style="white-space: nowrap;">
+                        <button type="button"
+                                class="hris-btn hris-btn-secondary hris-btn-icon btn-edit-jam"
+                                data-id="${row.id_jkerja}"
+                                title="Edit">
+                            <i class="feather-edit-2"></i>
+                        </button>
+                        <button type="button"
+                                class="hris-btn hris-btn-danger-soft hris-btn-icon btn-delete-jam"
+                                data-id="${row.id_jkerja}"
+                                title="Hapus">
+                            <i class="feather-trash-2"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        } catch (err) {
+            console.error(err);
+            tbody.innerHTML = '<tr><td colspan="10" class="hris-empty">Gagal memuat data.</td></tr>';
+        }
+    }
+
+    tbody.addEventListener('click', async function (e) {
+        const editButton = e.target.closest('.btn-edit-jam');
+        if (editButton) {
+            window.location.href =
+                '{{ url_for("main.view_master_jam_kerja") }}?edit_id=' +
+                encodeURIComponent(editButton.dataset.id);
+            return;
+        }
+
+        const deleteButton = e.target.closest('.btn-delete-jam');
+        if (!deleteButton) return;
+
+        const id = deleteButton.dataset.id;
+
+        if (!confirm('Hapus Master Jam Kerja ID ' + id + '?\n\nData yang dihapus tidak dapat dikembalikan.')) {
+            return;
+        }
+
+        deleteButton.disabled = true;
+
+        try {
+            const res = await fetch('{{ url_for("main.api_jam_kerja_delete") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id_jkerja: Number(id) })
+            });
+            const json = await res.json();
+
+            if (!res.ok || json.status !== 'success') {
+                alert(json.message || 'Gagal menghapus data.');
+                deleteButton.disabled = false;
+                return;
+            }
+
+            alert(json.message || 'Data berhasil dihapus.');
+            await loadJamKerjaList();
+        } catch (err) {
+            console.error(err);
+            alert('Terjadi kesalahan jaringan.');
+            deleteButton.disabled = false;
+        }
+    });
+
+    document.getElementById('btnRefreshJamKerja').addEventListener('click', loadJamKerjaList);
+
+    ['filterPeriode', 'filterField1', 'filterField2'].forEach(id => {
+        document.getElementById(id).addEventListener('change', loadJamKerjaList);
+    });
+
+    ['filterKeyword1', 'filterKeyword2'].forEach(id => {
+        document.getElementById(id).addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') loadJamKerjaList();
+        });
+    });
+
+    loadJamKerjaList();
+});
 {% endblock %}
