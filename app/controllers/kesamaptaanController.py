@@ -173,7 +173,6 @@ def api_kesamaptaan_complete(kegiatan_id):
         kegiatan.QR_ACTIVE = "N"
         kegiatan.UPDATE_BY = session.get("nip")
         kegiatan.UPDATE_DATE = jakarta_now()
-        db.session.commit()
         target = finalize_pdf(kegiatan)
         return jsonify({
             "status": "success",
