@@ -154,7 +154,7 @@
 {% endblock %}
 
 {% block script %}
-<script>
+
 document.addEventListener('DOMContentLoaded', function () {
     const editId = {{ edit_id|default('null')|tojson }};
 
@@ -286,5 +286,5 @@ document.addEventListener('DOMContentLoaded', function () {
         loadEditData(currentEditId);
     }
 });
-</script>
+
 {% endblock %}
