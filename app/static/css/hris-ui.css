@@ -1515,3 +1515,245 @@ body.hris-sidebar-mini .hris-submenu {
     width: 100%;
   }
 }
+
+
+/* ============================================================
+   HRIS REBORN — LEGACY PAGE COMPATIBILITY
+   Transitional styling for migrated Master File pages.
+   New pages should use canonical .hris-* components directly.
+   ============================================================ */
+.hris-modern .nxl-content {
+  min-height: calc(100vh - 78px);
+  padding: 22px 20px 30px;
+}
+
+.hris-modern .nxl-content > .page-header {
+  display: none;
+}
+
+.hris-modern .main-content,
+.hris-modern .main-content.master-siaga,
+.hris-modern .container-fluid {
+  width: 100%;
+  max-width: none;
+  padding: 0;
+  margin: 0;
+}
+
+.hris-modern .card {
+  margin-bottom: 16px;
+  border: 1px solid var(--ui-border) !important;
+  border-radius: var(--ui-radius-lg, 14px) !important;
+  background: #fff;
+  box-shadow: var(--ui-shadow-sm);
+  overflow: hidden;
+}
+
+.hris-modern .card-header-custom {
+  min-height: 54px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--ui-border);
+  background: #fff !important;
+  color: var(--ui-ink);
+}
+
+.hris-modern .card-header-custom h6,
+.hris-modern .card-header-custom .mb-0 {
+  color: var(--ui-ink);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.hris-modern .card-body {
+  padding: 18px !important;
+}
+
+.hris-modern .filter-card {
+  border-radius: var(--ui-radius-lg, 14px) !important;
+}
+
+.hris-modern .row {
+  --bs-gutter-x: 1rem;
+  --bs-gutter-y: .75rem;
+}
+
+.hris-modern .form-control,
+.hris-modern .form-control-sm,
+.hris-modern .form-select,
+.hris-modern .form-select-sm,
+.hris-modern .custom-select,
+.hris-modern input[type="text"],
+.hris-modern input[type="number"],
+.hris-modern input[type="date"],
+.hris-modern input[type="time"],
+.hris-modern input[type="email"],
+.hris-modern input[type="password"],
+.hris-modern select,
+.hris-modern textarea {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid var(--ui-border-strong) !important;
+  border-radius: var(--ui-radius-sm, 8px) !important;
+  outline: none;
+  color: var(--ui-ink);
+  background: #fff;
+  font: inherit;
+  font-size: 12px;
+  box-shadow: none !important;
+}
+
+.hris-modern .form-control:focus,
+.hris-modern .form-control-sm:focus,
+.hris-modern .form-select:focus,
+.hris-modern .form-select-sm:focus,
+.hris-modern input:focus,
+.hris-modern select:focus,
+.hris-modern textarea:focus {
+  border-color: var(--ui-accent) !important;
+  box-shadow: 0 0 0 3px rgba(243, 107, 44, .10) !important;
+}
+
+.hris-modern .input-group-custom {
+  position: relative;
+  width: 100%;
+}
+
+.hris-modern .input-group-custom .icon-append {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  color: var(--ui-muted);
+  pointer-events: none;
+}
+
+.hris-modern .input-group-custom input,
+.hris-modern .input-group-custom select {
+  padding-right: 38px !important;
+}
+
+.hris-modern label,
+.hris-modern .form-label,
+.hris-modern .fw-bold {
+  color: var(--ui-ink);
+  font-size: 11px;
+  font-weight: 700 !important;
+}
+
+.hris-modern .table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-sm, 8px);
+}
+
+.hris-modern table.table {
+  width: 100%;
+  margin: 0;
+  border-collapse: collapse;
+  color: var(--ui-text);
+  font-size: 11px;
+}
+
+.hris-modern table.table th {
+  padding: 10px 9px;
+  border: 0 !important;
+  border-bottom: 1px solid var(--ui-border) !important;
+  background: #f8fafc !important;
+  color: #64748b !important;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.hris-modern table.table td {
+  padding: 10px 9px;
+  border: 0 !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  vertical-align: middle;
+}
+
+.hris-modern table.table tbody tr:last-child td {
+  border-bottom: 0 !important;
+}
+
+.hris-modern table.table tbody tr:hover td {
+  background: #fafafa;
+}
+
+.hris-modern .btn-orange-figma {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 8px 14px !important;
+  border: 1px solid var(--ui-accent) !important;
+  border-radius: var(--ui-radius-sm, 8px) !important;
+  background: var(--ui-accent) !important;
+  color: #fff !important;
+  font-size: 11px;
+  font-weight: 700;
+  box-shadow: none !important;
+}
+
+.hris-modern .btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  border-radius: var(--ui-radius-sm, 8px) !important;
+  font-size: 11px;
+}
+
+.hris-modern .form-check-input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--ui-accent);
+}
+
+.hris-modern .form-check-label {
+  font-size: 11px;
+  font-weight: 500 !important;
+}
+
+.hris-modern .pagination {
+  display: flex;
+  gap: 4px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hris-modern .pagination .page-link {
+  min-width: 32px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ui-border);
+  border-radius: 7px;
+  color: var(--ui-text);
+  background: #fff;
+  text-decoration: none;
+  font-size: 11px;
+}
+
+.hris-modern .pagination .active .page-link {
+  border-color: var(--ui-accent);
+  background: var(--ui-accent);
+  color: #fff;
+}
+
+@media (max-width: 720px) {
+  .hris-modern .nxl-content {
+    padding: 16px 12px 24px;
+  }
+
+  .hris-modern .card-body {
+    padding: 14px !important;
+  }
+}
