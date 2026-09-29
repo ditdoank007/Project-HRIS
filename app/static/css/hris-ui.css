@@ -1,0 +1,354 @@
+/* ============================================================
+   HRIS REBORN — LIGHT UI SYSTEM
+   app/static/css/hris-ui.css
+
+   New UI layer for migrated pages.
+   No Bootstrap dependency. No vendor framework dependency.
+   Legacy pages may continue using the existing dashboard assets.
+   ============================================================ */
+
+:root {
+  --ui-brand: #eb6831;
+  --ui-brand-dark: #d95722;
+  --ui-ink: #172033;
+  --ui-text: #475569;
+  --ui-muted: #94a3b8;
+  --ui-bg: #f4f6f8;
+  --ui-surface: #ffffff;
+  --ui-border: #e5e7eb;
+  --ui-border-strong: #d5dbe3;
+  --ui-success: #15803d;
+  --ui-success-bg: #dcfce7;
+  --ui-warning: #b45309;
+  --ui-warning-bg: #fef3c7;
+  --ui-danger: #b91c1c;
+  --ui-danger-bg: #fee2e2;
+  --ui-info: #1d4ed8;
+  --ui-info-bg: #dbeafe;
+  --ui-radius: 12px;
+  --ui-radius-sm: 8px;
+  --ui-shadow: 0 4px 18px rgba(15, 23, 42, .06);
+  --ui-shadow-lg: 0 10px 30px rgba(15, 23, 42, .09);
+  --ui-font: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+.hris-modern,
+.hris-modern * {
+  box-sizing: border-box;
+}
+
+.hris-modern {
+  color: var(--ui-text);
+  font-family: var(--ui-font);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.hris-modern button,
+.hris-modern input,
+.hris-modern select,
+.hris-modern textarea {
+  font: inherit;
+}
+
+.hris-modern a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Page */
+.hris-page {
+  min-height: 100%;
+  padding: 24px;
+  background: var(--ui-bg);
+}
+
+.hris-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.hris-page-title {
+  margin: 0;
+  color: var(--ui-ink);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -.01em;
+}
+
+.hris-page-subtitle {
+  margin: 3px 0 0;
+  color: var(--ui-muted);
+  font-size: 12px;
+}
+
+/* Hero */
+.hris-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 24px;
+  margin-bottom: 18px;
+  border-radius: 16px;
+  color: #fff;
+  background: linear-gradient(135deg, #1f2937, #111827);
+  box-shadow: var(--ui-shadow-lg);
+}
+
+.hris-hero-title {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 700;
+}
+
+.hris-hero-text {
+  margin: 4px 0 0;
+  color: #cbd5e1;
+  font-size: 12px;
+}
+
+/* Grid */
+.hris-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.hris-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.hris-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.hris-grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+/* Card */
+.hris-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-shadow);
+}
+
+.hris-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 52px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--ui-border);
+}
+
+.hris-card-title {
+  margin: 0;
+  color: var(--ui-ink);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.hris-card-body {
+  padding: 18px;
+}
+
+/* Form */
+.hris-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 18px;
+}
+
+.hris-field {
+  min-width: 0;
+}
+
+.hris-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--ui-ink);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.hris-input,
+.hris-select,
+.hris-textarea {
+  display: block;
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 11px;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius-sm);
+  outline: 0;
+  color: var(--ui-ink);
+  background: #fff;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.hris-textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+.hris-input:focus,
+.hris-select:focus,
+.hris-textarea:focus {
+  border-color: var(--ui-brand);
+  box-shadow: 0 0 0 3px rgba(235, 104, 49, .12);
+}
+
+.hris-input::placeholder,
+.hris-textarea::placeholder {
+  color: #a8b1bc;
+}
+
+/* Buttons */
+.hris-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 8px 13px;
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius-sm);
+  cursor: pointer;
+  font-weight: 600;
+  transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
+}
+
+.hris-btn:hover {
+  transform: translateY(-1px);
+}
+
+.hris-btn-primary {
+  color: #fff;
+  background: var(--ui-brand);
+  border-color: var(--ui-brand);
+}
+
+.hris-btn-primary:hover {
+  background: var(--ui-brand-dark);
+  border-color: var(--ui-brand-dark);
+}
+
+.hris-btn-secondary {
+  color: var(--ui-ink);
+  background: #fff;
+  border-color: var(--ui-border-strong);
+}
+
+.hris-btn-danger {
+  color: #fff;
+  background: var(--ui-danger);
+  border-color: var(--ui-danger);
+}
+
+.hris-btn:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Toolbar */
+.hris-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--ui-border);
+}
+
+.hris-toolbar-left,
+.hris-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Table */
+.hris-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.hris-table-modern {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--ui-text);
+  font-size: 13px;
+}
+
+.hris-table-modern th {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--ui-border);
+  color: #64748b;
+  background: #f8fafc;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .025em;
+  white-space: nowrap;
+}
+
+.hris-table-modern td {
+  padding: 12px;
+  border-bottom: 1px solid #eef2f7;
+  vertical-align: middle;
+}
+
+.hris-table-modern tbody tr:hover td {
+  background: #fafbfc;
+}
+
+/* Status */
+.hris-badge-modern {
+  display: inline-flex;
+  align-items: center;
+  min-height: 25px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.hris-badge-success { color: var(--ui-success); background: var(--ui-success-bg); }
+.hris-badge-warning { color: var(--ui-warning); background: var(--ui-warning-bg); }
+.hris-badge-danger { color: var(--ui-danger); background: var(--ui-danger-bg); }
+.hris-badge-info { color: var(--ui-info); background: var(--ui-info-bg); }
+
+/* Empty/loading states */
+.hris-empty,
+.hris-loading {
+  padding: 40px 20px;
+  color: var(--ui-muted);
+  text-align: center;
+}
+
+.hris-divider {
+  height: 1px;
+  margin: 16px 0;
+  background: var(--ui-border);
+}
+
+/* Responsive */
+@media (max-width: 1000px) {
+  .hris-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hris-grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 720px) {
+  .hris-page { padding: 14px; }
+  .hris-page-header,
+  .hris-hero { align-items: flex-start; flex-direction: column; }
+  .hris-grid-2,
+  .hris-grid-3,
+  .hris-grid-4,
+  .hris-form-grid { grid-template-columns: 1fr; }
+  .hris-card-body { padding: 14px; }
+}
