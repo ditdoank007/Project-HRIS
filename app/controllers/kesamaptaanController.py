@@ -238,6 +238,9 @@ def api_kesamaptaan_photos(kegiatan_id):
 
     try:
         save_photos(kegiatan, files, session.get("nip"))
+        # Buat/perbarui PDF segera setelah dokumentasi tersedia sehingga operator
+        # dapat mengunduh daftar hadir tanpa menunggu SELESAI.
+        finalize_pdf(kegiatan)
         return jsonify({"status": "success", "data": _serialize(kegiatan), "message": "Foto dokumentasi berhasil disimpan."})
     except ValueError as exc:
         db.session.rollback()
@@ -277,6 +280,85 @@ def api_kesamaptaan_pdf(kegiatan_id):
     if not path.is_file():
         return jsonify({"status": "error", "message": "File PDF tidak ditemukan di central storage."}), 404
     return send_file(path, mimetype="application/pdf", as_attachment=False, download_name=f"kesamaptaan-{kegiatan_id:03d}.pdf")
+
+
+def _calendar_internal_authorized():
+    from config import Config
+    return request.headers.get("X-Calendar-Internal-Key") == Config.CALENDAR_INTERNAL_API_KEY
+
+
+def api_kesamaptaan_internal_agenda():
+    if not _calendar_internal_authorized():
+        return jsonify({"status": "error", "message": "Unauthorized"}), 401
+
+    nip = str(request.headers.get("X-Calendar-NIP") or "").strip()
+    if not nip:
+        return jsonify({"status": "error", "message": "NIP wajib diisi."}), 400
+
+    rows = (
+        KesamaptaanKehadiran.query
+        .filter(
+            KesamaptaanKehadiran.NIP == nip,
+            KesamaptaanKehadiran.STATUS == "HADIR",
+        )
+        .order_by(KesamaptaanKehadiran.SCANNED_DATE.desc())
+        .all()
+    )
+
+    data = []
+    seen = set()
+    for attendance in rows:
+        kegiatan = _find_kegiatan(attendance.KEGIATAN_ID)
+        if not kegiatan or kegiatan.STATUS != "SELESAI" or not kegiatan.PDF_PATH:
+            continue
+        if kegiatan.KEGIATAN_ID in seen:
+            continue
+        seen.add(kegiatan.KEGIATAN_ID)
+        data.append({
+            "event_id": kegiatan.KEGIATAN_ID,
+            "title": kegiatan.JUDUL,
+            "description": "Kesamaptaan Pegawai Kantor SAR Surabaya",
+            "start": f"{kegiatan.TANGGAL.isoformat()}T{kegiatan.JAM.strftime('%H:%M')}:00",
+            "end": f"{kegiatan.TANGGAL.isoformat()}T{kegiatan.JAM.strftime('%H:%M')}:00",
+            "location": "Kantor SAR Surabaya",
+            "status": kegiatan.STATUS,
+            "event_type": "KESAMAPTAAN",
+            "attendance_at": attendance.SCANNED_DATE.isoformat(),
+            "pdf_available": True,
+        })
+
+    return jsonify({"status": "success", "data": data})
+
+
+def api_kesamaptaan_internal_pdf(kegiatan_id):
+    if not _calendar_internal_authorized():
+        return jsonify({"status": "error", "message": "Unauthorized"}), 401
+
+    nip = str(request.headers.get("X-Calendar-NIP") or "").strip()
+    kegiatan = _find_kegiatan(kegiatan_id)
+    if not kegiatan or kegiatan.STATUS != "SELESAI" or not kegiatan.PDF_PATH:
+        return jsonify({"status": "error", "message": "PDF Kesamaptaan belum tersedia."}), 404
+
+    allowed = KesamaptaanKehadiran.query.filter(
+        KesamaptaanKehadiran.KEGIATAN_ID == kegiatan_id,
+        KesamaptaanKehadiran.NIP == nip,
+        KesamaptaanKehadiran.STATUS == "HADIR",
+    ).first()
+    if not allowed:
+        return jsonify({"status": "error", "message": "Anda tidak terdaftar sebagai peserta Kesamaptaan."}), 403
+
+    from app.services.kesamaptaan_service import pdf_absolute_path
+    path = pdf_absolute_path(kegiatan)
+    if not path.is_file():
+        return jsonify({"status": "error", "message": "File PDF tidak ditemukan di central storage."}), 404
+
+    return send_file(
+        path,
+        mimetype="application/pdf",
+        as_attachment=False,
+        download_name=f"kesamaptaan-{kegiatan_id:03d}.pdf",
+        max_age=0,
+    )
 
 
 def api_kesamaptaan_internal_info():
@@ -338,7 +420,7 @@ def api_kesamaptaan_internal_employee_attendance():
         return jsonify({"status": "error", "message": "QR Kesamaptaan tidak ditemukan."}), 404
 
     try:
-        attendance, pegawai, created = record_employee_attendance(kegiatan, nip, "QR")
+        attendance, pegawai, created = record_employee_attendance(kegiatan, nip)
         return jsonify({
             "status": "success",
             "created": created,
