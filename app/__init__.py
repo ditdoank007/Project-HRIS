@@ -1,5 +1,5 @@
 # app/__init__.py
-from flask import Flask
+from flask import Flask, session
 from flask_sqlalchemy import SQLAlchemy
 from datetime import timedelta
 from config import Config
@@ -82,5 +82,20 @@ def create_app():
 
     from app.routes.routes import main
     app.register_blueprint(main)
+
+    # ============================================================
+    # AUTHENTICATED HTML MUST NOT BE BROWSER-CACHED
+    # ============================================================
+    # Menu pada HRIS bergantung pada session + HAK_AKSES_FORM.
+    # Tanpa header ini, browser dapat menampilkan HTML lama setelah
+    # login/logout atau perubahan hak akses sampai hard refresh.
+    @app.after_request
+    def prevent_authenticated_html_cache(response):
+        if session.get('nip') and response.content_type and response.content_type.startswith('text/html'):
+            response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '0'
+            response.headers['Vary'] = 'Cookie'
+        return response
 
     return app
