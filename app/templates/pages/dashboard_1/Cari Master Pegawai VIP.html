@@ -195,9 +195,18 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    tbody.addEventListener('change', function (e) {
+    tbody.addEventListener('change', async function (e) {
         if (!e.target.classList.contains('vip-search-checkbox')) return;
-        setVip(e.target.dataset.nip, e.target.checked, '');
+
+        const checkbox = e.target;
+        const newValue = checkbox.checked;
+
+        if (!newValue && !confirm('Hapus status VIP untuk pegawai ini?')) {
+            checkbox.checked = true;
+            return;
+        }
+
+        await setVip(checkbox.dataset.nip, newValue, '');
     });
 
     tbody.addEventListener('click', function (e) {
