@@ -2,14 +2,14 @@
 
 {% block title %}- VIP List{% endblock %}
 {% block header_kicker %}MASTER FILE{% endblock %}
-{% block header_title %}Master Pegawai VIP{% endblock %}
+{% block header_title %}VIP List{% endblock %}
 
 {% block content %}
 <div class="hris-page">
     <div class="hris-page-header">
         <div>
             <h2 class="hris-page-title">Master Pegawai VIP</h2>
-            <p class="hris-page-subtitle">Kelola status VIP pegawai HRIS.</p>
+            <p class="hris-page-subtitle">Daftar pegawai yang ditetapkan sebagai VIP.</p>
         </div>
         <a href="{{ url_for('main.view_cari_master_pegawai_vip') }}" class="hris-btn hris-btn-secondary">
             <i class="feather-search"></i>
@@ -20,8 +20,8 @@
     <div class="hris-card">
         <div class="hris-card-header">
             <div>
-                <h3 class="hris-card-title">Pegawai VIP</h3>
-                <p class="hris-section-subtitle">Pilih pegawai untuk mengubah status VIP.</p>
+                <h3 class="hris-card-title">Daftar Pegawai VIP</h3>
+                <p class="hris-section-subtitle">Pegawai yang tercantum di sini adalah VIP aktif.</p>
             </div>
             <button type="button" class="hris-btn hris-btn-secondary" id="btnRefreshVip">
                 <i class="feather-refresh-cw"></i>
@@ -30,47 +30,20 @@
         </div>
 
         <div class="hris-card-body">
-            <div class="hris-filter">
-                <div class="hris-filter-field">
-                    <label class="hris-filter-label" for="unitKerjaSelect">Unit Kerja</label>
-                    <select class="hris-select" id="unitKerjaSelect">
-                        <option value="">Semua Unit Kerja</option>
-                        {% for unit in unit_kerja_list %}
-                        <option value="{{ unit.UNIT_KERJA_ID }}">{{ unit.NAMA_UNIT_KERJA }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="hris-filter-field hris-filter-field-sm">
-                    <label class="hris-filter-label" for="filterField1">Field 1</label>
-                    <select class="hris-select" id="filterField1">
-                        <option value="">- Pilih Field -</option>
-                        <option>Gol</option><option>Jabatan</option><option>Jenis Kelamin</option>
-                        <option>Nama Peg</option><option>NIP</option><option>No Finger</option><option>Unit Kerja</option>
-                    </select>
-                </div>
-                <div class="hris-filter-field">
-                    <label class="hris-filter-label" for="filterKeyword1">Kata Kunci</label>
-                    <input type="text" class="hris-input" id="filterKeyword1" placeholder="Ketik kata kunci...">
-                </div>
-                <div class="hris-filter-field hris-filter-field-sm">
-                    <label class="hris-filter-label" for="filterField2">Field 2</label>
-                    <select class="hris-select" id="filterField2">
-                        <option value="">- Pilih Field -</option>
-                        <option>Gol</option><option>Jabatan</option><option>Jenis Kelamin</option>
-                        <option>Nama Peg</option><option>NIP</option><option>No Finger</option><option>Unit Kerja</option>
-                    </select>
-                </div>
-                <div class="hris-filter-field">
-                    <label class="hris-filter-label" for="filterKeyword2">Kata Kunci</label>
-                    <input type="text" class="hris-input" id="filterKeyword2" placeholder="Ketik kata kunci...">
-                </div>
-            </div>
-
             <div class="hris-table-wrap">
                 <table class="hris-table-modern">
-                    <thead><tr><th>No</th><th>VIP</th><th>NIP</th><th>Nama</th><th>Jabatan</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>NIP</th>
+                            <th>Nama</th>
+                            <th>Jabatan</th>
+                            <th>Unit Kerja</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
                     <tbody id="vipTableBody">
-                        <tr><td colspan="5" class="hris-empty">Memuat data...</td></tr>
+                        <tr><td colspan="6" class="hris-empty">Memuat data...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -83,88 +56,79 @@
 document.addEventListener('DOMContentLoaded', function () {
     const tbody = document.getElementById('vipTableBody');
     const refreshBtn = document.getElementById('btnRefreshVip');
-    const unitKerjaSelect = document.getElementById('unitKerjaSelect');
-    const filterField1 = document.getElementById('filterField1');
-    const filterKeyword1 = document.getElementById('filterKeyword1');
-    const filterField2 = document.getElementById('filterField2');
-    const filterKeyword2 = document.getElementById('filterKeyword2');
 
-    function buildQueryParams() {
-        const params = new URLSearchParams();
-        if (unitKerjaSelect.value) params.set('unit_kerja_id', unitKerjaSelect.value);
-        if (filterField1.value && filterKeyword1.value.trim()) {
-            params.set('field1', filterField1.value);
-            params.set('keyword1', filterKeyword1.value.trim());
-        }
-        if (filterField2.value && filterKeyword2.value.trim()) {
-            params.set('field2', filterField2.value);
-            params.set('keyword2', filterKeyword2.value.trim());
-        }
-        return params;
-    }
+    async function loadVipList() {
+        tbody.innerHTML = '<tr><td colspan="6" class="hris-empty">Memuat data...</td></tr>';
 
-    async function loadPegawaiList() {
-        tbody.innerHTML = '<tr><td colspan="5" class="hris-empty">Memuat data...</td></tr>';
         try {
-            const res = await fetch('/api/pegawai-vip/list?' + buildQueryParams().toString());
+            const res = await fetch('/api/pegawai-vip/list?only_vip=Y');
             const json = await res.json();
+
             if (json.status !== 'success' || !json.data || json.data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="hris-empty">No records to display.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="hris-empty">Belum ada pegawai VIP.</td></tr>';
                 return;
             }
+
             tbody.innerHTML = json.data.map(p => `
                 <tr>
                     <td>${p.no}</td>
-                    <td><input type="checkbox" class="vip-checkbox" data-nip="${p.nip}" ${p.is_vip === true ? 'checked' : ''}></td>
                     <td>${p.nip ?? '-'}</td>
                     <td>${p.nama ?? '-'}</td>
                     <td>${p.jabatan ?? '-'}</td>
+                    <td>${p.unit_kerja ?? '-'}</td>
+                    <td style="white-space: nowrap;">
+                        <button type="button"
+                                class="hris-btn hris-btn-danger-soft hris-btn-icon btn-remove-vip"
+                                data-nip="${p.nip}"
+                                data-nama="${(p.nama || '').replace(/"/g, '&quot;')}"
+                                title="Hapus dari VIP">
+                            <i class="feather-trash-2"></i>
+                        </button>
+                    </td>
                 </tr>
             `).join('');
         } catch (err) {
-            console.error('Gagal memuat data pegawai:', err);
-            tbody.innerHTML = '<tr><td colspan="5" class="hris-empty">Gagal memuat data.</td></tr>';
+            console.error('Gagal memuat daftar VIP:', err);
+            tbody.innerHTML = '<tr><td colspan="6" class="hris-empty">Gagal memuat data.</td></tr>';
         }
     }
 
-    tbody.addEventListener('change', async function (e) {
-        if (!e.target.classList.contains('vip-checkbox')) return;
-        const checkbox = e.target;
-        const nip = checkbox.dataset.nip;
-        const isVip = checkbox.checked;
+    tbody.addEventListener('click', async function (e) {
+        const button = e.target.closest('.btn-remove-vip');
+        if (!button) return;
 
-        if (!isVip && !confirm('Hapus status VIP untuk pegawai ini?')) {
-            checkbox.checked = true;
+        const nip = button.dataset.nip;
+        const nama = button.dataset.nama || nip;
+
+        if (!confirm('Hapus pegawai berikut dari daftar VIP?\n\n' + nama + '\nNIP: ' + nip)) {
             return;
         }
 
-        checkbox.disabled = true;
+        button.disabled = true;
+
         try {
             const res = await fetch('/api/pegawai-vip/toggle', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nip, is_vip: isVip })
+                body: JSON.stringify({ nip, is_vip: false })
             });
             const json = await res.json();
+
             if (json.status !== 'success') {
-                checkbox.checked = !isVip;
-                alert(json.message || 'Gagal mengubah status VIP');
+                alert(json.message || 'Gagal menghapus status VIP.');
+                button.disabled = false;
+                return;
             }
+
+            await loadVipList();
         } catch (err) {
-            checkbox.checked = !isVip;
-            console.error('Gagal update status VIP:', err);
-            alert('Terjadi kesalahan jaringan');
-        } finally {
-            checkbox.disabled = false;
+            console.error('Gagal menghapus status VIP:', err);
+            alert('Gagal menghubungi server.');
+            button.disabled = false;
         }
     });
 
-    refreshBtn.addEventListener('click', loadPegawaiList);
-    unitKerjaSelect.addEventListener('change', loadPegawaiList);
-    filterField1.addEventListener('change', loadPegawaiList);
-    filterField2.addEventListener('change', loadPegawaiList);
-    filterKeyword1.addEventListener('keydown', e => { if (e.key === 'Enter') loadPegawaiList(); });
-    filterKeyword2.addEventListener('keydown', e => { if (e.key === 'Enter') loadPegawaiList(); });
-    loadPegawaiList();
+    refreshBtn.addEventListener('click', loadVipList);
+    loadVipList();
 });
 {% endblock %}
