@@ -8,6 +8,13 @@
 
 {% block content %}
 <div class="hris-page">
+    <div class="hris-page-header">
+        <div>
+            <h2 class="hris-page-title">Master Uang Makan</h2>
+            <p class="hris-page-subtitle">Kelola data Master Uang Makan HRIS.</p>
+        </div>
+        <a href="{{ url_for('main.view_cari_master_uang_makan') }}" class="hris-btn hris-btn-secondary"><i class="feather-search"></i><span>Cari Uang Makan</span></a>
+    </div>
     <div class="page-header">
         <div class="page-header-left d-flex align-items-center">
             <div class="page-header-title">
