@@ -4343,19 +4343,38 @@ def get_tunkin_class_list():
         elif field == 'No Surat':
             query = query.filter(MfClass.DOKREFF.ilike(f'%{keyword}%'))
 
-    tunkin_class_list = query.order_by(MfClass.CLASS_ID.asc()).all()
+    # Data terbaru ditampilkan paling atas berdasarkan waktu audit terakhir.
+    # MF_CLASS legacy hanya memiliki UpdateDate, bukan CreatedDate.
+    tunkin_class_list = query.order_by(
+        MfClass.UPDATE_DATE.desc().nullslast(),
+        MfClass.ID.desc(),
+        MfClass.CLASS_ID.asc(),
+    ).all()
 
-    data = [
-        {
+    data = []
+    for idx, row in enumerate(tunkin_class_list):
+        by_nip = (row.UPDATE_IN_BY or '').strip()
+        by_label = by_nip or '-'
+
+        if by_nip:
+            pegawai = (
+                Pegawai.query
+                .filter(Pegawai.NIP == by_nip)
+                .order_by(Pegawai.NAMA.asc())
+                .first()
+            )
+            if pegawai:
+                by_label = f"{pegawai.NAMA} ({by_nip})"
+
+        data.append({
             'no': idx + 1,
             'class_id': row.CLASS_ID,
-            'tunjangan': row.TUNJANGAN if row.TUNJANGAN is not None else '-',
+            'tunjangan': row.TUNJANGAN if row.TUNJANGAN is not None else None,
             'tgl_mulai': row.TGL_MULAI.strftime('%d-%m-%Y') if row.TGL_MULAI else '-',
             'dokreff': row.DOKREFF or '-',
             'updated': row.UPDATE_DATE.strftime('%d-%m-%Y %H:%M') if row.UPDATE_DATE else '-',
-        }
-        for idx, row in enumerate(tunkin_class_list)
-    ]
+            'by': by_label,
+        })
 
     return jsonify({'status': 'success', 'data': data})
 
