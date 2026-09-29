@@ -96,7 +96,7 @@ def dashboard_infografis():
     }
 
     age_buckets = {
-        '<20 Tahun': 0,
+        '<=20 Tahun': 0,
         '21 s/d 30 Tahun': 0,
         '31 s/d 40 Tahun': 0,
         '41 s/d 50 Tahun': 0,
@@ -122,8 +122,8 @@ def dashboard_infografis():
         age = _calculate_age(row.TGL_LAHIR, today)
         if age is None:
             age_unknown += 1
-        elif age < 20:
-            age_buckets['<20 Tahun'] += 1
+        elif age <= 20:
+            age_buckets['<=20 Tahun'] += 1
         elif 21 <= age <= 30:
             age_buckets['21 s/d 30 Tahun'] += 1
         elif age <= 40:
