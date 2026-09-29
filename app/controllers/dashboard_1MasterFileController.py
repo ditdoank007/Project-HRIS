@@ -4346,7 +4346,7 @@ def get_tunkin_class_list():
     # Data terbaru ditampilkan paling atas berdasarkan waktu audit terakhir.
     # MF_CLASS legacy hanya memiliki UpdateDate, bukan CreatedDate.
     tunkin_class_list = query.order_by(
-        MfClass.UPDATE_DATE.desc().nullslast(),
+        MfClass.UPDATE_DATE.desc(),
         MfClass.ID.desc(),
         MfClass.CLASS_ID.asc(),
     ).all()
