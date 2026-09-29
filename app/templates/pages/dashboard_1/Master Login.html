@@ -1,116 +1,30 @@
 {% extends "layout/baseHRIS.html" %}
-
 {% block title %}- Master Login{% endblock %}
-
 {% block header_kicker %}MASTER FILE{% endblock %}
 {% block header_title %}Master Login{% endblock %}
 
 {% block content %}
-<div class="nxl-content">
 
-    <div class="page-header">
-        <div class="page-header-left d-flex align-items-center">
-            <div class="page-header-title">
-                <h5 class="m-b-10">Master File</h5>
-            </div>
-            <ul class="breadcrumb">
-                <li class="breadcrumb-item">
-                    <a href="{{ url_for('main.view_master_login') }}">Master Login</a>
-                </li>
-            </ul>
+<div class="hris-page">
+    <div class="hris-page-header">
+        <div>
+            <h2 class="hris-page-title">Master Login</h2>
+            <p class="hris-page-subtitle">Kelola data Master Login HRIS.</p>
         </div>
     </div>
+    
+<div class="hris-page">
 
-    <div class="main-content">
-        <div class="container-fluid">
-
-            <div class="card mb-4 shadow-sm"
-                 style="border-radius:10px; overflow:hidden; border:none;">
-
-                <div class="card-header-custom"
-                     style="border-radius:10px;">
-                    <h6 class="mb-0">
-                        <i class="ti ti-lock me-2"></i>
-                        Master Login HRIS
-                    </h6>
-                </div>
-
-                <div class="card-body p-4">
-
-                    <div class="row mb-4 align-items-center">
-                        <label class="col-md-3 fw-bold text-dark">
-                            Mode Login
-                        </label>
-
-                        <div class="col-md-5">
-                            <select class="form-select" id="authMode">
-                                <option value="LOCAL">LOCAL</option>
-                                <option value="SSO">SSO</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div id="ssoSettings">
-
-                        <div class="row mb-4 align-items-center">
-                            <label class="col-md-3 fw-bold text-dark">
-                                SSO Server
-                            </label>
-
-                            <div class="col-md-7">
-                                <input type="text"
-                                       class="form-control"
-                                       id="ssoServer"
-                                       placeholder="https://bdip.example.id">
-                            </div>
-                        </div>
-
-                        <div class="row mb-4 align-items-center">
-                            <label class="col-md-3 fw-bold text-dark">
-                                SSO Callback
-                            </label>
-
-                            <div class="col-md-7">
-                                <input type="text"
-                                       class="form-control"
-                                       id="ssoCallback"
-                                       placeholder="http://hris.example.id/api/login/sso">
-                            </div>
-                        </div>
-
-                    </div>
-
-                    <div class="d-flex gap-2">
-                        <button type="button"
-                                class="btn btn-info text-white px-4 fw-bold"
-                                id="btnSaveAuth">
-                            <i class="bi bi-save me-1"></i>
-                            SIMPAN
-                        </button>
-
-                        <button type="button"
-                                class="btn btn-light border px-4"
-                                id="btnRefreshAuth">
-                            <i class="bi bi-arrow-clockwise me-1"></i>
-                            REFRESH
-                        </button>
-                    </div>
-
-                    <hr class="my-4">
-
-                    <div class="alert alert-warning mb-0">
-                        <i class="bi bi-shield-lock me-2"></i>
-                        Pengaturan login hanya dapat diubah oleh Administrator HRIS.
-                    </div>
-
-                </div>
-            </div>
-
-        </div>
     </div>
 </div>
 
-<script>
+
+
+
+</div>
+{% endblock %}
+
+{% block script %}
 (function () {
     const authMode = document.getElementById('authMode');
     const ssoSettings = document.getElementById('ssoSettings');
@@ -198,5 +112,4 @@
 
     loadAuthConfig();
 })();
-</script>
 {% endblock %}
