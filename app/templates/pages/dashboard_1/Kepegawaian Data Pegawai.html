@@ -459,7 +459,7 @@
 {% endblock %}
 
 {% block script %}
-<script>
+
 document.addEventListener("DOMContentLoaded", function () {
     console.log("[Kepegawaian] Script mulai...");
 
@@ -949,7 +949,7 @@ document.addEventListener("DOMContentLoaded", function () {
     console.log("[Kepegawaian] Handler terpasang. Siap input/edit!");
 });
 
-<script>
+
 document.addEventListener("DOMContentLoaded", function () {
     const statusField = document.querySelector('[data-field="status_peg"]');
     const careerFields = [
@@ -984,9 +984,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     updateCareerRequired();
 });
-</script>
-</script>
-<script>
+
+
+
 document.addEventListener("DOMContentLoaded",function(){
     const c=document.getElementById("bdipEmployeeContent");
     const n=document.getElementById("bdipEmployeeCount");
@@ -1009,9 +1009,8 @@ document.addEventListener("DOMContentLoaded",function(){
     })
     .catch(e=>console.error("[BDIP-FIX]",e));
 });
-</script>
-\n
-<script>
+
+
 /* [BDIP-IMPORT-FIX] Handler impor BDIP independen */
 document.addEventListener("DOMContentLoaded", function () {
     const btn = document.getElementById("btnImportBdip");
@@ -1105,10 +1104,10 @@ document.addEventListener("DOMContentLoaded", function () {
         );
     });
 });
-</script>
 
 
-<script>
+
+
 /* [SIMPAN-DIRECT-FIX]
  * Handler SIMPAN independen dari script utama Data Pegawai.
  */
@@ -1246,6 +1245,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     console.log("[SIMPAN-DIRECT-FIX] Handler SIMPAN terpasang.");
 });
-</script>
+
 
 {% endblock %}
