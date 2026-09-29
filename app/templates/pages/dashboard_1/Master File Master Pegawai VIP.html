@@ -117,7 +117,7 @@
 {% endblock %}
 
 {% block script %}
-<script>
+
 document.addEventListener('DOMContentLoaded', function () {
     const tbody = document.querySelector('.master-siaga table tbody');
     const refreshBtn = document.querySelector('.btn-refresh-custom');
@@ -224,5 +224,5 @@ document.addEventListener('DOMContentLoaded', function () {
     // Muat data otomatis saat halaman pertama kali dibuka (tanpa filter apapun)
     loadPegawaiList();
 });
-</script>
+
 {% endblock %}
