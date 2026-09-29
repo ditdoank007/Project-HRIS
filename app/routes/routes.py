@@ -2115,16 +2115,6 @@ def api_calendar_kesamaptaan_pdf_route(kegiatan_id):
     return api_kesamaptaan_internal_pdf(kegiatan_id)
 
 
-@main.route('/api/internal/calendar/kesamaptaan/agenda', methods=['GET'])
-def api_calendar_kesamaptaan_agenda_route():
-    return api_kesamaptaan_internal_agenda()
-
-
-@main.route('/api/internal/calendar/kesamaptaan/<int:kegiatan_id>/pdf', methods=['GET'])
-def api_calendar_kesamaptaan_pdf_route(kegiatan_id):
-    return api_kesamaptaan_internal_pdf(kegiatan_id)
-
-
 @main.route('/api/internal/calendar/kesamaptaan/attendance-info', methods=['GET'])
 def api_calendar_kesamaptaan_attendance_info_route():
     return api_kesamaptaan_internal_info()
