@@ -94,6 +94,11 @@
 
 <script>
 document.addEventListener("DOMContentLoaded",()=>{
+ const modalKesamaptaan=document.getElementById("modalKesamaptaan");
+ const modalDetailKes=document.getElementById("modalDetailKes");
+ // Bootstrap modal harus berada langsung di <body> agar backdrop tidak menutupi dialog.
+ if(modalKesamaptaan && modalKesamaptaan.parentElement!==document.body) document.body.appendChild(modalKesamaptaan);
+ if(modalDetailKes && modalDetailKes.parentElement!==document.body) document.body.appendChild(modalDetailKes);
  let rows=[], currentId=null, editId=null;
  const body=document.getElementById("kesRows"), search=document.getElementById("searchKes");
 
