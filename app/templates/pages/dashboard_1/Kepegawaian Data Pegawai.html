@@ -492,17 +492,80 @@ document.addEventListener("DOMContentLoaded", function () {
         return payload;
     }
 
-    // Isi form dari data
+    // Isi form dari data.
+    //
+    // HRIS 2013 mengisi kontrol berdasarkan nilai legacy PEGAWAI
+    // sekaligus master Unit/Golongan/Jabatan. Untuk select, jangan
+    // membuang nilai legacy hanya karena master saat ini tidak lagi
+    // menampilkan option tersebut.
+    function setFieldValue(el, key, data) {
+        const value = data[key];
+
+        if (el.tagName === "SELECT") {
+            const normalized = value === null || value === undefined
+                ? ""
+                : String(value);
+
+            const exists = Array.from(el.options).some(function (option) {
+                return String(option.value) === normalized;
+            });
+
+            if (normalized && !exists) {
+                let label = normalized;
+
+                if (key === "unit_kerja_id" && data.unit_kerja_name) {
+                    label = normalized + " - " + data.unit_kerja_name;
+                } else if (key === "jabatan_id" && data.jabatan_name) {
+                    label = data.jabatan_name;
+                } else if (key === "gol_id") {
+                    label = data.gol_name || normalized;
+                    if (data.pangkat_name) {
+                        label += " - " + data.pangkat_name;
+                    }
+                } else if (key === "gol_recruit" && data.gol_recruit_name) {
+                    label = data.gol_recruit_name;
+                }
+
+                const option = new Option(
+                    label + " (legacy)",
+                    normalized,
+                    true,
+                    true
+                );
+                option.dataset.legacy = "true";
+                el.add(option);
+            }
+
+            el.value = normalized;
+            return;
+        }
+
+        el.value = (
+            value === null || value === undefined
+                ? ""
+                : value
+        );
+    }
+
     function populateForm(data) {
         document.querySelectorAll("[data-field]").forEach(function (el) {
-            const key = el.dataset.field;
-            if (data[key] !== undefined && data[key] !== null) {
-                el.value = data[key];
-            } else {
-                el.value = "";
-            }
+            setFieldValue(el, el.dataset.field, data);
         });
+
         toggleFieldKeluar();
+
+        // PNS: informasi tanggal lahir/jenis kelamin dari NIP adalah
+        // business rule HRIS 2013. Nilai database tetap tidak ditimpa.
+        if (
+            String(data.status_peg || "") === "1" &&
+            data.tanggal_lahir_derived &&
+            !data.tgl_lahir
+        ) {
+            console.info(
+                "[Kepegawaian] TGL_LAHIR kosong; NIP menyediakan tanggal lahir:",
+                data.tanggal_lahir_derived
+            );
+        }
     }
 
     // Toggle field keluar
@@ -516,25 +579,84 @@ document.addEventListener("DOMContentLoaded", function () {
     toggleFieldKeluar();
 
     // ✅ FITUR: Ketik NIP lalu Enter/Tab → auto-load jika sudah ada
+    function loadPegawaiByNip(nip) {
+        const value = String(nip || "").trim();
+
+        if (!value) {
+            return Promise.resolve(null);
+        }
+
+        return fetch(
+            "/api/pegawai/get?nip=" + encodeURIComponent(value),
+            {
+                method: "GET",
+                headers: {
+                    "Accept": "application/json"
+                },
+                cache: "no-store"
+            }
+        )
+        .then(function (res) {
+            return res.json().then(function (result) {
+                return {
+                    httpStatus: res.status,
+                    data: result
+                };
+            });
+        })
+        .then(function (result) {
+            const resultData = result.data || {};
+
+            if (result.httpStatus === 200 && resultData.success) {
+                populateForm(resultData.data || {});
+                nipField.readOnly = true;
+
+                if (btnDelete) {
+                    btnDelete.classList.remove("d-none");
+                }
+
+                showAlert(
+                    "Data ditemukan. Data HRIS 2013 berhasil dimuat ke form. Silakan edit lalu Simpan.",
+                    "success"
+                );
+
+                return resultData.data;
+            }
+
+            if (result.httpStatus === 404) {
+                nipField.readOnly = false;
+
+                if (btnDelete) {
+                    btnDelete.classList.add("d-none");
+                }
+
+                console.log("Record baru untuk NIP:", value);
+                return null;
+            }
+
+            throw new Error(
+                resultData.error ||
+                resultData.message ||
+                "Gagal membaca data pegawai."
+            );
+        })
+        .catch(function (error) {
+            console.error("[Kepegawaian] GET Pegawai:", error);
+            showAlert(
+                error.message || "Gagal menghubungi server.",
+                "danger"
+            );
+            throw error;
+        });
+    }
+
     nipField.addEventListener("blur", function () {
         const nip = nipField.value.trim();
-        if (nip && nip.length >= 18) {
-            fetch("/api/pegawai/get?nip=" + encodeURIComponent(nip))
-                .then(res => res.json())
-                .then(result => {
-                    if (result.success) {
-                        populateForm(result.data);
-                        nipField.readOnly = true;
-                        if (btnDelete) btnDelete.classList.remove("d-none");
-                        showAlert("Data ditemukan. Silakan edit lalu Simpan.", "success");
-                    } else {
-                        // Tidak ada → record baru, form tetap bisa diisi
-                        nipField.readOnly = false;
-                        if (btnDelete) btnDelete.classList.add("d-none");
-                        console.log("Record baru untuk NIP:", nip);
-                    }
-                })
-                .catch(() => showAlert("Gagal menghubungi server.", "danger"));
+
+        // PNS normal: 18 digit. Non-PNS dapat menggunakan FingerID
+        // sebagai NIP sesuai rule BDIP/HRIS Reborn.
+        if (nip && nip.length >= 8) {
+            loadPegawaiByNip(nip);
         }
     });
 
@@ -571,7 +693,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (urlNip) {
         nipField.value = urlNip.trim();
-        nipField.dispatchEvent(new Event("blur"));
+        loadPegawaiByNip(urlNip.trim());
     }
 
     // ============================================================
