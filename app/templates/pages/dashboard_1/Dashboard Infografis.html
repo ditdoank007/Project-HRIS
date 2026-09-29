@@ -189,10 +189,10 @@ document.addEventListener("DOMContentLoaded", function () {
     renderChart("#ageChart", {
         chart:{type:"bar",height:320,toolbar:{show:false},fontFamily:"Inter,Segoe UI,Arial,sans-serif"},
         series:[{name:"Pegawai",data:[
-            age["<20 Tahun"],age["21 s/d 30 Tahun"],age["31 s/d 40 Tahun"],age["41 s/d 50 Tahun"],age["51 s/d 60 Tahun"]
+            age["<=20 Tahun"],age["21 s/d 30 Tahun"],age["31 s/d 40 Tahun"],age["41 s/d 50 Tahun"],age["51 s/d 60 Tahun"]
         ]}],
         colors:["#eb6831"],
-        xaxis:{categories:["<20 Tahun","21 s/d 30 Tahun","31 s/d 40 Tahun","41 s/d 50 Tahun","51 s/d 60 Tahun"]},
+        xaxis:{categories:["<=20 Tahun","21 s/d 30 Tahun","31 s/d 40 Tahun","41 s/d 50 Tahun","51 s/d 60 Tahun"]},
         plotOptions:{bar:{borderRadius:5,columnWidth:"48%"}},
         dataLabels:{enabled:true},
         grid:{borderColor:"#edf0f3"},
