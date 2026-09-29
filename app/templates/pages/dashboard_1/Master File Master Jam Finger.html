@@ -119,7 +119,7 @@
 {% endblock %}
 
 {% block script %}
-<script>
+
 document.addEventListener('DOMContentLoaded', function () {
     const params = new URLSearchParams(window.location.search);
     const editId = params.get('edit_id');
@@ -246,5 +246,5 @@ document.addEventListener('DOMContentLoaded', function () {
 
     loadEditJamFinger();
 });
-</script>
+
 {% endblock %}
