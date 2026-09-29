@@ -373,7 +373,7 @@ body {
   display: flex;
   align-items: center;
   gap: 14px;
-  min-height: 62px;
+  min-height: 72px;
   padding: 0 18px;
   border-bottom: 1px solid rgba(255,255,255,.18);
   background: var(--ui-brand);
@@ -471,7 +471,7 @@ body {
 
 .hris-shell {
   display: flex;
-  min-height: calc(100vh - 62px);
+  min-height: calc(100vh - 72px);
   background: var(--ui-bg);
 }
 
@@ -479,7 +479,7 @@ body {
    old Dashboard/Bootstrap theme. Access-control Jinja remains intact. */
 .hris-shell .nxl-navigation {
   position: fixed;
-  top: 62px;
+  top: 72px;
   bottom: 0;
   left: 0;
   z-index: 1050;
@@ -601,12 +601,12 @@ body {
   width: calc(100% - 250px);
   min-width: 0;
   margin-left: 250px;
-  min-height: calc(100vh - 62px);
+  min-height: calc(100vh - 72px);
   background: var(--ui-bg);
 }
 
 .hris-main > .hris-page {
-  min-height: calc(100vh - 62px);
+  min-height: calc(100vh - 72px);
 }
 
 .hris-sidebar-backdrop {
@@ -632,7 +632,7 @@ body {
   .hris-sidebar-open .hris-sidebar-backdrop {
     display: block;
     position: fixed;
-    inset: 62px 0 0;
+    inset: 72px 0 0;
     z-index: 1040;
     background: rgba(15, 23, 42, .32);
   }
