@@ -145,12 +145,12 @@ def derive_employee_metrics(
             if isinstance(tmt_cpns, datetime):
                 tmt_cpns = tmt_cpns.date()
 
-            service_months = (
-                (on_date or date.today()).year - tmt_cpns.year
-            ) * 12 + (
-                (on_date or date.today()).month - tmt_cpns.month
-            )
-            if tmt_cpns <= (on_date or date.today()) else None
+            effective_date = on_date or date.today()
+            if tmt_cpns <= effective_date:
+                service_months = (
+                    (effective_date.year - tmt_cpns.year) * 12
+                    + (effective_date.month - tmt_cpns.month)
+                )
         elif parsed:
             service_months = calculate_service_months_from_period(
                 parsed["cpns_year"],
