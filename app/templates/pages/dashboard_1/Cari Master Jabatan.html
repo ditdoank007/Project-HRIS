@@ -108,7 +108,7 @@
 {% endblock %}
 
 {% block script %}
-<script>
+
 function escapeHtml(value) {
     return String(value ?? '')
         .replace(/&/g, '&amp;')
@@ -298,5 +298,5 @@ document.addEventListener(
     'DOMContentLoaded',
     loadJabatanList
 );
-</script>
+
 {% endblock %}
