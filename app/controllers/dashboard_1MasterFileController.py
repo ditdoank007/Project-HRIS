@@ -1597,6 +1597,7 @@ def get_pegawai_vip_list():
             'nip': p.NIP,
             'nama': p.NAMA,
             'jabatan': jabatan_map.get(p.JABATAN_ID),
+            'unit_kerja': p.UNIT_KERJA or '-',
             'is_vip': is_vip_value(p.IS_VIP),
         }
         for idx, p in enumerate(pegawai_list)
