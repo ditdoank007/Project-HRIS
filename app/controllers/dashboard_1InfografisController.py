@@ -96,13 +96,22 @@ def dashboard_infografis():
     }
 
     age_buckets = {
-        '< 30 Tahun': 0,
-        '30-39 Tahun': 0,
-        '40-49 Tahun': 0,
-        '50-59 Tahun': 0,
-        '60 Tahun': 0,
+        '<20 Tahun': 0,
+        '21 s/d 30 Tahun': 0,
+        '31 s/d 40 Tahun': 0,
+        '41 s/d 50 Tahun': 0,
+        '51 s/d 60 Tahun': 0,
     }
     age_unknown = 0
+
+    # Golongan yang ditampilkan pada infografis.
+    # Rentang dimulai dari II/a sesuai kebutuhan dashboard.
+    golongan_labels = [
+        'II/a', 'II/b', 'II/c', 'II/d',
+        'III/a', 'III/b', 'III/c', 'III/d',
+        'IV/a', 'IV/b', 'IV/c', 'IV/d', 'IV/e',
+    ]
+    golongan_counts = {label: 0 for label in golongan_labels}
 
     unit_counts = {}
 
@@ -113,19 +122,27 @@ def dashboard_infografis():
         age = _calculate_age(row.TGL_LAHIR, today)
         if age is None:
             age_unknown += 1
-        elif age < 30:
-            age_buckets['< 30 Tahun'] += 1
-        elif age < 40:
-            age_buckets['30-39 Tahun'] += 1
-        elif age < 50:
-            age_buckets['40-49 Tahun'] += 1
-        elif age < 60:
-            age_buckets['50-59 Tahun'] += 1
-        elif age == 60:
-            age_buckets['60 Tahun'] += 1
+        elif age < 20:
+            age_buckets['<20 Tahun'] += 1
+        elif age <= 30:
+            age_buckets['21 s/d 30 Tahun'] += 1
+        elif age <= 40:
+            age_buckets['31 s/d 40 Tahun'] += 1
+        elif age <= 50:
+            age_buckets['41 s/d 50 Tahun'] += 1
+        elif age <= 60:
+            age_buckets['51 s/d 60 Tahun'] += 1
         else:
             # Usia > 60 tidak termasuk statistik pegawai aktif.
             continue
+
+        golongan = str(row.GOL_ID or '').strip()
+        if golongan:
+            normalized_golongan = golongan.lower()
+            for label in golongan_labels:
+                if normalized_golongan == label.lower():
+                    golongan_counts[label] += 1
+                    break
 
         unit_id = str(row.UNIT_KERJA_ID or '').strip()
         unit_name = unit_map.get(unit_id) or str(
@@ -150,5 +167,7 @@ def dashboard_infografis():
         status_counts=status_counts,
         age_buckets=age_buckets,
         age_unknown=age_unknown,
+        golongan_labels=golongan_labels,
+        golongan_counts=golongan_counts,
         unit_distribution=unit_distribution,
     )
