@@ -1488,6 +1488,17 @@ def get_pegawai_vip_list():
             )
 
     # ============================================================
+    # MODE DAFTAR VIP
+    #
+    # Halaman utama Master Pegawai VIP hanya menampilkan
+    # pegawai yang memang sudah berstatus VIP.
+    # Halaman Cari VIP tidak mengirim parameter ini sehingga
+    # tetap dapat mencari seluruh pegawai aktif.
+    # ============================================================
+
+    only_vip = request.args.get('only_vip', '').strip().upper()
+
+    # ============================================================
     # HANYA PEGAWAI AKTIF
     #
     # Standar HRIS Reborn:
@@ -1501,6 +1512,11 @@ def get_pegawai_vip_list():
     query = query.filter(
         Pegawai.IS_KELUAR == 'N'
     )
+
+    if only_vip == 'Y':
+        query = query.filter(
+            Pegawai.IS_VIP == 'Y'
+        )
 
     # ============================================================
     # AMBIL DATA
