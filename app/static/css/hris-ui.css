@@ -1757,3 +1757,105 @@ body.hris-sidebar-mini .hris-submenu {
     padding: 14px !important;
   }
 }
+
+
+/* Master File pages — exact User Account form rhythm */
+.hris-modern .hris-page > .hris-page .hris-page-header {
+  display: none;
+}
+
+.hris-form-stack {
+  display: block;
+  width: 100%;
+}
+
+.hris-form-stack > .hris-form-control,
+.hris-form-stack > .col-12 {
+  width: 100%;
+  max-width: none;
+}
+
+.hris-form-stack > .hris-form-control,
+.hris-form-stack > .col-12 {
+  margin: 0;
+}
+
+.hris-form-stack > .hris-form-control:has(.hris-form-row-label),
+.hris-form-stack > .col-12:has(.hris-form-row-label) {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  align-items: center;
+  gap: 18px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.hris-form-stack > .hris-form-control:has(.hris-form-row-label) > .hris-form-row-label,
+.hris-form-stack > .col-12:has(.hris-form-row-label) > .hris-form-row-label {
+  width: auto;
+  margin: 0;
+  padding: 0;
+}
+
+.hris-form-stack > .hris-form-control:has(.hris-form-row-label) > .hris-form-control,
+.hris-form-stack > .col-12:has(.hris-form-row-label) > .hris-form-control {
+  width: 100%;
+  max-width: 720px;
+}
+
+.hris-form-stack > .hris-form-control:has(.hris-form-row-label) > .hris-btn,
+.hris-form-stack > .col-12:has(.hris-form-row-label) > .hris-btn {
+  grid-column: 2;
+  justify-self: start;
+}
+
+.hris-modern .hris-card-header {
+  min-height: 56px;
+}
+
+.hris-modern .hris-card-header h6,
+.hris-modern .hris-card-header h5 {
+  margin: 0;
+  color: var(--ui-ink);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.hris-modern .hris-card-header .header-actions {
+  margin-left: auto;
+}
+
+.hris-modern .hris-card-header .header-actions a,
+.hris-modern .hris-card-header .header-actions button {
+  color: var(--ui-text);
+}
+
+.hris-modern .hris-input-group > .hris-input {
+  border-radius: var(--ui-radius-sm) 0 0 var(--ui-radius-sm) !important;
+}
+
+.hris-modern .hris-input-group > .hris-input-addon {
+  border-radius: 0 var(--ui-radius-sm) var(--ui-radius-sm) 0;
+}
+
+.hris-modern .hris-card-body > .hris-form-stack:last-child {
+  margin-bottom: 0;
+}
+
+@media (max-width: 720px) {
+  .hris-form-stack > .hris-form-control:has(.hris-form-row-label),
+  .hris-form-stack > .col-12:has(.hris-form-row-label) {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .hris-form-stack > .hris-form-control:has(.hris-form-row-label) > .hris-form-control,
+  .hris-form-stack > .col-12:has(.hris-form-row-label) > .hris-form-control {
+    max-width: none;
+  }
+
+  .hris-form-stack > .hris-form-control:has(.hris-form-row-label) > .hris-btn,
+  .hris-form-stack > .col-12:has(.hris-form-row-label) > .hris-btn {
+    grid-column: auto;
+  }
+}
