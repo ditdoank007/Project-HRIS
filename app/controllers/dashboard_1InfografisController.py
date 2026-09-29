@@ -55,6 +55,17 @@ def dashboard_infografis():
     # Pegawai dengan Unit Kerja nonaktif tidak masuk statistik.
     pegawai_rows = get_operational_pegawai_query().all()
 
+    # Pegawai aktif di atas 60 tahun tidak dimasukkan ke statistik.
+    # Data tanpa TGL_LAHIR tetap dipertahankan pada total, tetapi
+    # masuk kategori usia "Belum diketahui".
+    pegawai_rows = [
+        row for row in pegawai_rows
+        if (
+            _calculate_age(row.TGL_LAHIR, today) is None
+            or _calculate_age(row.TGL_LAHIR, today) <= 60
+        )
+    ]
+
     unit_rows = (
         MfUnitKerja.query
         .filter(MfUnitKerja.IS_USE == 'Y')
