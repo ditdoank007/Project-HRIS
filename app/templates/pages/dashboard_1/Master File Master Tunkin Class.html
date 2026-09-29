@@ -1,68 +1,37 @@
-<!-- pages/dashboard_1/Master File Master Tunkin Class .html -->
 {% extends "layout/baseHRIS.html" %}
-
-{% block title %}- Tunkin/Class{% endblock %}
-
+{% block title %}- Master Tunkin / Class{% endblock %}
 {% block header_kicker %}MASTER FILE{% endblock %}
 {% block header_title %}Master Tunkin / Class{% endblock %}
 
 {% block content %}
-<div class="nxl-content">
-    <div class="page-header">
-        <div class="page-header-left d-flex align-items-center">
-            <div class="page-header-title">
-                <h5 class="m-b-10">Master File</h5>
-            </div>
-            <ul class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url_for('main.view_master_tunkin_class') }}">Master Tunkin/Class</a></li>
-            </ul>
+
+<div class="hris-page">
+    <div class="hris-page-header">
+        <div>
+            <h2 class="hris-page-title">Master Tunkin / Class</h2>
+            <p class="hris-page-subtitle">Kelola data Master Tunkin / Class HRIS.</p>
         </div>
     </div>
-
-    <div class="main-content master-siaga">
-        <div class="container-fluid">
-            <div class="card mb-4 filter-card">
-                <div class="card-header-custom d-flex justify-content-between align-items-center"
-                    style="border-radius: 10px;">
-                    <h6 class="mb-0">
-                        <i class="ti ti-brand-redhat me-2"></i> Master Tunkin/Class
-                    </h6>
-
-                    <div class="header-actions">
-                        <button class="btn p-0 border-0 bg-transparent shadow-none d-md-none" type="button"
-                            data-bs-toggle="collapse" data-bs-target="#headerIconsCollapse">
-                            <i class="bi bi-three-dots-vertical" style="font-size: 1.5rem; color: #333;"></i>
-                        </button>
-
-                        <div class="collapse d-md-flex align-items-center" id="headerIconsCollapse">
-                            <div class="header-icons-wrapper d-flex gap-3 p-2 p-md-0 mt-2 mt-md-0">
-                                <a href="{{ url_for('main.view_cari_master_tunkin_class') }}"
-                                    class="btn p-0 border-0 bg-transparent shadow-none text-decoration-none">
-                                    <i class="bi bi-search" style="color: #333; font-size: 1.1rem;"></i>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card-body">
-                    <div class="row g-3">
+    
+<div class="hris-page">
+    <div class="hris-card-body">
+                    <div class="hris-form-stack">
                         <div class="col-12 d-md-flex align-items-center">
-                            <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Tanggal</label>
-                            <div class="col-md-7">
-                                <div class="input-group-custom w-100">
-                                    <input type="text" id="inputTanggal" class="form-control-sm border w-100" placeholder="YYYY-MM-DD">
-                                    <span class="icon-append"><i class="bi bi-calendar3"></i></span>
+                            
+                            <label class="hris-form-row-label">Tanggal</label>
+                            <div class="hris-form-control">
+                                <div class="hris-input-group w-100">
+                                    <input type="text" id="inputTanggal" class="hris-input w-100" placeholder="YYYY-MM-DD">
+                                    <span class="hris-input-addon"><i class="bi bi-calendar3"></i></span>
                                 </div>
                             </div>
                         </div>
 
                         <div class="col-12 d-md-flex align-items-center">
-                            <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Class</label>
-                            <div class="col-md-7">
-                                <select id="selectClass" class="form-select-sm border custom-select w-100">
+                            
+                            <label class="hris-form-row-label">Class</label>
+                            <div class="hris-form-control">
+                                <select id="selectClass" class="hris-select w-100">
                                     <option value="">Pilih</option>
                                     {% for c in class_list %}
                                     <option value="{{ c.CLASS_ID }}">{{ c.CLASS_ID }}</option>
@@ -72,26 +41,26 @@
                         </div>
 
                         <div class="col-12 d-md-flex align-items-center">
-                            <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Tunjangan</label>
-                            <div class="col-md-7">
-                                <div class="input-group-custom w-100">
-                                    <input type="text" id="inputTunjangan" class="form-control-sm border w-100">
-                                    <span class="icon-append"><i class="bi bi-pencil-fill"></i></span>
+                            
+                            <label class="hris-form-row-label">Tunjangan</label>
+                            <div class="hris-form-control">
+                                <div class="hris-input-group w-100">
+                                    <input type="text" id="inputTunjangan" class="hris-input w-100">
+                                    <span class="hris-input-addon"><i class="bi bi-pencil-fill"></i></span>
                                 </div>
                             </div>
                         </div>
 
                         <div class="col-12 d-md-flex align-items-center">
-                            <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">No Surat</label>
-                            <div class="col-md-7">
-                                <div class="input-group-custom w-100">
-                                    <input type="text" id="inputNoSurat" class="form-control-sm border w-100">
-                                    <span class="icon-append"><i class="bi bi-pencil-fill"></i></span>
+                            
+                            <label class="hris-form-row-label">No Surat</label>
+                            <div class="hris-form-control">
+                                <div class="hris-input-group w-100">
+                                    <input type="text" id="inputNoSurat" class="hris-input w-100">
+                                    <span class="hris-input-addon"><i class="bi bi-pencil-fill"></i></span>
                                 </div>
                             </div>
-                            <button type="button" id="btnSimpanTunkinClass" class="btn btn-orange-figma px-4 ms-md-3 mt-2 mt-md-0" style="white-space: nowrap;">
+                            <button type="button" id="btnSimpanTunkinClass" class="hris-btn hris-btn-primary" style="white-space: nowrap;">
                                 <i class="bi bi-save me-1"></i>Simpan
                             </button>
                         </div>
@@ -101,10 +70,13 @@
         </div>
     </div>
 </div>
+
+
+
+</div>
 {% endblock %}
 
 {% block script %}
-
 // --- Autofill form saat Class dipilih ---
 document.getElementById('selectClass').addEventListener('change', function () {
     const classId = this.value;
@@ -180,5 +152,4 @@ document.getElementById('btnSimpanTunkinClass').addEventListener('click', functi
             alert('Terjadi kesalahan saat menyimpan data.');
         });
 });
-
 {% endblock %}
