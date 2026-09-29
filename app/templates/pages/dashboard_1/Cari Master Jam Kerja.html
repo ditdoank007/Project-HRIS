@@ -105,7 +105,7 @@
 {% endblock %}
 
 {% block script %}
-<script>
+
 function loadJamKerjaList() {
     const periode  = document.getElementById('filterPeriode').value;
     const field1   = document.getElementById('filterField1').value;
@@ -225,5 +225,5 @@ document.getElementById('btnRefreshJamKerja').addEventListener('click', loadJamK
 
 // Load semua data begitu halaman dibuka (sama seperti klik Refresh dengan filter kosong)
 document.addEventListener('DOMContentLoaded', loadJamKerjaList);
-</script>
+
 {% endblock %}
