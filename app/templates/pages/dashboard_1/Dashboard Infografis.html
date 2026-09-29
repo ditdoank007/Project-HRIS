@@ -269,15 +269,39 @@ document.addEventListener("DOMContentLoaded", function () {
         const employees = golonganEmployees[label] || [];
         golonganModalTitle.textContent = "Golongan " + label;
         golonganModalSubtitle.textContent = employees.length + " pegawai";
-        golonganModalBody.innerHTML = employees.length
-            ? employees.map((item, index) => (
-                '<div class="golongan-person">' +
-                    '<div class="golongan-person-no">' + (index + 1) + '</div>' +
-                    '<div><div class="golongan-person-name">' + item.nama + '</div>' +
-                    '<div class="golongan-person-nip">' + item.nip + '</div></div>' +
-                '</div>'
-            )).join("")
-            : '<div class="golongan-empty">Tidak ada pegawai pada golongan ini.</div>';
+        golonganModalBody.innerHTML = "";
+
+        if (!employees.length) {
+            const empty = document.createElement("div");
+            empty.className = "golongan-empty";
+            empty.textContent = "Tidak ada pegawai pada golongan ini.";
+            golonganModalBody.appendChild(empty);
+        } else {
+            employees.forEach(function (item, index) {
+                const row = document.createElement("div");
+                row.className = "golongan-person";
+
+                const no = document.createElement("div");
+                no.className = "golongan-person-no";
+                no.textContent = index + 1;
+
+                const info = document.createElement("div");
+                const name = document.createElement("div");
+                name.className = "golongan-person-name";
+                name.textContent = item.nama || "-";
+
+                const nip = document.createElement("div");
+                nip.className = "golongan-person-nip";
+                nip.textContent = item.nip || "-";
+
+                info.appendChild(name);
+                info.appendChild(nip);
+                row.appendChild(no);
+                row.appendChild(info);
+                golonganModalBody.appendChild(row);
+            });
+        }
+
         golonganModal.classList.add("is-open");
         golonganModal.setAttribute("aria-hidden", "false");
     }
