@@ -35,6 +35,9 @@ from app.models.agendaDisposisiModel import AgendaDisposisi, AgendaDisposisiPese
 from app.models.hrisDocumentModel import HrisDocument
 from app.models.agendaRapatMetaModel import AgendaRapatMeta
 from app.models.agendaRapatAttendanceModel import AgendaRapatAttendance
+from app.models.kesamaptaanKegiatanModel import KesamaptaanKegiatan
+from app.models.kesamaptaanKehadiranModel import KesamaptaanKehadiran
+from app.models.kesamaptaanDokumentasiModel import KesamaptaanDokumentasi
 
 
 def create_app():
