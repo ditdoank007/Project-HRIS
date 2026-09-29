@@ -1478,6 +1478,68 @@ body.hris-sidebar-mini .hris-submenu {
   background: #fecaca;
 }
 
+
+.hris-radio-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 8px 14px;
+  border: 1px solid var(--ui-border);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ui-text);
+  cursor: pointer;
+}
+
+.hris-radio-option input {
+  accent-color: var(--ui-primary);
+}
+
+.hris-info-panel {
+  margin-top: 4px;
+  padding: 16px;
+  border: 1px solid var(--ui-border);
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.hris-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.hris-info-grid > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: #fff;
+  border: 1px solid var(--ui-border);
+}
+
+.hris-info-grid strong {
+  min-width: 46px;
+  color: var(--ui-primary);
+}
+
+.hris-info-grid span {
+  color: var(--ui-muted);
+  font-size: 13px;
+}
+
+@media (max-width: 700px) {
+  .hris-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hris-form-inline {
+    flex-wrap: wrap;
+  }
+}
+
 .hris-form-inline {
   display: flex;
   align-items: center;
