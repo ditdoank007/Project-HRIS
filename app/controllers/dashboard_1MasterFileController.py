@@ -1983,7 +1983,10 @@ def get_tunkin_class_detail(class_id):
     Ambil detail 1 baris MF_CLASS berdasarkan CLASS_ID, dipakai untuk
     autofill form saat user memilih Class di dropdown.
     """
-    row = MfClass.query.get(class_id)
+    # MF_CLASS legacy memakai composite ORM key (ClassID + ID).
+    # ClassID adalah identifier bisnis yang dipakai UI, jadi jangan
+    # menggunakan query.get(class_id) yang mengharuskan seluruh PK composite.
+    row = MfClass.query.filter(MfClass.CLASS_ID == class_id).first()
     if row is None:
         return jsonify({'status': 'error', 'message': 'Class tidak ditemukan'}), 404
 
@@ -2034,7 +2037,8 @@ def save_tunkin_class():
         return jsonify({'status': 'error', 'message': 'Class harus berupa angka'}), 400
 
     # --- Wajib sudah ada — form ini edit-only, tidak boleh buat baris baru ---
-    existing = MfClass.query.get(class_id)
+    # MF_CLASS legacy memakai composite ORM key (ClassID + ID).
+    existing = MfClass.query.filter(MfClass.CLASS_ID == class_id).first()
     if existing is None:
         return jsonify({
             'status': 'error',
