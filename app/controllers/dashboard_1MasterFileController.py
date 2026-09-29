@@ -1497,6 +1497,7 @@ def get_pegawai_vip_list():
     # ============================================================
 
     only_vip = request.args.get('only_vip', '').strip().upper()
+    exclude_vip = request.args.get('exclude_vip', '').strip().upper()
 
     # ============================================================
     # HANYA PEGAWAI AKTIF
@@ -1516,6 +1517,11 @@ def get_pegawai_vip_list():
     if only_vip == 'Y':
         query = query.filter(
             Pegawai.IS_VIP == 'Y'
+        )
+
+    if exclude_vip == 'Y':
+        query = query.filter(
+            Pegawai.IS_VIP != 'Y'
         )
 
     # ============================================================
