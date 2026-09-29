@@ -1367,6 +1367,11 @@ def get_kalender_list():
 
     return jsonify({'status': 'success', 'data': data})
 
+def cari_master_pegawai_vip():
+    """Render halaman pencarian Master Pegawai VIP."""
+    return render_template('pages/dashboard_1/Cari Master Pegawai VIP.html')
+
+
 def master_pegawai_vip():
     """
     Render halaman Master File Master Pegawai VIP.
