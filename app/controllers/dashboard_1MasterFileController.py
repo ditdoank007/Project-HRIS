@@ -2108,13 +2108,15 @@ def save_unit_kerja():
         return jsonify({'status': 'error', 'message': 'Tipe wajib dipilih'}), 400
 
     # --- Validasi & konversi Unit Kerja ID ---
-    try:
-        unit_kerja_id = int(unit_kerja_id_raw)
-    except (TypeError, ValueError):
-        return jsonify({'status': 'error', 'message': 'Unit Kerja ID harus berupa angka'}), 400
+    unit_kerja_id = str(unit_kerja_id_raw).strip()
 
-    # Cegah duplikat primary key — kalau sudah ada, tolak (bukan overwrite diam-diam)
-    existing = MfUnitKerja.query.get(unit_kerja_id)
+    # Cegah duplikat ID Unit Kerja — TransacID adalah primary key legacy,
+    # sedangkan IDUnitKerja adalah identifier bisnis.
+    existing = (
+        MfUnitKerja.query
+        .filter(MfUnitKerja.UNIT_KERJA_ID == unit_kerja_id)
+        .first()
+    )
     if existing is not None:
         return jsonify({
             'status': 'error',
@@ -2142,7 +2144,8 @@ def save_unit_kerja():
         NAMA_UNIT_KERJA=nama_unit_kerja,
         URUT_REPORT=urut_report,
         IS_PUSAT=is_pusat,
-        UPDATE_IN_BY=session.get('nip', 'system'),
+        IS_AKTIF='Y',
+        UPDATE_BY=session.get('nip', 'system'),
         UPDATE_DATE=datetime.utcnow(),
     )
 
