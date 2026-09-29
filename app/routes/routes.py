@@ -32,6 +32,7 @@ from app.controllers.dashboard_1MasterFileController import (
     get_jam_finger_by_id, update_jam_finger, delete_jam_finger,
     get_jabatan_by_id, update_jabatan, delete_jabatan,
 )
+from app.controllers.dashboard_1InfografisController import dashboard_infografis
 from app.controllers.dashboard_1KepegawaianController import (
     kepegawaian_cari_data_pegawai,
     kepegawaian_cari_dinas_luar_umum,
@@ -309,6 +310,11 @@ def preview_pegawai():
 # ---- Dashboard 1 Routes ----
 # ============================
 # Dasboard :
+@main.route('/dashboard/infografis')
+@login_required
+def view_dashboard_infografis():
+    return dashboard_infografis()
+
 @main.route('/dashboard/pelanggaran')
 @login_required
 def view_dashboard_pelanggaran():
