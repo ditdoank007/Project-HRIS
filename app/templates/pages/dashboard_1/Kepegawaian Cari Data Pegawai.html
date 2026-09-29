@@ -79,7 +79,8 @@
         .pegawai-search-page .filter-section { padding:12px; }
     }
 </style>
-<script src="{{ url_for('static', filename='static_dashboard_1/assets/vendors/js/jquery.min.js') }}">{% endblock %}
+<script src="{{ url_for('static', filename='static_dashboard_1/assets/vendors/js/jquery.min.js') }}"></script>
+{% endblock %}
 
 {% block content %}
 <div class="nxl-content pegawai-search-page">
@@ -372,5 +373,4 @@ $(document).ready(function() {
         });
     }
 });
-</script>
 {% endblock %}
