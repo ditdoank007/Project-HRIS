@@ -410,7 +410,7 @@ def generate_final_pdf(kegiatan):
                 colWidths=[86 * mm, 86 * mm],
                 rowHeights=[62 * mm],
             ))
-        else:
+    else:
         story.append(Paragraph("Belum ada foto dokumentasi yang diunggah.", normal))
 
     story.append(PageBreak())
