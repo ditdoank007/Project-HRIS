@@ -20,13 +20,13 @@ from app.controllers.dashboard_1MasterFileController import (
     get_google_calendar_config, save_google_calendar_config,
     test_google_calendar_connection,
     create_kalender_tahun, export_jam_finger_excel, export_tunjangan_excel, get_jabatan_list, get_jam_finger_list, get_jam_kerja_list, get_joblist_list, get_kalender_list, save_kalender_changes,
-    get_pegawai_vip_list, get_potongan_list, get_potongan_detail, get_tunjangan_list, get_tunkin_class_detail, get_tunkin_class_list,
+    get_pegawai_vip_list, get_potongan_list, get_potongan_detail, get_tunjangan_list, get_unit_kerja_detail, get_tunkin_class_detail, get_tunkin_class_list,
     delete_user_account, get_unit_kerja_list, get_user_account_detail, get_user_account_list, master_butir_kegiatan, master_jabatan, master_jam_finger, master_jam_kerja,
     master_kalender, master_pegawai_vip, master_potongan, master_trt as master_file_trt, master_tunkin_class,
     master_unit_kerja, toggle_unit_kerja, master_user, master_uang_makan, cari_master_pegawai_vip, cari_master_jabatan, cari_master_jam_finger, cari_master_jam_kerja,
     cari_master_kalender, cari_master_potongan, cari_master_tunkin_class, cari_master_uang_makan, cari_master_unit_kerja,
     cari_user_account, create_kalender, save_jabatan, save_jam_kerja, save_joblist, save_potongan, save_tunkin_class, save_uang_makan, save_unit_kerja, save_user_account,
-    toggle_pegawai_vip, save_jam_finger, update_potongan, delete_potongan,
+    toggle_pegawai_vip, save_jam_finger, update_potongan, delete_potongan, update_unit_kerja,
     get_jam_kerja_by_id, update_jam_kerja, delete_jam_kerja,
     get_auth_config, save_auth_config,
     get_jam_finger_by_id, update_jam_finger, delete_jam_finger,
@@ -797,6 +797,16 @@ def view_master_unit_kerja():
 @login_required
 def api_unit_kerja_save():
     return save_unit_kerja()
+
+@main.route('/api/unit-kerja/detail/<path:unit_kerja_id>', methods=['GET'])
+@login_required
+def api_unit_kerja_detail(unit_kerja_id):
+    return get_unit_kerja_detail(unit_kerja_id)
+
+@main.route('/api/unit-kerja/update/<path:unit_kerja_id>', methods=['POST'])
+@login_required
+def api_unit_kerja_update(unit_kerja_id):
+    return update_unit_kerja(unit_kerja_id)
 
 @main.route('/api/unit-kerja/toggle', methods=['POST'])
 @login_required
