@@ -5,6 +5,7 @@ from config import Config
 from app.models.pegawaiModel import Pegawai
 from app.models.jabatanModel import MfJabatan
 from app.models.hrisAuthConfigModel import HrisAuthConfig
+from app.models.hakAksesFormModel import HakAksesForm
 
 
 BDIP_SSO_URL = Config.BDIP_SSO_URL
@@ -13,6 +14,41 @@ HRIS_SSO_CALLBACK = Config.HRIS_SSO_CALLBACK
 
 def _get_auth_config():
     return HrisAuthConfig.query.first()
+
+def _get_menu_access(nip=None, sysadmin=False):
+    """Return menu permissions needed by the home portal after AJAX login."""
+    if sysadmin:
+        return {
+            "SUMDA_KESAMAPTAAN": True,
+            "AGENDA_RAPAT": True,
+            "AGENDA_DISPOSISI": True,
+        }
+
+    nip = str(nip or "").strip()
+    if not nip:
+        return {
+            "SUMDA_KESAMAPTAAN": False,
+            "AGENDA_RAPAT": False,
+            "AGENDA_DISPOSISI": False,
+        }
+
+    rows = HakAksesForm.query.filter(
+        HakAksesForm.NIP == nip,
+        HakAksesForm.IS_AKSES == "Y",
+        HakAksesForm.MODUL == "HRIS",
+        HakAksesForm.FORM_ID.in_([
+            "SUMDA_KESAMAPTAAN",
+            "AGENDA_RAPAT",
+            "AGENDA_DISPOSISI",
+        ]),
+    ).all()
+    allowed = {row.FORM_ID for row in rows}
+    return {
+        "SUMDA_KESAMAPTAAN": "SUMDA_KESAMAPTAAN" in allowed,
+        "AGENDA_RAPAT": "AGENDA_RAPAT" in allowed,
+        "AGENDA_DISPOSISI": "AGENDA_DISPOSISI" in allowed,
+    }
+
 
 
 def login():
@@ -54,7 +90,8 @@ def login():
             "user": {
                 "username": username,
                 "nama": "SYSADMIN",
-                "sysadmin": True
+                "sysadmin": True,
+                "menu_access": _get_menu_access(sysadmin=True)
             }
         })
 
@@ -190,7 +227,8 @@ def login():
                     "nip": pegawai.NIP,
                     "nama": pegawai.NAMA,
                     "fingerId": sso_finger_id,
-                    "sysadmin": False
+                    "sysadmin": False,
+                    "menu_access": _get_menu_access(pegawai.NIP)
                 }
             })
 
@@ -262,7 +300,8 @@ def login():
             "username": pegawai.NIP,
             "nip": pegawai.NIP,
             "nama": pegawai.NAMA,
-            "sysadmin": False
+            "sysadmin": False,
+            "menu_access": _get_menu_access(pegawai.NIP)
         }
     })
 
