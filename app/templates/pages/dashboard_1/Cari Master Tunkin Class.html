@@ -1,102 +1,93 @@
-<!-- pages/dashboard_1/Cari Master Tunkin Class.html -->
 {% extends "layout/baseHRIS.html" %}
 
-{% block title %}- Tunkin/Class{% endblock %}
-
+{% block title %}- Cari Tunkin / Class{% endblock %}
 {% block header_kicker %}MASTER FILE{% endblock %}
-{% block header_title %}Cari Master Tunkin / Class{% endblock %}
+{% block header_title %}Cari Tunkin / Class{% endblock %}
 
 {% block content %}
-<div class="nxl-content">
-    <div class="page-header">
-        <div class="page-header-left d-flex align-items-center">
-            <div class="page-header-title">
-                <h5 class="m-b-10">Master File</h5>
-            </div>
-            <ul class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url_for('main.view_master_tunkin_class') }}">Master Tunkin Class</a>
-                </li>
-                <li class="breadcrumb-item">Cari Tunkin Class</li>
-            </ul>
+<div class="hris-page">
+    <div class="hris-page-header">
+        <div>
+            <h2 class="hris-page-title">Cari Master Tunkin / Class</h2>
+            <p class="hris-page-subtitle">Cari Class yang sudah tersedia untuk melihat atau memperbarui data tunjangannya.</p>
         </div>
+        <a href="{{ url_for('main.view_master_tunkin_class') }}" class="hris-btn hris-btn-secondary">
+            <i class="feather-arrow-left"></i>
+            <span>Kembali</span>
+        </a>
     </div>
 
-    <div class="main-content master-siaga">
-        <div class="container-fluid">
-            <div class="card mb-4 filter-card">
-                <div class="card-header-custom d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0"><i class="bi bi-search me-2"></i> Cari Transaksi</h6>
-                    <a href="{{ url_for('main.view_master_tunkin_class') }}" class="btn-close-custom">
-                        <i class="bi bi-x-lg"></i>
-                    </a>
+    <div class="hris-card">
+        <div class="hris-card-header">
+            <div>
+                <h3 class="hris-card-title">Data Master Tunkin / Class</h3>
+                <p class="hris-section-subtitle">Gunakan filter untuk menemukan Class yang akan dikelola.</p>
+            </div>
+            <button type="button" class="hris-btn hris-btn-secondary" id="btnRefreshTunkinClass">
+                <i class="feather-refresh-cw"></i>
+                <span>Refresh</span>
+            </button>
+        </div>
+
+        <div class="hris-card-body">
+            <div class="hris-form-stack">
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="filterPeriode">Periode</label>
+                    <input type="date" id="filterPeriode" class="hris-input">
                 </div>
 
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-12 mb-3 d-flex flex-column flex-md-row align-items-start align-items-md-center gap-2">
-                            <label class="filter-label-wide">Periode</label>
-                            <div class="input-group-custom w-mobile-100">
-                                <input type="text" id="filterPeriode" class="form-control-sm border" placeholder="YYYY-MM-DD">
-                                <span class="icon-append"><i class="bi bi-calendar3"></i></span>
-                            </div>
-                        </div>
-
-                        <div class="col-md-12 d-flex flex-column flex-md-row align-items-start align-items-md-center flex-wrap gap-2">
-                            <label class="filter-label-wide">Filter</label>
-
-                            <select id="filterField1" class="form-select-sm border custom-select w-mobile-100">
-                                <option value="">- Pilih Field -</option>
-                                <option value="Class">Class</option>
-                                <option value="Tunjangan">Tunjangan</option>
-                                <option value="No Surat">No Surat</option>
-                            </select>
-
-                            <div class="input-group-custom w-mobile-100">
-                                <input type="text" id="filterKeyword1" class="form-control-sm border">
-                                <span class="icon-append"><i class="bi bi-pencil-fill"></i></span>
-                            </div>
-
-                            <span class="mx-md-2 fw-bold text-dan">Dan</span>
-
-                            <select id="filterField2" class="form-select-sm border custom-select w-mobile-100">
-                                <option value="">- Pilih Field -</option>
-                                <option value="Class">Class</option>
-                                <option value="Tunjangan">Tunjangan</option>
-                                <option value="No Surat">No Surat</option>
-                            </select>
-
-                            <div class="input-group-custom w-mobile-100">
-                                <input type="text" id="filterKeyword2" class="form-control-sm border">
-                                <span class="icon-append"><i class="bi bi-pencil-fill"></i></span>
-                            </div>
-
-                            <button id="btnRefreshTunkinClass" class="btn-refresh-custom ms-md-auto mt-2 mt-md-0 w-mobile-100">
-                                <i class="bi bi-arrow-clockwise"></i> Refresh
-                            </button>
-                        </div>
-                        <p class="mb-1 fw-semibold text-dark" style="font-size: 12px;">
-                            ㅤ
-                        </p>
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-striped text-center align-middle">
-                                <thead style="background:#EB6831;">
-                                    <tr>
-                                        <th style="color:white; vertical-align: middle;">No</th>
-                                        <th style="color:white; vertical-align: middle;">Class</th>
-                                        <th style="color:white; vertical-align: middle;">Tunjangan</th>
-                                        <th style="color:white; vertical-align: middle;">Tanggal Mulai</th>
-                                        <th style="color:white; vertical-align: middle;">No Surat</th>
-                                        <th style="color:white; vertical-align: middle;">Updated</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tunkinClassTableBody">
-                                    <tr>
-                                        <td colspan="6" style="vertical-align: middle; padding: 20px;">No records to display.</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="filterField1">Filter 1</label>
+                    <div class="hris-form-inline">
+                        <select id="filterField1" class="hris-select">
+                            <option value="">- Pilih Field -</option>
+                            <option value="Class">Class</option>
+                            <option value="Tunjangan">Tunjangan</option>
+                            <option value="No Surat">No Surat</option>
+                        </select>
+                        <input type="text" id="filterKeyword1" class="hris-input" placeholder="Kata kunci...">
                     </div>
+                </div>
+
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="filterField2">Filter 2</label>
+                    <div class="hris-form-inline">
+                        <select id="filterField2" class="hris-select">
+                            <option value="">- Pilih Field -</option>
+                            <option value="Class">Class</option>
+                            <option value="Tunjangan">Tunjangan</option>
+                            <option value="No Surat">No Surat</option>
+                        </select>
+                        <input type="text" id="filterKeyword2" class="hris-input" placeholder="Kata kunci...">
+                    </div>
+                </div>
+            </div>
+
+            <div class="hris-section" style="margin-top: 18px;">
+                <div class="hris-section-header">
+                    <div>
+                        <h3 class="hris-section-title">Hasil Pencarian</h3>
+                        <p class="hris-section-subtitle">Class adalah master tetap dan hanya dapat diperbarui.</p>
+                    </div>
+                </div>
+
+                <div class="hris-table-wrap">
+                    <table class="hris-table-modern">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Class</th>
+                                <th>Tunjangan</th>
+                                <th>Tanggal Mulai</th>
+                                <th>No Surat</th>
+                                <th>Updated</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tunkinClassTableBody">
+                            <tr><td colspan="7" class="hris-empty">Memuat data...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -105,64 +96,94 @@
 {% endblock %}
 
 {% block script %}
+document.addEventListener('DOMContentLoaded', function () {
+    const tbody = document.getElementById('tunkinClassTableBody');
 
-function loadTunkinClassList() {
-    const periode  = document.getElementById('filterPeriode').value.trim();
-    const field1   = document.getElementById('filterField1').value;
-    const keyword1 = document.getElementById('filterKeyword1').value.trim();
-    const field2   = document.getElementById('filterField2').value;
-    const keyword2 = document.getElementById('filterKeyword2').value.trim();
+    function buildQueryParams() {
+        const params = new URLSearchParams();
 
-    const params = new URLSearchParams();
-    if (periode) params.append('periode', periode);
-    if (field1 && keyword1) {
-        params.append('field1', field1);
-        params.append('keyword1', keyword1);
+        const periode = document.getElementById('filterPeriode').value;
+        const field1 = document.getElementById('filterField1').value;
+        const keyword1 = document.getElementById('filterKeyword1').value.trim();
+        const field2 = document.getElementById('filterField2').value;
+        const keyword2 = document.getElementById('filterKeyword2').value.trim();
+
+        if (periode) params.set('periode', periode);
+        if (field1 && keyword1) {
+            params.set('field1', field1);
+            params.set('keyword1', keyword1);
+        }
+        if (field2 && keyword2) {
+            params.set('field2', field2);
+            params.set('keyword2', keyword2);
+        }
+
+        return params;
     }
-    if (field2 && keyword2) {
-        params.append('field2', field2);
-        params.append('keyword2', keyword2);
-    }
 
-    fetch("{{ url_for('main.api_tunkin_class_list') }}?" + params.toString())
-        .then(res => res.json())
-        .then(data => {
-            const tbody = document.getElementById('tunkinClassTableBody');
-            tbody.innerHTML = '';
+    async function loadTunkinClassList() {
+        tbody.innerHTML = '<tr><td colspan="7" class="hris-empty">Memuat data...</td></tr>';
 
-            if (data.status !== 'success') {
-                tbody.innerHTML = `<tr><td colspan="6" style="padding:20px;">${data.message || 'Terjadi kesalahan'}</td></tr>`;
+        try {
+            const res = await fetch('{{ url_for("main.api_tunkin_class_list") }}?' + buildQueryParams().toString());
+            const json = await res.json();
+
+            if (!res.ok || json.status !== 'success') {
+                tbody.innerHTML = '<tr><td colspan="7" class="hris-empty">' +
+                    (json.message || 'Gagal memuat data.') + '</td></tr>';
                 return;
             }
 
-            if (data.data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="padding:20px;">No records to display.</td></tr>';
+            if (!json.data || json.data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="hris-empty">No records to display.</td></tr>';
                 return;
             }
 
-            data.data.forEach(row => {
-                tbody.insertAdjacentHTML('beforeend', `
-                    <tr>
-                        <td>${row.no}</td>
-                        <td>${row.class_id}</td>
-                        <td>${row.tunjangan}</td>
-                        <td>${row.tgl_mulai}</td>
-                        <td>${row.dokreff}</td>
-                        <td>${row.updated}</td>
-                    </tr>
-                `);
-            });
-        })
-        .catch(err => {
+            tbody.innerHTML = json.data.map(row => `
+                <tr>
+                    <td>${row.no}</td>
+                    <td>${row.class_id}</td>
+                    <td>${row.tunjangan}</td>
+                    <td>${row.tgl_mulai}</td>
+                    <td>${row.dokreff}</td>
+                    <td>${row.updated}</td>
+                    <td>
+                        <button type="button"
+                                class="hris-btn hris-btn-secondary hris-btn-icon btn-edit-tunkin"
+                                data-id="${row.class_id}"
+                                title="Edit">
+                            <i class="feather-edit-2"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        } catch (err) {
             console.error(err);
-            const tbody = document.getElementById('tunkinClassTableBody');
-            tbody.innerHTML = '<tr><td colspan="6" style="padding:20px;">Gagal memuat data.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="hris-empty">Gagal memuat data.</td></tr>';
+        }
+    }
+
+    tbody.addEventListener('click', function (e) {
+        const button = e.target.closest('.btn-edit-tunkin');
+        if (!button) return;
+
+        window.location.href =
+            '{{ url_for("main.view_master_tunkin_class") }}?id=' +
+            encodeURIComponent(button.dataset.id);
+    });
+
+    document.getElementById('btnRefreshTunkinClass').addEventListener('click', loadTunkinClassList);
+
+    ['filterPeriode', 'filterField1', 'filterField2'].forEach(id => {
+        document.getElementById(id).addEventListener('change', loadTunkinClassList);
+    });
+
+    ['filterKeyword1', 'filterKeyword2'].forEach(id => {
+        document.getElementById(id).addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') loadTunkinClassList();
         });
-}
+    });
 
-document.getElementById('btnRefreshTunkinClass').addEventListener('click', loadTunkinClassList);
-
-// Load semua data begitu halaman dibuka (sama seperti klik Refresh dengan filter kosong)
-document.addEventListener('DOMContentLoaded', loadTunkinClassList);
-
+    loadTunkinClassList();
+});
 {% endblock %}
