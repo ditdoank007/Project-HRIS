@@ -1776,6 +1776,114 @@ def save_potongan():
         'data': potongan.to_dict(),
     })
 
+def get_potongan_detail(potongan_id):
+    """Ambil detail satu Master Potongan untuk mode edit."""
+    row = MfPot.query.get(potongan_id)
+
+    if row is None:
+        return jsonify({
+            'status': 'error',
+            'message': 'Data potongan tidak ditemukan.'
+        }), 404
+
+    return jsonify({
+        'status': 'success',
+        'data': row.to_dict()
+    })
+
+
+def update_potongan(potongan_id):
+    """Update satu Master Potongan yang sudah ada."""
+    row = MfPot.query.get(potongan_id)
+
+    if row is None:
+        return jsonify({
+            'status': 'error',
+            'message': 'Data potongan tidak ditemukan.'
+        }), 404
+
+    payload = request.get_json(silent=True) or {}
+
+    kategori = str(payload.get('kategori') or '').strip()
+    tingkat = str(payload.get('tingkat') or '').strip()
+    diskripsi = str(payload.get('diskripsi') or '').strip()
+    persen_pot_raw = payload.get('persen_pot')
+    is_pendukung_raw = payload.get('is_pendukung')
+    tgl_mulai_raw = str(payload.get('tgl_mulai') or '').strip()
+    range_awal_raw = payload.get('range_awal')
+    range_akhir_raw = payload.get('range_akhir')
+
+    if not kategori:
+        return jsonify({'status': 'error', 'message': 'Kategori wajib dipilih'}), 400
+    if not diskripsi:
+        return jsonify({'status': 'error', 'message': 'Diskripsi wajib diisi'}), 400
+    if is_pendukung_raw is None:
+        return jsonify({'status': 'error', 'message': 'Bukti Pendukung wajib dipilih'}), 400
+
+    try:
+        persen_pot = None if persen_pot_raw in (None, '') else float(persen_pot_raw)
+        if persen_pot is not None and not 0 <= persen_pot <= 100:
+            raise ValueError
+    except (TypeError, ValueError):
+        return jsonify({'status': 'error', 'message': 'Potongan (%) harus berupa angka 0-100'}), 400
+
+    try:
+        range_awal = None if range_awal_raw in (None, '') else float(range_awal_raw)
+        range_akhir = None if range_akhir_raw in (None, '') else float(range_akhir_raw)
+    except (TypeError, ValueError):
+        return jsonify({'status': 'error', 'message': 'Range harus berupa angka'}), 400
+
+    if range_awal is not None and range_akhir is not None and range_awal > range_akhir:
+        return jsonify({'status': 'error', 'message': 'Range awal tidak boleh lebih besar dari range akhir'}), 400
+
+    tgl_mulai = row.TGL_MULAI
+    if tgl_mulai_raw:
+        try:
+            tgl_mulai = datetime.strptime(tgl_mulai_raw, '%Y-%m-%d')
+        except ValueError:
+            return jsonify({'status': 'error', 'message': 'Format tanggal harus YYYY-MM-DD'}), 400
+    else:
+        tgl_mulai = None
+
+    row.KATEGORI = kategori
+    row.TINGKAT = tingkat or None
+    row.NAMA_POT = diskripsi
+    row.PERSEN_POT = persen_pot
+    row.IS_PENDUKUNG = 'Y' if is_pendukung_raw else 'N'
+    row.TGL_MULAI = tgl_mulai
+    row.RANGE_AWAL = range_awal
+    row.RANGE_AKHIR = range_akhir
+    row.UPDATE_BY = session.get('nip', 'system')
+    row.UPDATE_DATE = datetime.utcnow()
+
+    db.session.commit()
+
+    return jsonify({
+        'status': 'success',
+        'message': 'Data potongan berhasil diperbarui.',
+        'data': row.to_dict()
+    })
+
+
+def delete_potongan(potongan_id):
+    """Hapus satu Master Potongan."""
+    row = MfPot.query.get(potongan_id)
+
+    if row is None:
+        return jsonify({
+            'status': 'error',
+            'message': 'Data potongan tidak ditemukan.'
+        }), 404
+
+    db.session.delete(row)
+    db.session.commit()
+
+    return jsonify({
+        'status': 'success',
+        'message': 'Data potongan berhasil dihapus.'
+    })
+
+
 def get_potongan_list():
     """
     Ambil data Master Potongan untuk tabel Cari Master Potongan.
