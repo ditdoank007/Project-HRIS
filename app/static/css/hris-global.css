@@ -1251,3 +1251,13 @@
 .hris-filter-field-fluid {
     width: 100%;
 }
+
+/* ============================================================
+   AUTHENTICATED MENU VISIBILITY
+   Dipakai untuk menu yang hak aksesnya diperbarui setelah
+   AJAX login tanpa membutuhkan hard refresh.
+   ============================================================ */
+
+.hris-access-hidden {
+    display: none !important;
+}
