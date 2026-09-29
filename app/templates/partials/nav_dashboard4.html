@@ -1,0 +1,45 @@
+<!-- partials/nav_dashboard4.html -->
+<nav class="nxl-navigation">
+    <div class="navbar-wrapper">
+        <div class="navbar-content">
+            <ul class="nxl-navbar">
+                <div class="custom-nav-header">
+                    <div class="header-container">
+                        <img src="{{ url_for('static', filename='static_dashboard_1/assets/images/logo-full.png') }}" alt="" width="40" height="auto">
+                        <div class="nxl-navigation-toggle toggle-btn-action"></div>
+                        <span class="nav-text-label nxl-mtext">HRIS Kansar</span>
+                    </div>
+                    <div class="header-container">
+                        <div class="nxl-navigation-toggle toggle-btn-action">
+                            <div id="menu-mini-button" class="btn-mini-style" style="cursor: pointer;"><i class="feather-menu"></i></div>
+                            <div id="menu-expend-button" class="btn-expand-style" style="display: none;"><i class="feather-menu"></i></div>
+                        </div>
+                        <span class="nav-text-label nxl-mtext">Navigation</span>
+                    </div>
+                    <div class="nav-separator"></div>
+                </div>
+                <li class="nxl-item nxl-caption"><label>SUMDA</label></li>
+                <li class="nxl-item nxl-hasmenu">
+                    <a href="javascript:void(0);" class="nxl-link">
+                        <span class="nxl-micon"><i class="bi bi-people-fill"></i></span>
+                        <span class="nxl-mtext">SUMDA</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                    </a>
+                    <ul class="nxl-submenu">
+                        <li class="nxl-item">
+                            <a class="nxl-link" href="{{ url_for('main.view_kesamaptaan') }}">
+                                <span class="nxl-micon"><i class="bi bi-activity"></i></span>
+                                <span class="nxl-mtext">Kesamaptaan</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="nxl-item nxl-hasmenu">
+                    <a href="{{ url_for('main.index') }}" class="nxl-link">
+                        <span class="nxl-micon"><i class="bi bi-house-fill"></i></span>
+                        <span class="nxl-mtext">Portal</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
