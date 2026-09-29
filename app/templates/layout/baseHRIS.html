@@ -19,73 +19,140 @@
 </head>
 
 <body class="hris-modern hris-app-shell">
-    <header class="hris-topbar">
-        <button type="button" class="hris-menu-toggle" id="hrisMenuToggle" aria-label="Buka menu">
-            <span></span><span></span><span></span>
-        </button>
+    {% include 'partials/nav_hris.html' %}
 
-        <a href="{{ url_for('main.index') }}" class="hris-brand">
-            <img src="{{ url_for('static', filename='static_dashboard_1/assets/images/logo-full.png') }}"
-                 alt="BHRIS">
-            <span>
-                <strong>HRIS Kansar</strong>
-                <small>Basarnas Surabaya</small>
-            </span>
-        </a>
-
-        <div class="hris-user">
-            <div class="hris-user-meta">
-                <strong>{{ session.get('nama', 'Guest') }}</strong>
-                <small>{{ session.get('jabatan', '-') }}</small>
+    <div class="hris-app-main">
+        <header class="hris-app-topbar">
+            <div class="hris-app-topbar-left">
+                <button type="button" class="hris-mobile-menu" id="hrisMobileMenu"
+                        aria-label="Buka menu">
+                    <i class="feather-menu"></i>
+                </button>
+                <div class="hris-page-heading">
+                    <span class="hris-page-kicker">{% block header_kicker %}HRIS REBORN{% endblock %}</span>
+                    <h1>{% block header_title %}Dashboard{% endblock %}</h1>
+                </div>
             </div>
-            <button type="button" class="hris-btn hris-btn-secondary hris-signout"
-                    id="hrisSignOutBtn">Sign Out</button>
-        </div>
-    </header>
 
-    <div class="hris-shell">
-        {% include 'partials/nav_dashboard1.html' %}
-        <main class="hris-main" id="hrisMain">
+            <div class="hris-account">
+                <button type="button" class="hris-account-toggle" id="hrisAccountToggle"
+                        aria-expanded="false" aria-label="Buka menu akun">
+                    <span class="hris-account-avatar">
+                        {{ session.get('nama', 'G')[:1]|upper }}
+                    </span>
+                    <span class="hris-account-name">{{ session.get('nama', 'Guest') }}</span>
+                    <i class="feather-chevron-down hris-account-chevron"></i>
+                </button>
+
+                <div class="hris-account-dropdown" id="hrisAccountDropdown">
+                    <div class="hris-account-info">
+                        <strong>{{ session.get('nama', 'Guest') }}</strong>
+                        <span>{{ session.get('nip', '') }}</span>
+                    </div>
+                    <button type="button" class="hris-account-logout" id="hrisSignOutBtn">
+                        <i class="feather-log-out"></i>
+                        <span>Logout</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="hris-main-v2" id="hrisMain">
             {% block content %}{% endblock %}
         </main>
     </div>
 
-    <div class="hris-sidebar-backdrop" id="hrisSidebarBackdrop"></div>
+    <div class="hris-mobile-overlay" id="hrisMobileOverlay"></div>
 
     <script>
         (function () {
-            const sidebar = document.querySelector('.nxl-navigation');
-            const toggle = document.getElementById('hrisMenuToggle');
-            const backdrop = document.getElementById('hrisSidebarBackdrop');
+            const body = document.body;
+            const sidebar = document.getElementById('hrisSidebar');
+            const sidebarToggle = document.getElementById('hrisSidebarToggle');
+            const mobileMenu = document.getElementById('hrisMobileMenu');
+            const mobileOverlay = document.getElementById('hrisMobileOverlay');
+            const accountToggle = document.getElementById('hrisAccountToggle');
+            const accountDropdown = document.getElementById('hrisAccountDropdown');
             const signOut = document.getElementById('hrisSignOutBtn');
 
-            function setSidebar(open) {
-                document.body.classList.toggle('hris-sidebar-open', open);
+            function setMini(mini) {
+                body.classList.toggle('hris-sidebar-mini', mini);
+                localStorage.setItem('hris-sidebar-mini', mini ? '1' : '0');
             }
 
-            toggle?.addEventListener('click', function () {
-                setSidebar(!document.body.classList.contains('hris-sidebar-open'));
-            });
-            backdrop?.addEventListener('click', function () {
-                setSidebar(false);
+            function setMobile(open) {
+                body.classList.toggle('hris-mobile-open', open);
+            }
+
+            if (localStorage.getItem('hris-sidebar-mini') === '1') {
+                setMini(true);
+            }
+
+            sidebarToggle?.addEventListener('click', function () {
+                setMini(!body.classList.contains('hris-sidebar-mini'));
             });
 
-            // Persist menu focus from the current URL after every page load.\n            // This keeps the active submenu open instead of collapsing after navigation.\n            (function restoreActiveMenu() {\n                const currentPath = window.location.pathname.replace(/\\/$/, '') || '/';\n\n                document.querySelectorAll('.nxl-submenu .nxl-link').forEach(function (link) {\n                    const href = link.getAttribute('href') || '';\n                    if (!href || href === 'javascript:void(0);' || href === '#') return;\n\n                    try {\n                        const linkPath = new URL(href, window.location.origin).pathname.replace(/\\/$/, '') || '/';\n                        if (linkPath === currentPath) {\n                            link.classList.add('hris-active');\n                            const parent = link.closest('.nxl-hasmenu');\n                            parent?.classList.add('hris-open');\n                        }\n                    } catch (err) {\n                        // Ignore malformed legacy menu links.\n                    }\n                });\n\n                document.querySelectorAll('.nxl-hasmenu > .nxl-link').forEach(function (link) {\n                    const href = link.getAttribute('href') || '';\n                    if (!href || href === 'javascript:void(0);' || href === '#') return;\n\n                    try {\n                        const linkPath = new URL(href, window.location.origin).pathname.replace(/\\/$/, '') || '/';\n                        if (linkPath === currentPath) {\n                            link.classList.add('hris-active');\n                        }\n                    } catch (err) {\n                        // Ignore malformed legacy menu links.\n                    }\n                });\n            })();\n\n            document.querySelectorAll('.nxl-hasmenu > .nxl-link').forEach(function (link) {
+            mobileMenu?.addEventListener('click', function () {
+                setMobile(true);
+            });
+
+            mobileOverlay?.addEventListener('click', function () {
+                setMobile(false);
+            });
+
+            document.querySelectorAll('.hris-nav-group > .hris-nav-link').forEach(function (link) {
                 link.addEventListener('click', function (event) {
                     const href = link.getAttribute('href') || '';
-                    if (href && href !== 'javascript:void(0);') {
-                        return;
-                    }
+                    if (href && href !== 'javascript:void(0);') return;
                     event.preventDefault();
-                    const item = link.parentElement;
-                    item.classList.toggle('hris-open');
+                    const group = link.closest('.hris-nav-group');
+                    group?.classList.toggle('hris-open');
                 });
             });
 
-            document.querySelectorAll('.nxl-submenu .nxl-link').forEach(function (link) {
+            // Restore the current menu and keep its parent open after navigation.
+            const currentPath = window.location.pathname.replace(/\/$/, '') || '/';
+            document.querySelectorAll('.hris-submenu .hris-nav-link').forEach(function (link) {
+                const href = link.getAttribute('href') || '';
+                if (!href || href === 'javascript:void(0);' || href === '#') return;
+                try {
+                    const linkPath = new URL(href, window.location.origin).pathname.replace(/\/$/, '') || '/';
+                    if (linkPath === currentPath) {
+                        link.classList.add('hris-active');
+                        link.closest('.hris-nav-group')?.classList.add('hris-open');
+                    }
+                } catch (err) {}
+            });
+
+            document.querySelectorAll('.hris-nav-group > .hris-nav-link').forEach(function (link) {
+                const href = link.getAttribute('href') || '';
+                if (!href || href === 'javascript:void(0);' || href === '#') return;
+                try {
+                    const linkPath = new URL(href, window.location.origin).pathname.replace(/\/$/, '') || '/';
+                    if (linkPath === currentPath) {
+                        link.classList.add('hris-active');
+                    }
+                } catch (err) {}
+            });
+
+            document.querySelectorAll('.hris-submenu .hris-nav-link').forEach(function (link) {
                 link.addEventListener('click', function () {
-                    setSidebar(false);
+                    setMobile(false);
                 });
+            });
+
+            accountToggle?.addEventListener('click', function (event) {
+                event.stopPropagation();
+                const open = !accountDropdown.classList.contains('is-open');
+                accountDropdown.classList.toggle('is-open', open);
+                accountToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+            });
+
+            document.addEventListener('click', function (event) {
+                if (!event.target.closest('.hris-account')) {
+                    accountDropdown?.classList.remove('is-open');
+                    accountToggle?.setAttribute('aria-expanded', 'false');
+                }
             });
 
             signOut?.addEventListener('click', async function () {
