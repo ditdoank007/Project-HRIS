@@ -23,6 +23,8 @@ from app.models.pegawaiModel import Pegawai
 from app.models.kalenderModel import MfKalender
 from app.models.agendaRapatAttendanceModel import AgendaRapatAttendance
 from app.models.calendarEventModel import CalendarEvent
+from app.models.kesamaptaanKegiatanModel import KesamaptaanKegiatan
+from app.models.kesamaptaanKehadiranModel import KesamaptaanKehadiran
 
 from app.utils.absensiNormalisasiHelper import (
     get_label_dinas_luar,
@@ -351,6 +353,47 @@ def build_personal_calendar_events(
                 attendance.SCANNED_DATE.isoformat()
                 if attendance else None
             ),
+        })
+
+    # ============================================================
+    # 7. KESAMAPTAAN
+    #
+    # Hanya pegawai yang benar-benar tercatat HADIR melalui QR
+    # yang mendapatkan event setelah kegiatan SELESAI.
+    # ============================================================
+
+    kesamaptaan_rows = (
+        db.session.query(KesamaptaanKegiatan, KesamaptaanKehadiran)
+        .join(
+            KesamaptaanKehadiran,
+            KesamaptaanKehadiran.KEGIATAN_ID == KesamaptaanKegiatan.KEGIATAN_ID,
+        )
+        .filter(
+            KesamaptaanKehadiran.NIP == nip,
+            KesamaptaanKehadiran.STATUS == "HADIR",
+            KesamaptaanKegiatan.STATUS == "SELESAI",
+            KesamaptaanKegiatan.TANGGAL >= tanggal_awal,
+            KesamaptaanKegiatan.TANGGAL < tanggal_akhir,
+        )
+        .order_by(KesamaptaanKegiatan.TANGGAL.asc(), KesamaptaanKegiatan.JAM.asc())
+        .all()
+    )
+
+    for kegiatan, attendance in kesamaptaan_rows:
+        events.append({
+            "id": f"KESAMAPTAAN-{kegiatan.KEGIATAN_ID}-{nip}",
+            "title": kegiatan.JUDUL,
+            "type": "KESAMAPTAAN",
+            "source": "KESAMAPTAAN",
+            "start": f"{kegiatan.TANGGAL.isoformat()}T{kegiatan.JAM.strftime('%H:%M')}:00",
+            "end": f"{kegiatan.TANGGAL.isoformat()}T{kegiatan.JAM.strftime('%H:%M')}:00",
+            "all_day": False,
+            "description": "Kesamaptaan Pegawai Kantor SAR Surabaya",
+            "location": "Kantor SAR Surabaya",
+            "event_id": kegiatan.KEGIATAN_ID,
+            "status": kegiatan.STATUS,
+            "attendance_at": attendance.SCANNED_DATE.isoformat(),
+            "pdf_available": bool(kegiatan.PDF_PATH),
         })
 
     # ============================================================
