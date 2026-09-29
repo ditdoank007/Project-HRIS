@@ -1,0 +1,97 @@
+<!-- layout/baseHRIS.html -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description"
+          content="BHRIS — Portal Internal Basarnas Surabaya untuk administrasi, kepegawaian, operasional, dan layanan internal pegawai.">
+    <title>BHRIS {% block title %}{% endblock %}</title>
+    <link rel="shortcut icon" type="image/x-icon"
+          href="{{ url_for('static', filename='static_dashboard_1/assets/images/logo-full.png') }}">
+    <link rel="stylesheet" type="text/css"
+          href="{{ url_for('static', filename='css/hris-ui.css') }}">
+    {% block styles %}{% endblock %}
+</head>
+
+<body class="hris-modern">
+    <header class="hris-topbar">
+        <button type="button" class="hris-menu-toggle" id="hrisMenuToggle" aria-label="Buka menu">
+            <span></span><span></span><span></span>
+        </button>
+
+        <a href="{{ url_for('main.index') }}" class="hris-brand">
+            <img src="{{ url_for('static', filename='static_dashboard_1/assets/images/logo-full.png') }}"
+                 alt="BHRIS">
+            <span>
+                <strong>HRIS Kansar</strong>
+                <small>Basarnas Surabaya</small>
+            </span>
+        </a>
+
+        <div class="hris-user">
+            <div class="hris-user-meta">
+                <strong>{{ session.get('nama', 'Guest') }}</strong>
+                <small>{{ session.get('jabatan', '-') }}</small>
+            </div>
+            <button type="button" class="hris-btn hris-btn-secondary hris-signout"
+                    id="hrisSignOutBtn">Sign Out</button>
+        </div>
+    </header>
+
+    <div class="hris-shell">
+        {% include 'partials/nav_dashboard1.html' %}
+        <main class="hris-main" id="hrisMain">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <div class="hris-sidebar-backdrop" id="hrisSidebarBackdrop"></div>
+
+    <script>
+        (function () {
+            const sidebar = document.querySelector('.nxl-navigation');
+            const toggle = document.getElementById('hrisMenuToggle');
+            const backdrop = document.getElementById('hrisSidebarBackdrop');
+            const signOut = document.getElementById('hrisSignOutBtn');
+
+            function setSidebar(open) {
+                document.body.classList.toggle('hris-sidebar-open', open);
+            }
+
+            toggle?.addEventListener('click', function () {
+                setSidebar(!document.body.classList.contains('hris-sidebar-open'));
+            });
+            backdrop?.addEventListener('click', function () {
+                setSidebar(false);
+            });
+
+            document.querySelectorAll('.nxl-hasmenu > .nxl-link').forEach(function (link) {
+                link.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    const item = link.parentElement;
+                    item.classList.toggle('hris-open');
+                });
+            });
+
+            document.querySelectorAll('.nxl-submenu .nxl-link').forEach(function (link) {
+                link.addEventListener('click', function () {
+                    setSidebar(false);
+                });
+            });
+
+            signOut?.addEventListener('click', async function () {
+                try {
+                    await fetch('/api/logout', { method: 'POST' });
+                } catch (err) {
+                    console.error('Gagal logout:', err);
+                } finally {
+                    window.location.href = "{{ url_for('main.index') }}";
+                }
+            });
+        })();
+    </script>
+
+    {% block script %}{% endblock %}
+</body>
+</html>
