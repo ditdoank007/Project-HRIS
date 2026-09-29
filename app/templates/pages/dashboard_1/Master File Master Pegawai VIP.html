@@ -1,115 +1,78 @@
-<!-- pages/dashboard_1/Master File Master Pegawai VIP.html -->
 {% extends "layout/baseHRIS.html" %}
 
 {% block title %}- VIP List{% endblock %}
-
 {% block header_kicker %}MASTER FILE{% endblock %}
 {% block header_title %}Master Pegawai VIP{% endblock %}
 
 {% block content %}
-<div class="hris-page" style="display: block !important; height: auto !important;">
-    <div class="page-header">
-        <div class="page-header-left d-flex align-items-center">
-            <div class="page-header-title">
-                <h5 class="m-b-10">Master File</h5>
-            </div>
-            <ul class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url_for('main.view_master_pegawai_vip') }}">VIP List</a></li>
-            </ul>
+<div class="hris-page">
+    <div class="hris-page-header">
+        <div>
+            <h2 class="hris-page-title">Master Pegawai VIP</h2>
+            <p class="hris-page-subtitle">Kelola status VIP pegawai HRIS.</p>
         </div>
+        <a href="{{ url_for('main.view_cari_master_pegawai_vip') }}" class="hris-btn hris-btn-secondary">
+            <i class="feather-search"></i>
+            <span>Cari VIP</span>
+        </a>
     </div>
 
-    <div class="main-content master-siaga">
-        <div class="container-fluid">
-            <div class="hris-card">
-                <div class="hris-card-header"
-                    style="border-radius: 10px;">
-                    <h6 class="mb-0">
-                        <i class="ti ti-vip me-2"></i> Pegawai VIP
-                    </h6>
+    <div class="hris-card">
+        <div class="hris-card-header">
+            <div>
+                <h3 class="hris-card-title">Pegawai VIP</h3>
+                <p class="hris-section-subtitle">Pilih pegawai untuk mengubah status VIP.</p>
+            </div>
+            <button type="button" class="hris-btn hris-btn-secondary" id="btnRefreshVip">
+                <i class="feather-refresh-cw"></i>
+                <span>Refresh</span>
+            </button>
+        </div>
+
+        <div class="hris-card-body">
+            <div class="hris-filter">
+                <div class="hris-filter-field">
+                    <label class="hris-filter-label" for="unitKerjaSelect">Unit Kerja</label>
+                    <select class="hris-select" id="unitKerjaSelect">
+                        <option value="">Semua Unit Kerja</option>
+                        {% for unit in unit_kerja_list %}
+                        <option value="{{ unit.UNIT_KERJA_ID }}">{{ unit.NAMA_UNIT_KERJA }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
-
-                <div class="hris-card-body">
-                    <div class="hris-form-stack mb-3">
-                        <div class="hris-form-control d-flex flex-column flex-md-row align-items-start align-items-md-center flex-wrap gap-2">
-                            <label class="filter-label-wide fw-bold">Unit kerja</label>
-
-                            <div class="flex-grow-1" style="max-width: 70%;">
-                                <select class="hris-select w-100" id="unitKerjaSelect">
-                                    <option value="">Pilih Kategori</option>
-                                    {% for unit in unit_kerja_list %}
-                                    <option value="{{ unit.UNIT_KERJA_ID }}">{{ unit.NAMA_UNIT_KERJA }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="hris-form-control d-flex flex-column flex-md-row align-items-start align-items-md-center flex-wrap gap-2">
-                            <label class="filter-label-wide fw-bold">Filter</label>
-
-                            <select class="hris-select w-mobile-100" id="filterField1">
-                                <option value="">- Pilih Field -</option>
-                                <option>Gol</option>
-                                <option>Jabatan</option>
-                                <option>Jenis Kelamin</option>
-                                <option>Nama Peg</option>
-                                <option>NIP</option>
-                                <option>No Finger</option>
-                                <option>Unit Kerja</option>
-                            </select>
-
-                            <div class="hris-input-group w-mobile-100">
-                                <input type="text" class="hris-input" id="filterKeyword1">
-                                <span class="hris-input-addon"><i class="bi bi-pencil-fill"></i></span>
-                            </div>
-
-                            <span class="mx-md-2 fw-bold text-dan">Dan</span>
-
-                            <select class="hris-select w-mobile-100" id="filterField2">
-                                <option value="">- Pilih Field -</option>
-                                <option>Gol</option>
-                                <option>Jabatan</option>
-                                <option>Jenis Kelamin</option>
-                                <option>Nama Peg</option>
-                                <option>NIP</option>
-                                <option>No Finger</option>
-                                <option>Unit Kerja</option>
-                            </select>
-
-                            <div class="hris-input-group w-mobile-100">
-                                <input type="text" class="hris-input" id="filterKeyword2">
-                                <span class="hris-input-addon"><i class="bi bi-pencil-fill"></i></span>
-                            </div>
-
-                            <button class="hris-btn hris-btn-secondary ms-md-auto mt-2 mt-md-0 w-mobile-100">
-                                <i class="bi bi-arrow-clockwise"></i> Refresh
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="hris-table-wrap mt-3">
-                        <table class="hris-table-modern">
-                            <thead>
-                                <tr>
-                                    <th>No</th>
-                                    <th>VIP</th>
-                                    <th>NIP</th>
-                                    <th>Nama</th>
-                                    <th>Jabatan</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td colspan="5" style="vertical-align: middle; padding: 20px;">No records to
-                                        display.</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div style="height: 120px;"></div>
+                <div class="hris-filter-field hris-filter-field-sm">
+                    <label class="hris-filter-label" for="filterField1">Field 1</label>
+                    <select class="hris-select" id="filterField1">
+                        <option value="">- Pilih Field -</option>
+                        <option>Gol</option><option>Jabatan</option><option>Jenis Kelamin</option>
+                        <option>Nama Peg</option><option>NIP</option><option>No Finger</option><option>Unit Kerja</option>
+                    </select>
                 </div>
+                <div class="hris-filter-field">
+                    <label class="hris-filter-label" for="filterKeyword1">Kata Kunci</label>
+                    <input type="text" class="hris-input" id="filterKeyword1" placeholder="Ketik kata kunci...">
+                </div>
+                <div class="hris-filter-field hris-filter-field-sm">
+                    <label class="hris-filter-label" for="filterField2">Field 2</label>
+                    <select class="hris-select" id="filterField2">
+                        <option value="">- Pilih Field -</option>
+                        <option>Gol</option><option>Jabatan</option><option>Jenis Kelamin</option>
+                        <option>Nama Peg</option><option>NIP</option><option>No Finger</option><option>Unit Kerja</option>
+                    </select>
+                </div>
+                <div class="hris-filter-field">
+                    <label class="hris-filter-label" for="filterKeyword2">Kata Kunci</label>
+                    <input type="text" class="hris-input" id="filterKeyword2" placeholder="Ketik kata kunci...">
+                </div>
+            </div>
+
+            <div class="hris-table-wrap">
+                <table class="hris-table-modern">
+                    <thead><tr><th>No</th><th>VIP</th><th>NIP</th><th>Nama</th><th>Jabatan</th></tr></thead>
+                    <tbody id="vipTableBody">
+                        <tr><td colspan="5" class="hris-empty">Memuat data...</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -117,86 +80,65 @@
 {% endblock %}
 
 {% block script %}
-<script>
 document.addEventListener('DOMContentLoaded', function () {
-    const tbody = document.querySelector('.master-siaga table tbody');
-    const refreshBtn = document.querySelector('.btn-refresh-custom');
-
-    // Elemen filter — pastikan id ini sudah ada di HTML
+    const tbody = document.getElementById('vipTableBody');
+    const refreshBtn = document.getElementById('btnRefreshVip');
     const unitKerjaSelect = document.getElementById('unitKerjaSelect');
     const filterField1 = document.getElementById('filterField1');
     const filterKeyword1 = document.getElementById('filterKeyword1');
     const filterField2 = document.getElementById('filterField2');
     const filterKeyword2 = document.getElementById('filterKeyword2');
 
-    // Susun query string dari nilai filter saat ini.
-    // Semua filter opsional — kalau kosong, tidak dikirim sama sekali.
     function buildQueryParams() {
         const params = new URLSearchParams();
-
-        if (unitKerjaSelect.value) {
-            params.set('unit_kerja_id', unitKerjaSelect.value);
-        }
-
-        // Filter 1 hanya dikirim kalau field DAN keyword-nya sama-sama diisi
+        if (unitKerjaSelect.value) params.set('unit_kerja_id', unitKerjaSelect.value);
         if (filterField1.value && filterKeyword1.value.trim()) {
             params.set('field1', filterField1.value);
             params.set('keyword1', filterKeyword1.value.trim());
         }
-
         if (filterField2.value && filterKeyword2.value.trim()) {
             params.set('field2', filterField2.value);
             params.set('keyword2', filterKeyword2.value.trim());
         }
-
         return params;
     }
 
     async function loadPegawaiList() {
-        tbody.innerHTML = `<tr><td colspan="5" style="padding:20px;">Memuat data...</td></tr>`;
-
+        tbody.innerHTML = '<tr><td colspan="5" class="hris-empty">Memuat data...</td></tr>';
         try {
-            const params = buildQueryParams();
-            const res = await fetch(`/api/pegawai-vip/list?${params.toString()}`);
+            const res = await fetch('/api/pegawai-vip/list?' + buildQueryParams().toString());
             const json = await res.json();
-
-            if (json.status !== 'success' || json.data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" style="padding:20px;">No records to display.</td></tr>`;
+            if (json.status !== 'success' || !json.data || json.data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="hris-empty">No records to display.</td></tr>';
                 return;
             }
-
-            // Render baris tabel — checkbox pakai data-nip untuk tahu row mana yang di-toggle
             tbody.innerHTML = json.data.map(p => `
                 <tr>
-                    <td style="text-align: center !important;">${p.no}</td>
-                    <td style="text-align: center !important;">
-                        <input type="checkbox"
-                               class="vip-checkbox"
-                               data-nip="${p.nip}"
-                               ${p.is_vip === true ? 'checked' : ''}>
-                    </td>
-                    <td style="text-align: left !important;">${p.nip ?? '-'}</td>
-                    <td style="text-align: left !important;">${p.nama ?? '-'}</td>
-                    <td style="text-align: left !important;">${p.jabatan ?? '-'}</td>
+                    <td>${p.no}</td>
+                    <td><input type="checkbox" class="vip-checkbox" data-nip="${p.nip}" ${p.is_vip === true ? 'checked' : ''}></td>
+                    <td>${p.nip ?? '-'}</td>
+                    <td>${p.nama ?? '-'}</td>
+                    <td>${p.jabatan ?? '-'}</td>
                 </tr>
             `).join('');
-
         } catch (err) {
             console.error('Gagal memuat data pegawai:', err);
-            tbody.innerHTML = `<tr><td colspan="5" style="padding:20px;">Gagal memuat data.</td></tr>`;
+            tbody.innerHTML = '<tr><td colspan="5" class="hris-empty">Gagal memuat data.</td></tr>';
         }
     }
 
-    // Event delegation: satu listener untuk semua checkbox (efisien, walau tabel di-render ulang)
     tbody.addEventListener('change', async function (e) {
         if (!e.target.classList.contains('vip-checkbox')) return;
-
         const checkbox = e.target;
         const nip = checkbox.dataset.nip;
         const isVip = checkbox.checked;
 
-        checkbox.disabled = true; // cegah double-click saat request masih jalan
+        if (!isVip && !confirm('Hapus status VIP untuk pegawai ini?')) {
+            checkbox.checked = true;
+            return;
+        }
 
+        checkbox.disabled = true;
         try {
             const res = await fetch('/api/pegawai-vip/toggle', {
                 method: 'POST',
@@ -204,9 +146,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 body: JSON.stringify({ nip, is_vip: isVip })
             });
             const json = await res.json();
-
             if (json.status !== 'success') {
-                // Rollback tampilan kalau backend menolak
                 checkbox.checked = !isVip;
                 alert(json.message || 'Gagal mengubah status VIP');
             }
@@ -220,9 +160,11 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     refreshBtn.addEventListener('click', loadPegawaiList);
-
-    // Muat data otomatis saat halaman pertama kali dibuka (tanpa filter apapun)
+    unitKerjaSelect.addEventListener('change', loadPegawaiList);
+    filterField1.addEventListener('change', loadPegawaiList);
+    filterField2.addEventListener('change', loadPegawaiList);
+    filterKeyword1.addEventListener('keydown', e => { if (e.key === 'Enter') loadPegawaiList(); });
+    filterKeyword2.addEventListener('keydown', e => { if (e.key === 'Enter') loadPegawaiList(); });
     loadPegawaiList();
 });
-</script>
 {% endblock %}
