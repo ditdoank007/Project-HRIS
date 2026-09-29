@@ -165,6 +165,8 @@ def api_kesamaptaan_complete(kegiatan_id):
         return jsonify({"status": "error", "message": "Kegiatan Kesamaptaan tidak ditemukan."}), 404
     if kegiatan.STATUS == "BATAL":
         return jsonify({"status": "error", "message": "Kegiatan yang dibatalkan tidak dapat diselesaikan."}), 400
+    if not documentation_rows(kegiatan.KEGIATAN_ID):
+        return jsonify({"status": "error", "message": "Upload minimal satu foto dokumentasi sebelum kegiatan diselesaikan."}), 400
     if kegiatan.STATUS == "SELESAI":
         return jsonify({"status": "success", "data": _serialize(kegiatan), "message": "Kegiatan sudah SELESAI."})
 
