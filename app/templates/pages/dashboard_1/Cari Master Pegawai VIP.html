@@ -1,0 +1,230 @@
+{% extends "layout/baseHRIS.html" %}
+
+{% block title %}- Cari VIP{% endblock %}
+{% block header_kicker %}MASTER FILE{% endblock %}
+{% block header_title %}Cari VIP{% endblock %}
+
+{% block content %}
+<div class="hris-page">
+    <div class="hris-page-header">
+        <div>
+            <h2 class="hris-page-title">Cari Pegawai VIP</h2>
+            <p class="hris-page-subtitle">Cari pegawai untuk melihat dan mengelola status VIP.</p>
+        </div>
+
+        <a href="{{ url_for('main.view_master_pegawai_vip') }}" class="hris-btn hris-btn-secondary">
+            <i class="feather-arrow-left"></i>
+            <span>Kembali</span>
+        </a>
+    </div>
+
+    <div class="hris-card">
+        <div class="hris-card-header">
+            <div>
+                <h3 class="hris-card-title">Filter Pegawai VIP</h3>
+                <p class="hris-section-subtitle">Gunakan satu atau dua kriteria pencarian.</p>
+            </div>
+
+            <button type="button" class="hris-btn hris-btn-secondary" id="btnRefreshVipSearch">
+                <i class="feather-refresh-cw"></i>
+                <span>Refresh</span>
+            </button>
+        </div>
+
+        <div class="hris-card-body">
+            <div class="hris-filter">
+                <div class="hris-filter-field hris-filter-field-sm">
+                    <label class="hris-filter-label" for="filterField1">Field 1</label>
+                    <select class="hris-select" id="filterField1">
+                        <option value="">- Pilih Field -</option>
+                        <option>Gol</option>
+                        <option>Jabatan</option>
+                        <option>Jenis Kelamin</option>
+                        <option>Nama Peg</option>
+                        <option>NIP</option>
+                        <option>No Finger</option>
+                        <option>Unit Kerja</option>
+                    </select>
+                </div>
+
+                <div class="hris-filter-field">
+                    <label class="hris-filter-label" for="filterKeyword1">Kata Kunci</label>
+                    <input type="text" class="hris-input" id="filterKeyword1" placeholder="Ketik kata kunci...">
+                </div>
+
+                <div class="hris-filter-field hris-filter-field-sm">
+                    <label class="hris-filter-label" for="filterField2">Field 2</label>
+                    <select class="hris-select" id="filterField2">
+                        <option value="">- Pilih Field -</option>
+                        <option>Gol</option>
+                        <option>Jabatan</option>
+                        <option>Jenis Kelamin</option>
+                        <option>Nama Peg</option>
+                        <option>NIP</option>
+                        <option>No Finger</option>
+                        <option>Unit Kerja</option>
+                    </select>
+                </div>
+
+                <div class="hris-filter-field">
+                    <label class="hris-filter-label" for="filterKeyword2">Kata Kunci</label>
+                    <input type="text" class="hris-input" id="filterKeyword2" placeholder="Ketik kata kunci...">
+                </div>
+            </div>
+
+            <div class="hris-table-wrap">
+                <table class="hris-table-modern">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>NIP</th>
+                            <th>Nama</th>
+                            <th>Jabatan</th>
+                            <th>VIP</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="vipSearchTableBody">
+                        <tr>
+                            <td colspan="6" class="hris-empty">Memuat data...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+document.addEventListener('DOMContentLoaded', function () {
+    const tbody = document.getElementById('vipSearchTableBody');
+
+    function buildQueryParams() {
+        const params = new URLSearchParams();
+        const field1 = document.getElementById('filterField1').value;
+        const keyword1 = document.getElementById('filterKeyword1').value.trim();
+        const field2 = document.getElementById('filterField2').value;
+        const keyword2 = document.getElementById('filterKeyword2').value.trim();
+
+        if (field1 && keyword1) {
+            params.set('field1', field1);
+            params.set('keyword1', keyword1);
+        }
+        if (field2 && keyword2) {
+            params.set('field2', field2);
+            params.set('keyword2', keyword2);
+        }
+
+        return params;
+    }
+
+    async function loadVipSearch() {
+        tbody.innerHTML = '<tr><td colspan="6" class="hris-empty">Memuat data...</td></tr>';
+
+        try {
+            const res = await fetch('/api/pegawai-vip/list?' + buildQueryParams().toString());
+            const json = await res.json();
+
+            if (json.status !== 'success' || !json.data || json.data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="hris-empty">No records to display.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = json.data.map(row => `
+                <tr>
+                    <td>${row.no}</td>
+                    <td>${row.nip ?? '-'}</td>
+                    <td>${row.nama ?? '-'}</td>
+                    <td>${row.jabatan ?? '-'}</td>
+                    <td>
+                        <input type="checkbox"
+                               class="vip-search-checkbox"
+                               data-nip="${row.nip}"
+                               ${row.is_vip === true ? 'checked' : ''}>
+                    </td>
+                    <td style="white-space: nowrap;">
+                        ${row.is_vip === true
+                            ? `<button type="button"
+                                       class="hris-btn hris-btn-danger-soft hris-btn-icon btn-remove-vip"
+                                       data-nip="${row.nip}"
+                                       data-nama="${(row.nama || '').replace(/"/g, '&quot;')}"
+                                       title="Hapus dari VIP">
+                                   <i class="feather-trash-2"></i>
+                               </button>`
+                            : `<button type="button"
+                                       class="hris-btn hris-btn-secondary hris-btn-icon btn-add-vip"
+                                       data-nip="${row.nip}"
+                                       title="Jadikan VIP">
+                                   <i class="feather-star"></i>
+                               </button>`
+                        }
+                    </td>
+                </tr>
+            `).join('');
+        } catch (err) {
+            console.error(err);
+            tbody.innerHTML = '<tr><td colspan="6" class="hris-empty">Gagal memuat data.</td></tr>';
+        }
+    }
+
+    async function setVip(nip, isVip, nama) {
+        if (!nip) return;
+
+        if (!isVip && !confirm('Hapus status VIP untuk:\n\n' + (nama || nip) + '?')) {
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/pegawai-vip/toggle', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nip, is_vip: isVip })
+            });
+            const json = await res.json();
+
+            if (json.status !== 'success') {
+                alert(json.message || 'Gagal mengubah status VIP');
+                return;
+            }
+
+            await loadVipSearch();
+        } catch (err) {
+            console.error(err);
+            alert('Gagal menghubungi server.');
+        }
+    }
+
+    tbody.addEventListener('change', function (e) {
+        if (!e.target.classList.contains('vip-search-checkbox')) return;
+        setVip(e.target.dataset.nip, e.target.checked, '');
+    });
+
+    tbody.addEventListener('click', function (e) {
+        const removeBtn = e.target.closest('.btn-remove-vip');
+        if (removeBtn) {
+            setVip(removeBtn.dataset.nip, false, removeBtn.dataset.nama);
+            return;
+        }
+
+        const addBtn = e.target.closest('.btn-add-vip');
+        if (addBtn) {
+            setVip(addBtn.dataset.nip, true, '');
+        }
+    });
+
+    document.getElementById('btnRefreshVipSearch').addEventListener('click', loadVipSearch);
+
+    ['filterField1', 'filterField2'].forEach(id => {
+        document.getElementById(id).addEventListener('change', loadVipSearch);
+    });
+
+    ['filterKeyword1', 'filterKeyword2'].forEach(id => {
+        document.getElementById(id).addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') loadVipSearch();
+        });
+    });
+
+    loadVipSearch();
+});
+{% endblock %}
