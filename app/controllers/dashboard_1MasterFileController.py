@@ -2156,6 +2156,73 @@ def save_unit_kerja():
     })
 
 
+def get_unit_kerja_detail(unit_kerja_id):
+    """Ambil detail Unit Kerja berdasarkan IDUnitKerja untuk mode edit."""
+    unit = (
+        MfUnitKerja.query
+        .filter(MfUnitKerja.UNIT_KERJA_ID == str(unit_kerja_id))
+        .first()
+    )
+
+    if unit is None:
+        return jsonify({
+            'status': 'error',
+            'message': 'Unit Kerja tidak ditemukan.'
+        }), 404
+
+    return jsonify({
+        'status': 'success',
+        'data': unit.to_dict()
+    })
+
+
+def update_unit_kerja(unit_kerja_id):
+    """Update Unit Kerja yang sudah ada tanpa mengubah primary key TransacID."""
+    unit = (
+        MfUnitKerja.query
+        .filter(MfUnitKerja.UNIT_KERJA_ID == str(unit_kerja_id))
+        .first()
+    )
+
+    if unit is None:
+        return jsonify({
+            'status': 'error',
+            'message': 'Unit Kerja tidak ditemukan.'
+        }), 404
+
+    payload = request.get_json(silent=True) or {}
+    nama = str(payload.get('nama_unit_kerja') or '').strip()
+    urut_raw = payload.get('urut_report')
+    tipe = str(payload.get('tipe') or '').strip()
+
+    if not nama:
+        return jsonify({'status': 'error', 'message': 'Nama Unit Kerja wajib diisi'}), 400
+    if tipe not in ('Pusat', 'Pos'):
+        return jsonify({'status': 'error', 'message': 'Tipe harus "Pusat" atau "Pos"'}), 400
+
+    try:
+        urut_report = 0 if urut_raw in (None, '') else int(urut_raw)
+    except (TypeError, ValueError):
+        return jsonify({'status': 'error', 'message': 'Urut Report harus berupa angka bulat'}), 400
+
+    if urut_report < 0:
+        return jsonify({'status': 'error', 'message': 'Urut Report tidak boleh negatif'}), 400
+
+    unit.NAMA_UNIT_KERJA = nama
+    unit.URUT_REPORT = urut_report
+    unit.IS_PUSAT = 1 if tipe == 'Pusat' else 2
+    unit.UPDATE_BY = session.get('nip', 'system')
+    unit.UPDATE_DATE = datetime.utcnow()
+
+    db.session.commit()
+
+    return jsonify({
+        'status': 'success',
+        'message': 'Data Unit Kerja berhasil diperbarui.',
+        'data': unit.to_dict()
+    })
+
+
 def toggle_unit_kerja():
     """
     Mengubah status penggunaan Unit Kerja.
