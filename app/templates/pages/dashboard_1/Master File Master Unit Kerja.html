@@ -1,8 +1,6 @@
-<!-- pages/dashboard_1/Master File Master Unit Kerja.html -->
 {% extends "layout/baseHRIS.html" %}
 
-{% block title %}- Unit Kerja{% endblock %}
-
+{% block title %}- Master Unit Kerja{% endblock %}
 {% block header_kicker %}MASTER FILE{% endblock %}
 {% block header_title %}Master Unit Kerja{% endblock %}
 
@@ -11,402 +9,189 @@
     <div class="hris-page-header">
         <div>
             <h2 class="hris-page-title">Master Unit Kerja</h2>
-            <p class="hris-page-subtitle">Kelola data Master Unit Kerja HRIS.</p>
+            <p class="hris-page-subtitle" id="pageSubtitle">Tambah dan kelola data Unit Kerja HRIS.</p>
         </div>
-        <a href="{{ url_for('main.view_cari_master_unit_kerja') }}" class="hris-btn hris-btn-secondary"><i class="feather-search"></i><span>Cari Unit Kerja</span></a>
+        <a href="{{ url_for('main.view_cari_master_unit_kerja') }}" class="hris-btn hris-btn-secondary">
+            <i class="feather-search"></i>
+            <span>Cari Unit Kerja</span>
+        </a>
     </div>
-    <div class="page-header">
-        <div class="page-header-left d-flex align-items-center">
-            <div class="page-header-title">
-                <h5 class="m-b-10">Master File</h5>
+
+    <div class="hris-card">
+        <div class="hris-card-header">
+            <div>
+                <h3 class="hris-card-title" id="formTitle">Tambah Master Unit Kerja</h3>
+                <p class="hris-section-subtitle">Isi data unit kerja yang akan digunakan dalam HRIS.</p>
             </div>
-            <ul class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url_for('main.view_master_unit_kerja') }}">Master Unit Kerja</a></li>
-            </ul>
         </div>
-    </div>
 
-    <div class="main-content master-siaga">
-        <div class="container-fluid">
-            <div class="hris-card">
-                <div class="hris-card-header"
-                    style="border-radius: 10px;">
-                    <h6 class="mb-0">
-                        <i class="ti ti-building me-2"></i> Master Unit Kerja
-                    </h6>
-
-                    <div class="header-actions">
-                        <button class="hris-btn hris-btn-ghost hris-btn-icon d-md-none" type="button"
-                            data-bs-toggle="collapse" data-bs-target="#headerIconsCollapse">
-                            <i class="bi bi-three-dots-vertical" style="font-size: 1.5rem; color: #333;"></i>
-                        </button>
-
-                        <div class="collapse d-md-flex align-items-center" id="headerIconsCollapse">
-                            <div class="header-icons-wrapper d-flex gap-3 p-2 p-md-0 mt-2 mt-md-0">
-                                <a href="{{ url_for('main.view_cari_master_unit_kerja') }}"
-                                    class="hris-btn hris-btn-ghost hris-btn-icon text-decoration-none">
-                                    <i class="bi bi-search" style="color: #333; font-size: 1.1rem;"></i>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
+        <div class="hris-card-body">
+            <div class="hris-form-stack">
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="inputUnitKerjaId">Unit Kerja ID</label>
+                    <input type="text" class="hris-input" id="inputUnitKerjaId" inputmode="numeric">
                 </div>
 
-                <div class="hris-card-body">
-                    <div class="hris-form-stack">
-                        <div class="hris-form-control align-items-center">
-                            <div class="hris-form-control"></div>
-                            <label class="hris-form-row-label">Unit Kerja ID</label>
-                            <div class="hris-form-control">
-                                <div class="hris-input-group w-100">
-                                    <input type="number" class="hris-input w-100" id="inputUnitKerjaId">
-                                    <span class="hris-input-addon"><i class="bi bi-pencil-fill"></i></span>
-                                </div>
-                            </div>
-                        </div>
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="inputNamaUnitKerja">Nama Unit Kerja</label>
+                    <input type="text" class="hris-input" id="inputNamaUnitKerja">
+                </div>
 
-                        <div class="hris-form-control align-items-center">
-                            <div class="hris-form-control"></div>
-                            <label class="hris-form-row-label">Nama Unit Kerja</label>
-                            <div class="hris-form-control">
-                                <div class="hris-input-group w-100">
-                                    <input type="text" class="hris-input w-100" id="inputNamaUnitKerja">
-                                    <span class="hris-input-addon"><i class="bi bi-pencil-fill"></i></span>
-                                </div>
-                            </div>
-                        </div>
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="inputUrutReport">Urut Report</label>
+                    <input type="number" class="hris-input" min="0" step="1" value="0" id="inputUrutReport">
+                </div>
 
-                        <div class="hris-form-control align-items-center">
-                            <div class="hris-form-control"></div>
-                            <label class="hris-form-row-label">Urut Report</label>
-                            <div class="hris-form-control">
-                                <div class="hris-input-group w-100">
-                                    <input type="number" class="hris-input w-100 text-end" min="0" step="1"
-                                        value="0" id="inputUrutReport">
-                                    <span class="hris-input-addon">
-                                        <i class="bi bi-sort-numeric-down"></i>
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="inputTipe">Tipe</label>
+                    <select class="hris-select" id="inputTipe">
+                        <option value="">Pilih</option>
+                        <option value="Pusat">Pusat</option>
+                        <option value="Pos">Pos</option>
+                    </select>
+                </div>
 
-                        <div class="hris-form-control align-items-center mb-2">
-                            <div class="hris-form-control"></div>
-                            <label class="hris-form-row-label">Tipe</label>
-                            <div class="hris-form-control d-flex align-items-center gap-2 flex-wrap">
-                                <select class="hris-select flex-grow-1" style="min-width: 150px;" id="inputTipe">
-                                    <option value="">Pilih</option>
-                                    <option value="Pusat">Pusat</option>
-                                    <option value="Pos">Pos</option>
-                                </select>
-                            </div>
-                            <button type="button" class="hris-btn hris-btn-primary"
-                                        id="btnSimpanUnitKerja" style="white-space: nowrap;">
-                                    <i class="bi bi-save me-1"></i>Simpan
-                            </button>
-                        </div>
-                    </div>
+                <div class="hris-form-actions">
+                    <button type="button" id="btnBatalUnitKerja" class="hris-btn hris-btn-secondary">
+                        <i class="feather-x-circle"></i>
+                        <span>Batal</span>
+                    </button>
+                    <button type="button" id="btnSimpanUnitKerja" class="hris-btn hris-btn-primary">
+                        <i class="feather-save"></i>
+                        <span>Simpan</span>
+                    </button>
                 </div>
             </div>
         </div>
     </div>
-
-                <div class="hris-card">
-                    <div class="hris-card-header">
-                        <h6 class="mb-0">
-                            <i class="ti ti-list me-2"></i> Daftar Unit Kerja
-                        </h6>
-                    </div>
-
-                    <div class="hris-card-body">
-                        <div class="hris-table-wrap">
-                            <table class="hris-table-modern">
-                                <thead>
-                                    <tr>
-                                        <th>No</th>
-                                        <th>Unit Kerja ID</th>
-                                        <th>Nama Unit Kerja</th>
-                                        <th>Tipe</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="unitKerjaTableBody">
-                                    <tr>
-                                        <td colspan="5" class="text-center">
-                                            Memuat data...
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
 </div>
 {% endblock %}
 
 {% block script %}
-(function () {
+document.addEventListener('DOMContentLoaded', function () {
+    const editId = new URLSearchParams(window.location.search).get('id');
     const btnSave = document.getElementById('btnSimpanUnitKerja');
+    const btnCancel = document.getElementById('btnBatalUnitKerja');
 
     const el = {
         unitKerjaId: document.getElementById('inputUnitKerjaId'),
         namaUnitKerja: document.getElementById('inputNamaUnitKerja'),
         urutReport: document.getElementById('inputUrutReport'),
-        tipe: document.getElementById('inputTipe'),
+        tipe: document.getElementById('inputTipe')
     };
 
     function resetForm() {
         el.unitKerjaId.value = '';
+        el.unitKerjaId.disabled = false;
         el.namaUnitKerja.value = '';
         el.urutReport.value = '0';
         el.tipe.value = '';
     }
 
-    async function saveUnitKerja() {
+    function validate() {
         if (!el.unitKerjaId.value.trim()) {
             alert('Unit Kerja ID wajib diisi');
-            return;
+            return false;
         }
         if (!el.namaUnitKerja.value.trim()) {
             alert('Nama Unit Kerja wajib diisi');
-            return;
+            return false;
         }
         if (!el.tipe.value) {
             alert('Tipe wajib dipilih');
-            return;
+            return false;
         }
+        return true;
+    }
 
-        const payload = {
-            unit_kerja_id: el.unitKerjaId.value,
-            nama_unit_kerja: el.namaUnitKerja.value.trim(),
-            urut_report: el.urutReport.value,
-            tipe: el.tipe.value,
-        };
+    async function loadDetail() {
+        try {
+            const res = await fetch('/api/unit-kerja/detail/' + encodeURIComponent(editId));
+            const json = await res.json();
+
+            if (!res.ok || json.status !== 'success') {
+                alert(json.message || 'Unit Kerja tidak ditemukan.');
+                window.location.href = '{{ url_for("main.view_cari_master_unit_kerja") }}';
+                return;
+            }
+
+            const row = json.data;
+
+            el.unitKerjaId.value = row.unit_kerja_id || '';
+            el.unitKerjaId.disabled = true;
+            el.namaUnitKerja.value = row.nama_unit_kerja || '';
+            el.urutReport.value = row.urut_report ?? 0;
+            el.tipe.value = Number(row.is_pusat) === 1 ? 'Pusat' : 'Pos';
+
+            document.getElementById('formTitle').textContent = 'Edit Master Unit Kerja';
+            document.getElementById('pageSubtitle').textContent = 'Perbarui data Unit Kerja yang sudah tersimpan.';
+            btnSave.querySelector('span').textContent = 'Simpan Perubahan';
+        } catch (err) {
+            console.error(err);
+            alert('Gagal memuat data Unit Kerja.');
+        }
+    }
+
+    async function saveUnitKerja() {
+        if (!validate()) return;
 
         btnSave.disabled = true;
 
         try {
-            const res = await fetch('/api/unit-kerja/save', {
+            const payload = {
+                unit_kerja_id: el.unitKerjaId.value,
+                nama_unit_kerja: el.namaUnitKerja.value.trim(),
+                urut_report: el.urutReport.value,
+                tipe: el.tipe.value
+            };
+
+            const url = editId
+                ? '/api/unit-kerja/update/' + encodeURIComponent(editId)
+                : '/api/unit-kerja/save';
+
+            const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
+
             const json = await res.json();
 
-            if (json.status !== 'success') {
-                alert(json.message || 'Gagal menyimpan data unit kerja');
+            if (!res.ok || json.status !== 'success') {
+                alert(json.message || 'Gagal menyimpan data Unit Kerja.');
                 return;
             }
 
-            alert('Data unit kerja berhasil disimpan');
-            resetForm();
+            alert(editId
+                ? 'Data Unit Kerja berhasil diperbarui.'
+                : 'Data Unit Kerja berhasil disimpan.'
+            );
 
+            if (editId) {
+                window.location.href = '{{ url_for("main.view_cari_master_unit_kerja") }}';
+            } else {
+                resetForm();
+            }
         } catch (err) {
-            console.error('Gagal menyimpan unit kerja:', err);
-            alert('Terjadi kesalahan jaringan');
+            console.error(err);
+            alert('Terjadi kesalahan jaringan.');
         } finally {
             btnSave.disabled = false;
         }
     }
 
+    btnCancel.addEventListener('click', function () {
+        if (editId) {
+            window.location.href = '{{ url_for("main.view_cari_master_unit_kerja") }}';
+        } else {
+            resetForm();
+        }
+    });
+
     btnSave.addEventListener('click', saveUnitKerja);
 
-    // ============================================================
-    // DAFTAR UNIT KERJA
-    // ============================================================
-
-    async function loadUnitKerja() {
-        const tbody = document.getElementById('unitKerjaTableBody');
-
-        try {
-            const res = await fetch('/api/unit-kerja/list');
-            const json = await res.json();
-
-            if (json.status !== 'success') {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="5" class="text-center">
-                            Gagal memuat data unit kerja.
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
-
-            if (!json.data || json.data.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="5" class="text-center">
-                            Tidak ada data unit kerja.
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
-
-            tbody.innerHTML = json.data.map((u, index) => {
-                const aktif = String(
-                    u.is_aktif ?? u.is_use ?? ''
-                ).toUpperCase() === 'Y';
-
-                return `
-                    <tr>
-                        <td class="hris-text-center">
-                            ${index + 1}
-                        </td>
-
-                        <td class="hris-text-center">
-                            ${u.unit_kerja_id ?? '-'}
-                        </td>
-
-                        <td class="hris-text-left">
-                            ${u.nama_unit_kerja ?? '-'}
-                        </td>
-
-                        <td class="hris-text-center">
-                            ${Number(u.is_pusat) === 1 ? 'Pusat' : 'Pos'}
-                        </td>
-
-                        <td class="hris-text-center">
-                            <label class="hris-toggle">
-                                <input
-                                    type="checkbox"
-                                    class="unit-use-toggle"
-                                    data-unit-id="${u.unit_kerja_id}"
-                                    ${aktif ? 'checked' : ''}
-                                    aria-label="Status ${u.nama_unit_kerja ?? ''}"
-                                >
-                                <span class="hris-toggle-slider"></span>
-                            </label>
-
-                            <span class="hris-toggle-label unit-status-label">
-                                ${aktif ? 'Aktif' : 'Nonaktif'}
-                            </span>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-
-            document
-                .querySelectorAll('.unit-use-toggle')
-                .forEach(toggle => {
-                    toggle.addEventListener('change', toggleUnitKerja);
-                });
-
-        } catch (err) {
-            console.error('Gagal memuat unit kerja:', err);
-
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="5" class="text-center">
-                        Gagal memuat data unit kerja.
-                    </td>
-                </tr>
-            `;
-        }
+    if (editId) {
+        loadDetail();
     }
-
-    async function toggleUnitKerja(event) {
-        const checkbox = event.target;
-
-        const unitKerjaId = checkbox.dataset.unitId;
-        const isAktif = checkbox.checked ? 'Y' : 'N';
-
-        // Simpan keadaan sebelum request
-        const previousState = !checkbox.checked;
-
-        checkbox.disabled = true;
-
-        try {
-            const res = await fetch('/api/unit-kerja/toggle', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                credentials: 'same-origin',
-                body: JSON.stringify({
-                    unit_kerja_id: unitKerjaId,
-                    is_aktif: isAktif
-                })
-            });
-
-            // Jangan langsung json() jika server mengembalikan HTML
-            const contentType = res.headers.get('content-type') || '';
-
-            if (!contentType.includes('application/json')) {
-                throw new Error(
-                    `Response bukan JSON (HTTP ${res.status})`
-                );
-            }
-
-            const json = await res.json();
-
-            if (!res.ok || json.status !== 'success') {
-                throw new Error(
-                    json.message ||
-                    `Gagal mengubah status unit kerja (HTTP ${res.status})`
-                );
-            }
-
-            // Pastikan checkbox mengikuti nilai yang benar-benar
-            // diterima backend.
-            const savedStatus =
-                json.data?.is_aktif ||
-                json.data?.is_use ||
-                isAktif;
-
-            checkbox.checked = savedStatus === 'Y';
-
-            const cell = checkbox.closest('td');
-            const label = cell
-                ? cell.querySelector('.unit-status-label')
-                : null;
-
-            if (label) {
-                label.textContent =
-                    checkbox.checked ? 'Aktif' : 'Nonaktif';
-            }
-
-            console.log(
-                'Unit Kerja berhasil diubah:',
-                unitKerjaId,
-                savedStatus
-            );
-
-        } catch (err) {
-
-            // Kembalikan checkbox ke keadaan sebelum klik
-            checkbox.checked = previousState;
-
-            const cell = checkbox.closest('td');
-            const label = cell
-                ? cell.querySelector('.unit-status-label')
-                : null;
-
-            if (label) {
-                label.textContent =
-                    checkbox.checked ? 'Aktif' : 'Nonaktif';
-            }
-
-            console.error(
-                'Gagal mengubah status Unit Kerja:',
-                err
-            );
-
-            alert(
-                err.message ||
-                'Gagal mengubah status unit kerja'
-            );
-
-        } finally {
-            checkbox.disabled = false;
-        }
-    }
-
-    // Muat daftar Unit Kerja saat halaman dibuka.
-    loadUnitKerja();
-
-})();
+});
 {% endblock %}
