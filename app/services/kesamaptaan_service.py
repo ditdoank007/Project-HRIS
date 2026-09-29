@@ -43,7 +43,7 @@ from config import Config
 
 
 MAX_PHOTO_BYTES = 10 * 1024 * 1024
-MAX_PHOTOS = 30
+MAX_PHOTOS = 8
 ALLOWED_MIMES = {"image/jpeg", "image/png"}
 
 
@@ -376,17 +376,41 @@ def generate_final_pdf(kegiatan):
             path = _under_root(storage_root() / photo.STORAGE_PATH)
             if not path.is_file():
                 continue
-            image = Image(str(path), width=82 * mm, height=58 * mm, kind="proportional")
-            cells.append(KeepTogether([Paragraph(f"Foto {index}", normal), image]))
+
+            image = Image(
+                str(path),
+                width=82 * mm,
+                height=55 * mm,
+                kind="proportional",
+            )
+            cell = Table(
+                [
+                    [Paragraph(f"Foto {index}", normal)],
+                    [image],
+                ],
+                colWidths=[82 * mm],
+                rowHeights=[None, 55 * mm],
+            )
+            cells.append(cell)
+
             if len(cells) == 2:
-                story.append(Table([cells], colWidths=[86 * mm, 86 * mm]))
+                story.append(Table(
+                    [cells],
+                    colWidths=[86 * mm, 86 * mm],
+                    rowHeights=[62 * mm],
+                ))
                 cells = []
-                story.append(Spacer(1, 5 * mm))
+                story.append(Spacer(1, 4 * mm))
+
         if cells:
             while len(cells) < 2:
                 cells.append("")
-            story.append(Table([cells], colWidths=[86 * mm, 86 * mm]))
-    else:
+            story.append(Table(
+                [cells],
+                colWidths=[86 * mm, 86 * mm],
+                rowHeights=[62 * mm],
+            ))
+        else:
         story.append(Paragraph("Belum ada foto dokumentasi yang diunggah.", normal))
 
     story.append(PageBreak())
