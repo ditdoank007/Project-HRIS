@@ -23,7 +23,7 @@ JUDUL_KESAMAPTAAN = "KESAMAPTAAN PEGAWAI KANTOR SAR SURABAYA"
 
 
 def kesamaptaan():
-    return render_template("pages/dashboard_1/Kesamaptaan.html")
+    return render_template("pages/dashboard_4/Kesamaptaan.html")
 
 
 def _can_manage():
