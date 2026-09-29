@@ -1,8 +1,6 @@
-<!-- pages/dashboard_1/Master File Master Tunkin Class .html -->
 {% extends "layout/baseHRIS.html" %}
 
-{% block title %}- Tunkin/Class{% endblock %}
-
+{% block title %}- Master Tunkin / Class{% endblock %}
 {% block header_kicker %}MASTER FILE{% endblock %}
 {% block header_title %}Master Tunkin / Class{% endblock %}
 
@@ -11,98 +9,58 @@
     <div class="hris-page-header">
         <div>
             <h2 class="hris-page-title">Master Tunkin / Class</h2>
-            <p class="hris-page-subtitle">Kelola data Master Tunkin / Class HRIS.</p>
+            <p class="hris-page-subtitle" id="pageSubtitle">Kelola nilai tunjangan untuk Class yang sudah tersedia.</p>
         </div>
-        <a href="{{ url_for('main.view_cari_master_tunkin_class') }}" class="hris-btn hris-btn-secondary"><i class="feather-search"></i><span>Cari Tunkin / Class</span></a>
+        <a href="{{ url_for('main.view_cari_master_tunkin_class') }}" class="hris-btn hris-btn-secondary">
+            <i class="feather-search"></i>
+            <span>Cari Tunkin / Class</span>
+        </a>
     </div>
-    <div class="page-header">
-        <div class="page-header-left d-flex align-items-center">
-            <div class="page-header-title">
-                <h5 class="m-b-10">Master File</h5>
+
+    <div class="hris-card">
+        <div class="hris-card-header">
+            <div>
+                <h3 class="hris-card-title" id="formTitle">Master Tunkin / Class</h3>
+                <p class="hris-section-subtitle">Master Class bersifat tetap. Halaman ini digunakan untuk memperbarui data tunjangan.</p>
             </div>
-            <ul class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url_for('main.view_master_tunkin_class') }}">Master Tunkin/Class</a></li>
-            </ul>
         </div>
-    </div>
 
-    <div class="main-content master-siaga">
-        <div class="container-fluid">
-            <div class="hris-card">
-                <div class="hris-card-header"
-                    style="border-radius: 10px;">
-                    <h6 class="mb-0">
-                        <i class="ti ti-brand-redhat me-2"></i> Master Tunkin/Class
-                    </h6>
-
-                    <div class="header-actions">
-                        <button class="hris-btn hris-btn-ghost hris-btn-icon d-md-none" type="button"
-                            data-bs-toggle="collapse" data-bs-target="#headerIconsCollapse">
-                            <i class="bi bi-three-dots-vertical" style="font-size: 1.5rem; color: #333;"></i>
-                        </button>
-
-                        <div class="collapse d-md-flex align-items-center" id="headerIconsCollapse">
-                            <div class="header-icons-wrapper d-flex gap-3 p-2 p-md-0 mt-2 mt-md-0">
-                                <a href="{{ url_for('main.view_cari_master_tunkin_class') }}"
-                                    class="hris-btn hris-btn-ghost hris-btn-icon text-decoration-none">
-                                    <i class="bi bi-search" style="color: #333; font-size: 1.1rem;"></i>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
+        <div class="hris-card-body">
+            <div class="hris-form-stack">
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="selectClass">Class</label>
+                    <select id="selectClass" class="hris-select">
+                        <option value="">Pilih Class</option>
+                        {% for c in class_list %}
+                        <option value="{{ c.CLASS_ID }}">{{ c.CLASS_ID }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
 
-                <div class="hris-card-body">
-                    <div class="hris-form-stack">
-                        <div class="hris-form-control align-items-center">
-                            <div class="hris-form-control"></div>
-                            <label class="hris-form-row-label">Tanggal</label>
-                            <div class="hris-form-control">
-                                <div class="hris-input-group w-100">
-                                    <input type="text" id="inputTanggal" class="hris-input w-100" placeholder="YYYY-MM-DD">
-                                    <span class="hris-input-addon"><i class="bi bi-calendar3"></i></span>
-                                </div>
-                            </div>
-                        </div>
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="inputTunjangan">Tunjangan</label>
+                    <input type="number" step="0.01" min="0" id="inputTunjangan" class="hris-input">
+                </div>
 
-                        <div class="hris-form-control align-items-center">
-                            <div class="hris-form-control"></div>
-                            <label class="hris-form-row-label">Class</label>
-                            <div class="hris-form-control">
-                                <select id="selectClass" class="hris-select w-100">
-                                    <option value="">Pilih</option>
-                                    {% for c in class_list %}
-                                    <option value="{{ c.CLASS_ID }}">{{ c.CLASS_ID }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="inputTanggal">Tanggal Mulai</label>
+                    <input type="date" id="inputTanggal" class="hris-input">
+                </div>
 
-                        <div class="hris-form-control align-items-center">
-                            <div class="hris-form-control"></div>
-                            <label class="hris-form-row-label">Tunjangan</label>
-                            <div class="hris-form-control">
-                                <div class="hris-input-group w-100">
-                                    <input type="text" id="inputTunjangan" class="hris-input w-100">
-                                    <span class="hris-input-addon"><i class="bi bi-pencil-fill"></i></span>
-                                </div>
-                            </div>
-                        </div>
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="inputNoSurat">No Surat</label>
+                    <input type="text" id="inputNoSurat" class="hris-input">
+                </div>
 
-                        <div class="hris-form-control align-items-center">
-                            <div class="hris-form-control"></div>
-                            <label class="hris-form-row-label">No Surat</label>
-                            <div class="hris-form-control">
-                                <div class="hris-input-group w-100">
-                                    <input type="text" id="inputNoSurat" class="hris-input w-100">
-                                    <span class="hris-input-addon"><i class="bi bi-pencil-fill"></i></span>
-                                </div>
-                            </div>
-                            <button type="button" id="btnSimpanTunkinClass" class="hris-btn hris-btn-primary" style="white-space: nowrap;">
-                                <i class="bi bi-save me-1"></i>Simpan
-                            </button>
-                        </div>
-                    </div>
+                <div class="hris-form-actions">
+                    <button type="button" id="btnBatalTunkinClass" class="hris-btn hris-btn-secondary">
+                        <i class="feather-x-circle"></i>
+                        <span>Batal</span>
+                    </button>
+                    <button type="button" id="btnSimpanTunkinClass" class="hris-btn hris-btn-primary">
+                        <i class="feather-save"></i>
+                        <span>Simpan Perubahan</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -111,79 +69,123 @@
 {% endblock %}
 
 {% block script %}
-// --- Autofill form saat Class dipilih ---
-document.getElementById('selectClass').addEventListener('change', function () {
-    const classId = this.value;
+document.addEventListener('DOMContentLoaded', function () {
+    const editId = new URLSearchParams(window.location.search).get('id');
+    const selectClass = document.getElementById('selectClass');
+    const btnSave = document.getElementById('btnSimpanTunkinClass');
+    const btnCancel = document.getElementById('btnBatalTunkinClass');
 
-    // Kosongkan dulu form kalau tidak ada class dipilih
-    if (!classId) {
-        document.getElementById('inputTunjangan').value = '';
-        document.getElementById('inputTanggal').value = '';
-        document.getElementById('inputNoSurat').value = '';
-        return;
-    }
-
-    fetch(`/api/tunkin-class/detail/${classId}`)
-        .then(res => res.json())
-        .then(result => {
-            if (result.status === 'success') {
-                const data = result.data;
-                document.getElementById('inputTunjangan').value = data.tunjangan ?? '';
-                document.getElementById('inputTanggal').value = data.tgl_mulai || '';
-                document.getElementById('inputNoSurat').value = data.dokreff || '';
-            } else {
-                alert('Gagal memuat detail: ' + result.message);
-            }
-        })
-        .catch(err => {
-            console.error(err);
-            alert('Terjadi kesalahan saat memuat detail Class.');
-        });
-});
-
-// --- Simpan (update) data Class yang dipilih ---
-document.getElementById('btnSimpanTunkinClass').addEventListener('click', function () {
-    const classId   = document.getElementById('selectClass').value;
-    const tunjangan = document.getElementById('inputTunjangan').value.trim();
-    const tglMulai  = document.getElementById('inputTanggal').value.trim();
-    const noSurat   = document.getElementById('inputNoSurat').value.trim();
-
-    if (!classId) {
-        alert('Class wajib dipilih');
-        return;
-    }
-    if (!tunjangan) {
-        alert('Tunjangan wajib diisi');
-        return;
-    }
-    if (!noSurat) {
-        alert('No Surat wajib diisi');
-        return;
-    }
-
-    const payload = {
-        class_id: classId,
-        tunjangan: tunjangan,
-        tgl_mulai: tglMulai || null,
-        dokreff: noSurat,
+    const el = {
+        tunjangan: document.getElementById('inputTunjangan'),
+        tanggal: document.getElementById('inputTanggal'),
+        noSurat: document.getElementById('inputNoSurat')
     };
 
-    fetch("{{ url_for('main.api_tunkin_class_save') }}", {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-    })
+    function clearFields() {
+        el.tunjangan.value = '';
+        el.tanggal.value = '';
+        el.noSurat.value = '';
+    }
+
+    function loadDetail(classId) {
+        if (!classId) {
+            clearFields();
+            return;
+        }
+
+        fetch('/api/tunkin-class/detail/' + encodeURIComponent(classId))
+            .then(res => res.json())
+            .then(result => {
+                if (result.status !== 'success') {
+                    alert(result.message || 'Gagal memuat detail Class.');
+                    return;
+                }
+
+                const data = result.data;
+                el.tunjangan.value = data.tunjangan ?? '';
+                el.tanggal.value = data.tgl_mulai || '';
+                el.noSurat.value = data.dokreff || '';
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Terjadi kesalahan saat memuat detail Class.');
+            });
+    }
+
+    selectClass.addEventListener('change', function () {
+        loadDetail(this.value);
+    });
+
+    btnSave.addEventListener('click', function () {
+        const classId = selectClass.value;
+        const tunjangan = el.tunjangan.value.trim();
+        const tglMulai = el.tanggal.value.trim();
+        const noSurat = el.noSurat.value.trim();
+
+        if (!classId) {
+            alert('Class wajib dipilih');
+            return;
+        }
+        if (!tunjangan) {
+            alert('Tunjangan wajib diisi');
+            return;
+        }
+        if (!noSurat) {
+            alert('No Surat wajib diisi');
+            return;
+        }
+
+        btnSave.disabled = true;
+
+        fetch('{{ url_for("main.api_tunkin_class_save") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                class_id: classId,
+                tunjangan: tunjangan,
+                tgl_mulai: tglMulai || null,
+                dokreff: noSurat
+            })
+        })
         .then(res => res.json())
         .then(data => {
-            if (data.status === 'success') {
-                alert(data.message);
+            if (data.status !== 'success') {
+                alert(data.message || 'Gagal menyimpan data.');
+                return;
+            }
+
+            alert(data.message || 'Data Tunkin/Class berhasil diperbarui.');
+
+            if (editId) {
+                window.location.href = '{{ url_for("main.view_cari_master_tunkin_class") }}';
             } else {
-                alert('Gagal: ' + data.message);
+                loadDetail(classId);
             }
         })
         .catch(err => {
             console.error(err);
             alert('Terjadi kesalahan saat menyimpan data.');
+        })
+        .finally(() => {
+            btnSave.disabled = false;
         });
+    });
+
+    btnCancel.addEventListener('click', function () {
+        if (editId) {
+            window.location.href = '{{ url_for("main.view_cari_master_tunkin_class") }}';
+        } else {
+            selectClass.value = '';
+            clearFields();
+        }
+    });
+
+    if (editId) {
+        selectClass.value = editId;
+        selectClass.disabled = true;
+        document.getElementById('formTitle').textContent = 'Edit Master Tunkin / Class';
+        document.getElementById('pageSubtitle').textContent = 'Perbarui data Tunkin/Class yang sudah tersimpan.';
+        loadDetail(editId);
+    }
 });
 {% endblock %}
