@@ -132,9 +132,6 @@ def api_calendar_rapat_attendance_info():
         return jsonify({"status": "error", "message": "Token QR tidak valid."}), 400
 
     meta, event = _event_from_token(token)
-    if not meta or not event:
-        return jsonify({"status": "error", "message": "QR rapat tidak ditemukan."}), 404
-
     nip = str(request.headers.get("X-Calendar-NIP") or "").strip() or None
 
     if not meta or not event:
