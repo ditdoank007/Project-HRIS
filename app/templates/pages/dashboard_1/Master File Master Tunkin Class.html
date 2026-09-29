@@ -39,7 +39,7 @@
 
                 <div class="hris-form-row">
                     <label class="hris-form-row-label" for="inputTunjangan">Tunjangan</label>
-                    <input type="number" step="0.01" min="0" id="inputTunjangan" class="hris-input">
+                    <input type="text" inputmode="numeric" autocomplete="off" id="inputTunjangan" class="hris-input" placeholder="Rp 0,-">
                 </div>
 
                 <div class="hris-form-row">
@@ -81,6 +81,17 @@ document.addEventListener('DOMContentLoaded', function () {
         noSurat: document.getElementById('inputNoSurat')
     };
 
+    function formatRupiah(value) {
+        const digits = String(value ?? '').replace(/\D/g, '');
+        if (!digits) return '';
+        return 'Rp ' + Number(digits).toLocaleString('id-ID') + ',-';
+    }
+
+    function getRupiahValue(value) {
+        const digits = String(value ?? '').replace(/\D/g, '');
+        return digits ? Number(digits) : null;
+    }
+
     function clearFields() {
         el.tunjangan.value = '';
         el.tanggal.value = '';
@@ -102,7 +113,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
 
                 const data = result.data;
-                el.tunjangan.value = data.tunjangan ?? '';
+                el.tunjangan.value = formatRupiah(data.tunjangan);
                 el.tanggal.value = data.tgl_mulai || '';
                 el.noSurat.value = data.dokreff || '';
             })
@@ -112,13 +123,19 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     }
 
+    el.tunjangan.addEventListener('input', function () {
+        const cursorEnd = this.value.length;
+        this.value = formatRupiah(this.value);
+        this.setSelectionRange(this.value.length, this.value.length);
+    });
+
     selectClass.addEventListener('change', function () {
         loadDetail(this.value);
     });
 
     btnSave.addEventListener('click', function () {
         const classId = selectClass.value;
-        const tunjangan = el.tunjangan.value.trim();
+        const tunjangan = getRupiahValue(el.tunjangan.value);
         const tglMulai = el.tanggal.value.trim();
         const noSurat = el.noSurat.value.trim();
 
@@ -126,7 +143,7 @@ document.addEventListener('DOMContentLoaded', function () {
             alert('Class wajib dipilih');
             return;
         }
-        if (!tunjangan) {
+        if (tunjangan === null) {
             alert('Tunjangan wajib diisi');
             return;
         }
