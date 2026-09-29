@@ -767,3 +767,490 @@ body {
 .hris-shell .custom-nav-header {
   padding-top: 4px;
 }
+
+
+/* ============================================================
+   HRIS REBORN — MODERN APPLICATION SHELL
+   Visual language inspired by HRIS Calendar:
+   white topbar + Basarnas orange sidebar + compact account menu.
+   ============================================================ */
+
+.hris-app-shell {
+  min-height: 100vh;
+  background: var(--ui-bg);
+}
+
+.hris-sidebar-v2 {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 1500;
+  width: 250px;
+  display: flex;
+  flex-direction: column;
+  background: var(--ui-brand);
+  color: #fff;
+  box-shadow: 4px 0 18px rgba(15,23,42,.08);
+  transition: width .2s ease, transform .2s ease;
+}
+
+.hris-sidebar-brand {
+  min-height: 78px;
+  padding: 17px 14px 17px 18px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  border-bottom: 1px solid rgba(255,255,255,.16);
+}
+
+.hris-sidebar-brand-link {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.hris-sidebar-brand-link img {
+  display: block;
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  flex: 0 0 36px;
+}
+
+.hris-sidebar-brand-text {
+  min-width: 0;
+}
+
+.hris-sidebar-brand-text strong,
+.hris-sidebar-brand-text small {
+  display: block;
+}
+
+.hris-sidebar-brand-text strong {
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -.01em;
+}
+
+.hris-sidebar-brand-text small {
+  margin-top: 2px;
+  color: rgba(255,255,255,.78);
+  font-size: 10px;
+}
+
+.hris-sidebar-toggle {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 8px;
+  color: #fff;
+  background: rgba(255,255,255,.08);
+  cursor: pointer;
+}
+
+.hris-sidebar-toggle:hover {
+  background: rgba(255,255,255,.16);
+}
+
+.hris-nav-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  margin: 0;
+  padding: 14px 10px 20px;
+  list-style: none;
+}
+
+.hris-nav-item {
+  list-style: none;
+}
+
+.hris-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 42px;
+  padding: 0 13px;
+  margin-bottom: 4px;
+  border-radius: 8px;
+  color: rgba(255,255,255,.90);
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .1px;
+  transition: background .15s ease, color .15s ease;
+}
+
+.hris-nav-link:hover {
+  color: #fff;
+  background: rgba(255,255,255,.10);
+}
+
+.hris-nav-link.hris-active {
+  color: #fff;
+  background: rgba(0,0,0,.17);
+}
+
+.hris-nav-icon {
+  width: 20px;
+  min-width: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.hris-nav-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.hris-nav-text {
+  min-width: 0;
+  flex: 1;
+}
+
+.hris-nav-arrow {
+  width: 16px;
+  display: inline-flex;
+  justify-content: center;
+  transition: transform .15s ease;
+}
+
+.hris-nav-group.hris-open > .hris-nav-link {
+  background: rgba(0,0,0,.10);
+}
+
+.hris-nav-group.hris-open > .hris-nav-link .hris-nav-arrow {
+  transform: rotate(90deg);
+}
+
+.hris-submenu {
+  display: none;
+  margin: 1px 0 6px;
+  padding: 2px 0 3px 27px;
+  list-style: none;
+}
+
+.hris-nav-group.hris-open > .hris-submenu {
+  display: block;
+}
+
+.hris-submenu .hris-nav-link {
+  min-height: 35px;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255,255,255,.80);
+}
+
+.hris-submenu .hris-nav-link.hris-active {
+  color: #fff;
+  background: rgba(0,0,0,.18);
+}
+
+.hris-app-main {
+  width: calc(100% - 250px);
+  min-height: 100vh;
+  margin-left: 250px;
+  transition: width .2s ease, margin-left .2s ease;
+}
+
+.hris-app-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 1200;
+  min-height: 78px;
+  padding: 0 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  background: #fff;
+  border-bottom: 1px solid var(--ui-border);
+}
+
+.hris-app-topbar-left {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hris-mobile-menu {
+  display: none;
+  width: 38px;
+  height: 38px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+  color: var(--ui-ink);
+  background: #fff;
+  cursor: pointer;
+}
+
+.hris-page-heading {
+  min-width: 0;
+}
+
+.hris-page-kicker {
+  display: block;
+  color: #9ca3af;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.15px;
+}
+
+.hris-page-heading h1 {
+  margin: 2px 0 0;
+  color: var(--ui-ink);
+  font-size: 20px;
+  line-height: 1.2;
+  font-weight: 800;
+}
+
+.hris-account {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.hris-account-toggle {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 10px;
+  color: var(--ui-ink);
+  background: transparent;
+  cursor: pointer;
+}
+
+.hris-account-toggle:hover {
+  background: #f5f6f8;
+}
+
+.hris-account-avatar {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--ui-brand);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.hris-account-name {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ui-ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.hris-account-chevron {
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.hris-account-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 250px;
+  overflow: hidden;
+  border: 1px solid var(--ui-border);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 14px 35px rgba(15,23,42,.15);
+}
+
+.hris-account-dropdown.is-open {
+  display: block;
+}
+
+.hris-account-info {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--ui-border);
+}
+
+.hris-account-info strong,
+.hris-account-info span {
+  display: block;
+}
+
+.hris-account-info strong {
+  color: var(--ui-ink);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.hris-account-info span {
+  margin-top: 3px;
+  color: #94a3b8;
+  font-size: 10px;
+}
+
+.hris-account-logout {
+  width: 100%;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 16px;
+  border: 0;
+  color: var(--ui-brand-dark);
+  background: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: left;
+}
+
+.hris-account-logout:hover {
+  background: #fff7f3;
+}
+
+.hris-main-v2 {
+  min-height: calc(100vh - 78px);
+  background: var(--ui-bg);
+}
+
+body.hris-sidebar-mini .hris-sidebar-v2 {
+  width: 76px;
+}
+
+body.hris-sidebar-mini .hris-app-main {
+  width: calc(100% - 76px);
+  margin-left: 76px;
+}
+
+body.hris-sidebar-mini .hris-sidebar-brand {
+  justify-content: center;
+  padding: 17px 10px;
+}
+
+body.hris-sidebar-mini .hris-sidebar-brand-link {
+  flex: 0 0 auto;
+}
+
+body.hris-sidebar-mini .hris-sidebar-brand-text,
+body.hris-sidebar-mini .hris-nav-text,
+body.hris-sidebar-mini .hris-nav-arrow {
+  display: none;
+}
+
+body.hris-sidebar-mini .hris-sidebar-toggle {
+  position: absolute;
+  right: -12px;
+  top: 24px;
+  z-index: 10;
+  width: 26px;
+  height: 32px;
+  border-radius: 0 7px 7px 0;
+  color: #fff;
+  background: var(--ui-brand);
+  box-shadow: 3px 0 10px rgba(15,23,42,.10);
+}
+
+body.hris-sidebar-mini .hris-sidebar-toggle .feather-chevron-left {
+  transform: rotate(180deg);
+}
+
+body.hris-sidebar-mini .hris-nav-list {
+  padding-left: 9px;
+  padding-right: 9px;
+}
+
+body.hris-sidebar-mini .hris-nav-link {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+body.hris-sidebar-mini .hris-submenu {
+  display: none !important;
+}
+
+.hris-mobile-overlay {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .hris-sidebar-v2 {
+    width: 250px;
+    transform: translateX(-100%);
+  }
+
+  .hris-app-main,
+  body.hris-sidebar-mini .hris-app-main {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .hris-mobile-menu {
+    display: inline-flex;
+  }
+
+  body.hris-mobile-open .hris-sidebar-v2 {
+    transform: translateX(0);
+    box-shadow: 8px 0 30px rgba(15,23,42,.18);
+  }
+
+  body.hris-mobile-open .hris-mobile-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 1400;
+    background: rgba(15,23,42,.42);
+  }
+
+  body.hris-sidebar-mini .hris-sidebar-v2 {
+    width: 250px;
+    transform: translateX(-100%);
+  }
+
+  body.hris-sidebar-mini.hris-mobile-open .hris-sidebar-v2 {
+    transform: translateX(0);
+  }
+}
+
+@media (max-width: 650px) {
+  .hris-app-topbar {
+    min-height: 68px;
+    padding: 0 14px;
+  }
+
+  .hris-main-v2 {
+    min-height: calc(100vh - 68px);
+  }
+
+  .hris-page-kicker {
+    font-size: 8px;
+  }
+
+  .hris-page-heading h1 {
+    font-size: 18px;
+  }
+
+  .hris-account-name {
+    display: none;
+  }
+
+  .hris-account-toggle {
+    padding-right: 0;
+  }
+}
