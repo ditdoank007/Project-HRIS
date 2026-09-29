@@ -1,62 +1,26 @@
-<!-- pages/dashboard_1/Master File Master Jam Finger.html -->
 {% extends "layout/baseHRIS.html" %}
-
-{% block title %}- Jam Finger{% endblock %}
-
+{% block title %}- Master Jam Finger{% endblock %}
 {% block header_kicker %}MASTER FILE{% endblock %}
 {% block header_title %}Master Jam Finger{% endblock %}
 
 {% block content %}
-<div class="nxl-content">
-    <div class="page-header">
-        <div class="page-header-left d-flex align-items-center">
-            <div class="page-header-title">
-                <h5 class="m-b-10">Master File</h5>
-            </div>
-            <ul class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url_for('main.view_master_jam_finger') }}">Master Jam Finger</a></li>
-            </ul>
+
+<div class="hris-page">
+    <div class="hris-page-header">
+        <div>
+            <h2 class="hris-page-title">Master Jam Finger</h2>
+            <p class="hris-page-subtitle">Kelola data Master Jam Finger HRIS.</p>
         </div>
     </div>
-
-    <div class="main-content master-siaga">
-        <div class="container-fluid">
-            <div class="card mb-4 filter-card">
-                <div class="card-header-custom d-flex justify-content-between align-items-center"
-                    style="border-radius: 10px;">
-                    <h6 class="mb-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
-                            viewBox="0 0 24 24">
-                            <path
-                                d="M12 2a7 7 0 0 0-7 7v3a5 5 0 0 0 10 0v-3a3 3 0 0 0-6 0v3a1 1 0 0 0 2 0v-3a1 1 0 0 1 2 0v3a3 3 0 0 1-6 0v-3a5 5 0 0 1 10 0v3a7 7 0 0 1-14 0v-3a9 9 0 0 1 18 0v3c0 5-4 9-9 9" />
-                        </svg>
-                        <i></i> Master Jam Finger
-                    </h6>
-
-                    <div class="header-actions">
-                        <button class="btn p-0 border-0 bg-transparent shadow-none d-md-none" type="button"
-                            data-bs-toggle="collapse" data-bs-target="#headerIconsCollapse">
-                            <i class="bi bi-three-dots-vertical" style="font-size: 1.5rem; color: #333;"></i>
-                        </button>
-
-                        <div class="collapse d-md-flex align-items-center" id="headerIconsCollapse">
-                            <div class="header-icons-wrapper d-flex gap-3 p-2 p-md-0 mt-2 mt-md-0">
-                                <a href="{{ url_for('main.view_cari_master_jam_finger')}}"
-                                    class="btn p-0 border-0 bg-transparent shadow-none text-decoration-none">
-                                    <i class="bi bi-search" style="color: #333; font-size: 1.1rem;"></i>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card-body">
-                    <div class="row g-3">
+    
+<div class="hris-page">
+    <div class="hris-card-body">
+                    <div class="hris-form-stack">
                         <div class="col-12 d-md-flex align-items-center">
-                            <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Shift</label>
-                            <div class="col-md-7">
-                                <select id="selectShiftFinger" class="form-select-sm border custom-select w-100">
+                            
+                            <label class="hris-form-row-label">Shift</label>
+                            <div class="hris-form-control">
+                                <select id="selectShiftFinger" class="hris-select w-100">
                                     <option value="">Pilih</option>
                                     <option value="1">1</option>
                                     <option value="2">2</option>
@@ -65,48 +29,48 @@
                         </div>
 
                         <div class="col-12 d-md-flex align-items-center">
-                            <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Tanggal Mulai</label>
-                            <div class="col-md-7">
-                                <div class="input-group-custom w-100">
-                                    <input type="date" id="inputTglMulaiFinger" class="form-control-sm border w-100" style="outline: none;">
-                                    <span class="icon-append"><i class="bi bi-calendar3"></i></span>
+                            
+                            <label class="hris-form-row-label">Tanggal Mulai</label>
+                            <div class="hris-form-control">
+                                <div class="hris-input-group w-100">
+                                    <input type="date" id="inputTglMulaiFinger" class="hris-input w-100" style="outline: none;">
+                                    <span class="hris-input-addon"><i class="bi bi-calendar3"></i></span>
                                 </div>
                             </div>
                         </div>
 
                         <div class="col-12 d-md-flex align-items-center mb-3">
-                            <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Start Jam In (Tgl
+                            
+                            <label class="hris-form-row-label">Start Jam In (Tgl
                                 Sama)</label>
-                            <div class="col-md-7">
+                            <div class="hris-form-control">
                                 <div style="display: flex; align-items: center; gap: 15px;">
-                                    <input type="time" id="inputJamInStart" class="form-control-sm border"
+                                    <input type="time" id="inputJamInStart" class="hris-input"
                                         style="width: 150px; outline: none;">
 
                                     <span class="fw-bold">S.D</span>
 
-                                    <input type="time" id="inputJamInEnd" class="form-control-sm border"
+                                    <input type="time" id="inputJamInEnd" class="hris-input"
                                         style="width: 150px; outline: none;">
                                 </div>
                             </div>
                         </div>
                         <div class="col-12 d-md-flex align-items-center mb-3">
-                            <div class="col-md-1"></div>
-                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Start Jam Out (Tgl
+                            
+                            <label class="hris-form-row-label">Start Jam Out (Tgl
                                 Sama)</label>
-                            <div class="col-md-7">
+                            <div class="hris-form-control">
                                 <div style="display: flex; align-items: center; gap: 15px;">
-                                    <input type="time" id="inputJamOutStart" class="form-control-sm border"
+                                    <input type="time" id="inputJamOutStart" class="hris-input"
                                         style="width: 150px; outline: none;">
                                     <span class="fw-bold">S.D</span>
-                                    <input type="time" id="inputJamOutEnd" class="form-control-sm border"
+                                    <input type="time" id="inputJamOutEnd" class="hris-input"
                                         style="width: 150px; outline: none;">
                                 </div>
                             </div>
                         </div>
                         <div class="col-12 d-flex justify-content-center mt-3">
-                            <button type="button" id="btnSimpanJamFinger" class="btn btn-orange-figma px-4">
+                            <button type="button" id="btnSimpanJamFinger" class="hris-btn hris-btn-primary">
                                 <i class="bi bi-save me-1"></i>Simpan
                             </button>
                         </div>
@@ -116,10 +80,13 @@
         </div>
     </div>
 </div>
+
+
+
+</div>
 {% endblock %}
 
 {% block script %}
-
 document.addEventListener('DOMContentLoaded', function () {
     const params = new URLSearchParams(window.location.search);
     const editId = params.get('edit_id');
@@ -246,5 +213,4 @@ document.addEventListener('DOMContentLoaded', function () {
 
     loadEditJamFinger();
 });
-
 {% endblock %}
