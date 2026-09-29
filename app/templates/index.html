@@ -201,9 +201,12 @@
 
                             <div class="dropdown-menu hris-dropdown-menu">
 
+                                {% if is_administrator() or has_form_access('SUMDA_KESAMAPTAAN') %}
                                 <a href="{{ url_for('main.view_kesamaptaan') }}" class="dropdown-item">
                                     Kesamaptaan
                                 </a>
+
+                                {% endif %}
 
                                 <a href="{{ url_for('main.index') }}" class="dropdown-item">
                                     Pemeliharaan
