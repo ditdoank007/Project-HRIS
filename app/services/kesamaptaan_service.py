@@ -391,9 +391,10 @@ def generate_final_pdf(kegiatan):
 
     story.append(PageBreak())
     story.extend([
-        Paragraph("DAFTAR HADIR KESAMAPTAAN", title),
+        Paragraph("DAFTAR HADIR KESAMAPTAAN PEGAWAI KANTOR SAR SURABAYA", title),
         Spacer(1, 2 * mm),
-        Paragraph(f"<b>Hari, Tanggal:</b> {hari_tanggal}", subtitle),
+        Paragraph(f"<b>Hari:</b> {kegiatan.HARI}", subtitle),
+        Paragraph(f"<b>Tanggal:</b> {kegiatan.TANGGAL.strftime("%d-%m-%Y")}", subtitle),
         Paragraph(f"<b>Jam:</b> {jam}", subtitle),
         Spacer(1, 7 * mm),
     ])
