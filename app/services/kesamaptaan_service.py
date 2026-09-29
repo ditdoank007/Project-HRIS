@@ -169,6 +169,12 @@ def record_employee_attendance(kegiatan, nip):
     )
     db.session.add(row)
     db.session.commit()
+
+    # Jika dokumentasi sudah tersedia, perbarui PDF agar daftar hadir
+    # selalu mencerminkan scan QR terbaru.
+    if documentation_rows(kegiatan.KEGIATAN_ID):
+        finalize_pdf(kegiatan)
+
     return row, pegawai, True
 
 
