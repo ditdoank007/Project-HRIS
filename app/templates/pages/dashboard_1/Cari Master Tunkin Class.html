@@ -105,7 +105,7 @@
 {% endblock %}
 
 {% block script %}
-<script>
+
 function loadTunkinClassList() {
     const periode  = document.getElementById('filterPeriode').value.trim();
     const field1   = document.getElementById('filterField1').value;
@@ -164,5 +164,5 @@ document.getElementById('btnRefreshTunkinClass').addEventListener('click', loadT
 
 // Load semua data begitu halaman dibuka (sama seperti klik Refresh dengan filter kosong)
 document.addEventListener('DOMContentLoaded', loadTunkinClassList);
-</script>
+
 {% endblock %}
