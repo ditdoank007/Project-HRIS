@@ -246,6 +246,27 @@ def api_kesamaptaan_photos(kegiatan_id):
         return jsonify({"status": "error", "message": "Gagal menyimpan foto dokumentasi."}), 500
 
 
+def api_kesamaptaan_signature(kegiatan_id, nip):
+    if not session.get("nip"):
+        return jsonify({"status": "error", "message": "Unauthorized"}), 401
+    kegiatan = _find_kegiatan(kegiatan_id)
+    if not kegiatan:
+        return jsonify({"status": "error", "message": "Kegiatan Kesamaptaan tidak ditemukan."}), 404
+    row = KesamaptaanKehadiran.query.filter(
+        KesamaptaanKehadiran.KEGIATAN_ID == kegiatan_id,
+        KesamaptaanKehadiran.NIP == str(nip).strip(),
+        KesamaptaanKehadiran.STATUS == "HADIR",
+    ).first()
+    if not row or not row.SIGNATURE_PATH:
+        return jsonify({"status": "error", "message": "Tanda tangan tidak tersedia."}), 404
+    from pathlib import Path
+    path = Path(row.SIGNATURE_PATH).resolve()
+    root = Path(__import__("config").Config.HRIS_TTD_ROOT).resolve()
+    if path != root and root not in path.parents or not path.is_file():
+        return jsonify({"status": "error", "message": "File tanda tangan tidak ditemukan."}), 404
+    return send_file(path, mimetype="image/png", as_attachment=False, max_age=0)
+
+
 def api_kesamaptaan_pdf(kegiatan_id):
     kegiatan = _find_kegiatan(kegiatan_id)
     if not kegiatan or not kegiatan.PDF_PATH:
