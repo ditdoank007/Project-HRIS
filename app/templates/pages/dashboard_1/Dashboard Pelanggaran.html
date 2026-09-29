@@ -1,152 +1,137 @@
 <!-- pages/dashboard_1/Dashboard Pelanggaran.html -->
-{% extends "layout/baseDashboard1.html" %}
+{% extends "layout/baseHRIS.html" %}
 
 {% block title %}- Pelanggaran{% endblock %}
 
-{% block content %}
-<div class="nxl-content">
-    <!-- [ page-header ] start -->
-    <div class="page-header">
-        <div class="page-header-left d-flex align-items-center">
-            <div class="page-header-title">
-                <h5 class="m-b-10">Dashboard</h5>
-            </div>
-            <ul class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url_for('main.view_dashboard_pelanggaran') }}">Pelanggaran</a></li>
-            </ul>
-        </div>
-    </div>
-    <!-- [ page-header ] end -->
-
-    <!-- [ Main Content ] start -->
-    <div class="main-content master-siaga">
-        <div class="container-fluid">
-            <div class="card mb-4 filter-card">
-                <div class="card-header-custom d-flex justify-content-start align-items-center gap-3"
-                    style="border-radius: 10px; padding: 10px 15px;">
-                    <h6 class="mb-0">
-                        <i class="ti ti-speakerphone me-2"></i> Reminder
-                    </h6>
-
-                    <select id="tahunFilter" class="form-select form-select-sm" 
-                        style="width: auto; min-height: 30px; font-size: 12px; border-radius: 8px;">
-                        {% for y in range(2012, 2031) %}
-                        <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="card-body">
-                    <div class="row g-3"></div>
-                    <div class="row border-0">
-                        <div class="col-12 mt-2">
-                            <style>
-                                .btn-orange {
-                                    background-color: #EB6831;
-                                    color: white;
-                                    border: 1px solid #1E1E1E;
-                                }
-
-                                .btn-orange:hover {
-                                    background-color: #d95c28;
-                                    color: white;
-                                    border: 1px solid #1E1E1E;
-                                }
-
-                                .btn-orange-outline {
-                                    border: 1px solid #1E1E1E;
-                                    color: #1E1E1E;
-                                    background: transparent;
-                                }
-
-                                .btn-orange-outline:hover {
-                                    background-color: #EB6831;
-                                    color: white;
-                                    border: 1px solid #1E1E1E;
-                                }
-                            </style>
-
-                            <div class="button-responsive-wrapper"
-                                style="overflow-x: auto; white-space: nowrap; padding-bottom: 5px;">
-                                <div class="btn-group d-inline-flex">
-                                    <a href="{{ url_for('main.view_dashboard_pelanggaran') }}" class="btn btn-sm btn-orange">Pelanggaran</a>
-                                    <a href="{{ url_for('main.view_dashboard_pensiun') }}" class="btn btn-sm btn-orange-outline">Pensiun</a>
-                                    <a href="{{ url_for('main.view_dashboard_pangkat') }}" class="btn btn-sm btn-orange-outline">Pangkat</a>
-                                    <a href="{{ url_for('main.view_dashboard_kgb') }}" class="btn btn-sm btn-orange-outline">KGB</a>
-                                    <a href="{{ url_for('main.view_dashboard_trt') }}" class="btn btn-sm btn-orange-outline">TRT</a>
-                                </div>
-                            </div>
-
-                        </div>
-
-                        <!-- TITLE TABLE -->
-                        <p class="mb-1 fw-semibold text-dark" style="font-size: 12px;">
-                            Hukuman Disiplin Pegawai Berdasarkan Jumlah Ketidakhadiran Hari Kerja
-                        </p>
-
-                        <!-- TABLE -->
-                        <div class="hris-table-wrapper">
-                            <table class="hris-table hris-table-pelanggaran">
-                                <thead>
-                                    <tr>
-                                        <th>No</th>
-                                        <th>Nama</th>
-                                        <th>Jumlah Hari</th>
-                                        <th>Kategori Hukuman</th>
-                                        <th>Jenis Hukuman</th>
-                                        <th>Potongan (%)</th>
-                                        <th>Lama Pot</th>
-                                    </tr>
-                                </thead>
-
-                                <tbody>
-                                    {% if data_pelanggaran %}
-                                        {% for row in data_pelanggaran %}
-                                        <tr class="{{ row.row_class|default('') }}">
-                                            <td class="hris-text-center">{{ row.no }}</td>
-                                            <td class="hris-text-left">{{ row.nama }}</td>
-                                            <td class="hris-text-center">{{ row.hari }}</td>
-                                            <td class="hris-text-center">{{ row.kategori }}</td>
-                                            <td class="hris-text-left">{{ row.jenis }}</td>
-                                            <td class="hris-text-center">{{ row.potongan }}</td>
-                                            <td class="hris-text-center">{{ row.lama_pot }}</td>
-                                        </tr>
-                                        {% endfor %}
-                                    {% else %}
-                                        <tr>
-                                            <td colspan="7" class="text-start">Tidak ada data pelanggaran.</td>
-                                        </tr>
-                                    {% endif %}
-                                </tbody>
-                            </table>
-                        </div>
-
-                    </div>
-                </div>
-                <!-- [ Main Content ] end -->
-            </div>
-        </div>
-    </div>
-</div>
+{% block styles %}
+<style>
+    .pelanggaran-page { padding: 24px; }
+    .pelanggaran-hero {
+        display:flex; align-items:center; justify-content:space-between; gap:16px;
+        padding:18px 20px; margin-bottom:16px; border-radius:14px;
+        background:linear-gradient(135deg,#191c20 0%,#292e34 100%);
+        color:#fff; box-shadow:var(--ui-shadow);
+    }
+    .pelanggaran-kicker {
+        margin:0 0 4px; color:#f6a57f; font-size:10px; font-weight:700;
+        letter-spacing:.12em; text-transform:uppercase;
+    }
+    .pelanggaran-hero h1 { margin:0; font-size:22px; font-weight:750; }
+    .pelanggaran-hero p { margin:5px 0 0; color:#c7cdd3; font-size:11px; }
+    .pelanggaran-card {
+        overflow:hidden; border:1px solid var(--ui-border); border-radius:13px;
+        background:#fff; box-shadow:var(--ui-shadow);
+    }
+    .pelanggaran-tabs {
+        display:flex; align-items:center; gap:0; overflow-x:auto;
+        padding:12px 16px; border-bottom:1px solid var(--ui-border);
+    }
+    .pelanggaran-tab {
+        display:inline-flex; align-items:center; justify-content:center;
+        min-height:34px; padding:7px 13px; border:1px solid var(--ui-border-strong);
+        border-right:0; color:#475569; background:#fff; font-size:11px; font-weight:700;
+        text-decoration:none; white-space:nowrap;
+    }
+    .pelanggaran-tab:first-child { border-radius:7px 0 0 7px; }
+    .pelanggaran-tab:last-child { border-right:1px solid var(--ui-border-strong); border-radius:0 7px 7px 0; }
+    .pelanggaran-tab.active { color:#fff; background:var(--ui-brand); border-color:var(--ui-brand); }
+    .pelanggaran-table-wrap { width:100%; overflow:auto; }
+    .pelanggaran-table {
+        width:100%; min-width:900px; border-collapse:collapse;
+        color:var(--ui-ink); font-size:12px;
+    }
+    .pelanggaran-table th {
+        padding:11px 10px; color:#fff; background:#343a40;
+        text-align:center; font-size:10px; font-weight:700; white-space:nowrap;
+    }
+    .pelanggaran-table td {
+        padding:10px; border-bottom:1px solid #edf0f3; vertical-align:middle;
+    }
+    .pelanggaran-table tbody tr:hover td { background:#fafbfc; }
+    .pelanggaran-table .text-center { text-align:center; }
+    .pelanggaran-table .text-left { text-align:left; }
+    .pelanggaran-table tr.alert-error td { color:#dc2626; background:#fff7f7; }
+    .pelanggaran-table tr.bg-orange-active td { color:#c2410c; background:#fff7ed; }
+    .pelanggaran-table tr.bg-yellow-gradient td { color:#92400e; background:#fffbeb; }
+    .pelanggaran-toolbar {
+        display:flex; align-items:center; justify-content:space-between; gap:12px;
+        flex-wrap:wrap; padding:13px 16px; border-bottom:1px solid var(--ui-border);
+    }
+    .pelanggaran-toolbar-title { color:var(--ui-ink); font-size:12px; font-weight:750; }
+    .pelanggaran-toolbar-note { color:var(--ui-muted); font-size:10px; }
+    .pelanggaran-year { width:auto; min-width:92px; }
+    .pelanggaran-empty { padding:36px 18px; color:var(--ui-muted); text-align:center; }
+    @media(max-width:720px){ .pelanggaran-page{padding:14px;} .pelanggaran-hero{align-items:flex-start;flex-direction:column;} }
+</style>
 {% endblock %}
 
+{% block content %}
+<section class="pelanggaran-page">
+    <div class="pelanggaran-hero">
+        <div>
+            <p class="pelanggaran-kicker">UMUM · Dashboard</p>
+            <h1>Pelanggaran Disiplin</h1>
+            <p>Rekap hukuman disiplin berdasarkan jumlah ketidakhadiran hari kerja.</p>
+        </div>
+        <select id="tahunFilter" class="hris-select pelanggaran-year" aria-label="Tahun">
+            {% for y in range(2012, 2031) %}
+            <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
+            {% endfor %}
+        </select>
+    </div>
 
+    <div class="pelanggaran-card">
+        <div class="pelanggaran-tabs">
+            <a href="{{ url_for('main.view_dashboard_pelanggaran') }}" class="pelanggaran-tab active">Pelanggaran</a>
+            <a href="{{ url_for('main.view_dashboard_pensiun') }}" class="pelanggaran-tab">Pensiun</a>
+            <a href="{{ url_for('main.view_dashboard_pangkat') }}" class="pelanggaran-tab">Pangkat</a>
+            <a href="{{ url_for('main.view_dashboard_kgb') }}" class="pelanggaran-tab">KGB</a>
+            <a href="{{ url_for('main.view_dashboard_trt') }}" class="pelanggaran-tab">TRT</a>
+        </div>
 
+        <div class="pelanggaran-toolbar">
+            <span class="pelanggaran-toolbar-title">Hukuman Disiplin Pegawai</span>
+            <span class="pelanggaran-toolbar-note">Data tahun {{ selected_year }}</span>
+        </div>
 
-
-
-
-
-
-
-
-
+        <div class="pelanggaran-table-wrap">
+            <table class="pelanggaran-table">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Nama</th>
+                        <th>Jumlah Hari</th>
+                        <th>Kategori Hukuman</th>
+                        <th>Jenis Hukuman</th>
+                        <th>Potongan (%)</th>
+                        <th>Lama Pot</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if data_pelanggaran %}
+                        {% for row in data_pelanggaran %}
+                        <tr class="{{ row.row_class|default('') }}">
+                            <td class="text-center">{{ row.no }}</td>
+                            <td class="text-left">{{ row.nama }}</td>
+                            <td class="text-center">{{ row.hari }}</td>
+                            <td class="text-center">{{ row.kategori }}</td>
+                            <td class="text-left">{{ row.jenis }}</td>
+                            <td class="text-center">{{ row.potongan }}</td>
+                            <td class="text-center">{{ row.lama_pot }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr><td colspan="7" class="pelanggaran-empty">Tidak ada data pelanggaran.</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}
 
 {% block script %}
-<script>
-    document.getElementById('tahunFilter').addEventListener('change', function() {
-        const tahun = this.value;
-        window.location.href = "{{ url_for('main.view_dashboard_pelanggaran') }}?tahun=" + tahun;
-    });
-</script>
+document.getElementById('tahunFilter')?.addEventListener('change', function () {
+    window.location.href = "{{ url_for('main.view_dashboard_pelanggaran') }}?tahun=" + encodeURIComponent(this.value);
+});
 {% endblock %}
