@@ -23,7 +23,7 @@ from app.controllers.dashboard_1MasterFileController import (
     get_pegawai_vip_list, get_potongan_list, get_tunjangan_list, get_tunkin_class_detail, get_tunkin_class_list,
     delete_user_account, get_unit_kerja_list, get_user_account_detail, get_user_account_list, master_butir_kegiatan, master_jabatan, master_jam_finger, master_jam_kerja,
     master_kalender, master_pegawai_vip, master_potongan, master_trt as master_file_trt, master_tunkin_class,
-    master_unit_kerja, toggle_unit_kerja, master_user, master_uang_makan, cari_master_jabatan, cari_master_jam_finger, cari_master_jam_kerja,
+    master_unit_kerja, toggle_unit_kerja, master_user, master_uang_makan, cari_master_pegawai_vip, cari_master_jabatan, cari_master_jam_finger, cari_master_jam_kerja,
     cari_master_kalender, cari_master_potongan, cari_master_tunkin_class, cari_master_uang_makan, cari_master_unit_kerja,
     cari_user_account, create_kalender, save_jabatan, save_jam_kerja, save_joblist, save_potongan, save_tunkin_class, save_uang_makan, save_unit_kerja, save_user_account,
     toggle_pegawai_vip, save_jam_finger,
@@ -727,6 +727,11 @@ def api_kalender_save():
 @login_required
 def view_master_pegawai_vip():
     return master_pegawai_vip()
+
+@main.route('/master/pegawai-vip/cari')
+@login_required
+def view_cari_master_pegawai_vip():
+    return cari_master_pegawai_vip()
 
 @main.route('/api/pegawai-vip/list', methods=['GET'])
 @login_required
