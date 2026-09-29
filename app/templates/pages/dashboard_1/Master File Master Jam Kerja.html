@@ -1,8 +1,6 @@
-<!-- pages/dashboard_1/Master File Master Jam Kerja.html -->
 {% extends "layout/baseHRIS.html" %}
 
-{% block title %}- Jam Kerja{% endblock %}
-
+{% block title %}- Master Jam Kerja{% endblock %}
 {% block header_kicker %}MASTER FILE{% endblock %}
 {% block header_title %}Master Jam Kerja{% endblock %}
 
@@ -11,168 +9,97 @@
     <div class="hris-page-header">
         <div>
             <h2 class="hris-page-title">Master Jam Kerja</h2>
-            <p class="hris-page-subtitle">Kelola data Master Jam Kerja HRIS.</p>
+            <p class="hris-page-subtitle" id="pageSubtitle">Tambah dan kelola pola Jam Kerja HRIS.</p>
         </div>
-        <a href="{{ url_for('main.view_cari_master_jam_kerja') }}" class="hris-btn hris-btn-secondary"><i class="feather-search"></i><span>Cari Jam Kerja</span></a>
+        <a href="{{ url_for('main.view_cari_master_jam_kerja') }}" class="hris-btn hris-btn-secondary">
+            <i class="feather-search"></i>
+            <span>Cari Jam Kerja</span>
+        </a>
     </div>
-    <div class="page-header">
-        <div class="page-header-left d-flex align-items-center">
-            <div class="page-header-title">
-                <h5 class="m-b-10">Master File</h5>
+
+    <div class="hris-card">
+        <div class="hris-card-header">
+            <div>
+                <h3 class="hris-card-title" id="formTitle">Tambah Master Jam Kerja</h3>
+                <p class="hris-section-subtitle">Atur shift, hari kerja, jam masuk, jam pulang, dan penggantian TLM.</p>
             </div>
-            <ul class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url_for('main.view_master_jam_kerja') }}">Master Jam Kerja</a></li>
-            </ul>
         </div>
-    </div>
 
-    <div class="main-content master-siaga">
-        <div class="container-fluid">
-            <div class="hris-card">
-                <div class="hris-card-header"
-                    style="border-radius: 10px;">
-                    <h6 class="mb-0">
-                        <i class="ti ti-clock-edit me-2"></i> Master Jam Kerja
-                    </h6>
+        <div class="hris-card-body">
+            <div class="hris-form-stack">
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="selectShift">Shift Kerja</label>
+                    <select id="selectShift" class="hris-select">
+                        <option value="">Pilih Shift</option>
+                        <option value="1">SK-1 — Reguler</option>
+                        <option value="2">SK-2 — Siaga</option>
+                        <option value="3">SK-3 — Reguler</option>
+                        <option value="4">SK-4 — Siaga</option>
+                    </select>
+                </div>
 
-                    <div class="header-actions">
-                        <button class="hris-btn hris-btn-ghost hris-btn-icon d-md-none" type="button"
-                            data-bs-toggle="collapse" data-bs-target="#headerIconsCollapse">
-                            <i class="bi bi-three-dots-vertical" style="font-size: 1.5rem; color: #333;"></i>
-                        </button>
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="selectPenggantianTlm1">Penggantian TLM 1</label>
+                    <select id="selectPenggantianTlm1" class="hris-select">
+                        <option value="">Pilih</option>
+                        <option value="1">Ada Penggantian (Y)</option>
+                        <option value="0">Tidak Ada Penggantian (N)</option>
+                    </select>
+                </div>
 
-                        <div class="collapse d-md-flex align-items-center" id="headerIconsCollapse">
-                            <div class="header-icons-wrapper d-flex gap-3 p-2 p-md-0 mt-2 mt-md-0">
-                                <a href="{{ url_for('main.view_cari_master_jam_kerja') }}"
-                                    class="hris-btn hris-btn-ghost hris-btn-icon text-decoration-none">
-                                    <i class="bi bi-search" style="color: #333; font-size: 1.1rem;"></i>
-                                </a>
-                            </div>
-                        </div>
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="inputTglMulai">Tanggal Mulai</label>
+                    <input type="date" id="inputTglMulai" class="hris-input">
+                </div>
+
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label">Hari Kerja</label>
+                    <div class="hris-form-inline">
+                        <label class="hris-radio-option">
+                            <input type="radio" name="hari_kerja" id="seninKamis" value="1">
+                            <span>HK-1 — Senin-Kamis</span>
+                        </label>
+                        <label class="hris-radio-option">
+                            <input type="radio" name="hari_kerja" id="jumat" value="2">
+                            <span>HK-2 — Jumat</span>
+                        </label>
                     </div>
                 </div>
 
-                <div class="hris-card-body">
-                    <div class="hris-form-stack">
-                        <div class="hris-form-control align-items-center">
-                            <div class="hris-form-control"></div>
-                            <label class="hris-form-row-label">Shift Kerja</label>
-                            <div class="hris-form-control">
-                                <select id="selectShift" class="hris-select w-100">
-                                    <option value="">Pilih</option>
-                                    <option value="1">SK-1 — Reguler</option>
-                                    <option value="2">SK-2 — Siaga</option>
-                                    <option value="3">SK-3 — Reguler</option>
-                                    <option value="4">SK-4 — Siaga</option>
-                                </select>
-                            </div>
-                        </div>
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="inputJamMasuk">Jam Masuk</label>
+                    <input type="time" id="inputJamMasuk" class="hris-input">
+                </div>
 
-                        <div class="hris-form-control align-items-center">
-                            <div class="hris-form-control"></div>
-                            <label class="hris-form-row-label">Penggantian TLM 1</label>
-                            <div class="hris-form-control">
-                                <select id="selectPenggantianTlm1" class="hris-select w-100">
-                                    <option value="">Pilih</option>
-                                    <option value="1">Ada Penggantian (Y)</option>
-                                    <option value="0">Tidak Ada Penggantian (N)</option>
-                                </select>
-                            </div>
-                        </div>
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="inputJamPulang">Jam Pulang</label>
+                    <input type="time" id="inputJamPulang" class="hris-input">
+                </div>
 
-                        <div class="hris-form-control align-items-center">
-                            <div class="hris-form-control"></div>
-                            <label class="hris-form-row-label">Tanggal Mulai</label>
-                            <div class="hris-form-control">
-                                <div class="hris-input-group w-100">
-                                    <input type="date" id="inputTglMulai" class="hris-input w-100" style="outline: none;">
-                                    <span class="hris-input-addon"><i class="bi bi-calendar3"></i></span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="hris-form-control align-items-center">
-                            <div class="hris-form-control"></div>
-                            <label class="hris-form-row-label">Hari Kerja</label>
-                            <div class="hris-form-control">
-                                <div class="d-flex gap-4 align-items-center">
-                                    <div class="form-check d-flex align-items-center gap-2 mb-0">
-                                        <input class="form-check-input" type="radio" name="hari_kerja" id="seninKamis"
-                                            value="1" checked>
-                                        <label class="form-check-label" for="seninKamis">
-                                            HK-1 — Senin-Kamis
-                                        </label>
-                                    </div>
-                                    <div class="form-check d-flex align-items-center gap-2 mb-0">
-                                        <input class="form-check-input" type="radio" name="hari_kerja" id="jumat"
-                                            value="2">
-                                        <label class="form-check-label" for="jumat">
-                                            HK-2 — Jumat
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="hris-form-control align-items-center">
-                            <div class="hris-form-control"></div>
-                            <label class="hris-form-row-label">Jam Masuk</label>
-                            <div class="hris-form-control">
-                                <div style="display: flex; align-items: center; gap: 5px;">
-                                    <input type="time" id="inputJamMasuk" class="hris-input"
-                                        style="width: 150px; outline: none;">
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="hris-form-control align-items-center">
-                            <div class="hris-form-control"></div>
-                            <label class="hris-form-row-label">Jam Pulang</label>
-                            <div class="hris-form-control">
-                                <div style="display: flex; align-items: center; gap: 5px;">
-                                    <input type="time" id="inputJamPulang" class="hris-input"
-                                        style="width: 150px; outline: none;">
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Referensi pola Shift Kerja -->
-                        <div class="col-12 d-flex justify-content-center mt-2">
-                            <div class="alert alert-primary border border-primary-subtle rounded-3 mb-0 w-100"
-                                 style="max-width: 920px;">
-                                <div class="fw-bold mb-2">
-                                    <i class="bi bi-info-circle me-1"></i>
-                                    Contoh Pola Jam Kerja (Referensi)
-                                </div>
-
-                                <div class="small d-flex flex-column gap-1">
-                                    <div>
-                                        <span class="badge bg-success me-1">SK-1</span>
-                                        = HK-1&nbsp; ( 07:30–16:00 )
-                                    </div>
-                                    <div>
-                                        <span class="badge bg-primary me-1">SK-2</span>
-                                        = HK-1&nbsp; ( 19:30–04:00 )
-                                    </div>
-                                    <div>
-                                        <span class="badge bg-warning text-dark me-1">SK-3</span>
-                                        = HK-2&nbsp; ( 07:30–16:30 )
-                                    </div>
-                                    <div>
-                                        <span class="badge bg-purple me-1"
-                                              style="background-color: #6f42c1 !important;">SK-4</span>
-                                        = HK-2&nbsp; ( 19:30–04:30 )
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-12 d-flex justify-content-center mt-3">
-                            <button type="button" id="btnSimpanJamKerja" class="hris-btn hris-btn-primary">
-                                <i class="bi bi-save me-1"></i>Simpan
-                            </button>
+                <div class="hris-section hris-info-panel">
+                    <div class="hris-section-header">
+                        <div>
+                            <h3 class="hris-section-title">Referensi Pola Jam Kerja</h3>
+                            <p class="hris-section-subtitle">Pola berikut membantu memastikan SK dan HK sesuai.</p>
                         </div>
                     </div>
+                    <div class="hris-info-grid">
+                        <div><strong>SK-1</strong><span>HK-1 · 07:30–16:00</span></div>
+                        <div><strong>SK-2</strong><span>HK-1 · 19:30–04:00</span></div>
+                        <div><strong>SK-3</strong><span>HK-2 · 07:30–16:30</span></div>
+                        <div><strong>SK-4</strong><span>HK-2 · 19:30–04:30</span></div>
+                    </div>
+                </div>
+
+                <div class="hris-form-actions">
+                    <button type="button" id="btnBatalJamKerja" class="hris-btn hris-btn-secondary">
+                        <i class="feather-x-circle"></i>
+                        <span>Batal</span>
+                    </button>
+                    <button type="button" id="btnSimpanJamKerja" class="hris-btn hris-btn-primary">
+                        <i class="feather-save"></i>
+                        <span>Simpan</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -181,172 +108,137 @@
 {% endblock %}
 
 {% block script %}
-const hariKerjaByShift = {
-    '1': '1',
-    '2': '1',
-    '3': '2',
-    '4': '2'
-};
-
-function sinkronisasiHariKerja() {
-    const shift = document.getElementById('selectShift').value;
-    const hariKerjaOtomatis = hariKerjaByShift[shift];
-
-    if (!hariKerjaOtomatis) {
-        return;
-    }
-
-    const radioHariKerja = document.querySelector(
-        `input[name="hari_kerja"][value="${hariKerjaOtomatis}"]`
-    );
-
-    if (radioHariKerja) {
-        radioHariKerja.checked = true;
-    }
-}
-
-document.getElementById('selectShift').addEventListener(
-    'change',
-    sinkronisasiHariKerja
-);
-
-async function loadEditJamKerja() {
+document.addEventListener('DOMContentLoaded', function () {
+    const hariKerjaByShift = { '1': '1', '2': '1', '3': '2', '4': '2' };
     const editId = new URLSearchParams(window.location.search).get('edit_id');
 
-    if (!editId) {
-        return;
-    }
-
-    try {
-        const res = await fetch(
-            "{{ url_for('main.api_jam_kerja_detail') }}?id=" +
-            encodeURIComponent(editId)
-        );
-
-        const data = await res.json();
-
-        if (data.status !== 'success') {
-            alert(data.message || 'Data tidak ditemukan.');
-            return;
-        }
-
-        const row = data.data;
-
-        document.getElementById('selectShift').value = row.shift;
-        document.getElementById('selectPenggantianTlm1').value =
-            row.penggantian_tlm1;
-        document.getElementById('inputTglMulai').value = row.tgl_mulai;
-        document.getElementById('inputJamMasuk').value = row.jam_masuk;
-        document.getElementById('inputJamPulang').value = row.jam_pulang;
-
-        const radioHariKerja = document.querySelector(
-            `input[name="hari_kerja"][value="${row.hari_kerja}"]`
-        );
-
-        if (radioHariKerja) {
-            radioHariKerja.checked = true;
-        }
-
-        sinkronisasiHariKerja();
-
-        document.getElementById('btnSimpanJamKerja').innerHTML =
-            '<i class="bi bi-pencil-square me-1"></i>Update';
-
-    } catch (err) {
-        console.error(err);
-        alert('Gagal memuat data Master Jam Kerja.');
-    }
-}
-
-document.getElementById('btnSimpanJamKerja').addEventListener('click', function () {
-    const shift = document.getElementById('selectShift').value;
-    const penggantianTlm1 = document.getElementById('selectPenggantianTlm1').value;
-    const tglMulai = document.getElementById('inputTglMulai').value;
-    const jamMasuk = document.getElementById('inputJamMasuk').value;
-    const jamPulang = document.getElementById('inputJamPulang').value;
-
-    // Pastikan HK tersinkronisasi dengan SK sebelum data dikirim.
-    sinkronisasiHariKerja();
-
-    // Baca ulang HK setelah sinkronisasi dengan SK.
-    const hariKerja = document.querySelector('input[name="hari_kerja"]:checked')
-        ? document.querySelector('input[name="hari_kerja"]:checked').value
-        : '';
-
-    if (!shift) {
-        alert('Shift wajib dipilih');
-        return;
-    }
-    if (penggantianTlm1 === '') {
-        alert('Penggantian TLM 1 wajib dipilih');
-        return;
-    }
-    if (!tglMulai) {
-        alert('Tanggal Mulai wajib diisi');
-        return;
-    }
-    if (!hariKerja) {
-        alert('Hari Kerja wajib dipilih');
-        return;
-    }
-    if (!jamMasuk) {
-        alert('Jam Masuk wajib diisi');
-        return;
-    }
-    if (!jamPulang) {
-        alert('Jam Pulang wajib diisi');
-        return;
-    }
-
-    const payload = {
-        shift: shift,
-        penggantian_tlm1: penggantianTlm1 === '1',
-        tgl_mulai: tglMulai,
-        hari_kerja: hariKerja,
-        jam_masuk: jamMasuk,
-        jam_pulang: jamPulang,
+    const el = {
+        shift: document.getElementById('selectShift'),
+        penggantian: document.getElementById('selectPenggantianTlm1'),
+        tglMulai: document.getElementById('inputTglMulai'),
+        jamMasuk: document.getElementById('inputJamMasuk'),
+        jamPulang: document.getElementById('inputJamPulang'),
+        btnSave: document.getElementById('btnSimpanJamKerja'),
+        btnCancel: document.getElementById('btnBatalJamKerja')
     };
 
-    const editId = new URLSearchParams(window.location.search).get('edit_id');
-
-    if (editId) {
-        payload.id_jkerja = Number(editId);
+    function sinkronisasiHariKerja() {
+        const value = hariKerjaByShift[el.shift.value];
+        if (!value) return;
+        const radio = document.querySelector('input[name="hari_kerja"][value="' + value + '"]');
+        if (radio) radio.checked = true;
     }
 
-    const saveUrl = editId
-        ? "{{ url_for('main.api_jam_kerja_update') }}"
-        : "{{ url_for('main.api_jam_kerja_save') }}";
+    function resetForm() {
+        el.shift.value = '';
+        el.penggantian.value = '';
+        el.tglMulai.value = '';
+        el.jamMasuk.value = '';
+        el.jamPulang.value = '';
+        document.querySelectorAll('input[name="hari_kerja"]').forEach(r => r.checked = false);
+    }
 
-    fetch(saveUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-    })
-        .then(res => res.json())
-        .then(data => {
-            if (data.status === 'success') {
-                alert(data.message);
-                // reset form setelah sukses
-                document.getElementById('selectShift').value = '';
-                document.getElementById('selectPenggantianTlm1').value = '';
-                document.getElementById('inputTglMulai').value = '';
-                document.getElementById('seninKamis').checked = true;
-                document.getElementById('inputJamMasuk').value = '';
-                document.getElementById('inputJamPulang').value = '';
+    async function loadEdit() {
+        if (!editId) return;
 
-                if (editId) {
-                    window.location.href =
-                        "{{ url_for('main.view_cari_master_jam_kerja') }}";
-                }
-            } else {
-                alert('Gagal: ' + data.message);
+        try {
+            const res = await fetch('{{ url_for("main.api_jam_kerja_detail") }}?id=' + encodeURIComponent(editId));
+            const json = await res.json();
+
+            if (!res.ok || json.status !== 'success') {
+                alert(json.message || 'Data Master Jam Kerja tidak ditemukan.');
+                return;
             }
-        })
-        .catch(err => {
-            console.error(err);
-            alert('Terjadi kesalahan saat menyimpan data.');
-        });
-});
 
-loadEditJamKerja();
+            const row = json.data;
+            el.shift.value = row.shift || '';
+            el.penggantian.value = row.penggantian_tlm1 || '';
+            el.tglMulai.value = row.tgl_mulai || '';
+            el.jamMasuk.value = row.jam_masuk || '';
+            el.jamPulang.value = row.jam_pulang || '';
+
+            const radio = document.querySelector('input[name="hari_kerja"][value="' + row.hari_kerja + '"]');
+            if (radio) radio.checked = true;
+
+            sinkronisasiHariKerja();
+
+            document.getElementById('formTitle').textContent = 'Edit Master Jam Kerja';
+            document.getElementById('pageSubtitle').textContent = 'Perbarui data Master Jam Kerja yang sudah tersimpan.';
+            el.btnSave.querySelector('span').textContent = 'Simpan Perubahan';
+        } catch (err) {
+            console.error(err);
+            alert('Gagal memuat data Master Jam Kerja.');
+        }
+    }
+
+    el.shift.addEventListener('change', sinkronisasiHariKerja);
+
+    el.btnSave.addEventListener('click', async function () {
+        sinkronisasiHariKerja();
+
+        const radio = document.querySelector('input[name="hari_kerja"]:checked');
+        const hariKerja = radio ? radio.value : '';
+
+        if (!el.shift.value) return alert('Shift wajib dipilih');
+        if (el.penggantian.value === '') return alert('Penggantian TLM 1 wajib dipilih');
+        if (!el.tglMulai.value) return alert('Tanggal Mulai wajib diisi');
+        if (!hariKerja) return alert('Hari Kerja wajib dipilih');
+        if (!el.jamMasuk.value) return alert('Jam Masuk wajib diisi');
+        if (!el.jamPulang.value) return alert('Jam Pulang wajib diisi');
+
+        const payload = {
+            shift: el.shift.value,
+            penggantian_tlm1: el.penggantian.value === '1',
+            tgl_mulai: el.tglMulai.value,
+            hari_kerja: hariKerja,
+            jam_masuk: el.jamMasuk.value,
+            jam_pulang: el.jamPulang.value
+        };
+
+        if (editId) payload.id_jkerja = Number(editId);
+
+        const url = editId
+            ? '{{ url_for("main.api_jam_kerja_update") }}'
+            : '{{ url_for("main.api_jam_kerja_save") }}';
+
+        el.btnSave.disabled = true;
+
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const json = await res.json();
+
+            if (!res.ok || json.status !== 'success') {
+                alert(json.message || 'Gagal menyimpan Master Jam Kerja.');
+                return;
+            }
+
+            alert(json.message || 'Master Jam Kerja berhasil disimpan.');
+
+            if (editId) {
+                window.location.href = '{{ url_for("main.view_cari_master_jam_kerja") }}';
+            } else {
+                resetForm();
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Terjadi kesalahan jaringan.');
+        } finally {
+            el.btnSave.disabled = false;
+        }
+    });
+
+    el.btnCancel.addEventListener('click', function () {
+        if (editId) {
+            window.location.href = '{{ url_for("main.view_cari_master_jam_kerja") }}';
+        } else {
+            resetForm();
+        }
+    });
+
+    loadEdit();
+});
 {% endblock %}
