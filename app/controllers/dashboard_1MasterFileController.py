@@ -735,6 +735,54 @@ def master_jam_kerja():
     """Render halaman Master File Master Jam Kerja."""
     return render_template('pages/dashboard_1/Master File Master Jam Kerja.html')
 
+def get_jam_kerja_detail():
+    """Ambil detail Master Jam Kerja berdasarkan IDJKerja untuk mode edit."""
+    id_raw = request.args.get('id')
+
+    try:
+        id_jkerja = int(id_raw)
+    except (TypeError, ValueError):
+        return jsonify({
+            'status': 'error',
+            'message': 'IDJKerja tidak valid'
+        }), 400
+
+    row = MfJamKerja.query.filter(
+        MfJamKerja.IDJKERJA == id_jkerja
+    ).first()
+
+    if row is None:
+        return jsonify({
+            'status': 'error',
+            'message': 'Data Master Jam Kerja tidak ditemukan'
+        }), 404
+
+    def _time_value(value):
+        return value.strftime('%H:%M') if value else ''
+
+    return jsonify({
+        'status': 'success',
+        'data': {
+            'id_jkerja': row.IDJKERJA,
+            'shift': (
+                '1' if row.SHIFT == '1' and row.SHIFT_KERJA == '1' else
+                '2' if row.SHIFT == '1' and row.SHIFT_KERJA == '2' else
+                '3' if row.SHIFT == '2' and row.SHIFT_KERJA == '1' else
+                '4' if row.SHIFT == '2' and row.SHIFT_KERJA == '2' else ''
+            ),
+            'penggantian_tlm1': '1' if row.PENGGANTIAN_TLM1 == 'Y' else '0',
+            'tgl_mulai': row.TGL_MULAI_BERLAKU.strftime('%Y-%m-%d')
+                if row.TGL_MULAI_BERLAKU else '',
+            'hari_kerja': row.SHIFT or '',
+            'jam_masuk': _time_value(row.STD_JAM_IN),
+            'jam_pulang': _time_value(row.STD_JAM_OUT),
+            'update_by': row.UPDATE_BY or '-',
+            'update_date': row.UPDATE_DATE.isoformat()
+                if row.UPDATE_DATE else None,
+        }
+    })
+
+
 def save_jam_kerja():
     """
     Simpan data Master Jam Kerja baru dari form.
