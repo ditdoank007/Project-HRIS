@@ -1,111 +1,102 @@
 <!-- pages/dashboard_1/Cari User Account.html -->
-{% extends "layout/baseDashboard1.html" %}
+{% extends "layout/baseHRIS.html" %}
 
-{% block title %}- User Account{% endblock %}
+{% block title %}- Cari User{% endblock %}
+{% block header_kicker %}MASTER FILE{% endblock %}
+{% block header_title %}Cari User{% endblock %}
 
 {% block content %}
-<div class="nxl-content">
-    <div class="page-header">
-        <div class="page-header-left d-flex align-items-center">
-            <div class="page-header-title">
-                <h5 class="m-b-10">Master File</h5>
-            </div>
-            <ul class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url_for('main.view_master_user') }}">User Account</a></li>
-                <li class="breadcrumb-item">Cari User</li>
-            </ul>
+<div class="hris-page">
+    <div class="hris-page-header">
+        <div>
+            <h2 class="hris-page-title">Cari User Account</h2>
+            <p class="hris-page-subtitle">Cari dan kelola akun User Account HRIS berdasarkan data pegawai.</p>
         </div>
+
+        <a href="{{ url_for('main.view_master_user') }}" class="hris-btn hris-btn-secondary">
+            <i class="feather-arrow-left"></i>
+            <span>Kembali</span>
+        </a>
     </div>
 
-    <div class="main-content">
-        <div class="container-fluid">
-            <div class="card mb-4 shadow-sm" style="border-radius: 10px; overflow: hidden; border: none;">
-                <div class="card-header-custom d-flex justify-content-between align-items-center p-3"
-                    style="background: #ffffff; border-bottom: 1px solid #eee;">
-                    <h6 class="mb-0"><i class="bi bi-search me-2"></i> Cari User</h6>
-                    <a href="{{ url_for('main.view_master_user') }}" class="btn-close-custom">
-                        <i class="bi bi-x-lg"></i>
-                    </a>
-                </div>
-
-                <div class="card-body p-4">
-                    <div class="row mb-4 align-items-center">
-                        <div
-                            class="col-md-12 d-flex flex-column flex-md-row align-items-start align-items-md-center flex-wrap gap-2">
-                            <label class="filter-label-wide">Filter</label>
-
-                            <select class="form-select-sm border custom-select w-mobile-100" id="filterField1">
-                                <option value="">- Pilih Field -</option>
-                                <option value="Gol">Gol</option>
-                                <option value="Jabatan">Jabatan</option>
-                                <option value="Jenis Kelamin">Jenis Kelamin</option>
-                                <option value="Nama Peg">Nama Peg</option>
-                                <option value="NIP">NIP</option>
-                                <option value="No Finger">No Finger</option>
-                                <option value="Unit Kerja">Unit Kerja</option>
-                            </select>
-
-                            <div class="input-group-custom w-mobile-100">
-                                <input type="text" class="form-control-sm border" id="filterKeyword1">
-                                <span class="icon-append"><i class="bi bi-pencil-fill"></i></span>
-                            </div>
-
-                            <span class="mx-md-2 fw-bold text-dan">Dan</span>
-
-                            <select class="form-select-sm border custom-select w-mobile-100" id="filterField2">
-                                <option value="">- Pilih Field -</option>
-                                <option value="Gol">Gol</option>
-                                <option value="Jabatan">Jabatan</option>
-                                <option value="Jenis Kelamin">Jenis Kelamin</option>
-                                <option value="Nama Peg">Nama Peg</option>
-                                <option value="NIP">NIP</option>
-                                <option value="No Finger">No Finger</option>
-                                <option value="Unit Kerja">Unit Kerja</option>
-                            </select>
-
-                            <div class="input-group-custom w-mobile-100">
-                                <input type="text" class="form-control-sm border" id="filterKeyword2">
-                                <span class="icon-append"><i class="bi bi-pencil-fill"></i></span>
-                            </div>
-
-                            <button class="btn-refresh-custom ms-md-auto mt-2 mt-md-0 w-mobile-100" id="btnRefreshUser">
-                                <i class="bi bi-arrow-clockwise"></i> Refresh
-                            </button>
-                        </div>
-                        <p class="mb-1 fw-semibold text-dark" style="font-size: 12px;">
-                            ㅤ
-                        </p>
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-striped align-middle">
-                                <thead style="background:#EB6831;">
-                                    <tr>
-                                        <th style="color:white; vertical-align: middle;">No</th>
-                                        <th style="color:white; vertical-align: middle;">NIP</th>
-                                        <th style="color:white; vertical-align: middle;">Nama</th>
-                                        <th style="color:white; vertical-align: middle;">Jabatan</th>
-                                        <th style="color:white; vertical-align: middle;">Level</th>
-                                        <th style="color:white; vertical-align: middle;">UpdateBy</th>
-                                        <th style="color:white; vertical-align: middle;">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="userAccountTableBody">
-                                    <tr>
-                                        <td colspan="7" style="vertical-align: middle; padding: 20px;">No records to
-                                            display.</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+    <div class="hris-card">
+        <div class="hris-card-header">
+            <div>
+                <h3 class="hris-card-title">Filter User Account</h3>
+                <p class="hris-section-subtitle">Gunakan satu atau dua kriteria pencarian.</p>
             </div>
+
+            <button type="button" class="hris-btn hris-btn-secondary" id="btnRefreshUser">
+                <i class="feather-refresh-cw"></i>
+                <span>Refresh</span>
+            </button>
+        </div>
+
+        <div class="hris-filter">
+            <div class="hris-filter-field hris-filter-field-sm">
+                <label class="hris-filter-label" for="filterField1">Field 1</label>
+                <select class="hris-select" id="filterField1">
+                    <option value="">- Pilih Field -</option>
+                    <option value="Gol">Gol</option>
+                    <option value="Jabatan">Jabatan</option>
+                    <option value="Jenis Kelamin">Jenis Kelamin</option>
+                    <option value="Nama Peg">Nama Peg</option>
+                    <option value="NIP">NIP</option>
+                    <option value="No Finger">No Finger</option>
+                    <option value="Unit Kerja">Unit Kerja</option>
+                </select>
+            </div>
+
+            <div class="hris-filter-field">
+                <label class="hris-filter-label" for="filterKeyword1">Kata Kunci</label>
+                <input type="text" class="hris-input" id="filterKeyword1" placeholder="Ketik kata kunci...">
+            </div>
+
+            <div class="hris-filter-field hris-filter-field-sm">
+                <label class="hris-filter-label" for="filterField2">Field 2</label>
+                <select class="hris-select" id="filterField2">
+                    <option value="">- Pilih Field -</option>
+                    <option value="Gol">Gol</option>
+                    <option value="Jabatan">Jabatan</option>
+                    <option value="Jenis Kelamin">Jenis Kelamin</option>
+                    <option value="Nama Peg">Nama Peg</option>
+                    <option value="NIP">NIP</option>
+                    <option value="No Finger">No Finger</option>
+                    <option value="Unit Kerja">Unit Kerja</option>
+                </select>
+            </div>
+
+            <div class="hris-filter-field">
+                <label class="hris-filter-label" for="filterKeyword2">Kata Kunci</label>
+                <input type="text" class="hris-input" id="filterKeyword2" placeholder="Ketik kata kunci...">
+            </div>
+        </div>
+
+        <div class="hris-table-wrap">
+            <table class="hris-table-modern">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>NIP</th>
+                        <th>Nama</th>
+                        <th>Jabatan</th>
+                        <th>Level</th>
+                        <th>Update By</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="userAccountTableBody">
+                    <tr>
+                        <td colspan="7" class="hris-empty">No records to display.</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
 {% endblock %}
 
 {% block script %}
-<script>
 document.addEventListener('DOMContentLoaded', function () {
     const tbody = document.getElementById('userAccountTableBody');
 
@@ -156,23 +147,23 @@ document.addEventListener('DOMContentLoaded', function () {
         data.forEach(row => {
             tbody.innerHTML += `
                 <tr>
-                    <td class="text-center">${row.no}</td>
-                    <td class="text-center">${row.user_id}</td>
-                    <td class="text-start">${row.nama}</td>
-                    <td class="text-start">${row.jabatan}</td>
-                    <td class="text-center">${row.level}</td>
-                    <td class="text-center">${row.update_by}</td>
+                    <td >${row.no}</td>
+                    <td >${row.user_id}</td>
+                    <td >${row.nama}</td>
+                    <td >${row.jabatan}</td>
+                    <td >${row.level}</td>
+                    <td >${row.update_by}</td>
                     <td style="white-space: nowrap;">
                         <button
                             type="button"
-                            class="btn btn-sm btn-warning me-1"
+                            class="hris-btn hris-btn-secondary hris-btn-icon"
                             onclick="editUserAccount('${row.user_id}')"
                             title="Edit User Account">
                             <i class="bi bi-pencil-square"></i>
                         </button>
                         <button
                             type="button"
-                            class="btn btn-sm btn-danger"
+                            class="hris-btn hris-btn-danger-soft hris-btn-icon"
                             onclick="deleteUserAccount('${row.user_id}', '${row.nama.replace(/'/g, "\\'")}')"
                             title="Hapus User Account">
                             <i class="bi bi-trash"></i>
@@ -245,5 +236,4 @@ document.addEventListener('DOMContentLoaded', function () {
     // Load data pertama kali saat halaman dibuka
     loadUserAccount();
 });
-</script>
 {% endblock %}
