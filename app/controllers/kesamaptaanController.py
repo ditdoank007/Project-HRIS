@@ -216,6 +216,7 @@ def api_kesamaptaan_attendance(kegiatan_id):
                 "nip": row.NIP,
                 "nama": row.NAMA,
                 "scanned_date": row.SCANNED_DATE.isoformat(),
+                "signature_available": bool(row.SIGNATURE_PATH),
             }
             for index, row in enumerate(attendance_rows(kegiatan_id), start=1)
         ],
