@@ -12,10 +12,16 @@ from app.models.agendaRapatAttendanceModel import AgendaRapatAttendance
 from app.models.agendaRapatMetaModel import AgendaRapatMeta
 from app.models.calendarEventModel import CalendarEvent
 from app.models.pegawaiModel import Pegawai
+from app.models.kesamaptaanKegiatanModel import KesamaptaanKegiatan
+from app.models.kesamaptaanKehadiranModel import KesamaptaanKehadiran
 from app.services.agenda_rapat_service import (
     get_meta,
     record_employee_attendance,
     record_guest_attendance,
+)
+from app.services.kesamaptaan_service import (
+    employee_for_nip,
+    record_employee_attendance as record_kesamaptaan_attendance,
 )
 
 
