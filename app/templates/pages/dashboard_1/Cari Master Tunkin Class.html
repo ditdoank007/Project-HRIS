@@ -81,11 +81,12 @@
                                 <th>Tanggal Mulai</th>
                                 <th>No Surat</th>
                                 <th>Updated</th>
+                                <th>BY</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
                         <tbody id="tunkinClassTableBody">
-                            <tr><td colspan="7" class="hris-empty">Memuat data...</td></tr>
+                            <tr><td colspan="8" class="hris-empty">Memuat data...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -143,10 +144,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 <tr>
                     <td>${row.no}</td>
                     <td>${row.class_id}</td>
-                    <td>${row.tunjangan}</td>
+                    <td>${row.tunjangan != null ? ('Rp ' + Number(row.tunjangan).toLocaleString('id-ID') + ',-') : '-'}</td>
                     <td>${row.tgl_mulai}</td>
                     <td>${row.dokreff}</td>
                     <td>${row.updated}</td>
+                    <td>${row.by || '-'}</td>
                     <td>
                         <button type="button"
                                 class="hris-btn hris-btn-secondary hris-btn-icon btn-edit-tunkin"
