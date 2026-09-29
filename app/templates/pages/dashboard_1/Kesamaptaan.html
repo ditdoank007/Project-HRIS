@@ -1,0 +1,145 @@
+{% extends "layout/baseDashboard1.html" %}
+
+{% block title %}- Kesamaptaan{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/kesamaptaan.css') }}">
+
+<div class="nxl-content kesamaptaan-page">
+    <div class="page-header">
+        <div class="page-header-left d-flex align-items-center">
+            <div class="page-header-title">
+                <h5 class="m-b-10">SUMDA</h5>
+            </div>
+            <ul class="breadcrumb">
+                <li class="breadcrumb-item active">Kesamaptaan</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="container-fluid">
+            <div class="kes-hero">
+                <div>
+                    <div class="small text-white-50 mb-1">HRIS Reborn · SUMDA</div>
+                    <h4 class="mb-1 text-white">KESAMAPTAAN PEGAWAI KANTOR SAR SURABAYA</h4>
+                    <div class="small text-white-50">Kelola kegiatan, QR absensi pegawai, dokumentasi foto, dan PDF kegiatan.</div>
+                </div>
+                <button class="btn btn-light" data-bs-toggle="modal" data-bs-target="#modalKesamaptaan" onclick="resetEditor()">
+                    <i class="feather-plus me-1"></i> Buat Kegiatan
+                </button>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-md-4">
+                    <div class="card kes-stat"><div class="card-body"><div class="text-muted small">Total Kegiatan</div><div id="statTotal" class="fs-4 fw-bold mt-1">0</div></div></div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="card kes-stat"><div class="card-body"><div class="text-muted small">Terjadwal</div><div id="statTerjadwal" class="fs-4 fw-bold mt-1">0</div></div></div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="card kes-stat"><div class="card-body"><div class="text-muted small">Selesai</div><div id="statSelesai" class="fs-4 fw-bold mt-1">0</div></div></div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div><h6 class="mb-0">Daftar Kegiatan Kesamaptaan</h6><div class="text-muted small">Kegiatan terbaru ditampilkan di bagian atas.</div></div>
+                    <input id="searchKes" class="form-control form-control-sm kes-search" placeholder="Cari tanggal / status...">
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead><tr><th>No.</th><th>Hari / Tanggal</th><th>Jam</th><th>Judul Kegiatan</th><th>Hadir</th><th>Foto</th><th>Status</th><th class="text-end">Action</th></tr></thead>
+                            <tbody id="kesRows"><tr><td colspan="8" class="text-center py-5 text-muted">Memuat data...</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalKesamaptaan" tabindex="-1" aria-hidden="true">
+ <div class="modal-dialog modal-lg modal-dialog-centered">
+  <div class="modal-content">
+   <div class="modal-header"><div><h5 class="modal-title">Buat / Ubah Kegiatan Kesamaptaan</h5><div class="text-muted small">Judul kegiatan ditetapkan otomatis.</div></div><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+   <div class="modal-body">
+    <div class="kes-fixed-title mb-4"><i class="feather-activity me-2"></i>KESAMAPTAAN PEGAWAI KANTOR SAR SURABAYA</div>
+    <div class="row g-3">
+      <div class="col-md-4"><label class="form-label">Hari *</label><input id="kesHari" class="form-control" placeholder="Contoh: Senin"></div>
+      <div class="col-md-4"><label class="form-label">Tanggal *</label><input id="kesTanggal" type="date" class="form-control"></div>
+      <div class="col-md-4"><label class="form-label">Jam *</label><input id="kesJam" type="time" class="form-control"></div>
+    </div>
+   </div>
+   <div class="modal-footer"><button class="btn btn-light" data-bs-dismiss="modal">Tutup</button><button id="btnSimpanKes" class="btn btn-primary" onclick="simpanKesamaptaan()">Simpan</button></div>
+  </div>
+ </div>
+</div>
+
+<div class="modal fade" id="modalDetailKes" tabindex="-1" aria-hidden="true">
+ <div class="modal-dialog modal-xl modal-dialog-scrollable">
+  <div class="modal-content">
+   <div class="modal-header"><div><h5 class="modal-title">Detail Kesamaptaan</h5><div id="detailKesSub" class="text-muted small"></div></div><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+   <div id="detailKesBody" class="modal-body"></div>
+   <div class="modal-footer">
+     <button class="btn btn-light" data-bs-dismiss="modal">Tutup</button>
+     <button id="btnUbahKes" class="btn btn-outline-primary" onclick="ubahKesamaptaan()">Ubah</button>
+     <button id="btnBatalKes" class="btn btn-outline-danger" onclick="batalKesamaptaan()">Batal</button>
+     <button id="btnSelesaiKes" class="btn btn-success" onclick="selesaiKesamaptaan()">Selesai</button>
+   </div>
+  </div>
+ </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded",()=>{
+ let rows=[], currentId=null, editId=null;
+ const body=document.getElementById("kesRows"), search=document.getElementById("searchKes");
+
+ const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+ const fmtDate=v=>{if(!v)return "-";const d=new Date(v+"T00:00:00");return new Intl.DateTimeFormat("id-ID",{weekday:"long",day:"2-digit",month:"2-digit",year:"numeric"}).format(d)};
+ const badge=s=>{const map={TERJADWAL:"bg-primary",SELESAI:"bg-success",BATAL:"bg-danger"};return '<span class="badge '+(map[s]||"bg-secondary")+'">'+esc(s||"-")+"</span>"};
+
+ function render(){
+   const q=(search.value||"").toLowerCase().trim();
+   const filtered=rows.filter(x=>(x.hari+" "+x.tanggal+" "+x.status).toLowerCase().includes(q));
+   document.getElementById("statTotal").textContent=rows.length;
+   document.getElementById("statTerjadwal").textContent=rows.filter(x=>x.status==="TERJADWAL").length;
+   document.getElementById("statSelesai").textContent=rows.filter(x=>x.status==="SELESAI").length;
+   body.innerHTML=filtered.length?filtered.map((x,i)=>'<tr><td>'+(i+1)+'</td><td><strong>'+esc(x.hari)+'</strong><div class="text-muted small">'+esc(fmtDate(x.tanggal))+'</div></td><td>'+esc(x.jam)+' WIB</td><td>'+esc(x.judul)+'</td><td>'+x.attendance_count+'</td><td>'+x.photo_count+'</td><td>'+badge(x.status)+'</td><td class="text-end"><button class="btn btn-sm btn-outline-primary" onclick="lihatKesamaptaan('+x.kegiatan_id+')"><i class="feather-eye"></i></button></td></tr>').join(""):'<tr><td colspan="8" class="text-center py-5 text-muted">Belum ada kegiatan.</td></tr>';
+ }
+ async function load(){const r=await fetch("/api/kesamaptaan");const j=await r.json();if(!r.ok)throw Error(j.message||"Gagal memuat data.");rows=j.data||[];render()}
+ search.addEventListener("input",render);
+
+ window.resetEditor=()=>{editId=null;document.getElementById("kesHari").value="";document.getElementById("kesTanggal").value=new Date().toISOString().slice(0,10);document.getElementById("kesJam").value="07:30";document.getElementById("btnSimpanKes").textContent="Simpan"};
+ window.simpanKesamaptaan=async()=>{
+   const payload={hari:document.getElementById("kesHari").value.trim(),tanggal:document.getElementById("kesTanggal").value,jam:document.getElementById("kesJam").value};
+   if(!payload.hari||!payload.tanggal||!payload.jam){alert("Hari, tanggal, dan jam wajib diisi.");return}
+   const url=editId?"/api/kesamaptaan/"+editId:"/api/kesamaptaan",method=editId?"PUT":"POST";
+   const r=await fetch(url,{method,headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)}),j=await r.json();
+   if(!r.ok){alert(j.message||"Gagal menyimpan.");return}
+   bootstrap.Modal.getOrCreateInstance(document.getElementById("modalKesamaptaan")).hide();await load();alert(editId?"Kegiatan berhasil diubah.":"Kegiatan Kesamaptaan berhasil dibuat.");
+ };
+
+ window.lihatKesamaptaan=async id=>{
+   currentId=Number(id);const r=await fetch("/api/kesamaptaan/"+currentId),j=await r.json();if(!r.ok){alert(j.message||"Gagal memuat detail.");return}
+   const x=j.data;
+   document.getElementById("detailKesSub").textContent=x.hari+", "+fmtDate(x.tanggal)+" · "+x.jam+" WIB";
+   document.getElementById("btnUbahKes").classList.toggle("d-none",["SELESAI","BATAL"].includes(x.status));
+   document.getElementById("btnBatalKes").classList.toggle("d-none",["SELESAI","BATAL"].includes(x.status));
+   document.getElementById("btnSelesaiKes").classList.toggle("d-none",["SELESAI","BATAL"].includes(x.status));
+   document.getElementById("detailKesBody").innerHTML='<div class="row g-4"><div class="col-lg-7"><div class="kes-title-card"><div class="small text-muted">Judul Kegiatan</div><h5>'+esc(x.judul)+'</h5><div class="mt-3"><strong>Hari:</strong> '+esc(x.hari)+' &nbsp; <strong>Tanggal:</strong> '+esc(fmtDate(x.tanggal))+' &nbsp; <strong>Jam:</strong> '+esc(x.jam)+' WIB</div></div><div class="card border mt-3"><div class="card-body"><h6><i class="feather-camera me-1"></i> Foto Dokumentasi</h6><div class="kes-upload-row"><input id="kesPhotos" type="file" class="form-control" accept="image/jpeg,image/png" multiple><button class="btn btn-primary" onclick="uploadKesPhotos()">Upload</button></div><div class="small text-muted mt-2">Bisa memilih lebih dari satu foto. Maksimal 10 MB per foto.</div></div></div><div class="card border mt-3"><div class="card-body"><h6><i class="feather-users me-1"></i> Daftar Hadir <span class="badge bg-light text-dark">'+x.attendance_count+'</span></h6><div id="kesAttendanceList" class="table-responsive"><div class="text-muted small">Memuat...</div></div></div></div></div><div class="col-lg-5"><div class="card border"><div class="card-body text-center"><div class="small text-muted mb-2">QR CODE ABSEN KEHADIRAN</div><img class="kes-qr" src="/api/kesamaptaan/'+x.kegiatan_id+'/qr?ts='+Date.now()+'"><div class="small text-muted mt-2">Hanya pegawai aktif Kantor SAR Surabaya yang dapat melakukan absensi.</div><button class="btn btn-outline-primary mt-3 w-100" onclick="fullscreenKesQR('+x.kegiatan_id+')">Tampilkan QR Fullscreen</button></div></div>'+ (x.pdf_available?'<div class="card border mt-3"><div class="card-body"><h6><i class="feather-file-text me-1"></i> PDF Dokumentasi</h6><a class="btn btn-outline-success w-100" target="_blank" href="/api/kesamaptaan/'+x.kegiatan_id+'/pdf">Buka PDF Kesamaptaan</a></div></div>':"") + '</div></div>';
+   await loadAttendance(currentId);bootstrap.Modal.getOrCreateInstance(document.getElementById("modalDetailKes")).show();
+ };
+
+ async function loadAttendance(id){const r=await fetch("/api/kesamaptaan/"+id+"/attendance");const j=await r.json();const el=document.getElementById("kesAttendanceList");if(!r.ok){el.innerHTML='<div class="text-danger small">'+esc(j.message)+'</div>';return}el.innerHTML='<table class="table table-sm align-middle"><thead><tr><th>No.</th><th>Nama</th><th>Tanda Tangan</th></tr></thead><tbody>'+((j.data||[]).map(x=>'<tr><td>'+x.no+'</td><td>'+esc(x.nama)+'</td><td><span class="text-muted">Tersedia di PDF</span></td></tr>').join("")||'<tr><td colspan="3" class="text-muted">Belum ada pegawai hadir.</td></tr>')+'</tbody></table>'}
+ window.uploadKesPhotos=async()=>{const input=document.getElementById("kesPhotos");if(!input?.files?.length){alert("Pilih foto terlebih dahulu.");return}const fd=new FormData();[...input.files].forEach(f=>fd.append("photos",f));const r=await fetch("/api/kesamaptaan/"+currentId+"/photos",{method:"POST",body:fd}),j=await r.json();if(!r.ok){alert(j.message||"Gagal upload foto.");return}await load();await lihatKesamaptaan(currentId);alert(j.message||"Foto berhasil disimpan.")};
+ window.ubahKesamaptaan=async()=>{const r=await fetch("/api/kesamaptaan/"+currentId),j=await r.json();if(!r.ok)return alert(j.message);editId=currentId;document.getElementById("kesHari").value=j.data.hari;document.getElementById("kesTanggal").value=j.data.tanggal;document.getElementById("kesJam").value=j.data.jam;document.getElementById("btnSimpanKes").textContent="Simpan Perubahan";bootstrap.Modal.getOrCreateInstance(document.getElementById("modalDetailKes")).hide();bootstrap.Modal.getOrCreateInstance(document.getElementById("modalKesamaptaan")).show()};
+ window.batalKesamaptaan=async()=>{if(!confirm("Batalkan kegiatan Kesamaptaan ini?"))return;const r=await fetch("/api/kesamaptaan/"+currentId+"/cancel",{method:"POST"}),j=await r.json();if(!r.ok)return alert(j.message);await load();bootstrap.Modal.getOrCreateInstance(document.getElementById("modalDetailKes")).hide();alert("Kegiatan berhasil dibatalkan.")};
+ window.selesaiKesamaptaan=async()=>{if(!confirm("Tandai kegiatan sebagai SELESAI? Setelah ini QR dan upload dokumentasi ditutup, lalu PDF otomatis dibuat."))return;const r=await fetch("/api/kesamaptaan/"+currentId+"/complete",{method:"POST"}),j=await r.json();if(!r.ok)return alert(j.message);await load();await lihatKesamaptaan(currentId);alert(j.message||"Kegiatan selesai dan PDF berhasil dibuat.")};
+ window.fullscreenKesQR=id=>{const w=window.open("","_blank","width=700,height=850");if(!w)return alert("Popup diblokir browser.");w.document.write('<!doctype html><html><head><title>QR Kesamaptaan</title></head><body style="margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;font-family:Arial"><h2>QR ABSEN KESAMAPTAAN</h2><img src="/api/kesamaptaan/'+Number(id)+'/qr?ts='+Date.now()+'" style="width:min(75vw,600px)"><p>Hanya pegawai Kantor SAR Surabaya.</p></body></html>');w.document.close()};
+ load().catch(e=>body.innerHTML='<tr><td colspan="8" class="text-center text-danger py-4">'+esc(e.message)+'</td></tr>');
+});
+</script>
+{% endblock %}
