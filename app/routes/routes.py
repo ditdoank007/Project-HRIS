@@ -1881,12 +1881,14 @@ def view_kirim_forum_media_informasi():
 
 @main.route('/agenda/rapat')
 @login_required
+@form_access_required('AGENDA_RAPAT')
 def view_agenda_rapat():
     return agenda_rapat()
 
 
 @main.route('/agenda/disposisi')
 @login_required
+@form_access_required('AGENDA_DISPOSISI')
 def view_agenda_disposisi():
     return agenda_disposisi()
 
@@ -1897,102 +1899,119 @@ def view_agenda_disposisi():
 
 @main.route('/api/agenda/rapat', methods=['GET'])
 @login_required
+@form_access_required('AGENDA_RAPAT')
 def api_agenda_rapat_route():
     return api_agenda_rapat_list()
 
 
 @main.route('/api/agenda/rapat', methods=['POST'])
 @login_required
+@form_access_required('AGENDA_RAPAT')
 def api_agenda_rapat_save_route():
     return api_agenda_rapat_save()
 
 
 @main.route('/api/agenda/rapat/<int:event_id>', methods=['PUT'])
 @login_required
+@form_access_required('AGENDA_RAPAT')
 def api_agenda_rapat_update_route(event_id):
     return api_agenda_rapat_update(event_id)
 
 
 @main.route('/api/agenda/rapat/<int:event_id>', methods=['GET'])
 @login_required
+@form_access_required('AGENDA_RAPAT')
 def api_agenda_rapat_detail_route(event_id):
     return api_agenda_rapat_detail(event_id)
 
 
 @main.route('/api/agenda/rapat/<int:event_id>/cancel', methods=['POST'])
 @login_required
+@form_access_required('AGENDA_RAPAT')
 def api_agenda_rapat_cancel_route(event_id):
     return api_agenda_rapat_cancel(event_id)
 
 
 @main.route('/api/agenda/rapat/<int:event_id>/complete', methods=['POST'])
 @login_required
+@form_access_required('AGENDA_RAPAT')
 def api_agenda_rapat_complete_route(event_id):
     return api_agenda_rapat_complete(event_id)
 
 
 @main.route('/api/agenda/rapat/<int:event_id>/qr', methods=['GET'])
 @login_required
+@form_access_required('AGENDA_RAPAT')
 def api_agenda_rapat_qr_route(event_id):
     return api_agenda_rapat_qr(event_id)
 
 
 @main.route('/api/agenda/rapat/<int:event_id>/attendance', methods=['GET'])
 @login_required
+@form_access_required('AGENDA_RAPAT')
 def api_agenda_rapat_attendance_route(event_id):
     return api_agenda_rapat_attendance(event_id)
 
 
 @main.route('/api/agenda/rapat/<int:event_id>/daftar-hadir', methods=['GET'])
 @login_required
+@form_access_required('AGENDA_RAPAT')
 def api_agenda_rapat_daftar_hadir_pdf_route(event_id):
     return api_agenda_rapat_daftar_hadir_pdf(event_id)
 
 
 @main.route('/rapat/scan/<token>', methods=['GET'])
 @login_required
+@form_access_required('AGENDA_RAPAT')
 def api_agenda_rapat_scan_route(token):
     return api_agenda_rapat_scan(token)
 
 
 @main.route('/api/agenda/rapat/<int:event_id>/notulen', methods=['POST'])
 @login_required
+@form_access_required('AGENDA_RAPAT')
 def api_agenda_rapat_notulen_upload_route(event_id):
     return api_agenda_rapat_notulen_upload(event_id)
 
 
 @main.route('/api/agenda/rapat/<int:event_id>/notulen', methods=['GET'])
 @login_required
+@form_access_required('AGENDA_RAPAT')
 def api_agenda_rapat_notulen_download_route(event_id):
     return api_agenda_rapat_notulen_download(event_id)
 
 
 @main.route('/api/agenda/pegawai/search', methods=['GET'])
 @login_required
+@form_access_required('AGENDA_RAPAT')
 def api_agenda_pegawai_search_route():
     return api_pegawai_agenda_search()
 
 
 @main.route('/api/agenda/disposisi', methods=['GET'])
 @login_required
+@form_access_required('AGENDA_DISPOSISI')
 def api_agenda_disposisi_list_route():
     return api_agenda_disposisi_list()
 
 
 @main.route('/api/agenda/disposisi', methods=['POST'])
 @login_required
+@form_access_required('AGENDA_DISPOSISI')
 def api_agenda_disposisi_save_route():
     return api_agenda_disposisi_save()
 
 
 @main.route('/api/agenda/disposisi/<int:agenda_id>', methods=['GET'])
 @login_required
+@form_access_required('AGENDA_DISPOSISI')
 def api_agenda_disposisi_detail_route(agenda_id):
     return api_agenda_disposisi_detail(agenda_id)
 
 
 @main.route('/api/agenda/disposisi/<int:agenda_id>/cancel', methods=['POST'])
 @login_required
+@form_access_required('AGENDA_DISPOSISI')
 def api_agenda_disposisi_cancel_route(agenda_id):
     return api_agenda_disposisi_cancel(agenda_id)
 
@@ -2003,72 +2022,84 @@ def api_agenda_disposisi_cancel_route(agenda_id):
 
 @main.route('/kesamaptaan')
 @login_required
+@form_access_required('SUMDA_KESAMAPTAAN')
 def view_kesamaptaan():
     return kesamaptaan()
 
 
 @main.route('/api/kesamaptaan', methods=['GET'])
 @login_required
+@form_access_required('SUMDA_KESAMAPTAAN')
 def api_kesamaptaan_list_route():
     return api_kesamaptaan_list()
 
 
 @main.route('/api/kesamaptaan', methods=['POST'])
 @login_required
+@form_access_required('SUMDA_KESAMAPTAAN')
 def api_kesamaptaan_save_route():
     return api_kesamaptaan_save()
 
 
 @main.route('/api/kesamaptaan/<int:kegiatan_id>', methods=['GET'])
 @login_required
+@form_access_required('SUMDA_KESAMAPTAAN')
 def api_kesamaptaan_detail_route(kegiatan_id):
     return api_kesamaptaan_detail(kegiatan_id)
 
 
 @main.route('/api/kesamaptaan/<int:kegiatan_id>', methods=['PUT'])
 @login_required
+@form_access_required('SUMDA_KESAMAPTAAN')
 def api_kesamaptaan_update_route(kegiatan_id):
     return api_kesamaptaan_update(kegiatan_id)
 
 
 @main.route('/api/kesamaptaan/<int:kegiatan_id>/cancel', methods=['POST'])
 @login_required
+@form_access_required('SUMDA_KESAMAPTAAN')
 def api_kesamaptaan_cancel_route(kegiatan_id):
     return api_kesamaptaan_cancel(kegiatan_id)
 
 
 @main.route('/api/kesamaptaan/<int:kegiatan_id>/complete', methods=['POST'])
 @login_required
+@form_access_required('SUMDA_KESAMAPTAAN')
 def api_kesamaptaan_complete_route(kegiatan_id):
     return api_kesamaptaan_complete(kegiatan_id)
 
 
 @main.route('/api/kesamaptaan/<int:kegiatan_id>/qr', methods=['GET'])
 @login_required
+@form_access_required('SUMDA_KESAMAPTAAN')
 def api_kesamaptaan_qr_route(kegiatan_id):
     return api_kesamaptaan_qr(kegiatan_id)
 
 
 @main.route('/api/kesamaptaan/<int:kegiatan_id>/attendance', methods=['GET'])
 @login_required
+@form_access_required('SUMDA_KESAMAPTAAN')
 def api_kesamaptaan_attendance_route(kegiatan_id):
     return api_kesamaptaan_attendance(kegiatan_id)
 
 
 @main.route('/api/kesamaptaan/<int:kegiatan_id>/photos', methods=['POST'])
 @login_required
+@form_access_required('SUMDA_KESAMAPTAAN')
 def api_kesamaptaan_photos_route(kegiatan_id):
     return api_kesamaptaan_photos(kegiatan_id)
 
 
 @main.route('/api/kesamaptaan/<int:kegiatan_id>/signature/<path:nip>', methods=['GET'])
 @login_required
+@form_access_required('SUMDA_KESAMAPTAAN')
 def api_kesamaptaan_signature_route(kegiatan_id, nip):
     return api_kesamaptaan_signature(kegiatan_id, nip)
 
 
 @main.route('/api/kesamaptaan/<int:kegiatan_id>/pdf', methods=['GET'])
 @login_required
+@form_access_required('SUMDA_KESAMAPTAAN')
 def api_kesamaptaan_pdf_route(kegiatan_id):
     return api_kesamaptaan_pdf(kegiatan_id)
 
