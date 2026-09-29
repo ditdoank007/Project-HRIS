@@ -1,25 +1,56 @@
+<!-- pages/dashboard_1/Master File Master Jam Kerja.html -->
 {% extends "layout/baseHRIS.html" %}
-{% block title %}- Master Jam Kerja{% endblock %}
+
+{% block title %}- Jam Kerja{% endblock %}
+
 {% block header_kicker %}MASTER FILE{% endblock %}
 {% block header_title %}Master Jam Kerja{% endblock %}
 
 {% block content %}
-
 <div class="hris-page">
-    <div class="hris-page-header">
-        <div>
-            <h2 class="hris-page-title">Master Jam Kerja</h2>
-            <p class="hris-page-subtitle">Kelola data Master Jam Kerja HRIS.</p>
+    <div class="page-header">
+        <div class="page-header-left d-flex align-items-center">
+            <div class="page-header-title">
+                <h5 class="m-b-10">Master File</h5>
+            </div>
+            <ul class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.view_master_jam_kerja') }}">Master Jam Kerja</a></li>
+            </ul>
         </div>
     </div>
-    
-<div class="hris-page">
-    <div class="hris-card-body">
-                    <div class="hris-form-stack">
+
+    <div class="main-content master-siaga">
+        <div class="container-fluid">
+            <div class="hris-card">
+                <div class="hris-card-header"
+                    style="border-radius: 10px;">
+                    <h6 class="mb-0">
+                        <i class="ti ti-clock-edit me-2"></i> Master Jam Kerja
+                    </h6>
+
+                    <div class="header-actions">
+                        <button class="btn p-0 border-0 bg-transparent shadow-none d-md-none" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#headerIconsCollapse">
+                            <i class="bi bi-three-dots-vertical" style="font-size: 1.5rem; color: #333;"></i>
+                        </button>
+
+                        <div class="collapse d-md-flex align-items-center" id="headerIconsCollapse">
+                            <div class="header-icons-wrapper d-flex gap-3 p-2 p-md-0 mt-2 mt-md-0">
+                                <a href="{{ url_for('main.view_cari_master_jam_kerja') }}"
+                                    class="btn p-0 border-0 bg-transparent shadow-none text-decoration-none">
+                                    <i class="bi bi-search" style="color: #333; font-size: 1.1rem;"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hris-card-body">
+                    <div class="row g-3">
                         <div class="col-12 d-md-flex align-items-center">
-                            
-                            <label class="hris-form-row-label">Shift Kerja</label>
-                            <div class="hris-form-control">
+                            <div class="col-md-1"></div>
+                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Shift Kerja</label>
+                            <div class="col-md-7">
                                 <select id="selectShift" class="hris-select w-100">
                                     <option value="">Pilih</option>
                                     <option value="1">SK-1 — Reguler</option>
@@ -31,9 +62,9 @@
                         </div>
 
                         <div class="col-12 d-md-flex align-items-center">
-                            
-                            <label class="hris-form-row-label">Penggantian TLM 1</label>
-                            <div class="hris-form-control">
+                            <div class="col-md-1"></div>
+                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Penggantian TLM 1</label>
+                            <div class="col-md-7">
                                 <select id="selectPenggantianTlm1" class="hris-select w-100">
                                     <option value="">Pilih</option>
                                     <option value="1">Ada Penggantian (Y)</option>
@@ -43,9 +74,9 @@
                         </div>
 
                         <div class="col-12 d-md-flex align-items-center">
-                            
-                            <label class="hris-form-row-label">Tanggal Mulai</label>
-                            <div class="hris-form-control">
+                            <div class="col-md-1"></div>
+                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Tanggal Mulai</label>
+                            <div class="col-md-7">
                                 <div class="hris-input-group w-100">
                                     <input type="date" id="inputTglMulai" class="hris-input w-100" style="outline: none;">
                                     <span class="hris-input-addon"><i class="bi bi-calendar3"></i></span>
@@ -54,9 +85,9 @@
                         </div>
 
                         <div class="col-12 d-md-flex align-items-center">
-                            
-                            <label class="hris-form-row-label">Hari Kerja</label>
-                            <div class="hris-form-control">
+                            <div class="col-md-1"></div>
+                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Hari Kerja</label>
+                            <div class="col-md-7">
                                 <div class="d-flex gap-4 align-items-center">
                                     <div class="form-check d-flex align-items-center gap-2 mb-0">
                                         <input class="form-check-input" type="radio" name="hari_kerja" id="seninKamis"
@@ -77,9 +108,9 @@
                         </div>
 
                         <div class="col-12 d-md-flex align-items-center">
-                            
-                            <label class="hris-form-row-label">Jam Masuk</label>
-                            <div class="hris-form-control">
+                            <div class="col-md-1"></div>
+                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Jam Masuk</label>
+                            <div class="col-md-7">
                                 <div style="display: flex; align-items: center; gap: 5px;">
                                     <input type="time" id="inputJamMasuk" class="hris-input"
                                         style="width: 150px; outline: none;">
@@ -88,9 +119,9 @@
                         </div>
 
                         <div class="col-12 d-md-flex align-items-center">
-                            
-                            <label class="hris-form-row-label">Jam Pulang</label>
-                            <div class="hris-form-control">
+                            <div class="col-md-1"></div>
+                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Jam Pulang</label>
+                            <div class="col-md-7">
                                 <div style="display: flex; align-items: center; gap: 5px;">
                                     <input type="time" id="inputJamPulang" class="hris-input"
                                         style="width: 150px; outline: none;">
@@ -139,10 +170,6 @@
             </div>
         </div>
     </div>
-</div>
-
-
-
 </div>
 {% endblock %}
 
