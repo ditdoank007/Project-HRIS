@@ -123,7 +123,7 @@ document.addEventListener('DOMContentLoaded', function () {
         tbody.innerHTML = '<tr><td colspan="6" class="hris-empty">Memuat data...</td></tr>';
 
         try {
-            const res = await fetch('/api/pegawai-vip/list?' + buildQueryParams().toString());
+            const res = await fetch('/api/pegawai-vip/list?exclude_vip=Y&' + buildQueryParams().toString());
             const json = await res.json();
 
             if (json.status !== 'success' || !json.data || json.data.length === 0) {
@@ -138,27 +138,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     <td>${row.nama ?? '-'}</td>
                     <td>${row.jabatan ?? '-'}</td>
                     <td>
-                        <input type="checkbox"
-                               class="vip-search-checkbox"
-                               data-nip="${row.nip}"
-                               ${row.is_vip === true ? 'checked' : ''}>
-                    </td>
-                    <td style="white-space: nowrap;">
-                        ${row.is_vip === true
-                            ? `<button type="button"
-                                       class="hris-btn hris-btn-danger-soft hris-btn-icon btn-remove-vip"
-                                       data-nip="${row.nip}"
-                                       data-nama="${(row.nama || '').replace(/"/g, '&quot;')}"
-                                       title="Hapus dari VIP">
-                                   <i class="feather-trash-2"></i>
-                               </button>`
-                            : `<button type="button"
-                                       class="hris-btn hris-btn-secondary hris-btn-icon btn-add-vip"
-                                       data-nip="${row.nip}"
-                                       title="Jadikan VIP">
-                                   <i class="feather-star"></i>
-                               </button>`
-                        }
+                        <button type="button"
+                                class="hris-btn hris-btn-secondary hris-btn-icon btn-add-vip"
+                                data-nip="${row.nip}"
+                                data-nama="${(row.nama || '').replace(/"/g, '&quot;')}"
+                                title="Tambahkan sebagai VIP">
+                            <i class="feather-star"></i>
+                        </button>
                     </td>
                 </tr>
             `).join('');
@@ -195,30 +181,10 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    tbody.addEventListener('change', async function (e) {
-        if (!e.target.classList.contains('vip-search-checkbox')) return;
-
-        const checkbox = e.target;
-        const newValue = checkbox.checked;
-
-        if (!newValue && !confirm('Hapus status VIP untuk pegawai ini?')) {
-            checkbox.checked = true;
-            return;
-        }
-
-        await setVip(checkbox.dataset.nip, newValue, '');
-    });
-
     tbody.addEventListener('click', function (e) {
-        const removeBtn = e.target.closest('.btn-remove-vip');
-        if (removeBtn) {
-            setVip(removeBtn.dataset.nip, false, removeBtn.dataset.nama);
-            return;
-        }
-
         const addBtn = e.target.closest('.btn-add-vip');
         if (addBtn) {
-            setVip(addBtn.dataset.nip, true, '');
+            setVip(addBtn.dataset.nip, true, addBtn.dataset.nama);
         }
     });
 
