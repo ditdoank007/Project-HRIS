@@ -1,103 +1,95 @@
-<!-- pages/dashboard_1/Cari Master Potongan.html -->
 {% extends "layout/baseHRIS.html" %}
 
-{% block title %}- Potongan{% endblock %}
-
+{% block title %}- Cari Potongan{% endblock %}
 {% block header_kicker %}MASTER FILE{% endblock %}
-{% block header_title %}Cari Master Potongan{% endblock %}
+{% block header_title %}Cari Potongan{% endblock %}
 
 {% block content %}
-<div class="nxl-content">
-    <div class="page-header">
-        <div class="page-header-left d-flex align-items-center">
-            <div class="page-header-title">
-                <h5 class="m-b-10">Master File</h5>
-            </div>
-            <ul class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url_for('main.view_master_potongan') }}">Master Potongan</a></li>
-                <li class="breadcrumb-item">Cari Master Potongan</li>
-            </ul>
+<div class="hris-page">
+    <div class="hris-page-header">
+        <div>
+            <h2 class="hris-page-title">Cari Master Potongan</h2>
+            <p class="hris-page-subtitle">Cari, edit, atau hapus data Master Potongan yang sudah tersimpan.</p>
         </div>
+        <a href="{{ url_for('main.view_master_potongan') }}" class="hris-btn hris-btn-secondary">
+            <i class="feather-arrow-left"></i>
+            <span>Kembali</span>
+        </a>
     </div>
 
-    <div class="main-content master-siaga">
-        <div class="container-fluid">
-            <div class="card mb-4 shadow-sm" style="border-radius: 10px; overflow: hidden; border: none;">
-                <div class="card-header-custom d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0"><i class="bi bi-search me-2"></i> Cari Transaksi</h6>
-                    <a href="{{ url_for('main.view_master_potongan') }}" class="btn-close-custom">
-                        <i class="bi bi-x-lg"></i>
-                    </a>
+    <div class="hris-card">
+        <div class="hris-card-header">
+            <div>
+                <h3 class="hris-card-title">Data Master Potongan</h3>
+                <p class="hris-section-subtitle">Gunakan filter untuk menemukan data yang akan dikelola.</p>
+            </div>
+            <button type="button" class="hris-btn hris-btn-secondary" id="btnRefreshPotongan">
+                <i class="feather-refresh-cw"></i>
+                <span>Refresh</span>
+            </button>
+        </div>
+
+        <div class="hris-card-body">
+            <div class="hris-form-stack">
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="periodeInput">Periode</label>
+                    <input type="date" class="hris-input" id="periodeInput">
                 </div>
 
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-12 mb-3 d-flex flex-column flex-md-row align-items-start align-items-md-center gap-2">
-                            <label class="filter-label-wide">Periode</label>
-                            <div class="input-group-custom w-mobile-100">
-                                <input type="date" class="form-control-sm border" id="periodeInput">
-                                <span class="icon-append"><i class="bi bi-calendar3"></i></span>
-                            </div>
-                        </div>
-
-                        <div class="col-md-12 d-flex flex-column flex-md-row align-items-start align-items-md-center flex-wrap gap-2">
-                            <label class="filter-label-wide">Filter</label>
-
-                            <select class="form-select-sm border custom-select w-mobile-100" id="filterField1">
-                                <option value="">- Pilih Field -</option>
-                                <option>Kategori</option>
-                                <option>Potongan(%)</option>
-                                <option>Tingkat</option>
-                            </select>
-
-                            <div class="input-group-custom w-mobile-100">
-                                <input type="text" class="form-control-sm border" id="filterKeyword1">
-                                <span class="icon-append"><i class="bi bi-pencil-fill"></i></span>
-                            </div>
-
-                            <span class="mx-md-2 fw-bold text-dan">Dan</span>
-
-                            <select class="form-select-sm border custom-select w-mobile-100" id="filterField2">
-                                <option value="">- Pilih Field -</option>
-                                <option>Kategori</option>
-                                <option>Potongan(%)</option>
-                                <option>Tingkat</option>
-                            </select>
-
-                            <div class="input-group-custom w-mobile-100">
-                                <input type="text" class="form-control-sm border" id="filterKeyword2">
-                                <span class="icon-append"><i class="bi bi-pencil-fill"></i></span>
-                            </div>
-
-                            <button class="btn-refresh-custom ms-md-auto mt-2 mt-md-0 w-mobile-100" id="btnRefreshPotongan">
-                                <i class="bi bi-arrow-clockwise"></i> Refresh
-                            </button>
-                        </div>
-                        <p class="mb-1 fw-semibold text-dark" style="font-size: 12px;">
-                            ㅤ
-                        </p>
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-striped text-center align-middle">
-                                <thead style="background:#EB6831;">
-                                    <tr>
-                                        <th style="color:white; vertical-align: middle;">No</th>
-                                        <th style="color:white; vertical-align: middle;">Kategori</th>
-                                        <th style="color:white; vertical-align: middle;">Tingkat</th>
-                                        <th style="color:white; vertical-align: middle;">Deskripsi</th>
-                                        <th style="color:white; vertical-align: middle;">Potongan(%)</th>
-                                        <th style="color:white; vertical-align: middle;">Range</th>
-                                        <th style="color:white; vertical-align: middle;">Tanggal Mulai</th>
-                                        <th style="color:white; vertical-align: middle;">Updated</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="potonganTableBody">
-                                    <tr>
-                                        <td colspan="8" style="vertical-align: middle; padding: 20px;">No records to display.</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="filterField1">Filter 1</label>
+                    <div class="hris-form-inline">
+                        <select class="hris-select" id="filterField1">
+                            <option value="">- Pilih Field -</option>
+                            <option>Kategori</option>
+                            <option>Potongan(%)</option>
+                            <option>Tingkat</option>
+                        </select>
+                        <input type="text" class="hris-input" id="filterKeyword1" placeholder="Kata kunci...">
                     </div>
+                </div>
+
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="filterField2">Filter 2</label>
+                    <div class="hris-form-inline">
+                        <select class="hris-select" id="filterField2">
+                            <option value="">- Pilih Field -</option>
+                            <option>Kategori</option>
+                            <option>Potongan(%)</option>
+                            <option>Tingkat</option>
+                        </select>
+                        <input type="text" class="hris-input" id="filterKeyword2" placeholder="Kata kunci...">
+                    </div>
+                </div>
+            </div>
+
+            <div class="hris-section" style="margin-top: 18px;">
+                <div class="hris-section-header">
+                    <div>
+                        <h3 class="hris-section-title">Hasil Pencarian</h3>
+                        <p class="hris-section-subtitle">Pilih Edit untuk memperbarui atau Hapus untuk menghapus data.</p>
+                    </div>
+                </div>
+
+                <div class="hris-table-wrap">
+                    <table class="hris-table-modern">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Kategori</th>
+                                <th>Tingkat</th>
+                                <th>Deskripsi</th>
+                                <th>Potongan (%)</th>
+                                <th>Range</th>
+                                <th>Tanggal Mulai</th>
+                                <th>Updated</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="potonganTableBody">
+                            <tr><td colspan="9" class="hris-empty">Memuat data...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -106,52 +98,46 @@
 {% endblock %}
 
 {% block script %}
-
 document.addEventListener('DOMContentLoaded', function () {
     const tbody = document.getElementById('potonganTableBody');
-    const btnRefresh = document.getElementById('btnRefreshPotongan');
-
-    const periodeInput = document.getElementById('periodeInput');
-    const filterField1 = document.getElementById('filterField1');
-    const filterKeyword1 = document.getElementById('filterKeyword1');
-    const filterField2 = document.getElementById('filterField2');
-    const filterKeyword2 = document.getElementById('filterKeyword2');
 
     function buildQueryParams() {
         const params = new URLSearchParams();
 
-        if (periodeInput.value) {
-            params.set('periode', periodeInput.value);
-        }
+        const periode = document.getElementById('periodeInput').value;
+        const field1 = document.getElementById('filterField1').value;
+        const keyword1 = document.getElementById('filterKeyword1').value.trim();
+        const field2 = document.getElementById('filterField2').value;
+        const keyword2 = document.getElementById('filterKeyword2').value.trim();
 
-        if (filterField1.value && filterKeyword1.value.trim()) {
-            params.set('field1', filterField1.value);
-            params.set('keyword1', filterKeyword1.value.trim());
+        if (periode) params.set('periode', periode);
+        if (field1 && keyword1) {
+            params.set('field1', field1);
+            params.set('keyword1', keyword1);
         }
-
-        if (filterField2.value && filterKeyword2.value.trim()) {
-            params.set('field2', filterField2.value);
-            params.set('keyword2', filterKeyword2.value.trim());
+        if (field2 && keyword2) {
+            params.set('field2', field2);
+            params.set('keyword2', keyword2);
         }
 
         return params;
     }
 
     async function loadPotonganList() {
-        tbody.innerHTML = `<tr><td colspan="8" style="padding:20px;">Memuat data...</td></tr>`;
+        tbody.innerHTML = '<tr><td colspan="9" class="hris-empty">Memuat data...</td></tr>';
 
         try {
-            const params = buildQueryParams();
-            const res = await fetch(`/api/potongan/list?${params.toString()}`);
+            const res = await fetch('/api/potongan/list?' + buildQueryParams().toString());
             const json = await res.json();
 
-            if (json.status !== 'success') {
-                tbody.innerHTML = `<tr><td colspan="8" style="padding:20px;">${json.message || 'Gagal memuat data.'}</td></tr>`;
+            if (!res.ok || json.status !== 'success') {
+                tbody.innerHTML = '<tr><td colspan="9" class="hris-empty">' +
+                    (json.message || 'Gagal memuat data.') + '</td></tr>';
                 return;
             }
 
-            if (json.data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" style="padding:20px;">No records to display.</td></tr>`;
+            if (!json.data || json.data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" class="hris-empty">No records to display.</td></tr>';
                 return;
             }
 
@@ -165,19 +151,87 @@ document.addEventListener('DOMContentLoaded', function () {
                     <td>${row.range}</td>
                     <td>${row.tgl_mulai}</td>
                     <td>${row.updated}</td>
+                    <td style="white-space: nowrap;">
+                        <button type="button"
+                                class="hris-btn hris-btn-secondary hris-btn-icon btn-edit-potongan"
+                                data-id="${row.potongan_id}"
+                                title="Edit">
+                            <i class="feather-edit-2"></i>
+                        </button>
+                        <button type="button"
+                                class="hris-btn hris-btn-danger-soft hris-btn-icon btn-delete-potongan"
+                                data-id="${row.potongan_id}"
+                                data-name="${(row.deskripsi || '').replace(/"/g, '&quot;')}"
+                                title="Hapus">
+                            <i class="feather-trash-2"></i>
+                        </button>
+                    </td>
                 </tr>
             `).join('');
-
         } catch (err) {
             console.error('Gagal memuat data potongan:', err);
-            tbody.innerHTML = `<tr><td colspan="8" style="padding:20px;">Gagal memuat data.</td></tr>`;
+            tbody.innerHTML = '<tr><td colspan="9" class="hris-empty">Gagal memuat data.</td></tr>';
         }
     }
 
-    btnRefresh.addEventListener('click', loadPotonganList);
+    tbody.addEventListener('click', async function (e) {
+        const editButton = e.target.closest('.btn-edit-potongan');
+        if (editButton) {
+            window.location.href = '{{ url_for("main.view_master_potongan") }}?id=' +
+                encodeURIComponent(editButton.dataset.id);
+            return;
+        }
 
-    // Muat data otomatis saat halaman pertama kali dibuka (tanpa filter)
+        const deleteButton = e.target.closest('.btn-delete-potongan');
+        if (!deleteButton) return;
+
+        const id = deleteButton.dataset.id;
+        const name = deleteButton.dataset.name || id;
+
+        if (!confirm(
+            'Hapus Master Potongan berikut?\n\n' +
+            name +
+            '\nID: ' + id +
+            '\n\nData yang dihapus tidak dapat dikembalikan.\n\nLanjutkan?'
+        )) {
+            return;
+        }
+
+        deleteButton.disabled = true;
+
+        try {
+            const res = await fetch('/api/potongan/delete/' + encodeURIComponent(id), {
+                method: 'POST'
+            });
+            const json = await res.json();
+
+            if (!res.ok || json.status !== 'success') {
+                alert(json.message || 'Gagal menghapus data potongan.');
+                deleteButton.disabled = false;
+                return;
+            }
+
+            alert(json.message || 'Data potongan berhasil dihapus.');
+            await loadPotonganList();
+        } catch (err) {
+            console.error(err);
+            alert('Gagal menghubungi server.');
+            deleteButton.disabled = false;
+        }
+    });
+
+    document.getElementById('btnRefreshPotongan').addEventListener('click', loadPotonganList);
+
+    ['periodeInput', 'filterField1', 'filterField2'].forEach(id => {
+        document.getElementById(id).addEventListener('change', loadPotonganList);
+    });
+
+    ['filterKeyword1', 'filterKeyword2'].forEach(id => {
+        document.getElementById(id).addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') loadPotonganList();
+        });
+    });
+
     loadPotonganList();
 });
-
 {% endblock %}
