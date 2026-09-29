@@ -5,6 +5,7 @@ from flask import render_template
 
 from app.models.pegawaiModel import Pegawai
 from app.models.unitKerjaModel import MfUnitKerja
+from app.utils.pegawaiHelper import get_operational_pegawai_query
 
 
 def _calculate_age(birth_date, today):
@@ -47,15 +48,18 @@ def dashboard_infografis():
     """
     today = date.today()
 
-    # Dashboard kepegawaian memakai definisi pegawai aktif yang sama
-    # dengan modul operasional HRIS: isKeluar = 'N'.
-    pegawai_rows = (
-        Pegawai.query
-        .filter(Pegawai.IS_KELUAR == 'N')
+    # Populasi dashboard = Pegawai Operasional HRIS.
+    # Single Source of Truth:
+    #   PEGAWAI.IS_KELUAR = 'N'
+    #   MF_UNIT_KERJA.IS_USE = 'Y'
+    # Pegawai dengan Unit Kerja nonaktif tidak masuk statistik.
+    pegawai_rows = get_operational_pegawai_query().all()
+
+    unit_rows = (
+        MfUnitKerja.query
+        .filter(MfUnitKerja.IS_USE == 'Y')
         .all()
     )
-
-    unit_rows = MfUnitKerja.query.all()
     unit_map = {
         str(row.UNIT_KERJA_ID).strip(): str(
             row.NAMA_UNIT_KERJA or ''
@@ -85,7 +89,7 @@ def dashboard_infografis():
         '30-39 Tahun': 0,
         '40-49 Tahun': 0,
         '50-59 Tahun': 0,
-        '60+ Tahun': 0,
+        '60 Tahun': 0,
     }
     age_unknown = 0
 
@@ -106,8 +110,11 @@ def dashboard_infografis():
             age_buckets['40-49 Tahun'] += 1
         elif age < 60:
             age_buckets['50-59 Tahun'] += 1
+        elif age == 60:
+            age_buckets['60 Tahun'] += 1
         else:
-            age_buckets['60+ Tahun'] += 1
+            # Usia > 60 tidak termasuk statistik pegawai aktif.
+            continue
 
         unit_id = str(row.UNIT_KERJA_ID or '').strip()
         unit_name = unit_map.get(unit_id) or str(
