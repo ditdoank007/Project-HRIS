@@ -3,7 +3,7 @@ from operator import and_
 import uuid
 from config import Config
 
-from flask import render_template, request, jsonify
+from flask import render_template, request, jsonify, session
 from datetime import datetime
 from datetime import timedelta
 
@@ -589,27 +589,125 @@ def _safe_date(value):
 
 
 def api_pegawai_get():
-    """API: Get data pegawai by NIP"""
+    """
+    API: Get data pegawai by NIP.
+
+    Rebuild mengikuti FillData() pada HRIS 2013:
+    PEGAWAI dibaca bersama master Unit Kerja, Golongan dan Jabatan.
+    Nilai legacy tetap menjadi sumber utama; master hanya memperkaya
+    response agar form edit dapat menampilkan data lama dengan benar.
+    """
     try:
         nip = request.args.get('nip', '').strip()
-        
+
         if not nip:
-            return jsonify({'error': 'NIP tidak boleh kosong'})
-        
-        pegawai = Pegawai.query.filter(Pegawai.NIP == nip).first()
-        
-        if not pegawai:
-            return jsonify({'error': 'Pegawai tidak ditemukan'})
-        
+            return jsonify({
+                'success': False,
+                'error': 'NIP tidak boleh kosong'
+            }), 400
+
+        result = (
+            db.session.query(
+                Pegawai,
+                MfUnitKerja,
+                MfGolongan,
+                MfJabatan,
+            )
+            .outerjoin(
+                MfUnitKerja,
+                Pegawai.UNIT_KERJA_ID == MfUnitKerja.UNIT_KERJA_ID,
+            )
+            .outerjoin(
+                MfGolongan,
+                Pegawai.GOL_ID == MfGolongan.GOL_ID,
+            )
+            .outerjoin(
+                MfJabatan,
+                Pegawai.JABATAN_ID == MfJabatan.JABATAN_ID,
+            )
+            .filter(Pegawai.NIP == nip)
+            .first()
+        )
+
+        if not result:
+            return jsonify({
+                'success': False,
+                'error': 'Pegawai tidak ditemukan'
+            }), 404
+
+        pegawai, unit, gol, jabatan = result
+        data = pegawai.to_dict()
+
+        # Nama master mengikuti pola FillData() HRIS 2013.
+        data.update({
+            'unit_kerja_name': (
+                unit.NAMA_UNIT_KERJA
+                if unit else None
+            ),
+            'jabatan_name': (
+                jabatan.NAMA_JABATAN
+                if jabatan else None
+            ),
+            'gol_name': (
+                gol.NAMA_GOL
+                if gol else pegawai.GOL_ID
+            ),
+            'pangkat_name': (
+                gol.PANGKAT_GOL
+                if gol else pegawai.PANGKAT
+            ),
+            'gol_recruit_name': None,
+            'master_status': {
+                'unit_kerja': 'VALID' if unit else 'MASTER TIDAK DITEMUKAN',
+                'jabatan': (
+                    'VALID'
+                    if jabatan and pegawai.JABATAN_ID is not None
+                    else (
+                        'BELUM DIISI'
+                        if pegawai.JABATAN_ID is None
+                        else 'MASTER TIDAK DITEMUKAN'
+                    )
+                ),
+                'golongan': (
+                    'VALID'
+                    if gol and pegawai.GOL_ID
+                    else (
+                        'BELUM DIISI'
+                        if not pegawai.GOL_ID
+                        else 'MASTER TIDAK DITEMUKAN'
+                    )
+                ),
+            },
+        })
+
+        # Golongan recruitment adalah master yang sama dengan HRIS 2013,
+        # tetapi menggunakan nilai GolRecruit sebagai key.
+        if pegawai.GOL_RECRUIT:
+            gol_recruit = MfGolongan.query.filter(
+                MfGolongan.GOL_ID == pegawai.GOL_RECRUIT
+            ).first()
+            if gol_recruit:
+                data['gol_recruit_name'] = (
+                    f"{gol_recruit.NAMA_GOL or pegawai.GOL_RECRUIT}"
+                    + (
+                        f" - {gol_recruit.PANGKAT_GOL}"
+                        if gol_recruit.PANGKAT_GOL
+                        else ''
+                    )
+                )
+
         return jsonify({
             'success': True,
-            'data': pegawai.to_dict()
+            'data': data
         })
-        
+
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return jsonify({'error': str(e)})
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 
 def api_pegawai_save():
@@ -715,9 +813,9 @@ def api_pegawai_save():
             pegawai.NO_TELP = no_telp
             pegawai.MAIL = email
             pegawai.TGL_MASUK = _safe_date(tgl_masuk)
-            pegawai.TMT_PANGKAT = tmt_pangkat
-            pegawai.TMT_CPNS = tmt_cpns
-            pegawai.TMT_PNS = tmt_pns
+            pegawai.TMTPANGKAT = tmt_pangkat
+            pegawai.TMTCPNS = tmt_cpns
+            pegawai.TMTPNS = tmt_pns
             pegawai.TMT_CLASS = tmt_class
             pegawai.TMT_JABATAN = tmt_jabatan
             pegawai.GOL_RECRUIT = gol_recruit
@@ -725,7 +823,7 @@ def api_pegawai_save():
             pegawai.IS_KELUAR = is_keluar
             pegawai.TGL_KELUAR = tgl_keluar
             pegawai.ALASAN_KELUAR = alasan_keluar
-            pegawai.UPDATE_IN_BY = 'admin'
+            pegawai.UPDATE_BY = session.get('nip') or 'admin'
             pegawai.UPDATE_DATE = datetime.now()
             
             db.session.commit()
