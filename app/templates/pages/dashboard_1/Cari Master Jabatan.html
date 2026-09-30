@@ -141,7 +141,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
 
                 tbody.innerHTML = data.data.map(row => `
-                    <tr>
+                    <tr class="${String(row.is_aktif || '').toLowerCase() === 'non aktif' ? 'hris-table-row-inactive' : ''}">
                         <td>${escapeHtml(row.no)}</td>
                         <td>${escapeHtml(row.urut_jabatan)}</td>
                         <td>${escapeHtml(row.jabatan_id)}</td>
