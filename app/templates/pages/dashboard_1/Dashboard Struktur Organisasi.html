@@ -134,8 +134,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const button = document.createElement("button");
         button.type = "button";
+        const employeeCount = (employeesByJabatan[String(node.id)] || []).length;
         button.className = "org-node " +
-            (node.relation === "functional" ? "is-functional" : "is-structural");
+            (node.relation === "functional" ? "is-functional " : "is-structural ") +
+            (employeeCount === 0 ? "is-empty" : "is-occupied");
 
         const name = document.createElement("span");
         name.textContent = node.name || "-";
