@@ -3506,12 +3506,19 @@ def get_jabatan_structure():
     # dari root 10. Urutan kode mengikuti angka Jabatan ID sehingga
     # jabatan nonaktif (misalnya 1040 saat ini) otomatis tidak tampil,
     # tetapi akan muncul kembali jika diaktifkan.
-    top_rows = sort_rows([
-        row for row in active_rows
-        if len(str(row.JABATAN_ID)) == 4
-        and str(row.JABATAN_ID).startswith('10')
-        and str(row.JABATAN_ID) != '10'
-    ])
+    top_rows = sorted(
+        [
+            row for row in active_rows
+            if len(str(row.JABATAN_ID)) == 4
+            and str(row.JABATAN_ID).startswith('10')
+            and str(row.JABATAN_ID) != '10'
+        ],
+        key=lambda row: (
+            1 if str(row.JABATAN_ID) == '1050' else 0,
+            row.URUT_JABATAN if row.URUT_JABATAN is not None else 999999,
+            int(row.JABATAN_ID) if row.JABATAN_ID is not None else 999999999,
+        )
+    )
 
     for parent_row in top_rows:
         parent_node = node(
