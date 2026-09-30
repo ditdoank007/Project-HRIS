@@ -1,8 +1,6 @@
-<!-- pages/dashboard_1/Master File Master Jam Finger.html -->
 {% extends "layout/baseHRIS.html" %}
 
-{% block title %}- Jam Finger{% endblock %}
-
+{% block title %}- Master Jam Finger{% endblock %}
 {% block header_kicker %}MASTER FILE{% endblock %}
 {% block header_title %}Master Jam Finger{% endblock %}
 
@@ -11,113 +9,80 @@
     <div class="hris-page-header">
         <div>
             <h2 class="hris-page-title">Master Jam Finger</h2>
-            <p class="hris-page-subtitle">Kelola data Master Jam Finger HRIS.</p>
+            <p class="hris-page-subtitle" id="pageSubtitle">Tambah dan kelola batas waktu finger masuk dan pulang.</p>
         </div>
-        <a href="{{ url_for('main.view_cari_master_jam_finger') }}" class="hris-btn hris-btn-secondary"><i class="feather-search"></i><span>Cari Jam Finger</span></a>
+        <div class="hris-form-inline">
+            <a href="{{ url_for('main.view_cari_master_jam_finger') }}" class="hris-btn hris-btn-secondary">
+                <i class="feather-search"></i>
+                <span>Cari Jam Finger</span>
+            </a>
+            <a href="{{ url_for('main.view_cari_master_jam_finger') }}" id="btnKembaliJamFinger" class="hris-btn hris-btn-secondary" style="display:none;">
+                <i class="feather-arrow-left"></i>
+                <span>Kembali</span>
+            </a>
+        </div>
     </div>
-    <div class="page-header">
-        <div class="page-header-left d-flex align-items-center">
-            <div class="page-header-title">
-                <h5 class="m-b-10">Master File</h5>
+
+    <div class="hris-card">
+        <div class="hris-card-header">
+            <div>
+                <h3 class="hris-card-title" id="formTitle">Tambah Master Jam Finger</h3>
+                <p class="hris-section-subtitle">Tentukan shift, tanggal berlaku, serta rentang waktu finger IN dan OUT.</p>
             </div>
-            <ul class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url_for('main.view_master_jam_finger') }}">Master Jam Finger</a></li>
-            </ul>
         </div>
-    </div>
 
-    <div class="main-content master-siaga">
-        <div class="container-fluid">
-            <div class="hris-card">
-                <div class="hris-card-header"
-                    style="border-radius: 10px;">
-                    <h6 class="mb-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
-                            viewBox="0 0 24 24">
-                            <path
-                                d="M12 2a7 7 0 0 0-7 7v3a5 5 0 0 0 10 0v-3a3 3 0 0 0-6 0v3a1 1 0 0 0 2 0v-3a1 1 0 0 1 2 0v3a3 3 0 0 1-6 0v-3a5 5 0 0 1 10 0v3a7 7 0 0 1-14 0v-3a9 9 0 0 1 18 0v3c0 5-4 9-9 9" />
-                        </svg>
-                        <i></i> Master Jam Finger
-                    </h6>
+        <div class="hris-card-body">
+            <div class="hris-form-stack">
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="selectShiftFinger">Shift</label>
+                    <select id="selectShiftFinger" class="hris-select">
+                        <option value="">Pilih Shift</option>
+                        <option value="1">Shift 1</option>
+                        <option value="2">Shift 2</option>
+                    </select>
+                </div>
 
-                    <div class="header-actions">
-                        <button class="hris-btn hris-btn-ghost hris-btn-icon d-md-none" type="button"
-                            data-bs-toggle="collapse" data-bs-target="#headerIconsCollapse">
-                            <i class="bi bi-three-dots-vertical" style="font-size: 1.5rem; color: #333;"></i>
-                        </button>
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="inputTglMulaiFinger">Tanggal Mulai</label>
+                    <input type="date" id="inputTglMulaiFinger" class="hris-input">
+                </div>
 
-                        <div class="collapse d-md-flex align-items-center" id="headerIconsCollapse">
-                            <div class="header-icons-wrapper d-flex gap-3 p-2 p-md-0 mt-2 mt-md-0">
-                                <a href="{{ url_for('main.view_cari_master_jam_finger')}}"
-                                    class="hris-btn hris-btn-ghost hris-btn-icon text-decoration-none">
-                                    <i class="bi bi-search" style="color: #333; font-size: 1.1rem;"></i>
-                                </a>
-                            </div>
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label">Start Jam In (Tanggal Sama)</label>
+                    <div class="hris-form-inline hris-time-range">
+                        <input type="time" id="inputJamInStart" class="hris-input" aria-label="Start Finger IN">
+                        <span class="hris-range-separator">S.D</span>
+                        <input type="time" id="inputJamInEnd" class="hris-input" aria-label="End Finger IN">
+                    </div>
+                </div>
+
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label">Start Jam Out (Tanggal Sama)</label>
+                    <div class="hris-form-inline hris-time-range">
+                        <input type="time" id="inputJamOutStart" class="hris-input" aria-label="Start Finger OUT">
+                        <span class="hris-range-separator">S.D</span>
+                        <input type="time" id="inputJamOutEnd" class="hris-input" aria-label="End Finger OUT">
+                    </div>
+                </div>
+
+                <div class="hris-info-panel">
+                    <div class="hris-section-header">
+                        <div>
+                            <h3 class="hris-section-title">Keterangan</h3>
+                            <p class="hris-section-subtitle">Rentang waktu digunakan untuk menentukan batas finger yang dianggap valid pada tanggal yang sama.</p>
                         </div>
                     </div>
                 </div>
 
-                <div class="hris-card-body">
-                    <div class="hris-form-stack">
-                        <div class="hris-form-control align-items-center">
-                            <div class="hris-form-control"></div>
-                            <label class="hris-form-row-label">Shift</label>
-                            <div class="hris-form-control">
-                                <select id="selectShiftFinger" class="hris-select w-100">
-                                    <option value="">Pilih</option>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="hris-form-control align-items-center">
-                            <div class="hris-form-control"></div>
-                            <label class="hris-form-row-label">Tanggal Mulai</label>
-                            <div class="hris-form-control">
-                                <div class="hris-input-group w-100">
-                                    <input type="date" id="inputTglMulaiFinger" class="hris-input w-100" style="outline: none;">
-                                    <span class="hris-input-addon"><i class="bi bi-calendar3"></i></span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="hris-form-control align-items-center mb-3">
-                            <div class="hris-form-control"></div>
-                            <label class="hris-form-row-label">Start Jam In (Tgl
-                                Sama)</label>
-                            <div class="hris-form-control">
-                                <div style="display: flex; align-items: center; gap: 15px;">
-                                    <input type="time" id="inputJamInStart" class="hris-input"
-                                        style="width: 150px; outline: none;">
-
-                                    <span class="fw-bold">S.D</span>
-
-                                    <input type="time" id="inputJamInEnd" class="hris-input"
-                                        style="width: 150px; outline: none;">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="hris-form-control align-items-center mb-3">
-                            <div class="hris-form-control"></div>
-                            <label class="hris-form-row-label">Start Jam Out (Tgl
-                                Sama)</label>
-                            <div class="hris-form-control">
-                                <div style="display: flex; align-items: center; gap: 15px;">
-                                    <input type="time" id="inputJamOutStart" class="hris-input"
-                                        style="width: 150px; outline: none;">
-                                    <span class="fw-bold">S.D</span>
-                                    <input type="time" id="inputJamOutEnd" class="hris-input"
-                                        style="width: 150px; outline: none;">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12 d-flex justify-content-center mt-3">
-                            <button type="button" id="btnSimpanJamFinger" class="hris-btn hris-btn-primary">
-                                <i class="bi bi-save me-1"></i>Simpan
-                            </button>
-                        </div>
-                    </div>
+                <div class="hris-form-actions">
+                    <button type="button" id="btnBatalJamFinger" class="hris-btn hris-btn-secondary">
+                        <i class="feather-x-circle"></i>
+                        <span>Batal</span>
+                    </button>
+                    <button type="button" id="btnSimpanJamFinger" class="hris-btn hris-btn-primary">
+                        <i class="feather-save"></i>
+                        <span>Simpan</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -130,126 +95,119 @@ document.addEventListener('DOMContentLoaded', function () {
     const params = new URLSearchParams(window.location.search);
     const editId = params.get('edit_id');
 
-    const btn = document.getElementById('btnSimpanJamFinger');
+    const el = {
+        shift: document.getElementById('selectShiftFinger'),
+        tglMulai: document.getElementById('inputTglMulaiFinger'),
+        jamInStart: document.getElementById('inputJamInStart'),
+        jamInEnd: document.getElementById('inputJamInEnd'),
+        jamOutStart: document.getElementById('inputJamOutStart'),
+        jamOutEnd: document.getElementById('inputJamOutEnd'),
+        save: document.getElementById('btnSimpanJamFinger'),
+        cancel: document.getElementById('btnBatalJamFinger'),
+        back: document.getElementById('btnKembaliJamFinger')
+    };
 
-    async function loadEditJamFinger() {
-        if (!editId) {
-            return;
-        }
+    function resetForm() {
+        el.shift.value = '';
+        el.tglMulai.value = '';
+        el.jamInStart.value = '';
+        el.jamInEnd.value = '';
+        el.jamOutStart.value = '';
+        el.jamOutEnd.value = '';
+    }
+
+    async function loadEdit() {
+        if (!editId) return;
+
+        el.back.style.display = '';
+        document.getElementById('formTitle').textContent = 'Edit Master Jam Finger';
+        document.getElementById('pageSubtitle').textContent = 'Perbarui data Master Jam Finger yang sudah tersimpan.';
+        el.save.querySelector('span').textContent = 'Simpan Perubahan';
 
         try {
             const res = await fetch(
                 "{{ url_for('main.api_jam_finger_detail') }}?transaksi_id=" +
                 encodeURIComponent(editId)
             );
-
             const data = await res.json();
 
-            if (data.status !== 'success') {
+            if (!res.ok || data.status !== 'success') {
                 alert(data.message || 'Data Master Jam Finger tidak ditemukan.');
                 return;
             }
 
-            const row = data.data;
-
-            document.getElementById('selectShiftFinger').value = row.shift || '';
-            document.getElementById('inputTglMulaiFinger').value = row.tgl_mulai || '';
-            document.getElementById('inputJamInStart').value = row.jam_in_start || '';
-            document.getElementById('inputJamInEnd').value = row.jam_in_end || '';
-            document.getElementById('inputJamOutStart').value = row.jam_out_start || '';
-            document.getElementById('inputJamOutEnd').value = row.jam_out_end || '';
-
-            btn.innerHTML =
-                '<i class="bi bi-pencil-square me-1"></i>Update';
-
+            const row = data.data || {};
+            el.shift.value = row.shift || '';
+            el.tglMulai.value = row.tgl_mulai || '';
+            el.jamInStart.value = row.jam_in_start || '';
+            el.jamInEnd.value = row.jam_in_end || '';
+            el.jamOutStart.value = row.jam_out_start || '';
+            el.jamOutEnd.value = row.jam_out_end || '';
         } catch (err) {
             console.error(err);
-            alert('Terjadi kesalahan saat mengambil data Master Jam Finger.');
+            alert('Gagal memuat data Master Jam Finger.');
         }
     }
 
-    btn.addEventListener('click', async function () {
-        const shift = document.getElementById('selectShiftFinger').value;
-        const tglMulai = document.getElementById('inputTglMulaiFinger').value;
-        const jamInStart = document.getElementById('inputJamInStart').value;
-        const jamInEnd = document.getElementById('inputJamInEnd').value;
-        const jamOutStart = document.getElementById('inputJamOutStart').value;
-        const jamOutEnd = document.getElementById('inputJamOutEnd').value;
-
-        if (!shift) {
-            alert('Shift wajib dipilih');
-            return;
-        }
-
-        if (!tglMulai) {
-            alert('Tanggal Mulai wajib diisi');
-            return;
-        }
-
-        if (!jamInStart || !jamInEnd) {
-            alert('Rentang Start Jam In wajib diisi');
-            return;
-        }
-
-        if (!jamOutStart || !jamOutEnd) {
-            alert('Rentang Start Jam Out wajib diisi');
-            return;
-        }
-
+    el.save.addEventListener('click', async function () {
         const payload = {
-            shift: shift,
-            tgl_mulai: tglMulai,
-            jam_in_start: jamInStart,
-            jam_in_end: jamInEnd,
-            jam_out_start: jamOutStart,
-            jam_out_end: jamOutEnd
+            shift: el.shift.value,
+            tgl_mulai: el.tglMulai.value,
+            jam_in_start: el.jamInStart.value,
+            jam_in_end: el.jamInEnd.value,
+            jam_out_start: el.jamOutStart.value,
+            jam_out_end: el.jamOutEnd.value
         };
+
+        if (!payload.shift) return alert('Shift wajib dipilih');
+        if (!payload.tgl_mulai) return alert('Tanggal Mulai wajib diisi');
+        if (!payload.jam_in_start || !payload.jam_in_end) return alert('Rentang Start Jam In wajib diisi');
+        if (!payload.jam_out_start || !payload.jam_out_end) return alert('Rentang Start Jam Out wajib diisi');
 
         const url = editId
             ? "{{ url_for('main.api_jam_finger_update') }}"
             : "{{ url_for('main.api_jam_finger_save') }}";
 
-        if (editId) {
-            payload.transaksi_id = editId;
-        }
+        if (editId) payload.transaksi_id = editId;
+
+        el.save.disabled = true;
 
         try {
             const res = await fetch(url, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                 body: JSON.stringify(payload)
             });
-
             const data = await res.json();
 
-            if (data.status === 'success') {
-                alert(data.message);
-
-                if (editId) {
-                    window.location.href =
-                        "{{ url_for('main.view_cari_master_jam_finger') }}";
-                    return;
-                }
-
-                document.getElementById('selectShiftFinger').value = '';
-                document.getElementById('inputTglMulaiFinger').value = '';
-                document.getElementById('inputJamInStart').value = '';
-                document.getElementById('inputJamInEnd').value = '';
-                document.getElementById('inputJamOutStart').value = '';
-                document.getElementById('inputJamOutEnd').value = '';
-
-            } else {
-                alert('Gagal: ' + (data.message || 'Proses gagal.'));
+            if (!res.ok || data.status !== 'success') {
+                alert(data.message || 'Gagal menyimpan data Master Jam Finger.');
+                return;
             }
 
+            alert(data.message || 'Data Master Jam Finger berhasil disimpan.');
+
+            if (editId) {
+                window.location.href = "{{ url_for('main.view_cari_master_jam_finger') }}";
+            } else {
+                resetForm();
+            }
         } catch (err) {
             console.error(err);
             alert('Terjadi kesalahan saat menyimpan data.');
+        } finally {
+            el.save.disabled = false;
         }
     });
 
-    loadEditJamFinger();
+    el.cancel.addEventListener('click', function () {
+        if (editId) {
+            window.location.href = "{{ url_for('main.view_cari_master_jam_finger') }}";
+        } else {
+            resetForm();
+        }
+    });
+
+    loadEdit();
 });
 {% endblock %}
