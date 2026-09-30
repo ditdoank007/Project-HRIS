@@ -1,104 +1,98 @@
-<!-- pages/dashboard_1/Cari Master Jam Finger.html -->
 {% extends "layout/baseHRIS.html" %}
 
-{% block title %}- Jam Finger{% endblock %}
-
+{% block title %}- Cari Jam Finger{% endblock %}
 {% block header_kicker %}MASTER FILE{% endblock %}
-{% block header_title %}Cari Master Jam Finger{% endblock %}
+{% block header_title %}Cari Jam Finger{% endblock %}
 
 {% block content %}
-<div class="nxl-content">
-    <div class="page-header">
-        <div class="page-header-left d-flex align-items-center">
-            <div class="page-header-title">
-                <h5 class="m-b-10">Master File</h5>
-            </div>
-            <ul class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url_for('main.view_master_jam_finger') }}">Master Jam Finger</a></li>
-                <li class="breadcrumb-item">Cari Master Jam Finger</li>
-            </ul>
+<div class="hris-page">
+    <div class="hris-page-header">
+        <div>
+            <h2 class="hris-page-title">Cari Master Jam Finger</h2>
+            <p class="hris-page-subtitle">Cari, edit, atau hapus data Jam Finger yang sudah tersimpan.</p>
         </div>
+        <a href="{{ url_for('main.view_master_jam_finger') }}" class="hris-btn hris-btn-secondary">
+            <i class="feather-arrow-left"></i>
+            <span>Kembali</span>
+        </a>
     </div>
 
-    <div class="main-content">
-        <div class="container-fluid">
-            <div class="card mb-4 shadow-sm" style="border-radius: 10px; overflow: hidden; border: none;">
-                <div class="card-header-custom d-flex justify-content-between align-items-center p-3"
-                    style="background: #ffffff; border-bottom: 1px solid #eee;">
-                    <h6 class="mb-0"><i class="bi bi-search me-2"></i> Cari Transaksi</h6>
-                    <a href="{{ url_for('main.view_master_jam_finger') }}" class="btn-close-custom">
-                        <i class="bi bi-x-lg"></i>
-                    </a>
+    <div class="hris-card">
+        <div class="hris-card-header">
+            <div>
+                <h3 class="hris-card-title">Data Master Jam Finger</h3>
+                <p class="hris-section-subtitle">Gunakan filter untuk menemukan data yang akan dikelola.</p>
+            </div>
+            <div class="hris-form-inline">
+                <button type="button" class="hris-btn hris-btn-secondary" id="btnRefreshJamFinger">
+                    <i class="feather-refresh-cw"></i>
+                    <span>Refresh</span>
+                </button>
+                <button type="button" class="hris-btn hris-btn-secondary" id="btnExportExcel">
+                    <i class="feather-download"></i>
+                    <span>Export Excel</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="hris-card-body">
+            <div class="hris-form-stack">
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="filterPeriode">Periode</label>
+                    <input type="date" id="filterPeriode" class="hris-input">
                 </div>
 
-                <div class="card-body p-4">
-                    <div class="row mb-4 align-items-center">
-                        <div class="col-md-12 d-flex flex-column flex-md-row align-items-start align-items-md-center flex-wrap gap-2">
-                            <label class="filter-label-wide">Filter</label>
-
-                            <select class="form-select-sm border custom-select w-mobile-100" id="filterField1">
-                                <option value="">- Pilih Field -</option>
-                                <option>Tanggal Mulai</option>
-                            </select>
-
-                            <div class="input-group-custom w-mobile-100">
-                                <input type="date" class="form-control-sm border" id="filterKeyword1">
-                                <span class="icon-append"><i class="bi bi-pencil-fill"></i></span>
-                            </div>
-
-                            <span class="mx-md-2 fw-bold text-dan">Dan</span>
-
-                            <select class="form-select-sm border custom-select w-mobile-100" id="filterField2">
-                                <option value="">- Pilih Field -</option>
-                                <option>Tanggal Mulai</option>
-                            </select>
-
-                            <div class="input-group-custom w-mobile-100">
-                                <input type="date" class="form-control-sm border" id="filterKeyword2">
-                                <span class="icon-append"><i class="bi bi-pencil-fill"></i></span>
-                            </div>
-
-                            <button class="btn-refresh-custom ms-md-auto mt-2 mt-md-0 w-mobile-100" id="btnRefreshJamFinger">
-                                <i class="bi bi-arrow-clockwise"></i> Refresh
-                            </button>
-                        </div>
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="filterField1">Filter 1</label>
+                    <div class="hris-form-inline">
+                        <select class="hris-select" id="filterField1">
+                            <option value="">- Pilih Field -</option>
+                            <option value="Tanggal Mulai">Tanggal Mulai</option>
+                        </select>
+                        <input type="date" class="hris-input" id="filterKeyword1">
                     </div>
+                </div>
 
-                    <div class="d-flex justify-content-end mb-2">
-                        <button class="btn btn-sm p-0 border-0 shadow-none" id="btnExportExcel" title="Download Excel">
-                            <img src="https://cdn-icons-png.flaticon.com/512/732/732220.png" alt="Excel"
-                                style="width: 25px; height: 25px;">
-                        </button>
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="filterField2">Filter 2</label>
+                    <div class="hris-form-inline">
+                        <select class="hris-select" id="filterField2">
+                            <option value="">- Pilih Field -</option>
+                            <option value="Tanggal Mulai">Tanggal Mulai</option>
+                        </select>
+                        <input type="date" class="hris-input" id="filterKeyword2">
                     </div>
+                </div>
+            </div>
 
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-striped text-center align-middle" style="min-width: 1000px;">
-                            <thead style="background:#EB6831;">
-                                <tr>
-                                    <th rowspan="2" style="color:white; vertical-align: middle;">-</th>
-                                    <th rowspan="2" style="color:white; vertical-align: middle;"></th>
-                                    <th rowspan="2" style="color:white; vertical-align: middle;">NO</th>
-                                    <th rowspan="2" style="color:white; vertical-align: middle;">TGL MULAI</th>
-                                    <th rowspan="2" style="color:white; vertical-align: middle;">SHIFT</th>
-                                    <th colspan="2" style="color:white; vertical-align: middle;">IN (START DAN END TGL YG SAMA)</th>
-                                    <th colspan="2" style="color:white; vertical-align: middle;">OUT (START DAN END TGL YG SAMA)</th>
-                                    <th rowspan="2" style="color:white; vertical-align: middle;">UPDATED</th>
-                                    <th rowspan="2" style="color:white; vertical-align: middle;">AKSI</th>
-                                </tr>
-                                <tr>
-                                    <th style="color:white; vertical-align: middle;">START FINGER</th>
-                                    <th style="color:white; vertical-align: middle;">END FINGER</th>
-                                    <th style="color:white; vertical-align: middle;">START FINGER</th>
-                                    <th style="color:white; vertical-align: middle;">END FINGER</th>
-                                </tr>
-                            </thead>
-                            <tbody id="jamFingerTableBody">
-                                <tr>
-                                    <td colspan="11" style="vertical-align: middle; padding: 20px;">No records to display.</td>
-                                </tr>
-                            </tbody>
-                        </table>
+            <div class="hris-section" style="margin-top:18px;">
+                <div class="hris-section-header">
+                    <div>
+                        <h3 class="hris-section-title">Hasil Pencarian</h3>
+                        <p class="hris-section-subtitle">Data terbaru ditampilkan paling atas.</p>
                     </div>
+                </div>
+
+                <div class="hris-table-wrap">
+                    <table class="hris-table-modern">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Tgl Mulai</th>
+                                <th>Shift</th>
+                                <th>IN Start</th>
+                                <th>IN End</th>
+                                <th>OUT Start</th>
+                                <th>OUT End</th>
+                                <th>Updated</th>
+                                <th>BY</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="jamFingerTableBody">
+                            <tr><td colspan="10" class="hris-empty">Memuat data...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -107,54 +101,50 @@
 {% endblock %}
 
 {% block script %}
-
 document.addEventListener('DOMContentLoaded', function () {
     const tbody = document.getElementById('jamFingerTableBody');
-    const btnRefresh = document.getElementById('btnRefreshJamFinger');
-    const btnExport = document.getElementById('btnExportExcel');
-
-    const filterField1 = document.getElementById('filterField1');
-    const filterKeyword1 = document.getElementById('filterKeyword1');
-    const filterField2 = document.getElementById('filterField2');
-    const filterKeyword2 = document.getElementById('filterKeyword2');
 
     function buildQueryParams() {
         const params = new URLSearchParams();
+        const periode = document.getElementById('filterPeriode').value;
+        const field1 = document.getElementById('filterField1').value;
+        const keyword1 = document.getElementById('filterKeyword1').value;
+        const field2 = document.getElementById('filterField2').value;
+        const keyword2 = document.getElementById('filterKeyword2').value;
 
-        if (filterField1.value && filterKeyword1.value) {
-            params.set('field1', filterField1.value);
-            params.set('keyword1', filterKeyword1.value);
+        if (periode) params.set('periode', periode);
+        if (field1 && keyword1) {
+            params.set('field1', field1);
+            params.set('keyword1', keyword1);
         }
-        if (filterField2.value && filterKeyword2.value) {
-            params.set('field2', filterField2.value);
-            params.set('keyword2', filterKeyword2.value);
+        if (field2 && keyword2) {
+            params.set('field2', field2);
+            params.set('keyword2', keyword2);
         }
 
         return params;
     }
 
     async function loadJamFingerList() {
-        tbody.innerHTML = `<tr><td colspan="11" style="padding:20px;">Memuat data...</td></tr>`;
+        tbody.innerHTML = '<tr><td colspan="10" class="hris-empty">Memuat data...</td></tr>';
 
         try {
-            const params = buildQueryParams();
-            const res = await fetch(`/api/jam-finger/list?${params.toString()}`);
+            const res = await fetch('/api/jam-finger/list?' + buildQueryParams().toString());
             const json = await res.json();
 
-            if (json.status !== 'success') {
-                tbody.innerHTML = `<tr><td colspan="11" style="padding:20px;">${json.message || 'Gagal memuat data.'}</td></tr>`;
+            if (!res.ok || json.status !== 'success') {
+                tbody.innerHTML = '<tr><td colspan="10" class="hris-empty">' +
+                    (json.message || 'Gagal memuat data.') + '</td></tr>';
                 return;
             }
 
-            if (json.data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="11" style="padding:20px;">No records to display.</td></tr>`;
+            if (!json.data || json.data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" class="hris-empty">No records to display.</td></tr>';
                 return;
             }
 
             tbody.innerHTML = json.data.map(row => `
                 <tr>
-                    <td><input type="checkbox"></td>
-                    <td></td>
                     <td>${row.no}</td>
                     <td>${row.tgl_mulai}</td>
                     <td>${row.shift}</td>
@@ -163,78 +153,82 @@ document.addEventListener('DOMContentLoaded', function () {
                     <td>${row.start_finger_out}</td>
                     <td>${row.end_finger_out}</td>
                     <td>${row.updated}</td>
-                    <td style="white-space: nowrap;">
-                        <button type="button"
-                                class="btn btn-sm btn-warning me-1"
-                                onclick="editJamFinger(${row.transaksi_id})"
-                                title="Edit">
-                            <i class="bi bi-pencil-square"></i>
+                    <td>${row.by || '-'}</td>
+                    <td style="white-space:nowrap;">
+                        <button type="button" class="hris-btn hris-btn-secondary hris-btn-icon btn-edit-jam-finger"
+                                data-id="${row.transaksi_id}" title="Edit">
+                            <i class="feather-edit-2"></i>
                         </button>
-                        <button type="button"
-                                class="btn btn-sm btn-danger"
-                                onclick="hapusJamFinger(${row.transaksi_id})"
-                                title="Hapus">
-                            <i class="bi bi-trash"></i>
+                        <button type="button" class="hris-btn hris-btn-danger-soft hris-btn-icon btn-delete-jam-finger"
+                                data-id="${row.transaksi_id}" title="Hapus">
+                            <i class="feather-trash-2"></i>
                         </button>
                     </td>
                 </tr>
             `).join('');
-
         } catch (err) {
-            console.error('Gagal memuat data jam finger:', err);
-            tbody.innerHTML = `<tr><td colspan="11" style="padding:20px;">Gagal memuat data.</td></tr>`;
+            console.error(err);
+            tbody.innerHTML = '<tr><td colspan="10" class="hris-empty">Gagal memuat data.</td></tr>';
         }
     }
 
-    window.editJamFinger = function (transaksiId) {
-        window.location.href =
-            "{{ url_for('main.view_master_jam_finger') }}?edit_id=" +
-            encodeURIComponent(transaksiId);
-    };
+    tbody.addEventListener('click', async function (event) {
+        const editButton = event.target.closest('.btn-edit-jam-finger');
+        const deleteButton = event.target.closest('.btn-delete-jam-finger');
 
-    window.hapusJamFinger = async function (transaksiId) {
-        if (!confirm('Apakah data Master Jam Finger ini akan dihapus?')) {
+        if (editButton) {
+            window.location.href =
+                "{{ url_for('main.view_master_jam_finger') }}?edit_id=" +
+                encodeURIComponent(editButton.dataset.id);
             return;
         }
 
-        try {
-            const res = await fetch(
-                "{{ url_for('main.api_jam_finger_delete') }}",
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        transaksi_id: transaksiId
-                    })
-                }
-            );
+        if (!deleteButton) return;
 
+        const id = deleteButton.dataset.id;
+
+        if (!confirm('Hapus Master Jam Finger ID ' + id + '?\n\nData yang dihapus tidak dapat dikembalikan.')) {
+            return;
+        }
+
+        deleteButton.disabled = true;
+
+        try {
+            const res = await fetch("{{ url_for('main.api_jam_finger_delete') }}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify({ transaksi_id: Number(id) })
+            });
             const data = await res.json();
 
-            if (data.status === 'success') {
-                alert(data.message);
-                await loadJamFingerList();
-            } else {
-                alert('Gagal: ' + (data.message || 'Data gagal dihapus.'));
+            if (!res.ok || data.status !== 'success') {
+                alert(data.message || 'Gagal menghapus data.');
+                deleteButton.disabled = false;
+                return;
             }
 
+            alert(data.message || 'Data Master Jam Finger berhasil dihapus.');
+            await loadJamFingerList();
         } catch (err) {
             console.error(err);
             alert('Terjadi kesalahan saat menghapus data.');
+            deleteButton.disabled = false;
         }
-    };
+    });
 
-    function exportExcel() {
-        const params = buildQueryParams();
-        window.location.href = `/api/jam-finger/export?${params.toString()}`;
-    }
+    document.getElementById('btnRefreshJamFinger').addEventListener('click', loadJamFingerList);
+    document.getElementById('btnExportExcel').addEventListener('click', function () {
+        window.location.href = '/api/jam-finger/export?' + buildQueryParams().toString();
+    });
 
-    btnRefresh.addEventListener('click', loadJamFingerList);
-    btnExport.addEventListener('click', exportExcel);
+    ['filterPeriode', 'filterField1', 'filterField2'].forEach(function (id) {
+        document.getElementById(id).addEventListener('change', loadJamFingerList);
+    });
+
+    ['filterKeyword1', 'filterKeyword2'].forEach(function (id) {
+        document.getElementById(id).addEventListener('change', loadJamFingerList);
+    });
 
     loadJamFingerList();
 });
-
 {% endblock %}
