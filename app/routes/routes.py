@@ -30,7 +30,7 @@ from app.controllers.dashboard_1MasterFileController import (
     get_jam_kerja_by_id, update_jam_kerja, delete_jam_kerja,
     get_auth_config, save_auth_config,
     get_jam_finger_by_id, update_jam_finger, delete_jam_finger,
-    get_jabatan_by_id, update_jabatan, delete_jabatan,
+    get_jabatan_by_id, get_jabatan_structure, update_jabatan, delete_jabatan,
 )
 from app.controllers.dashboard_1InfografisController import dashboard_infografis
 from app.controllers.dashboard_1KepegawaianController import (
@@ -654,6 +654,12 @@ def api_jabatan_save():
 @login_required
 def api_jabatan_detail():
     return get_jabatan_by_id()
+\n
+@main.route('/api/jabatan/structure', methods=['GET'])
+@login_required
+def api_jabatan_structure():
+    return get_jabatan_structure()
+
 
 @main.route('/api/jabatan/update', methods=['POST'])
 @login_required
