@@ -1,105 +1,91 @@
-<!-- pages/dashboard_1/Cari Master Jabatan.html -->
 {% extends "layout/baseHRIS.html" %}
 
-{% block title %}- Jabatan{% endblock %}
-
+{% block title %}- Cari Jabatan{% endblock %}
 {% block header_kicker %}MASTER FILE{% endblock %}
-{% block header_title %}Cari Master Jabatan{% endblock %}
+{% block header_title %}Cari Jabatan{% endblock %}
 
 {% block content %}
-<div class="nxl-content">
-    <div class="page-header">
-        <div class="page-header-left d-flex align-items-center">
-            <div class="page-header-title">
-                <h5 class="m-b-10">Master File</h5>
-            </div>
-            <ul class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url_for('main.view_master_jabatan') }}">Master Jabatan</a></li>
-                <li class="breadcrumb-item">Cari Master Jabatan</li>
-            </ul>
+<div class="hris-page">
+    <div class="hris-page-header">
+        <div>
+            <h2 class="hris-page-title">Cari Master Jabatan</h2>
+            <p class="hris-page-subtitle">Cari, edit, atau hapus data jabatan yang sudah tersimpan.</p>
         </div>
+        <a href="{{ url_for('main.view_master_jabatan') }}" class="hris-btn hris-btn-secondary">
+            <i class="feather-arrow-left"></i>
+            <span>Kembali</span>
+        </a>
     </div>
 
-    <div class="main-content">
-        <div class="container-fluid">
-            <div class="card mb-4 shadow-sm" style="border-radius: 10px; overflow: hidden; border: none;">
-                <div class="card-header-custom d-flex justify-content-between align-items-center p-3"
-                    style="background: #ffffff; border-bottom: 1px solid #eee;">
-                    <h6 class="mb-0"><i class="bi bi-search me-2"></i> Cari Transaksi</h6>
-                    <a href="{{ url_for('main.view_master_jabatan') }}" class="btn-close-custom">
-                        <i class="bi bi-x-lg"></i>
-                    </a>
+    <div class="hris-card">
+        <div class="hris-card-header">
+            <div>
+                <h3 class="hris-card-title">Data Master Jabatan</h3>
+                <p class="hris-section-subtitle">Gunakan filter untuk menemukan jabatan yang akan dikelola.</p>
+            </div>
+            <button type="button" class="hris-btn hris-btn-secondary" id="btnRefreshJabatan">
+                <i class="feather-refresh-cw"></i>
+                <span>Refresh</span>
+            </button>
+        </div>
+
+        <div class="hris-card-body">
+            <div class="hris-form-stack">
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="filterField1">Filter 1</label>
+                    <div class="hris-form-inline">
+                        <select id="filterField1" class="hris-select">
+                            <option value="">- Pilih Field -</option>
+                            <option value="Jabatan ID">Jabatan ID</option>
+                            <option value="Nama Jabatan">Nama Jabatan</option>
+                            <option value="Isi Aktif">Isi Aktif</option>
+                            <option value="Tanggal Mulai">Tanggal Mulai</option>
+                        </select>
+                        <input type="text" id="filterKeyword1" class="hris-input" placeholder="Kata kunci...">
+                    </div>
                 </div>
 
-                <div class="card-body p-4">
-                    <div class="row mb-4 align-items-center">
-                        <div class="col-md-12 d-flex flex-column flex-md-row align-items-start align-items-md-center flex-wrap gap-2">
-                            <label class="filter-label-wide">Filter</label>
-
-                            <select id="filterField1" class="form-select-sm border custom-select w-mobile-100">
-                                <option value="">- Pilih Field -</option>
-                                <option value="Jabatan ID">Jabatan ID</option>
-                                <option value="Nama Jabatan">Nama Jabatan</option>
-                                <option value="Isi Aktif">Isi Aktif</option>
-                                <option value="Tanggal Mulai">Tanggal Mulai</option>
-                            </select>
-
-                            <div class="input-group-custom w-mobile-100">
-                                <input type="text" id="filterKeyword1" class="form-control-sm border">
-                                <span class="icon-append"><i class="bi bi-pencil-fill"></i></span>
-                            </div>
-
-                            <span class="mx-md-2 fw-bold text-dan">Dan</span>
-
-                            <select id="filterField2" class="form-select-sm border custom-select w-mobile-100">
-                                <option value="">- Pilih Field -</option>
-                                <option value="Jabatan ID">Jabatan ID</option>
-                                <option value="Nama Jabatan">Nama Jabatan</option>
-                                <option value="Isi Aktif">Isi Aktif</option>
-                                <option value="Tanggal Mulai">Tanggal Mulai</option>
-                            </select>
-
-                            <div class="input-group-custom w-mobile-100">
-                                <input type="text" id="filterKeyword2" class="form-control-sm border">
-                                <span class="icon-append"><i class="bi bi-pencil-fill"></i></span>
-                            </div>
-
-                            <button id="btnRefreshJabatan" class="btn-refresh-custom ms-md-auto mt-2 mt-md-0 w-mobile-100">
-                                <i class="bi bi-arrow-clockwise"></i> Refresh
-                            </button>
-                        </div>
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="filterField2">Filter 2</label>
+                    <div class="hris-form-inline">
+                        <select id="filterField2" class="hris-select">
+                            <option value="">- Pilih Field -</option>
+                            <option value="Jabatan ID">Jabatan ID</option>
+                            <option value="Nama Jabatan">Nama Jabatan</option>
+                            <option value="Isi Aktif">Isi Aktif</option>
+                            <option value="Tanggal Mulai">Tanggal Mulai</option>
+                        </select>
+                        <input type="text" id="filterKeyword2" class="hris-input" placeholder="Kata kunci...">
                     </div>
+                </div>
+            </div>
 
-                    <div class="d-flex justify-content-end mb-2">
-                        <button class="btn btn-sm p-0 border-0 shadow-none">
-                            <img src="https://cdn-icons-png.flaticon.com/512/732/732220.png" alt="Excel"
-                                style="width: 25px; height: 25px;">
-                        </button>
+            <div class="hris-section" style="margin-top:18px;">
+                <div class="hris-section-header">
+                    <div>
+                        <h3 class="hris-section-title">Hasil Pencarian</h3>
+                        <p class="hris-section-subtitle">Data terbaru ditampilkan paling atas.</p>
                     </div>
+                </div>
 
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-striped text-center align-middle"
-                            style="min-width: 1000px;">
-                            <thead style="background:#EB6831;">
-                                <tr>
-                                    <th style="color:white; vertical-align: middle;">NO</th>
-                                    <th style="color:white; vertical-align: middle;">JABATAN ID</th>
-                                    <th style="color:white; vertical-align: middle; text-align:left;">NAMA JABATAN</th>
-                                    <th style="color:white; vertical-align: middle;">BUTIR KEGIATAN</th>
-                                    <th style="color:white; vertical-align: middle;">URUT JABATAN</th>
-                                    <th style="color:white; vertical-align: middle;">ISI AKTIF?</th>
-                                    <th style="color:white; vertical-align: middle;">AKSI</th>
-                                    <th style="color:white; vertical-align: middle;">UPDATED</th>
-                                </tr>
-                            </thead>
-                            <tbody id="jabatanTableBody">
-                                <tr>
-                                    <td colspan="8" style="vertical-align: middle; padding: 20px;">No records to
-                                        display.</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="hris-table-wrap">
+                    <table class="hris-table-modern">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Jabatan ID</th>
+                                <th>Nama Jabatan</th>
+                                <th>Urut Jabatan</th>
+                                <th>Status</th>
+                                <th>Updated</th>
+                                <th>BY</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="jabatanTableBody">
+                            <tr><td colspan="8" class="hris-empty">Memuat data...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -108,195 +94,156 @@
 {% endblock %}
 
 {% block script %}
+document.addEventListener('DOMContentLoaded', function () {
+    const tbody = document.getElementById('jabatanTableBody');
 
-function escapeHtml(value) {
-    return String(value ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-}
-
-function loadJabatanList() {
-    const field1 = document.getElementById('filterField1').value;
-    const keyword1 = document.getElementById('filterKeyword1').value.trim();
-    const field2 = document.getElementById('filterField2').value;
-    const keyword2 = document.getElementById('filterKeyword2').value.trim();
-
-    const params = new URLSearchParams();
-
-    if (field1 && keyword1) {
-        params.append('field1', field1);
-        params.append('keyword1', keyword1);
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
     }
 
-    if (field2 && keyword2) {
-        params.append('field2', field2);
-        params.append('keyword2', keyword2);
-    }
+    function loadJabatanList() {
+        const field1 = document.getElementById('filterField1').value;
+        const keyword1 = document.getElementById('filterKeyword1').value.trim();
+        const field2 = document.getElementById('filterField2').value;
+        const keyword2 = document.getElementById('filterKeyword2').value.trim();
 
-    fetch("{{ url_for('main.api_jabatan_list') }}?" + params.toString())
-        .then(res => res.json())
-        .then(data => {
-            const tbody = document.getElementById('jabatanTableBody');
+        const params = new URLSearchParams();
 
-            tbody.innerHTML = '';
+        if (field1 && keyword1) {
+            params.set('field1', field1);
+            params.set('keyword1', keyword1);
+        }
 
-            if (data.status !== 'success') {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="8" style="padding:20px;">
-                            ${escapeHtml(data.message || 'Terjadi kesalahan')}
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
+        if (field2 && keyword2) {
+            params.set('field2', field2);
+            params.set('keyword2', keyword2);
+        }
 
-            if (!data.data || data.data.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="8" style="padding:20px;">
-                            No records to display.
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
+        tbody.innerHTML = '<tr><td colspan="8" class="hris-empty">Memuat data...</td></tr>';
 
-            data.data.forEach(row => {
-                tbody.insertAdjacentHTML('beforeend', `
-                    <tr>
-                        <td>${row.no}</td>
-                        <td>${row.jabatan_id}</td>
-                        <td style="text-align:left !important;">${row.nama_jabatan}</td>
-                        <td>${row.butir_kegiatan}</td>
-                        <td>${row.urut_jabatan}</td>
-                        <td>${row.is_aktif}</td>
-                        <td>
-                            <div class="d-flex justify-content-center gap-1">
-                                <button
-                                    type="button"
-                                    class="btn btn-sm btn-warning"
-                                    title="Edit"
-                                    onclick="editJabatan(${row.jabatan_id})">
-                                    <i class="bi bi-pencil-square"></i>
-                                </button>
-                                <button
-                                    type="button"
-                                    class="btn btn-sm btn-danger"
-                                    title="Hapus"
-                                    onclick="deleteJabatan(${row.jabatan_id})">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </div>
-                        </td>
-                        <td>${row.updated}</td>
-                    </tr>
-                `);
-            });
-        })
-        .catch(err => {
-            console.error(err);
-
-            document.getElementById('jabatanTableBody').innerHTML = `
-                <tr>
-                    <td colspan="8" style="padding:20px;">
-                        Gagal memuat data.
-                    </td>
-                </tr>
-            `;
-        });
-}
-
-
-function editJabatan(jabatanId) {
-    if (!jabatanId) {
-        alert('Jabatan ID tidak valid.');
-        return;
-    }
-
-    window.location.href =
-        "{{ url_for('main.view_master_jabatan') }}" +
-        "?edit=" + encodeURIComponent(jabatanId);
-}
-
-
-function deleteJabatan(jabatanId) {
-    if (!jabatanId) {
-        alert('Jabatan ID tidak valid.');
-        return;
-    }
-
-    if (!confirm(
-        'Hapus Master Jabatan ID ' +
-        jabatanId +
-        '?'
-    )) {
-        return;
-    }
-
-    fetch("{{ url_for('main.api_jabatan_delete') }}", {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            jabatan_id: jabatanId
-        })
-    })
-        .then(async res => {
-            const data = await res.json();
-
-            if (res.ok && data.status === 'success') {
-                alert(data.message);
-                loadJabatanList();
-                return;
-            }
-
-            if (res.status === 409) {
-                let message =
-                    'Master Jabatan ID ' +
-                    jabatanId +
-                    ' tidak dapat dihapus.';
-
-                if (Array.isArray(data.references) &&
-                    data.references.length > 0) {
-
-                    message += '\n\nMasih digunakan oleh:\n';
-
-                    data.references.forEach(reference => {
-                        message += '\n• ' + reference;
-                    });
-                } else if (data.message) {
-                    message += '\n\n' + data.message;
+        fetch("{{ url_for('main.api_jabatan_list') }}?" + params.toString())
+            .then(async res => {
+                const data = await res.json();
+                if (!res.ok || data.status !== 'success') {
+                    throw new Error(data.message || 'Gagal memuat data.');
+                }
+                return data;
+            })
+            .then(data => {
+                if (!data.data || data.data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" class="hris-empty">No records to display.</td></tr>';
+                    return;
                 }
 
-                alert(message);
+                tbody.innerHTML = data.data.map(row => `
+                    <tr>
+                        <td>${escapeHtml(row.no)}</td>
+                        <td>${escapeHtml(row.jabatan_id)}</td>
+                        <td>${escapeHtml(row.nama_jabatan)}</td>
+                        <td>${escapeHtml(row.urut_jabatan)}</td>
+                        <td>${escapeHtml(row.is_aktif)}</td>
+                        <td>${escapeHtml(row.updated)}</td>
+                        <td>${escapeHtml(row.by)}</td>
+                        <td style="white-space:nowrap;">
+                            <button type="button"
+                                    class="hris-btn hris-btn-secondary hris-btn-icon btn-edit-jabatan"
+                                    data-id="${escapeHtml(row.jabatan_id)}"
+                                    title="Edit">
+                                <i class="feather-edit-2"></i>
+                            </button>
+                            <button type="button"
+                                    class="hris-btn hris-btn-danger-soft hris-btn-icon btn-delete-jabatan"
+                                    data-id="${escapeHtml(row.jabatan_id)}"
+                                    title="Hapus">
+                                <i class="feather-trash-2"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            })
+            .catch(err => {
+                console.error(err);
+                tbody.innerHTML = '<tr><td colspan="8" class="hris-empty">' +
+                    escapeHtml(err.message || 'Gagal memuat data.') + '</td></tr>';
+            });
+    }
+
+    tbody.addEventListener('click', function (event) {
+        const editButton = event.target.closest('.btn-edit-jabatan');
+        const deleteButton = event.target.closest('.btn-delete-jabatan');
+
+        if (editButton) {
+            window.location.href =
+                "{{ url_for('main.view_master_jabatan') }}?edit=" +
+                encodeURIComponent(editButton.dataset.id);
+            return;
+        }
+
+        if (deleteButton) {
+            const jabatanId = deleteButton.dataset.id;
+
+            if (!confirm('Hapus Master Jabatan ID ' + jabatanId + '?\n\nData yang dihapus tidak dapat dikembalikan.')) {
                 return;
             }
 
-            alert(
-                data.message ||
-                'Terjadi kesalahan saat menghapus data.'
-            );
-        })
-        .catch(err => {
-            console.error(err);
-            alert(
-                'Tidak dapat terhubung ke server saat menghapus data.'
-            );
-        });
-}
+            deleteButton.disabled = true;
 
+            fetch("{{ url_for('main.api_jabatan_delete') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ jabatan_id: Number(jabatanId) })
+            })
+                .then(async res => {
+                    const data = await res.json();
 
-document.getElementById('btnRefreshJabatan')
-    .addEventListener('click', loadJabatanList);
+                    if (res.ok && data.status === 'success') {
+                        alert(data.message || 'Data berhasil dihapus.');
+                        loadJabatanList();
+                        return;
+                    }
 
-document.addEventListener(
-    'DOMContentLoaded',
-    loadJabatanList
-);
+                    if (res.status === 409) {
+                        let message = data.message || ('Master Jabatan ID ' + jabatanId + ' tidak dapat dihapus.');
 
+                        if (Array.isArray(data.references) && data.references.length > 0) {
+                            message += '\n\nMasih digunakan oleh:\n' +
+                                data.references.map(item => '• ' + item).join('\n');
+                        }
+
+                        alert(message);
+                        deleteButton.disabled = false;
+                        return;
+                    }
+
+                    alert(data.message || 'Terjadi kesalahan saat menghapus data.');
+                    deleteButton.disabled = false;
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert('Tidak dapat terhubung ke server saat menghapus data.');
+                    deleteButton.disabled = false;
+                });
+        }
+    });
+
+    document.getElementById('btnRefreshJabatan').addEventListener('click', loadJabatanList);
+
+    ['filterField1', 'filterField2'].forEach(id => {
+        document.getElementById(id).addEventListener('change', loadJabatanList);
+    });
+
+    ['filterKeyword1', 'filterKeyword2'].forEach(id => {
+        document.getElementById(id).addEventListener('change', loadJabatanList);
+    });
+
+    loadJabatanList();
+});
 {% endblock %}
