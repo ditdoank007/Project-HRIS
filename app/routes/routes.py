@@ -95,6 +95,7 @@ from app.controllers.dashboard_1LaporanRekapController import (
 from app.controllers.calendarController import (
     api_calendar_personal,
     api_calendar_personal_sync_token,
+    api_calendar_sync_token_internal,
     api_calendar_employee_profile_internal,
     api_calendar_my_agenda,
     api_calendar_conflict,
@@ -2210,7 +2211,7 @@ def api_calendar_personal_route():
 )
 def api_calendar_sync_token_internal_route():
 
-    return api_calendar_personal_sync_token()
+    return api_calendar_sync_token_internal()
 
 
 @main.route(
