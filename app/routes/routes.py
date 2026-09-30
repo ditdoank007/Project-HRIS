@@ -33,6 +33,7 @@ from app.controllers.dashboard_1MasterFileController import (
     get_jabatan_by_id, get_jabatan_structure, update_jabatan, delete_jabatan,
 )
 from app.controllers.dashboard_1InfografisController import dashboard_infografis
+from app.controllers.dashboard_1StrukturOrganisasiController import dashboard_struktur_organisasi
 from app.controllers.dashboard_1KepegawaianController import (
     kepegawaian_cari_data_pegawai,
     kepegawaian_cari_dinas_luar_umum,
@@ -314,6 +315,11 @@ def preview_pegawai():
 @login_required
 def view_dashboard_infografis():
     return dashboard_infografis()
+
+@main.route('/dashboard/struktur-organisasi')
+@login_required
+def view_dashboard_struktur_organisasi():
+    return dashboard_struktur_organisasi()
 
 @main.route('/dashboard/pelanggaran')
 @login_required
