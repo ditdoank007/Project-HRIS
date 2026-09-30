@@ -11,183 +11,97 @@
     <div class="hris-page-header">
         <div>
             <h2 class="hris-page-title">Master Jabatan</h2>
-            <p class="hris-page-subtitle">Kelola data Master Jabatan HRIS.</p>
+            <p class="hris-page-subtitle" id="pageSubtitle">Tambah dan kelola data jabatan HRIS.</p>
         </div>
-        <a href="{{ url_for('main.view_cari_master_jabatan') }}" class="hris-btn hris-btn-secondary"><i class="feather-search"></i><span>Cari Jabatan</span></a>
-    </div>
-    <div class="page-header">
-        <div class="page-header-left d-flex align-items-center">
-            <div class="page-header-title">
-                <h5 class="m-b-10">Master File</h5>
-            </div>
-            <ul class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url_for('main.view_master_jabatan') }}">Master Jabatan</a></li>
-            </ul>
+        <div class="hris-form-inline">
+            <a href="{{ url_for('main.view_cari_master_jabatan') }}" class="hris-btn hris-btn-secondary">
+                <i class="feather-search"></i>
+                <span>Cari Jabatan</span>
+            </a>
+            <a href="{{ url_for('main.view_cari_master_jabatan') }}" id="btnKembaliJabatan" class="hris-btn hris-btn-secondary" style="display:none;">
+                <i class="feather-arrow-left"></i>
+                <span>Kembali</span>
+            </a>
         </div>
     </div>
 
-    <div class="main-content master-siaga">
-        <div class="container-fluid">
-            <div class="hris-card">
-                <div class="hris-card-header"
-                    style="border-radius: 10px;">
-                    <h6 class="mb-0" id="masterJabatanTitle">
-                        <i class="feather-award me-2"></i> Master Jabatan
-                    </h6>
-
-                    <div class="header-actions">
-                        <button class="hris-btn hris-btn-ghost hris-btn-icon d-md-none" type="button"
-                            data-bs-toggle="collapse" data-bs-target="#headerIconsCollapse">
-                            <i class="bi bi-three-dots-vertical" style="font-size: 1.5rem; color: #333;"></i>
-                        </button>
-
-                        <div class="collapse d-md-flex align-items-center" id="headerIconsCollapse">
-                            <div class="header-icons-wrapper d-flex gap-3 p-2 p-md-0 mt-2 mt-md-0">
-                                <a href="{{ url_for('main.view_cari_master_jabatan') }}"
-                                    class="hris-btn hris-btn-ghost hris-btn-icon text-decoration-none">
-                                    <i class="bi bi-search" style="color: #333; font-size: 1.1rem;"></i>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="hris-card-body">
-                    <div class="hris-form-stack">
-                        <!-- Dropdown Group Jabatan: diisi dari server, tersimpan sebagai <select> -->
-                        <div class="hris-form-control align-items-center mb-3">
-                            <div class="hris-form-control"></div>
-                            <label class="hris-form-row-label">Group jabatan</label>
-                            <div class="hris-form-control">
-                                <select id="selectGroupJabatan" class="hris-select w-100">
-                                    <option value="">Pilih</option>
-                                    {% for g in group_jabatan_list %}
-                                    <option value="{{ g.GROUP_JABATAN_ID }}">{{ g.GROUP_JABATAN_ID }} - {{ g.NAMA_GROUP_JABATAN }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- Dropdown SubGroup Jabatan: diisi dari server -->
-                        <div class="hris-form-control align-items-center mb-3">
-                            <div class="hris-form-control"></div>
-                            <label class="hris-form-row-label">SubGroup Jabatan</label>
-                            <div class="hris-form-control">
-                                <select id="selectSubGroupJabatan" class="hris-select w-100">
-                                    <option value="">Pilih</option>
-                                    {% for sg in sub_group_jabatan_list %}
-                                    <option value="{{ sg.SUB_GROUP_JABATAN_ID }}">{{ sg.SUB_GROUP_JABATAN_ID }} - {{ sg.NAMA_SUB_GROUP_JABATAN }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="hris-form-control align-items-center">
-                            <div class="hris-form-control"></div>
-                            <label class="hris-form-row-label">Jabatan ID</label>
-                            <div class="hris-form-control">
-                                <div class="hris-input-group w-100">
-                                    <input type="number" id="inputJabatanId" class="hris-input w-100 text-end" min="0" step="1" value="0">
-                                    <span class="hris-input-addon"><i class="bi bi-sort-numeric-down"></i></span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="hris-form-control align-items-center">
-                            <div class="hris-form-control"></div>
-                            <label class="hris-form-row-label">Nama Jabatan</label>
-                            <div class="hris-form-control">
-                                <div class="hris-input-group w-100">
-                                    <input type="text" id="inputNamaJabatan" class="hris-input w-100">
-                                    <span class="hris-input-addon"><i class="bi bi-pencil-fill"></i></span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="hris-form-control align-items-center">
-                            <div class="hris-form-control"></div>
-                            <label class="hris-form-row-label">Parent Jabatan ID</label>
-                            <div class="hris-form-control">
-                                <div class="hris-input-group w-100">
-                                    <input type="number" id="inputParentJabatanId" class="hris-input w-100 text-end" min="0" step="1" value="0">
-                                    <span class="hris-input-addon"><i class="bi bi-sort-numeric-down"></i></span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="hris-form-control align-items-center">
-                            <div class="hris-form-control"></div>
-                            <label class="hris-form-row-label">Level Jabatan</label>
-                            <div class="hris-form-control">
-                                <div class="hris-input-group w-100">
-                                    <input type="number" id="inputLevelJabatan" class="hris-input w-100 text-end" min="0" step="1" value="0">
-                                    <span class="hris-input-addon"><i class="bi bi-sort-numeric-down"></i></span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="hris-form-control align-items-center">
-                            <div class="hris-form-control"></div>
-                            <label class="hris-form-row-label">Type</label>
-                            <div class="hris-form-control">
-                                <select id="selectType" class="hris-select w-100">
-                                    <option value="">Pilih</option>
-                                    <option value="FT">FT</option>
-                                    <option value="FU">FU</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="hris-form-control align-items-center">
-                            <div class="hris-form-control"></div>
-                            <label class="hris-form-row-label">Isi Aktif</label>
-                            <div class="hris-form-control">
-                                <select id="selectIsAktif" class="hris-select w-100">
-                                    <option value="">Pilih</option>
-                                    <option value="1">Aktif</option>
-                                    <option value="0">Non Aktif</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="col-12 d-flex justify-content-center mt-3">
-                            <button type="button" id="btnSimpanJabatan" class="hris-btn hris-btn-primary">
-                                <i class="bi bi-save me-1"></i>
-                                <span id="btnSimpanJabatanText">Simpan</span>
-                            </button>
-                        </div>
-
-                    </div>
-                </div>
-
+    <div class="hris-card">
+        <div class="hris-card-header">
+            <div>
+                <h3 class="hris-card-title" id="formTitle">Tambah Master Jabatan</h3>
+                <p class="hris-section-subtitle">Kelola struktur group, sub group, parent, level, tipe, dan status jabatan.</p>
             </div>
-            <div class="hris-card">
-                <div class="hris-card-header">
-                    <h6 class="mb-0">Item Kegiatan</h6>
+        </div>
+
+        <div class="hris-card-body">
+            <div class="hris-form-stack">
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="selectGroupJabatan">Group Jabatan</label>
+                    <select id="selectGroupJabatan" class="hris-select">
+                        <option value="">Pilih Group Jabatan</option>
+                        {% for g in group_jabatan_list %}
+                        <option value="{{ g.GROUP_JABATAN_ID }}">{{ g.GROUP_JABATAN_ID }} - {{ g.NAMA_GROUP_JABATAN }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
-                <div class="hris-card-body">
-                    <div class="hris-form-stack">
-                        <div class="hris-table-wrap">
-                            <table class="table table-bordered table-striped text-center align-middle">
-                                <thead>
-                                    <tr>
-                                        <th>ID Job</th>
-                                        <th>Item ID</th>
-                                        <th>Deskripsi</th>
-                                        <th>AK</th>
-                                        <th>Type</th>
-                                        <th>Unsur</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td colspan="6" style="vertical-align: middle; padding: 20px;">No
-                                            records to display.</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="selectSubGroupJabatan">SubGroup Jabatan</label>
+                    <select id="selectSubGroupJabatan" class="hris-select">
+                        <option value="">Pilih SubGroup Jabatan</option>
+                        {% for sg in sub_group_jabatan_list %}
+                        <option value="{{ sg.SUB_GROUP_JABATAN_ID }}">{{ sg.SUB_GROUP_JABATAN_ID }} - {{ sg.NAMA_SUB_GROUP_JABATAN }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="inputJabatanId">Jabatan ID</label>
+                    <input type="number" id="inputJabatanId" class="hris-input" min="0" step="1" value="0">
+                </div>
+
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="inputNamaJabatan">Nama Jabatan</label>
+                    <input type="text" id="inputNamaJabatan" class="hris-input">
+                </div>
+
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="inputParentJabatanId">Parent Jabatan ID</label>
+                    <input type="number" id="inputParentJabatanId" class="hris-input" min="0" step="1" value="0">
+                </div>
+
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="inputLevelJabatan">Level Jabatan</label>
+                    <input type="number" id="inputLevelJabatan" class="hris-input" min="0" step="1" value="0">
+                </div>
+
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="selectType">Type</label>
+                    <select id="selectType" class="hris-select">
+                        <option value="">Pilih Type</option>
+                        <option value="FT">FT</option>
+                        <option value="FU">FU</option>
+                    </select>
+                </div>
+
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="selectIsAktif">Status Aktif</label>
+                    <select id="selectIsAktif" class="hris-select">
+                        <option value="">Pilih Status</option>
+                        <option value="1">Aktif</option>
+                        <option value="0">Non Aktif</option>
+                    </select>
+                </div>
+
+                <div class="hris-form-actions">
+                    <button type="button" id="btnBatalJabatan" class="hris-btn hris-btn-secondary">
+                        <i class="feather-x-circle"></i>
+                        <span>Batal</span>
+                    </button>
+                    <button type="button" id="btnSimpanJabatan" class="hris-btn hris-btn-primary">
+                        <i class="feather-save"></i>
+                        <span id="btnSimpanJabatanText">Simpan</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -196,244 +110,149 @@
 {% endblock %}
 
 {% block script %}
-let editJabatanId = null;
-
-
-function resetFormJabatan() {
-    editJabatanId = null;
-
-    document.getElementById('selectGroupJabatan').value = '';
-    document.getElementById('selectSubGroupJabatan').value = '';
-    document.getElementById('inputJabatanId').value = '0';
-    document.getElementById('inputNamaJabatan').value = '';
-    document.getElementById('inputParentJabatanId').value = '0';
-    document.getElementById('inputLevelJabatan').value = '0';
-    document.getElementById('selectType').value = '';
-    document.getElementById('selectIsAktif').value = '';
-
-    document.getElementById('inputJabatanId').readOnly = false;
-
-    document.getElementById('masterJabatanTitle').innerHTML =
-        '<i class="feather-award me-2"></i> Master Jabatan';
-
-    document.getElementById('btnSimpanJabatanText').textContent =
-        'Simpan';
-}
-
-
-function loadEditJabatan() {
+document.addEventListener('DOMContentLoaded', function () {
+    let editJabatanId = null;
     const params = new URLSearchParams(window.location.search);
     const editId = params.get('edit');
 
-    if (!editId) {
-        resetFormJabatan();
-        return;
+    const el = {
+        group: document.getElementById('selectGroupJabatan'),
+        subGroup: document.getElementById('selectSubGroupJabatan'),
+        id: document.getElementById('inputJabatanId'),
+        nama: document.getElementById('inputNamaJabatan'),
+        parent: document.getElementById('inputParentJabatanId'),
+        level: document.getElementById('inputLevelJabatan'),
+        type: document.getElementById('selectType'),
+        aktif: document.getElementById('selectIsAktif'),
+        save: document.getElementById('btnSimpanJabatan'),
+        saveText: document.getElementById('btnSimpanJabatanText'),
+        cancel: document.getElementById('btnBatalJabatan'),
+        back: document.getElementById('btnKembaliJabatan'),
+        title: document.getElementById('formTitle'),
+        subtitle: document.getElementById('pageSubtitle')
+    };
+
+    function resetForm() {
+        editJabatanId = null;
+        el.group.value = '';
+        el.subGroup.value = '';
+        el.id.value = '0';
+        el.nama.value = '';
+        el.parent.value = '0';
+        el.level.value = '0';
+        el.type.value = '';
+        el.aktif.value = '';
+        el.id.readOnly = false;
+        el.title.textContent = 'Tambah Master Jabatan';
+        el.subtitle.textContent = 'Tambah dan kelola data jabatan HRIS.';
+        el.saveText.textContent = 'Simpan';
+        el.back.style.display = 'none';
     }
 
-    const jabatanId = Number(editId);
+    async function loadEdit() {
+        if (!editId) {
+            resetForm();
+            return;
+        }
 
-    if (!Number.isInteger(jabatanId) || jabatanId <= 0) {
-        alert('Jabatan ID untuk Edit tidak valid.');
-        return;
-    }
+        const jabatanId = Number(editId);
+        if (!Number.isInteger(jabatanId) || jabatanId <= 0) {
+            alert('Jabatan ID untuk Edit tidak valid.');
+            return;
+        }
 
-    fetch(
-        "{{ url_for('main.api_jabatan_detail') }}" +
-        "?id=" + encodeURIComponent(jabatanId)
-    )
-        .then(res => res.json())
-        .then(data => {
+        el.back.style.display = '';
+        el.title.textContent = 'Edit Master Jabatan';
+        el.subtitle.textContent = 'Perbarui data Master Jabatan yang sudah tersimpan.';
+        el.saveText.textContent = 'Simpan Perubahan';
 
-            if (data.status !== 'success') {
-                alert(
-                    'Gagal mengambil data Jabatan: ' +
-                    (data.message || 'Data tidak ditemukan')
-                );
+        try {
+            const res = await fetch(
+                "{{ url_for('main.api_jabatan_detail') }}?id=" + encodeURIComponent(jabatanId)
+            );
+            const data = await res.json();
+
+            if (!res.ok || data.status !== 'success') {
+                alert(data.message || 'Data Master Jabatan tidak ditemukan.');
                 return;
             }
 
-            const row = data.data || data;
-
+            const row = data.data || {};
             editJabatanId = jabatanId;
-
-            document.getElementById('selectGroupJabatan').value =
-                row.group_jabatan_id ?? '';
-
-            document.getElementById('selectSubGroupJabatan').value =
-                row.sub_group_jabatan_id ?? '';
-
-            document.getElementById('inputJabatanId').value =
-                row.jabatan_id ?? jabatanId;
-
-            document.getElementById('inputNamaJabatan').value =
-                row.nama_jabatan ?? '';
-
-            document.getElementById('inputParentJabatanId').value =
-                row.parent_id ??
-                row.parent_jabatan_id ??
-                0;
-
-            document.getElementById('inputLevelJabatan').value =
-                row.level_jabatan ??
-                row.urut_jabatan ??
-                0;
-
-            document.getElementById('selectType').value =
-                row.type_jabatan ?? '';
-
-            let isAktif = row.is_aktif;
-
-            if (
-                isAktif === true ||
-                isAktif === 1 ||
-                isAktif === '1' ||
-                isAktif === 'Aktif'
-            ) {
-                isAktif = '1';
-            } else {
-                isAktif = '0';
-            }
-
-            document.getElementById('selectIsAktif').value =
-                isAktif;
-
-            document.getElementById('inputJabatanId').readOnly = true;
-
-            document.getElementById('masterJabatanTitle').innerHTML =
-                '<i class="feather-award me-2"></i> Edit Master Jabatan';
-
-            document.getElementById('btnSimpanJabatanText').textContent =
-                'Update';
-        })
-        .catch(err => {
+            el.group.value = row.group_jabatan_id ?? '';
+            el.subGroup.value = row.sub_group_jabatan_id ?? '';
+            el.id.value = row.jabatan_id ?? jabatanId;
+            el.nama.value = row.nama_jabatan ?? '';
+            el.parent.value = row.parent_id ?? row.parent_jabatan_id ?? 0;
+            el.level.value = row.level_jabatan ?? row.urut_jabatan ?? 0;
+            el.type.value = row.type_jabatan ?? '';
+            el.aktif.value = row.is_aktif === true || row.is_aktif === 1 || row.is_aktif === '1' ? '1' : '0';
+            el.id.readOnly = true;
+        } catch (err) {
             console.error(err);
-            alert(
-                'Terjadi kesalahan saat mengambil data Jabatan.'
-            );
-        });
-}
-
-
-document.getElementById('btnSimpanJabatan')
-    .addEventListener('click', function () {
-
-        const groupJabatanId =
-            document.getElementById('selectGroupJabatan').value;
-
-        const subGroupJabatanId =
-            document.getElementById('selectSubGroupJabatan').value;
-
-        const jabatanId =
-            document.getElementById('inputJabatanId').value;
-
-        const namaJabatan =
-            document.getElementById('inputNamaJabatan').value.trim();
-
-        const parentJabatanId =
-            document.getElementById('inputParentJabatanId').value;
-
-        const levelJabatan =
-            document.getElementById('inputLevelJabatan').value;
-
-        const typeJabatan =
-            document.getElementById('selectType').value;
-
-        const isAktif =
-            document.getElementById('selectIsAktif').value;
-
-
-        if (!groupJabatanId) {
-            alert('Group Jabatan wajib dipilih');
-            return;
+            alert('Gagal memuat data Master Jabatan.');
         }
+    }
 
-        if (!subGroupJabatanId) {
-            alert('SubGroup Jabatan wajib dipilih');
-            return;
-        }
-
-        if (!jabatanId) {
-            alert('Jabatan ID wajib diisi');
-            return;
-        }
-
-        if (!namaJabatan) {
-            alert('Nama Jabatan wajib diisi');
-            return;
-        }
-
-        if (levelJabatan === '') {
-            alert('Level Jabatan wajib diisi');
-            return;
-        }
-
-        if (!typeJabatan) {
-            alert('Type wajib dipilih');
-            return;
-        }
-
-        if (isAktif === '') {
-            alert('Isi Aktif wajib dipilih');
-            return;
-        }
-
-
+    el.save.addEventListener('click', async function () {
         const payload = {
-            group_jabatan_id: groupJabatanId,
-            sub_group_jabatan_id: subGroupJabatanId,
-            jabatan_id: jabatanId,
-            nama_jabatan: namaJabatan,
-            parent_jabatan_id: parentJabatanId,
-            level_jabatan: levelJabatan,
-            type_jabatan: typeJabatan,
-            is_aktif: isAktif === '1'
+            group_jabatan_id: el.group.value,
+            sub_group_jabatan_id: el.subGroup.value,
+            jabatan_id: el.id.value,
+            nama_jabatan: el.nama.value.trim(),
+            parent_jabatan_id: el.parent.value,
+            level_jabatan: el.level.value,
+            type_jabatan: el.type.value,
+            is_aktif: el.aktif.value === '1'
         };
 
+        if (!payload.group_jabatan_id) return alert('Group Jabatan wajib dipilih');
+        if (!payload.sub_group_jabatan_id) return alert('SubGroup Jabatan wajib dipilih');
+        if (!payload.jabatan_id || payload.jabatan_id === '0') return alert('Jabatan ID wajib diisi');
+        if (!payload.nama_jabatan) return alert('Nama Jabatan wajib diisi');
+        if (payload.level_jabatan === '') return alert('Level Jabatan wajib diisi');
+        if (!payload.type_jabatan) return alert('Type wajib dipilih');
+        if (el.aktif.value === '') return alert('Status Aktif wajib dipilih');
 
         const endpoint = editJabatanId !== null
             ? "{{ url_for('main.api_jabatan_update') }}"
             : "{{ url_for('main.api_jabatan_save') }}";
 
+        if (editJabatanId !== null) payload.jabatan_id = editJabatanId;
 
-        fetch(endpoint, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-        })
-            .then(res => res.json())
-            .then(data => {
+        el.save.disabled = true;
 
-                if (data.status === 'success') {
-
-                    alert(data.message);
-
-                    window.location.href =
-                        "{{ url_for('main.view_cari_master_jabatan') }}";
-
-                } else {
-
-                    alert(
-                        'Gagal: ' +
-                        (data.message || 'Terjadi kesalahan')
-                    );
-                }
-            })
-            .catch(err => {
-                console.error(err);
-
-                alert(
-                    editJabatanId !== null
-                        ? 'Terjadi kesalahan saat memperbarui data.'
-                        : 'Terjadi kesalahan saat menyimpan data.'
-                );
+        try {
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify(payload)
             });
+            const data = await res.json();
+
+            if (!res.ok || data.status !== 'success') {
+                alert(data.message || 'Gagal menyimpan data Master Jabatan.');
+                return;
+            }
+
+            alert(data.message || 'Data Master Jabatan berhasil disimpan.');
+            window.location.href = "{{ url_for('main.view_cari_master_jabatan') }}";
+        } catch (err) {
+            console.error(err);
+            alert('Terjadi kesalahan saat menyimpan data Master Jabatan.');
+        } finally {
+            el.save.disabled = false;
+        }
     });
 
+    el.cancel.addEventListener('click', function () {
+        if (editJabatanId !== null) {
+            window.location.href = "{{ url_for('main.view_cari_master_jabatan') }}";
+        } else {
+            resetForm();
+        }
+    });
 
-document.addEventListener(
-    'DOMContentLoaded',
-    loadEditJabatan
-);
+    loadEdit();
+});
 {% endblock %}
