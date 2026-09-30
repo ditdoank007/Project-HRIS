@@ -28,10 +28,6 @@
                     <i class="feather-refresh-cw"></i>
                     <span>Refresh</span>
                 </button>
-                <button type="button" class="hris-btn hris-btn-secondary" id="btnExportExcel">
-                    <i class="feather-download"></i>
-                    <span>Export Excel</span>
-                </button>
             </div>
         </div>
 
@@ -217,10 +213,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     document.getElementById('btnRefreshJamFinger').addEventListener('click', loadJamFingerList);
-    document.getElementById('btnExportExcel').addEventListener('click', function () {
-        window.location.href = '/api/jam-finger/export?' + buildQueryParams().toString();
-    });
-
     ['filterPeriode', 'filterField1', 'filterField2'].forEach(function (id) {
         document.getElementById(id).addEventListener('change', loadJamFingerList);
     });
