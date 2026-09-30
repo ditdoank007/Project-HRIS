@@ -89,9 +89,14 @@
                                 </button>
 
                                 <div class="collapse d-md-flex align-items-center" id="headerIconsCollapse">
-                                    <div class="header-icons-wrapper d-flex gap-3 p-2 p-md-0 mt-2 mt-md-0">
-                                        <a href="{{ url_for('main.view_kepegawaian_cari_data_pegawai') }}" class="btn p-0 border-0 bg-transparent shadow-none text-decoration-none">
-                                            <i class="bi bi-search" style="color: #333; font-size: 1.1rem;"></i>
+                                    <div class="header-icons-wrapper d-flex align-items-center gap-2 p-2 p-md-0 mt-2 mt-md-0">
+                                        <a href="{{ url_for('main.view_kepegawaian_cari_data_pegawai') }}" class="hris-btn hris-btn-secondary text-decoration-none">
+                                            <i class="feather-arrow-left"></i>
+                                            <span>Kembali</span>
+                                        </a>
+                                        <a href="{{ url_for('main.view_kepegawaian_cari_data_pegawai') }}" class="hris-btn hris-btn-secondary text-decoration-none">
+                                            <i class="feather-search"></i>
+                                            <span>Cari Pegawai</span>
                                         </a>
                                     </div>
                                 </div>
@@ -1234,7 +1239,7 @@ document.addEventListener("DOMContentLoaded", function () {
              * Setelah berhasil simpan, reload agar memastikan
              * record benar-benar terbaca kembali dari database.
              */
-            window.location.reload();
+            window.location.href = "{{ url_for('main.view_kepegawaian_cari_data_pegawai') }}";
         })
         .catch(function (error) {
             console.error("[SIMPAN-DIRECT-FIX]", error);
