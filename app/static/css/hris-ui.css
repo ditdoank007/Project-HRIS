@@ -2501,6 +2501,42 @@ body.hris-sidebar-mini .hris-submenu {
   color: #047857;
 }
 
+.org-node.is-empty {
+  border-color: #475569;
+  background: #475569;
+  color: #fff;
+}
+
+.org-node.is-empty span {
+  color: #fff;
+}
+
+.org-node.is-empty:hover {
+  border-color: #334155;
+  background: #334155;
+  box-shadow: 0 7px 18px rgba(15,23,42,.16);
+}
+
+.org-node.is-empty.is-functional {
+  border-color: #475569;
+  background: #475569;
+}
+
+.org-node.is-empty.is-functional span {
+  color: #fff;
+}
+
+/* Root jabatan juga mengikuti status keterisian pegawai. */
+.org-tree-root > .org-tree-item > .org-node-wrap .org-node.is-empty {
+  border-color: #475569;
+  background: #475569;
+  color: #fff;
+}
+
+.org-tree-root > .org-tree-item > .org-node-wrap .org-node.is-empty span {
+  color: #fff;
+}
+
 .org-tree-root > .org-tree-item > .org-tree-children > .org-tree-item:has(.org-node.is-functional)::before {
   border-top-style: dashed;
   border-top-color: #64748b;
