@@ -73,9 +73,9 @@
                         <thead>
                             <tr>
                                 <th>No</th>
+                                <th>Urut Jabatan</th>
                                 <th>Jabatan ID</th>
                                 <th>Nama Jabatan</th>
-                                <th>Urut Jabatan</th>
                                 <th>Status</th>
                                 <th>Updated</th>
                                 <th>BY</th>
@@ -143,9 +143,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 tbody.innerHTML = data.data.map(row => `
                     <tr>
                         <td>${escapeHtml(row.no)}</td>
+                        <td>${escapeHtml(row.urut_jabatan)}</td>
                         <td>${escapeHtml(row.jabatan_id)}</td>
                         <td>${escapeHtml(row.nama_jabatan)}</td>
-                        <td>${escapeHtml(row.urut_jabatan)}</td>
                         <td>${escapeHtml(row.is_aktif)}</td>
                         <td>${escapeHtml(row.updated)}</td>
                         <td>${escapeHtml(row.by)}</td>
