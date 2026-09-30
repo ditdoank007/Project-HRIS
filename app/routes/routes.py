@@ -654,7 +654,7 @@ def api_jabatan_save():
 @login_required
 def api_jabatan_detail():
     return get_jabatan_by_id()
-\n
+
 @main.route('/api/jabatan/structure', methods=['GET'])
 @login_required
 def api_jabatan_structure():
