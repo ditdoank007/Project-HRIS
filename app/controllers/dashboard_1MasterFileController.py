@@ -3330,9 +3330,28 @@ def get_jabatan_list():
             )
 
     jabatan_list = query.order_by(
-        MfJabatan.UPDATE_DATE.desc(),
-        MfJabatan.JABATAN_ID.desc()
+        MfJabatan.URUT_JABATAN.asc(),
+        MfJabatan.JABATAN_ID.asc()
     ).all()
+
+    # Jabatan aktif selalu di atas. Di masing-masing kelompok,
+    # URUT_JABATAN tetap menjadi urutan utama: 1, 2, 3, dst.
+    def _jabatan_sort_key(row):
+        status = str(row.IS_USE).strip().upper() if row.IS_USE is not None else ''
+        is_inactive = status in ('0', 'N', 'TIDAK', 'FALSE')
+        urut = row.URUT_JABATAN if row.URUT_JABATAN is not None else 999999
+        try:
+            urut = int(urut)
+        except (TypeError, ValueError):
+            urut = 999999
+
+        return (
+            1 if is_inactive else 0,
+            urut,
+            row.JABATAN_ID or 0,
+        )
+
+    jabatan_list = sorted(jabatan_list, key=_jabatan_sort_key)
 
     def _format_jabatan_updated(value):
         # Database legacy bisa mengembalikan UPDATE_DATE sebagai
