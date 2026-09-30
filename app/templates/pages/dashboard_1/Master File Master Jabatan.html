@@ -105,8 +105,44 @@
                 </div>
             </div>
         </div>
+
     </div>
-</div>
+
+    <div class="hris-card hris-jabatan-structure-card">
+        <div class="hris-card-header hris-jabatan-structure-header">
+            <div>
+                <h3 class="hris-card-title">Struktur Kodefikasi Jabatan</h3>
+                <p class="hris-section-subtitle">Visualisasi hierarki jabatan berdasarkan kodefikasi. Klik node untuk membuka atau menutup child tree.</p>
+            </div>
+            <div class="hris-jabatan-legend">
+                <span><i class="hris-legend-line"></i> Struktural</span>
+                <span><i class="hris-legend-line is-dashed"></i> Fungsional / PKPP</span>
+            </div>
+            <div class="hris-jabatan-zoom">
+                <button type="button" class="hris-btn hris-btn-secondary hris-btn-icon" id="btnJabatanZoomOut" title="Zoom Out">
+                    <i class="feather-minus"></i>
+                </button>
+                <span id="jabatanZoomValue">100%</span>
+                <button type="button" class="hris-btn hris-btn-secondary hris-btn-icon" id="btnJabatanZoomIn" title="Zoom In">
+                    <i class="feather-plus"></i>
+                </button>
+                <button type="button" class="hris-btn hris-btn-secondary" id="btnJabatanZoomReset">
+                    <i class="feather-refresh-cw"></i>
+                    <span>Reset View</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="hris-card-body hris-jabatan-structure-body">
+            <div class="hris-jabatan-structure-viewport" id="jabatanStructureViewport">
+                <div class="hris-jabatan-structure-canvas" id="jabatanStructureCanvas">
+                    <div class="hris-jabatan-structure-loading" id="jabatanStructureLoading">
+                        Memuat Struktur Kodefikasi Jabatan...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 {% endblock %}
 
 {% block script %}
@@ -253,6 +289,149 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    const structureCanvas = document.getElementById('jabatanStructureCanvas');
+    const structureLoading = document.getElementById('jabatanStructureLoading');
+    const zoomValue = document.getElementById('jabatanZoomValue');
+    let structureScale = 1;
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function renderJabatanNode(node) {
+        const li = document.createElement('li');
+        li.className = 'hris-jabatan-tree-item';
+
+        const relation = node.relation === 'functional' ? 'is-functional' : 'is-structural';
+        const hasChildren = Array.isArray(node.children) && node.children.length > 0;
+
+        const nodeWrap = document.createElement('div');
+        nodeWrap.className = 'hris-jabatan-node-wrap';
+
+        if (hasChildren) {
+            const toggle = document.createElement('button');
+            toggle.type = 'button';
+            toggle.className = 'hris-jabatan-node-toggle';
+            toggle.setAttribute('aria-expanded', 'false');
+            toggle.title = 'Buka child tree';
+            toggle.innerHTML = '<i class="feather-chevron-down"></i>';
+            nodeWrap.appendChild(toggle);
+        } else {
+            const spacer = document.createElement('span');
+            spacer.className = 'hris-jabatan-node-toggle-spacer';
+            nodeWrap.appendChild(spacer);
+        }
+
+        const nodeButton = document.createElement('button');
+        nodeButton.type = 'button';
+        nodeButton.className = 'hris-jabatan-node ' + relation;
+        nodeButton.innerHTML =
+            '<strong>' + escapeHtml(node.code) + '</strong>' +
+            '<span>' + escapeHtml(node.name) + '</span>';
+
+        nodeWrap.appendChild(nodeButton);
+        li.appendChild(nodeWrap);
+
+        if (hasChildren) {
+            const children = document.createElement('ul');
+            children.className = 'hris-jabatan-tree-children';
+
+            node.children.forEach(function (child) {
+                children.appendChild(renderJabatanNode(child));
+            });
+
+            li.appendChild(children);
+
+            const toggle = nodeWrap.querySelector('.hris-jabatan-node-toggle');
+            toggle.addEventListener('click', function (event) {
+                event.stopPropagation();
+                const expanded = li.classList.toggle('is-expanded');
+                toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+                toggle.innerHTML = expanded
+                    ? '<i class="feather-chevron-up"></i>'
+                    : '<i class="feather-chevron-down"></i>';
+            });
+
+            nodeButton.addEventListener('click', function () {
+                toggle.click();
+            });
+        }
+
+        nodeButton.addEventListener('dblclick', function () {
+            if (editJabatanId === null) {
+                window.location.href =
+                    "{{ url_for('main.view_master_jabatan') }}?edit=" +
+                    encodeURIComponent(node.id);
+            }
+        });
+
+        return li;
+    }
+
+    function renderJabatanStructure(root) {
+        structureCanvas.innerHTML = '';
+
+        if (!root) {
+            const empty = document.createElement('div');
+            empty.className = 'hris-jabatan-structure-loading';
+            empty.textContent = 'Kodefikasi root 10 belum tersedia atau tidak aktif.';
+            structureCanvas.appendChild(empty);
+            return;
+        }
+
+        const tree = document.createElement('ul');
+        tree.className = 'hris-jabatan-tree hris-jabatan-tree-root';
+        tree.appendChild(renderJabatanNode(root));
+
+        structureCanvas.appendChild(tree);
+    }
+
+    async function loadJabatanStructure() {
+        try {
+            const response = await fetch("{{ url_for('main.api_jabatan_structure') }}", {
+                headers: { 'Accept': 'application/json' }
+            });
+            const payload = await response.json();
+
+            if (!response.ok || payload.status !== 'success') {
+                throw new Error(payload.message || 'Gagal memuat struktur jabatan.');
+            }
+
+            renderJabatanStructure(payload.data && payload.data.root);
+        } catch (error) {
+            console.error(error);
+            structureCanvas.innerHTML = '';
+            const message = document.createElement('div');
+            message.className = 'hris-jabatan-structure-loading is-error';
+            message.textContent = error.message || 'Gagal memuat Struktur Kodefikasi Jabatan.';
+            structureCanvas.appendChild(message);
+        }
+    }
+
+    function setStructureZoom(nextScale) {
+        structureScale = Math.min(1.6, Math.max(0.6, nextScale));
+        structureCanvas.style.setProperty('--jabatan-structure-scale', structureScale);
+        zoomValue.textContent = Math.round(structureScale * 100) + '%';
+    }
+
+    document.getElementById('btnJabatanZoomIn').addEventListener('click', function () {
+        setStructureZoom(structureScale + 0.1);
+    });
+
+    document.getElementById('btnJabatanZoomOut').addEventListener('click', function () {
+        setStructureZoom(structureScale - 0.1);
+    });
+
+    document.getElementById('btnJabatanZoomReset').addEventListener('click', function () {
+        setStructureZoom(1);
+    });
+
     loadEdit();
+    loadJabatanStructure();
 });
 {% endblock %}
