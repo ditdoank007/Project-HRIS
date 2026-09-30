@@ -3445,6 +3445,129 @@ def get_jabatan_list():
     return jsonify({'status': 'success', 'data': data})
 
 
+
+def get_jabatan_structure():
+    """
+    Bangun struktur kodefikasi Master Jabatan secara dinamis dari database.
+
+    Aturan kode:
+      - 10    : root / Kepala Kantor
+      - 1010, 1020, 1030, ... : child struktural langsung dari 10
+      - child struktural 8 digit mengikuti 4 digit parent di depannya
+      - 1050  : PKPP/fungsional langsung di bawah 10
+      - 105010 : node pengelompokan PKPP
+      - 105020, 105030, ... : child dari 105010
+
+    Hanya jabatan aktif yang divisualisasikan. Nama node selalu diambil
+    dari MF_JABATAN sehingga perubahan master otomatis mengubah diagram.
+    """
+    rows = MfJabatan.query.all()
+
+    def is_active(row):
+        value = str(row.IS_USE).strip().upper() if row.IS_USE is not None else ''
+        return value in ('1', 'Y', 'YA', 'TRUE')
+
+    active_rows = [row for row in rows if is_active(row)]
+    by_code = {str(row.JABATAN_ID): row for row in active_rows}
+
+    def sort_rows(items):
+        return sorted(
+            items,
+            key=lambda row: (
+                row.URUT_JABATAN if row.URUT_JABATAN is not None else 999999,
+                int(row.JABATAN_ID) if row.JABATAN_ID is not None else 999999999,
+            )
+        )
+
+    def node(row, relation='structural'):
+        return {
+            'id': int(row.JABATAN_ID),
+            'code': str(row.JABATAN_ID),
+            'name': row.NAMA_JABATAN or '-',
+            'type': (row.TYPE_JABATAN or '').strip().upper(),
+            'relation': relation,
+            'children': [],
+        }
+
+    root = by_code.get('10')
+    if root is None:
+        return jsonify({
+            'status': 'success',
+            'data': {
+                'root': None,
+                'message': 'Kodefikasi root 10 belum tersedia atau tidak aktif.'
+            }
+        })
+
+    root_node = node(root)
+
+    # Level pertama: seluruh kode 4 digit yang diawali "10".
+    top_rows = sort_rows([
+        row for row in active_rows
+        if len(str(row.JABATAN_ID)) == 4
+        and str(row.JABATAN_ID).startswith('10')
+        and str(row.JABATAN_ID) != '10'
+    ])
+
+    for parent_row in top_rows:
+        parent_node = node(
+            parent_row,
+            relation='functional' if str(parent_row.JABATAN_ID) == '1050' else 'structural'
+        )
+
+        parent_code = str(parent_row.JABATAN_ID)
+
+        if parent_code == '1050':
+            # PKPP: 105010 menjadi kelompok, lalu 105020 dst.
+            # menjadi child di bawah 105010 sesuai struktur kodefikasi
+            # yang ditetapkan untuk PKPP.
+            pkpp_rows = sort_rows([
+                row for row in active_rows
+                if len(str(row.JABATAN_ID)) == 6
+                and str(row.JABATAN_ID).startswith('1050')
+            ])
+
+            if pkpp_rows:
+                group_row = next(
+                    (row for row in pkpp_rows if str(row.JABATAN_ID).endswith('010')),
+                    pkpp_rows[0]
+                )
+                group_node = node(group_row, relation='functional')
+
+                child_rows = [
+                    row for row in pkpp_rows
+                    if row.JABATAN_ID != group_row.JABATAN_ID
+                ]
+
+                for child_row in child_rows:
+                    group_node['children'].append(
+                        node(child_row, relation='functional')
+                    )
+
+                parent_node['children'].append(group_node)
+        else:
+            # Struktur jabatan biasa: 4 digit parent -> 8 digit child
+            # dengan empat digit awal yang sama.
+            child_rows = sort_rows([
+                row for row in active_rows
+                if len(str(row.JABATAN_ID)) > len(parent_code)
+                and str(row.JABATAN_ID).startswith(parent_code)
+            ])
+
+            for child_row in child_rows:
+                parent_node['children'].append(
+                    node(child_row, relation='structural')
+                )
+
+        root_node['children'].append(parent_node)
+
+    return jsonify({
+        'status': 'success',
+        'data': {
+            'root': root_node,
+        }
+    })
+
 def get_jabatan_by_id():
     """Ambil satu Master Jabatan berdasarkan JabatanID untuk mode Edit."""
     id_raw = request.args.get('id', '').strip()
