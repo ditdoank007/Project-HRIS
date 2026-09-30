@@ -1,0 +1,253 @@
+<!-- pages/dashboard_1/Dashboard Struktur Organisasi.html -->
+{% extends "layout/baseHRIS.html" %}
+
+{% block title %}- Struktur Organisasi{% endblock %}
+
+{% block header_kicker %}UMUM · DASHBOARD{% endblock %}
+{% block header_title %}Struktur Organisasi{% endblock %}
+
+{% block content %}
+<section class="hris-page org-page">
+    <div class="hris-page-header">
+        <div>
+            <h2 class="hris-page-title">Struktur Organisasi</h2>
+            <p class="hris-page-subtitle">
+                Struktur organisasi berdasarkan Master Jabatan dan pegawai aktif HRIS.
+            </p>
+        </div>
+    </div>
+
+    <div class="hris-card org-card">
+        <div class="hris-card-header org-header">
+            <div>
+                <h3 class="hris-card-title">Struktur Organisasi Kantor SAR Surabaya</h3>
+                <p class="hris-section-subtitle">
+                    Klik nama jabatan untuk melihat daftar pegawai pada jabatan tersebut.
+                    Gunakan tombol kecil di samping jabatan untuk membuka atau menutup child tree.
+                </p>
+            </div>
+
+            <div class="org-toolbar">
+                <div class="org-legend">
+                    <span><i class="hris-legend-line"></i> Struktural</span>
+                    <span><i class="hris-legend-line is-dashed"></i> Fungsional / PKPP</span>
+                </div>
+
+                <div class="org-zoom">
+                    <button type="button" class="hris-btn hris-btn-secondary hris-btn-icon"
+                            id="btnOrgZoomOut" title="Zoom Out">
+                        <i class="feather-minus"></i>
+                    </button>
+                    <span id="orgZoomValue">100%</span>
+                    <button type="button" class="hris-btn hris-btn-secondary hris-btn-icon"
+                            id="btnOrgZoomIn" title="Zoom In">
+                        <i class="feather-plus"></i>
+                    </button>
+                    <button type="button" class="hris-btn hris-btn-secondary"
+                            id="btnOrgZoomReset">
+                        <i class="feather-refresh-cw"></i>
+                        <span>Reset View</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="hris-card-body org-body">
+            <div class="org-viewport" id="orgViewport">
+                <div class="org-canvas" id="orgCanvas">
+                    {% if structure %}
+                    <ul class="org-tree org-tree-root" id="orgTreeRoot"></ul>
+                    {% else %}
+                    <div class="org-empty">
+                        Struktur root 10 belum tersedia atau tidak aktif.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="org-modal" id="orgEmployeeModal" aria-hidden="true">
+    <div class="org-modal-dialog" role="dialog" aria-modal="true"
+         aria-labelledby="orgEmployeeModalTitle">
+        <div class="org-modal-head">
+            <div>
+                <h3 id="orgEmployeeModalTitle">Pegawai</h3>
+                <span id="orgEmployeeModalSubtitle"></span>
+            </div>
+            <button type="button" class="org-modal-close"
+                    id="orgEmployeeModalClose" aria-label="Tutup">&times;</button>
+        </div>
+        <div class="org-modal-body" id="orgEmployeeModalBody"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+document.addEventListener("DOMContentLoaded", function () {
+    const structure = {{ structure | tojson }};
+    const employeesByJabatan = {{ employees_by_jabatan | tojson }};
+
+    const canvas = document.getElementById("orgCanvas");
+    const zoomValue = document.getElementById("orgZoomValue");
+    const modal = document.getElementById("orgEmployeeModal");
+    const modalTitle = document.getElementById("orgEmployeeModalTitle");
+    const modalSubtitle = document.getElementById("orgEmployeeModalSubtitle");
+    const modalBody = document.getElementById("orgEmployeeModalBody");
+
+    let scale = 1;
+
+    function createNode(node) {
+        const li = document.createElement("li");
+        li.className = "org-tree-item";
+
+        const hasChildren = Array.isArray(node.children) && node.children.length > 0;
+
+        const wrap = document.createElement("div");
+        wrap.className = "org-node-wrap";
+
+        if (hasChildren) {
+            const toggle = document.createElement("button");
+            toggle.type = "button";
+            toggle.className = "org-node-toggle";
+            toggle.setAttribute("aria-expanded", "false");
+            toggle.title = "Buka child tree";
+            toggle.innerHTML = '<i class="feather-chevron-down"></i>';
+
+            toggle.addEventListener("click", function (event) {
+                event.stopPropagation();
+                const expanded = li.classList.toggle("is-expanded");
+                toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
+                toggle.title = expanded ? "Tutup child tree" : "Buka child tree";
+                toggle.innerHTML = expanded
+                    ? '<i class="feather-chevron-up"></i>'
+                    : '<i class="feather-chevron-down"></i>';
+            });
+
+            wrap.appendChild(toggle);
+        } else {
+            const spacer = document.createElement("span");
+            spacer.className = "org-node-toggle-spacer";
+            wrap.appendChild(spacer);
+        }
+
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "org-node " +
+            (node.relation === "functional" ? "is-functional" : "is-structural");
+
+        const name = document.createElement("span");
+        name.textContent = node.name || "-";
+        button.appendChild(name);
+
+        button.addEventListener("click", function () {
+            openEmployeeModal(node);
+        });
+
+        wrap.appendChild(button);
+        li.appendChild(wrap);
+
+        if (hasChildren) {
+            const children = document.createElement("ul");
+            children.className = "org-tree-children";
+
+            node.children.forEach(function (child) {
+                children.appendChild(createNode(child));
+            });
+
+            li.appendChild(children);
+        }
+
+        return li;
+    }
+
+    function renderStructure() {
+        const root = document.getElementById("orgTreeRoot");
+        if (!root || !structure) return;
+
+        root.innerHTML = "";
+        root.appendChild(createNode(structure));
+    }
+
+    function openEmployeeModal(node) {
+        const key = String(node.id);
+        const employees = employeesByJabatan[key] || [];
+
+        modalTitle.textContent = node.name || "Jabatan";
+        modalSubtitle.textContent = employees.length + " pegawai";
+        modalBody.innerHTML = "";
+
+        if (!employees.length) {
+            const empty = document.createElement("div");
+            empty.className = "org-person-empty";
+            empty.textContent = "Tidak ada pegawai aktif pada jabatan ini.";
+            modalBody.appendChild(empty);
+        } else {
+            employees.forEach(function (item, index) {
+                const row = document.createElement("div");
+                row.className = "org-person";
+
+                const no = document.createElement("div");
+                no.className = "org-person-no";
+                no.textContent = index + 1;
+
+                const info = document.createElement("div");
+
+                const name = document.createElement("div");
+                name.className = "org-person-name";
+                name.textContent = item.nama || "-";
+
+                const nip = document.createElement("div");
+                nip.className = "org-person-nip";
+                nip.textContent = item.nip || "-";
+
+                info.appendChild(name);
+                info.appendChild(nip);
+                row.appendChild(no);
+                row.appendChild(info);
+                modalBody.appendChild(row);
+            });
+        }
+
+        modal.classList.add("is-open");
+        modal.setAttribute("aria-hidden", "false");
+    }
+
+    function closeEmployeeModal() {
+        modal.classList.remove("is-open");
+        modal.setAttribute("aria-hidden", "true");
+    }
+
+    function setZoom(nextScale) {
+        scale = Math.min(1.6, Math.max(0.6, nextScale));
+        canvas.style.setProperty("--org-scale", scale);
+        zoomValue.textContent = Math.round(scale * 100) + "%";
+    }
+
+    document.getElementById("btnOrgZoomIn").addEventListener("click", function () {
+        setZoom(scale + 0.1);
+    });
+
+    document.getElementById("btnOrgZoomOut").addEventListener("click", function () {
+        setZoom(scale - 0.1);
+    });
+
+    document.getElementById("btnOrgZoomReset").addEventListener("click", function () {
+        setZoom(1);
+    });
+
+    document.getElementById("orgEmployeeModalClose")
+        ?.addEventListener("click", closeEmployeeModal);
+
+    modal?.addEventListener("click", function (event) {
+        if (event.target === modal) closeEmployeeModal();
+    });
+
+    document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") closeEmployeeModal();
+    });
+
+    renderStructure();
+});
+{% endblock %}
