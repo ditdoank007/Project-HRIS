@@ -3501,19 +3501,17 @@ def get_jabatan_structure():
 
     root_node = node(root)
 
-    # Level pertama mengikuti struktur organisasi yang disepakati:
-    # 10 -> 1010 -> 1020 -> 1030, lalu 1050 (PKPP) paling kanan.
-    # Kode 1040 tidak ditampilkan pada diagram karena bukan node pada
-    # struktur visual yang digunakan saat ini.
-    top_order = {'1010': 0, '1020': 1, '1030': 2, '1050': 3}
-    top_rows = sorted(
-        [
-            row for row in active_rows
-            if len(str(row.JABATAN_ID)) == 4
-            and str(row.JABATAN_ID) in top_order
-        ],
-        key=lambda row: top_order[str(row.JABATAN_ID)]
-    )
+    # Level pertama dinamis dari database.
+    # Semua kode 4 digit aktif yang diawali "10" adalah child langsung
+    # dari root 10. Urutan kode mengikuti angka Jabatan ID sehingga
+    # jabatan nonaktif (misalnya 1040 saat ini) otomatis tidak tampil,
+    # tetapi akan muncul kembali jika diaktifkan.
+    top_rows = sort_rows([
+        row for row in active_rows
+        if len(str(row.JABATAN_ID)) == 4
+        and str(row.JABATAN_ID).startswith('10')
+        and str(row.JABATAN_ID) != '10'
+    ])
 
     for parent_row in top_rows:
         parent_node = node(
