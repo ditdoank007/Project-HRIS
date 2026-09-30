@@ -1948,3 +1948,308 @@ body.hris-sidebar-mini .hris-submenu {
 .hris-table-modern tbody tr.hris-table-row-inactive td {
   background: #f3f4f6;
 }
+
+
+/* ============================================================
+   MASTER JABATAN — CODED HIERARCHY VISUALIZATION
+   ============================================================ */
+.hris-jabatan-structure-card {
+  overflow: hidden;
+}
+
+.hris-jabatan-structure-header {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) auto auto;
+  align-items: center;
+  gap: 18px;
+}
+
+.hris-jabatan-legend,
+.hris-jabatan-zoom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hris-jabatan-legend {
+  color: var(--ui-muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.hris-jabatan-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.hris-legend-line {
+  width: 28px;
+  height: 2px;
+  display: inline-block;
+  background: #475569;
+}
+
+.hris-legend-line.is-dashed {
+  height: 0;
+  border-top: 2px dashed #475569;
+  background: transparent;
+}
+
+.hris-jabatan-zoom {
+  justify-content: flex-end;
+}
+
+.hris-jabatan-zoom > span {
+  min-width: 42px;
+  text-align: center;
+  color: var(--ui-ink);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.hris-jabatan-structure-body {
+  padding: 0 !important;
+}
+
+.hris-jabatan-structure-viewport {
+  position: relative;
+  min-height: 430px;
+  overflow: auto;
+  padding: 42px 28px 55px;
+  background:
+    radial-gradient(circle at 1px 1px, rgba(148,163,184,.16) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+.hris-jabatan-structure-canvas {
+  width: max-content;
+  min-width: 100%;
+  transform: scale(var(--jabatan-structure-scale, 1));
+  transform-origin: top center;
+  transition: transform .18s ease;
+}
+
+.hris-jabatan-structure-loading {
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ui-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.hris-jabatan-structure-loading.is-error {
+  color: var(--ui-danger);
+}
+
+.hris-jabatan-tree,
+.hris-jabatan-tree ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hris-jabatan-tree-root {
+  display: flex;
+  justify-content: center;
+}
+
+.hris-jabatan-tree-root > .hris-jabatan-tree-item > .hris-jabatan-node-wrap {
+  justify-content: center;
+}
+
+.hris-jabatan-tree-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 12px;
+}
+
+.hris-jabatan-tree-children {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  padding-top: 34px !important;
+}
+
+.hris-jabatan-tree-children::before {
+  content: "";
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  width: 0;
+  height: 18px;
+  border-left: 2px solid #64748b;
+}
+
+.hris-jabatan-tree-children > .hris-jabatan-tree-item::before {
+  content: "";
+  position: absolute;
+  top: 16px;
+  left: 0;
+  right: 0;
+  border-top: 2px solid #64748b;
+}
+
+.hris-jabatan-tree-children > .hris-jabatan-tree-item:first-child::before {
+  left: 50%;
+}
+
+.hris-jabatan-tree-children > .hris-jabatan-tree-item:last-child::before {
+  right: 50%;
+}
+
+.hris-jabatan-tree-children > .hris-jabatan-tree-item:only-child::before {
+  display: none;
+}
+
+.hris-jabatan-node-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 2;
+}
+
+.hris-jabatan-node-toggle,
+.hris-jabatan-node-toggle-spacer {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+}
+
+.hris-jabatan-node-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--ui-border);
+  border-radius: 7px;
+  color: var(--ui-muted);
+  background: #fff;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(15,23,42,.06);
+}
+
+.hris-jabatan-node-toggle:hover {
+  color: var(--ui-primary);
+  border-color: var(--ui-primary);
+}
+
+.hris-jabatan-node-toggle .feather {
+  width: 13px;
+  height: 13px;
+}
+
+.hris-jabatan-node {
+  position: relative;
+  min-width: 178px;
+  max-width: 230px;
+  min-height: 66px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: 1.5px solid #60a5fa;
+  border-radius: 9px;
+  color: #17324d;
+  background: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%);
+  box-shadow: 0 4px 12px rgba(15,23,42,.08);
+  cursor: pointer;
+  text-align: center;
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+
+.hris-jabatan-node:hover {
+  transform: translateY(-2px);
+  border-color: var(--ui-primary);
+  box-shadow: 0 7px 18px rgba(15,23,42,.12);
+}
+
+.hris-jabatan-node strong {
+  color: #1e3a5f;
+  font-size: 15px;
+  line-height: 1.1;
+  letter-spacing: .02em;
+}
+
+.hris-jabatan-node span {
+  max-width: 200px;
+  color: #64748b;
+  font-size: 10px;
+  line-height: 1.3;
+  font-weight: 650;
+}
+
+.hris-jabatan-tree-root > .hris-jabatan-tree-item > .hris-jabatan-node-wrap .hris-jabatan-node {
+  min-width: 235px;
+  border-color: #2563eb;
+  color: #fff;
+  background: #245d91;
+}
+
+.hris-jabatan-tree-root > .hris-jabatan-tree-item > .hris-jabatan-node-wrap .hris-jabatan-node strong,
+.hris-jabatan-tree-root > .hris-jabatan-tree-item > .hris-jabatan-node-wrap .hris-jabatan-node span {
+  color: #fff;
+}
+
+.hris-jabatan-node.is-functional {
+  border-color: #34d399;
+  background: linear-gradient(180deg, #ecfdf5 0%, #ffffff 100%);
+}
+
+.hris-jabatan-node.is-functional strong {
+  color: #047857;
+}
+
+.hris-jabatan-tree-root > .hris-jabatan-tree-item > .hris-jabatan-tree-children > .hris-jabatan-tree-item:has(.hris-jabatan-node.is-functional)::before {
+  border-top-style: dashed;
+  border-top-color: #64748b;
+}
+
+.hris-jabatan-tree-root > .hris-jabatan-tree-item > .hris-jabatan-tree-children > .hris-jabatan-tree-item:has(.hris-jabatan-node.is-functional)::after {
+  content: "";
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  height: 18px;
+  border-left: 2px dashed #64748b;
+}
+
+.hris-jabatan-tree-children .hris-jabatan-tree-children {
+  display: none;
+}
+
+.hris-jabatan-tree-item.is-expanded > .hris-jabatan-tree-children {
+  display: flex;
+}
+
+@media (max-width: 1050px) {
+  .hris-jabatan-structure-header {
+    grid-template-columns: 1fr;
+  }
+
+  .hris-jabatan-legend,
+  .hris-jabatan-zoom {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 720px) {
+  .hris-jabatan-structure-viewport {
+    min-height: 360px;
+    padding: 28px 18px 45px;
+  }
+
+  .hris-jabatan-node {
+    min-width: 155px;
+  }
+}
