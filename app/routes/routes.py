@@ -2210,19 +2210,16 @@ def api_calendar_personal_route():
 )
 def api_calendar_sync_token_internal_route():
 
-    from app.controllers.calendarController import (
-        api_calendar_sync_token_internal
-    )
+    return api_calendar_personal_sync_token()
 
-    @main.route(
+
+@main.route(
     '/api/internal/calendar/employee-profile',
     methods=['GET']
 )
 def api_calendar_employee_profile_internal_route():
+
     return api_calendar_employee_profile_internal()
-
-
-return api_calendar_sync_token_internal()
 
 
 @main.route(
