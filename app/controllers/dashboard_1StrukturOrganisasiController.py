@@ -133,11 +133,7 @@ def dashboard_struktur_organisasi():
 
     root = _build_structure(jabatan_rows)
 
-    pegawai_rows = (
-        get_operational_pegawai_query()
-        .order_by()
-        .all()
-    )
+    pegawai_rows = get_operational_pegawai_query().all()
 
     employees_by_jabatan = {}
 
