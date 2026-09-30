@@ -1941,3 +1941,10 @@ body.hris-sidebar-mini .hris-submenu {
     grid-column: auto;
   }
 }
+
+
+/* Master Jabatan: inactive rows are visually de-emphasized. */
+.hris-table-modern tbody tr.hris-table-row-inactive,
+.hris-table-modern tbody tr.hris-table-row-inactive td {
+  background: #f3f4f6;
+}
