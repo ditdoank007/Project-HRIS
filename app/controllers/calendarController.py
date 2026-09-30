@@ -231,6 +231,52 @@ def api_calendar_personal_internal():
     })
 
 
+
+def api_calendar_employee_profile_internal():
+    """
+    Internal employee profile for trusted Calendar Portal requests.
+
+    Source of truth remains the HRIS Reborn PEGAWAI table.
+    """
+    from config import Config
+
+    internal_key = request.headers.get("X-Calendar-Internal-Key")
+
+    if not internal_key or internal_key != Config.CALENDAR_INTERNAL_API_KEY:
+        return jsonify({
+            "status": "error",
+            "message": "Unauthorized"
+        }), 401
+
+    nip = str(request.headers.get("X-Calendar-NIP") or "").strip()
+
+    if not nip:
+        return jsonify({
+            "status": "error",
+            "message": "NIP wajib diisi."
+        }), 400
+
+    pegawai = (
+        Pegawai.query
+        .filter(Pegawai.NIP == nip)
+        .first()
+    )
+
+    if not pegawai:
+        return jsonify({
+            "status": "success",
+            "data": None
+        })
+
+    return jsonify({
+        "status": "success",
+        "data": {
+            "nip": str(pegawai.NIP or "").strip(),
+            "nama": str(pegawai.NAMA or "").strip(),
+            "jenis_kel": str(pegawai.JENIS_KEL or "").strip(),
+        }
+    })
+
 def api_calendar_personal():
 
     nip = session.get('nip')
