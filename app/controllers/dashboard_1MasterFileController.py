@@ -3329,7 +3329,10 @@ def get_jabatan_list():
                 MfJabatan.UPDATE_DATE < akhir_hari
             )
 
-    jabatan_list = query.order_by(MfJabatan.JABATAN_ID.asc()).all()
+    jabatan_list = query.order_by(
+        MfJabatan.UPDATE_DATE.desc(),
+        MfJabatan.JABATAN_ID.desc()
+    ).all()
 
     def _format_jabatan_updated(value):
         # Database legacy bisa mengembalikan UPDATE_DATE sebagai
@@ -3391,6 +3394,7 @@ def get_jabatan_list():
             ),
             'is_aktif': _format_jabatan_is_aktif(row.IS_USE),
             'updated': _format_jabatan_updated(row.UPDATE_DATE),
+            'by': row.UPDATE_BY or '-',
         }
         for idx, row in enumerate(jabatan_list)
     ]
