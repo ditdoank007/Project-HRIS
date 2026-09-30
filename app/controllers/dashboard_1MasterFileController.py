@@ -3381,20 +3381,44 @@ def get_jabatan_list():
 
         return str(value)
 
+    # UPDATE_BY pada legacy Jabatan berisi NIP. Tampilkan nama lengkap
+    # pegawai agar kolom BY lebih mudah dibaca.
+    updater_nips = {
+        str(row.UPDATE_BY).strip()
+        for row in jabatan_list
+        if row.UPDATE_BY is not None and str(row.UPDATE_BY).strip()
+    }
+    updater_names = {}
+
+    if updater_nips:
+        updater_rows = Pegawai.query.filter(
+            Pegawai.NIP.in_(list(updater_nips))
+        ).all()
+
+        for pegawai in updater_rows:
+            nip = str(pegawai.NIP).strip()
+            updater_names[nip] = (
+                getattr(pegawai, 'NAMA', None)
+                or getattr(pegawai, 'NAMA_LENGKAP', None)
+                or nip
+            )
+
     data = [
         {
             'no': idx + 1,
-            'jabatan_id': row.JABATAN_ID,
-            'nama_jabatan': row.NAMA_JABATAN or '-',
-            'butir_kegiatan': '-',  # belum ada model/relasi Butir Kegiatan
             'urut_jabatan': (
                 row.URUT_JABATAN
                 if row.URUT_JABATAN is not None
                 else '-'
             ),
+            'jabatan_id': row.JABATAN_ID,
+            'nama_jabatan': row.NAMA_JABATAN or '-',
             'is_aktif': _format_jabatan_is_aktif(row.IS_USE),
             'updated': _format_jabatan_updated(row.UPDATE_DATE),
-            'by': row.UPDATE_BY or '-',
+            'by': updater_names.get(
+                str(row.UPDATE_BY).strip(),
+                row.UPDATE_BY or '-'
+            ),
         }
         for idx, row in enumerate(jabatan_list)
     ]
