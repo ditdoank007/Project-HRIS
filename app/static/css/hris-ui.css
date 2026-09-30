@@ -1953,6 +1953,25 @@ body.hris-sidebar-mini .hris-submenu {
 /* ============================================================
    MASTER JABATAN — CODED HIERARCHY VISUALIZATION
    ============================================================ */
+.hris-jabatan-form-card {
+  overflow: hidden;
+}
+
+.hris-jabatan-form-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.hris-jabatan-form-card.is-minimized .hris-jabatan-form-body {
+  display: none;
+}
+
+.hris-jabatan-form-header .hris-btn-icon {
+  flex: 0 0 36px;
+}
+
 .hris-jabatan-structure-card {
   overflow: hidden;
 }
@@ -2074,7 +2093,7 @@ body.hris-sidebar-mini .hris-submenu {
   position: relative;
   display: flex;
   justify-content: center;
-  gap: 14px;
+  gap: 18px;
   padding-top: 34px !important;
 }
 
