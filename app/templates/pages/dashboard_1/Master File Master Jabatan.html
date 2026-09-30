@@ -25,15 +25,23 @@
         </div>
     </div>
 
-    <div class="hris-card">
-        <div class="hris-card-header">
+    <div class="hris-card hris-jabatan-form-card">
+        <div class="hris-card-header hris-jabatan-form-header">
             <div>
                 <h3 class="hris-card-title" id="formTitle">Tambah Master Jabatan</h3>
                 <p class="hris-section-subtitle">Kelola struktur group, sub group, parent, level, tipe, dan status jabatan.</p>
             </div>
+            <button type="button"
+                    id="btnJabatanFormToggle"
+                    class="hris-btn hris-btn-secondary hris-btn-icon"
+                    title="Minimize Form"
+                    aria-expanded="true"
+                    aria-label="Minimize Form">
+                <i class="feather-minus"></i>
+            </button>
         </div>
 
-        <div class="hris-card-body">
+        <div class="hris-card-body hris-jabatan-form-body">
             <div class="hris-form-stack">
                 <div class="hris-form-row">
                     <label class="hris-form-row-label" for="selectGroupJabatan">Group Jabatan</label>
@@ -287,6 +295,21 @@ document.addEventListener('DOMContentLoaded', function () {
         } else {
             resetForm();
         }
+    });
+
+    const formCard = document.querySelector('.hris-jabatan-form-card');
+    const formBody = document.querySelector('.hris-jabatan-form-body');
+    const formToggle = document.getElementById('btnJabatanFormToggle');
+
+    formToggle.addEventListener('click', function () {
+        const minimized = formCard.classList.toggle('is-minimized');
+        formBody.hidden = minimized;
+        formToggle.setAttribute('aria-expanded', minimized ? 'false' : 'true');
+        formToggle.setAttribute('aria-label', minimized ? 'Maximize Form' : 'Minimize Form');
+        formToggle.title = minimized ? 'Maximize Form' : 'Minimize Form';
+        formToggle.innerHTML = minimized
+            ? '<i class="feather-plus"></i>'
+            : '<i class="feather-minus"></i>';
     });
 
     const structureCanvas = document.getElementById('jabatanStructureCanvas');
