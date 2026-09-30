@@ -1409,6 +1409,13 @@ def get_kalender_list():
             'is_libur': row.IS_LIBUR,
             'ket': row.KET or '-',
             'updated': _format_jam_finger_updated(row.UPDATE_DATE),
+            'by': (
+                f"{pegawai.NAMA} ({row.UPDATE_BY})"
+                if row.UPDATE_BY and (
+                    pegawai := Pegawai.query.filter(Pegawai.NIP == row.UPDATE_BY).first()
+                )
+                else (row.UPDATE_BY or '-')
+            ),
         }
         for idx, row in enumerate(rows)
     ]
@@ -3776,7 +3783,10 @@ def _query_jam_finger(periode_raw, field1, keyword1, field2, keyword2):
                 MfLoadFinger.TGL_MULAI_BERLAKU < akhir_hari
             )
 
-    return query.order_by(MfLoadFinger.TGL_MULAI_BERLAKU.desc()).all()
+    return query.order_by(
+        MfLoadFinger.UPDATE_DATE.desc(),
+        MfLoadFinger.TRAKSAKSI_ID.desc()
+    ).all()
 
 
 def _format_jam_finger_date(value):
