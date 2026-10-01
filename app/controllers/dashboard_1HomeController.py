@@ -14,6 +14,43 @@ from app.utils.jabatanHelper import pegawai_sort_key
 from sqlalchemy import or_
 
 
+
+def api_calendar_pelanggaran_internal():
+    from config import Config
+
+    internal_key = request.headers.get('X-Calendar-Internal-Key')
+    if not internal_key or internal_key != Config.CALENDAR_INTERNAL_API_KEY:
+        from flask import jsonify
+        return jsonify({"status": "error", "message": "Unauthorized"}), 401
+
+    tahun_str = request.args.get('tahun', str(date.today().year))
+    try:
+        tahun = int(tahun_str)
+    except ValueError:
+        tahun = date.today().year
+
+    data = _get_data_pelanggaran(tahun)
+
+    from flask import jsonify
+    return jsonify({
+        "status": "success",
+        "tahun": tahun,
+        "data": [
+            {
+                "no": row.get("no"),
+                "nama": row.get("nama") or "-",
+                "hari": row.get("hari", 0),
+                "kategori": row.get("kategori") or "-",
+                "jenis": row.get("jenis") or "-",
+                "potongan": row.get("potongan", 0),
+                "lama_pot": row.get("lama_pot") or "-",
+                "row_class": row.get("row_class") or "",
+            }
+            for row in data
+        ],
+    })
+
+
 def dashboard_pelanggaran():
     """
     Render halaman Dashboard Pelanggaran.
