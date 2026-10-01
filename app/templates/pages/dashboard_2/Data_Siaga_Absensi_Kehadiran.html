@@ -37,6 +37,10 @@
                     <h2 class="hris-card-title">Filter Kehadiran</h2>
                     <div class="hris-page-subtitle">Pilih tanggal, unit, dan shift untuk menampilkan jadwal.</div>
                 </div>
+                <button type="button" class="hris-btn hris-btn-secondary" id="btnDownloadPdf" title="Download Daftar Hadir PDF">
+                    <i class="bi bi-file-earmark-pdf"></i>
+                    <span>Download PDF</span>
+                </button>
             </div>
 
             <div class="hris-toolbar">
@@ -102,6 +106,21 @@
                         </tr>
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="replacementModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Informasi Pengganti</h5>
+                <button type="button" class="btn-close" data-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div style="font-size:12px;color:var(--ui-muted);">Pegawai ini menggantikan:</div>
+                <div style="font-weight:700;color:var(--ui-ink);margin-top:6px;" id="modalNamaAsliPengganti"></div>
             </div>
         </div>
     </div>
@@ -269,7 +288,13 @@ $(document).ready(function () {
 
             let namaHtml = nama;
             if (item.pengganti == 1) {
-                namaHtml += ' <span class="hris-badge-modern hris-badge-info">Pengganti</span>';
+                if (item.nama_asli_pengganti) {
+                    namaHtml += ' <button type="button" class="hris-badge-modern hris-badge-info btn-pengganti" ' +
+                        'data-original-name="' + escapeHtml(item.nama_asli_pengganti) + '" ' +
+                        'title="Lihat pegawai yang digantikan">Pengganti</button>';
+                } else {
+                    namaHtml += ' <span class="hris-badge-modern hris-badge-info">Pengganti</span>';
+                }
             }
 
             const updateBy = escapeHtml(item.update_by || '-');
@@ -308,6 +333,66 @@ $(document).ready(function () {
             '</div></td></tr>'
         );
     }
+
+    $('#btnDownloadPdf').on('click', async function (e) {
+        e.preventDefault();
+
+        const tgl = $('#filterTanggal').val();
+        const unit = $('#filterUnit').val();
+        const shift = $('#filterShift').val();
+        const $btn = $(this);
+
+        if (!unit) {
+            showAlert('error', 'Pilih Unit Kerja terlebih dahulu untuk mengunduh daftar hadir PDF.');
+            return;
+        }
+
+        if (shift !== '1' && shift !== '2') {
+            showAlert('error', 'Pilih Shift 1 atau Shift 2 terlebih dahulu untuk mengunduh daftar hadir PDF.');
+            return;
+        }
+
+        $btn.prop('disabled', true).find('span').text('Membuat PDF...');
+
+        try {
+            const url = '/api/absensi-kehadiran/export-pdf?' +
+                $.param({ tgl: tgl, unit_kerja_id: unit, shift: shift });
+
+            const response = await fetch(url);
+
+            if (!response.ok) {
+                const text = await response.text();
+                let message = 'Gagal membuat PDF.';
+                try {
+                    const json = JSON.parse(text);
+                    message = json.error || message;
+                } catch (_) {}
+                throw new Error(message);
+            }
+
+            const blob = await response.blob();
+            const downloadUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = tgl.split('-').reverse().join('-') + '-absen-kehadiran-shift' + shift + '.pdf';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(downloadUrl);
+        } catch (err) {
+            showAlert('error', err.message || 'Gagal membuat PDF.');
+        } finally {
+            $btn.prop('disabled', false).find('span').text('Download PDF');
+        }
+    });
+
+    $('#tableBody').on('click', '.btn-pengganti', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        $('#modalNamaAsliPengganti').text($(this).data('original-name') || '-');
+        $('#replacementModal').modal('show');
+    });
 
     $('#tableBody').on('click', '.btn-aksi', function () {
         selectedGuidLog = $(this).data('guid');
