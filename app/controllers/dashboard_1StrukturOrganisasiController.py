@@ -113,6 +113,53 @@ def _build_structure(active_rows):
     return root_node
 
 
+
+def api_calendar_struktur_organisasi_internal():
+    from config import Config
+    from flask import jsonify
+
+    internal_key = request.headers.get('X-Calendar-Internal-Key')
+    if not internal_key or internal_key != Config.CALENDAR_INTERNAL_API_KEY:
+        return jsonify({"status": "error", "message": "Unauthorized"}), 401
+
+    jabatan_rows = [
+        row
+        for row in MfJabatan.query.all()
+        if _is_active_jabatan(row)
+    ]
+
+    root = _build_structure(jabatan_rows)
+    pegawai_rows = get_operational_pegawai_query().all()
+
+    employees_by_jabatan = {}
+
+    for row in pegawai_rows:
+        if row.JABATAN_ID is None:
+            continue
+
+        key = str(row.JABATAN_ID)
+        employees_by_jabatan.setdefault(key, []).append({
+            'nama': row.NAMA or '-',
+            'nip': row.NIP or '-',
+        })
+
+    for items in employees_by_jabatan.values():
+        items.sort(
+            key=lambda item: (
+                str(item['nama']).upper(),
+                str(item['nip'])
+            )
+        )
+
+    return jsonify({
+        "status": "success",
+        "data": {
+            "structure": root,
+            "employees_by_jabatan": employees_by_jabatan,
+        },
+    })
+
+
 def dashboard_struktur_organisasi():
     """
     Dashboard Struktur Organisasi.
