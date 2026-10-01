@@ -1,0 +1,407 @@
+"""
+Personal Benefit engine.
+
+Tunjangan Kinerja / Uang Makan mengikuti alur data HRIS Reborn
+dan legacy MyTunkin/MyUM. Uang Siaga mengikuti formula TTUPiket
+HRIS 2013, tetapi hasilnya difilter hanya untuk NIP yang login.
+"""
+
+from calendar import monthrange
+from datetime import date, datetime, timedelta
+
+from app import db
+from app.models.absensiModel import Absensi
+from app.models.classModel import MfClass
+from app.models.dinasLuarModel import DinasLuar
+from app.models.kalenderModel import MfKalender
+from app.models.logActivityModel import LogActivity
+from app.models.orgzSiagaModel import MfOrgzSiaga
+from app.models.pegawaiModel import Pegawai
+from app.models.potModel import MfPot
+from app.models.tunjanganModel import MfTunjangan
+
+
+def _d(value):
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    return None
+
+
+def _parse(value):
+    if isinstance(value, (date, datetime)):
+        return _d(value)
+    return datetime.strptime(str(value), "%Y-%m-%d").date()
+
+
+def _month_add(value, months):
+    index = value.year * 12 + value.month - 1 + months
+    year, month0 = divmod(index, 12)
+    return date(year, month0 + 1, min(
+        value.day, monthrange(year, month0 + 1)[1]
+    ))
+
+
+def _employee(nip):
+    return Pegawai.query.filter(Pegawai.NIP == str(nip).strip()).first()
+
+
+def _active(pegawai, start, end):
+    if not pegawai:
+        return False
+    join = _d(pegawai.TGL_MASUK)
+    leave = _d(pegawai.TGL_KELUAR)
+    if join and join > end:
+        return False
+    if str(pegawai.IS_KELUAR or "").upper() == "Y" and leave and leave < start:
+        return False
+    return True
+
+
+def _calendar(start, end):
+    rows = (
+        MfKalender.query
+        .filter(MfKalender.TGL_KERJA >= start)
+        .filter(MfKalender.TGL_KERJA <= end)
+        .order_by(MfKalender.TGL_KERJA.asc())
+        .all()
+    )
+    return {_d(row.TGL_KERJA): row for row in rows if _d(row.TGL_KERJA)}
+
+
+def _holiday(day, cal):
+    row = cal.get(day)
+    return (
+        str(row.IS_LIBUR or "N").upper() == "Y"
+        if row else day.weekday() >= 5
+    )
+
+
+def _latest_class(class_id, effective):
+    if class_id is None:
+        return 0.0
+    row = (
+        MfClass.query
+        .filter(MfClass.CLASS_ID == class_id)
+        .filter(MfClass.TGL_MULAI <= effective)
+        .order_by(MfClass.TGL_MULAI.desc(), MfClass.ID.desc())
+        .first()
+    )
+    return float(row.TUNJANGAN or 0) if row else 0.0
+
+
+def _latest_pot(kategori, effective):
+    row = (
+        MfPot.query
+        .filter(MfPot.KATEGORI == kategori)
+        .filter(MfPot.TGL_MULAI <= effective)
+        .order_by(MfPot.TGL_MULAI.desc(), MfPot.POTONGAN_ID.desc())
+        .first()
+    )
+    return float(row.PERSEN_POT or 0) if row else 0.0
+
+
+def calculate_tunjangan_kinerja(nip, start, end):
+    start, requested_end = _parse(start), _parse(end)
+    if start > requested_end:
+        raise ValueError("Tanggal mulai tidak boleh lebih besar dari tanggal selesai.")
+
+    pegawai = _employee(nip)
+    if not _active(pegawai, start, requested_end):
+        return {"status": "success", "data": None,
+                "message": "Pegawai tidak aktif pada periode tersebut."}
+
+    effective_end = min(requested_end, date.today())
+    if effective_end < start:
+        return {"status": "success", "data": {
+            "requested_period": {"start": start.isoformat(), "end": requested_end.isoformat()},
+            "effective_period": None, "tunjangan": 0, "persen_potongan": 0,
+            "nilai_potongan": 0, "total_diterima": 0, "detail": []
+        }}
+
+    cal = _calendar(start, effective_end)
+    absensi = (
+        Absensi.query
+        .filter(Absensi.FINGER_ID == pegawai.FINGER_ID)
+        .filter(Absensi.TGL_KERJA >= start)
+        .filter(Absensi.TGL_KERJA <= effective_end)
+        .order_by(Absensi.TGL_KERJA.asc())
+        .all()
+    )
+    abs_by_date = {}
+    for row in absensi:
+        day = _d(row.TGL_KERJA)
+        if day and day not in abs_by_date:
+            abs_by_date[day] = row
+
+    dl_rows = (
+        DinasLuar.query
+        .filter(DinasLuar.FINGER_ID == pegawai.FINGER_ID)
+        .filter(DinasLuar.TGL_AWAL_DINAS_LUAR <= effective_end)
+        .filter(DinasLuar.TGL_AKHIR_DINAS_LUAR >= start)
+        .all()
+    )
+
+    allowance = _latest_class(pegawai.CLASS_ID, effective_end)
+    pot_ta = _latest_pot("TA", effective_end)
+    pot_dl = _latest_pot("DINASLUAR", effective_end)
+
+    detail = []
+    total_percent = 0.0
+    day = start
+
+    while day <= effective_end:
+        item = {
+            "tanggal": day.isoformat(), "ta": 0,
+            "tlm_tingkat": "", "tlm_persen": 0,
+            "psw_tingkat": "", "psw_persen": 0,
+            "dinas_luar": 0, "cuti_tingkat": "", "cuti_persen": 0,
+            "sakit_tingkat": "", "sakit_persen": 0, "ijin": 0,
+            "potongan_persen": 0, "hari_libur": _holiday(day, cal),
+            "keterangan": ""
+        }
+
+        if not item["hari_libur"]:
+            row = abs_by_date.get(day)
+            if not row:
+                item["ta"] = 1
+                item["potongan_persen"] = pot_ta
+                item["keterangan"] = "TA"
+            else:
+                trx = str(row.TRANSAKSI_IN or "").strip().upper()
+                if trx == "DINASLUAR":
+                    item["dinas_luar"] = 1
+                    item["keterangan"] = row.KET_IN or "Dinas Luar"
+                elif trx == "CUTI":
+                    level = str(row.TINGKAT_TLM or "").strip().upper()
+                    pct = float(row.PERSEN_POT_TLM or 0)
+                    item.update(cuti_tingkat=level, cuti_persen=pct,
+                                potongan_persen=pct, keterangan=row.KET_IN or level)
+                elif trx == "SAKIT":
+                    level = str(row.TINGKAT_TLM or "").strip().upper()
+                    pct = float(row.PERSEN_POT_TLM or 0)
+                    item.update(sakit_tingkat=level, sakit_persen=pct,
+                                potongan_persen=pct,
+                                keterangan=((row.KET_IN or "") + " " + (row.KET_OUT or "")).strip())
+                elif trx == "ALPA":
+                    # MyTunkin legacy displays ALPA in the IJIN column.
+                    item["ijin"] = 1
+                    item["keterangan"] = ((row.KET_IN or "") + " " + (row.KET_OUT or "")).strip()
+                else:
+                    tlm = str(row.TINGKAT_TLM or "").strip().upper()
+                    psw = str(row.TINGKAT_PSW or "").strip().upper()
+                    tlm_pct = float(row.PERSEN_POT_TLM or 0)
+                    psw_pct = float(row.PERSEN_POT_PSW or 0)
+                    item.update(tlm_tingkat=tlm, tlm_persen=tlm_pct,
+                                psw_tingkat=psw, psw_persen=psw_pct,
+                                potongan_persen=tlm_pct + psw_pct,
+                                keterangan=((row.KET_IN or "") + " " + (row.KET_OUT or "")).strip())
+
+            for dl in dl_rows:
+                dl_start, dl_end = _d(dl.TGL_AWAL_DINAS_LUAR), _d(dl.TGL_AKHIR_DINAS_LUAR)
+                if dl_start and dl_end and dl_start <= day <= dl_end and _month_add(dl_start, 4) <= day:
+                    item["potongan_persen"] += pot_dl
+                    item["keterangan"] = ((item["keterangan"] + " + ") if item["keterangan"] else "") + "DL > 4 bulan"
+                    break
+
+        total_percent += float(item["potongan_persen"] or 0)
+        detail.append(item)
+        day += timedelta(days=1)
+
+    deduction = allowance * total_percent / 100 if total_percent else 0
+    return {"status": "success", "data": {
+        "nip": str(pegawai.NIP), "nama": str(pegawai.NAMA or ""),
+        "class_id": pegawai.CLASS_ID,
+        "requested_period": {"start": start.isoformat(), "end": requested_end.isoformat()},
+        "effective_period": {"start": start.isoformat(), "end": effective_end.isoformat()},
+        "tunjangan": round(allowance, 2),
+        "persen_potongan": round(total_percent, 4),
+        "nilai_potongan": round(deduction, 2),
+        "total_diterima": round(allowance - deduction, 2),
+        "detail": detail
+    }}
+
+
+def calculate_uang_makan(nip, year, month):
+    year, month = int(year), int(month)
+    start = date(year, month, 1)
+    end = date(year + (month == 12), 1 if month == 12 else month + 1, 1) - timedelta(days=1)
+    effective_end = min(end, date.today())
+
+    pegawai = _employee(nip)
+    if not _active(pegawai, start, effective_end):
+        return {"status": "success", "data": None,
+                "message": "Pegawai tidak aktif pada periode tersebut."}
+
+    cal = _calendar(start, effective_end)
+    workdays = [d for d in sorted(cal) if not _holiday(d, cal)]
+    join = _d(pegawai.TGL_MASUK)
+    employee_days = [d for d in workdays if not join or join <= start or d > join]
+
+    um = (
+        MfTunjangan.query
+        .filter(db.func.lower(MfTunjangan.JENIS_TUNJANGAN) == "u.makan")
+        .filter(MfTunjangan.TGL_MULAI <= effective_end)
+        .order_by(MfTunjangan.TGL_MULAI.desc(), MfTunjangan.IDTUNJANGAN.desc())
+        .first()
+    )
+    nominal = float(um.NOMINAL or 0) if um else 0
+
+    abs_rows = (
+        Absensi.query
+        .filter(Absensi.FINGER_ID == pegawai.FINGER_ID)
+        .filter(Absensi.TGL_KERJA >= start)
+        .filter(Absensi.TGL_KERJA <= effective_end)
+        .all()
+    )
+    abs_by_date = {}
+    for row in abs_rows:
+        d = _d(row.TGL_KERJA)
+        if d and d not in abs_by_date:
+            abs_by_date[d] = row
+
+    dl_rows = (
+        DinasLuar.query
+        .filter(DinasLuar.FINGER_ID == pegawai.FINGER_ID)
+        .filter(DinasLuar.TRANSAKSI == "DinasLuar")
+        .filter(DinasLuar.STATUS_UM == 1)
+        .filter(DinasLuar.TGL_AWAL_DINAS_LUAR <= effective_end)
+        .filter(DinasLuar.TGL_AKHIR_DINAS_LUAR >= start)
+        .all()
+    )
+    dl_dates = set()
+    for dl in dl_rows:
+        a, b = _d(dl.TGL_AWAL_DINAS_LUAR), _d(dl.TGL_AKHIR_DINAS_LUAR)
+        if not a or not b:
+            continue
+        d = max(a, start)
+        while d <= min(b, effective_end):
+            if d in employee_days:
+                dl_dates.add(d)
+            d += timedelta(days=1)
+
+    cuti = {x: 0 for x in ("CT", "CB-1", "CB-2", "CB-3", "CAP-M2", "CAP")}
+    sakit = {x: 0 for x in ("S-1", "S-2", "S-3", "S-4", "S-5")}
+    ijin = 0
+    unsupported_alpa = 0
+
+    for d, row in abs_by_date.items():
+        if d not in employee_days:
+            continue
+        trx = str(row.TRANSAKSI_IN or "").strip().upper()
+        level = str(row.TINGKAT_TLM or "").strip().upper()
+        if trx == "CUTI" and level in cuti:
+            cuti[level] += 1
+        elif trx == "SAKIT" and level in sakit:
+            sakit[level] += 1
+        elif trx == "ALPA":
+            if str(row.PENDUKUNG_IN or "").strip().upper() == "Y":
+                ijin += 1
+            else:
+                unsupported_alpa += 1
+
+    absence_count = sum(1 for d in abs_by_date if d in employee_days)
+    tidak_absen = unsupported_alpa + max(0, len(employee_days) - absence_count)
+    cuti_total, sakit_total = sum(cuti.values()), sum(sakit.values())
+    um_days = max(0, len(employee_days) - cuti_total - sakit_total -
+                   len(dl_dates) - tidak_absen - ijin)
+
+    return {"status": "success", "data": {
+        "nip": str(pegawai.NIP), "nama": str(pegawai.NAMA or ""),
+        "year": year, "month": month,
+        "requested_period": {"start": start.isoformat(), "end": end.isoformat()},
+        "effective_period": {"start": start.isoformat(), "end": effective_end.isoformat()},
+        "nominal_per_hari": round(nominal, 2),
+        "hari_kerja": len(employee_days), "dinas_luar": len(dl_dates),
+        "cuti": cuti_total, "cuti_detail": cuti,
+        "ijin": ijin, "sakit": sakit_total, "sakit_detail": sakit,
+        "tidak_absen": tidak_absen, "um_hari": um_days,
+        "nominal": round(um_days * nominal, 2)
+    }}
+
+
+def calculate_uang_siaga(nip, year, month):
+    year, month = int(year), int(month)
+    start = date(year, month, 1)
+    end = date(year + (month == 12), 1 if month == 12 else month + 1, 1) - timedelta(days=1)
+    effective_end = min(end, date.today())
+
+    pegawai = _employee(nip)
+    if not _active(pegawai, start, effective_end):
+        return {"status": "success", "data": None,
+                "message": "Pegawai tidak aktif pada periode tersebut."}
+
+    cal = _calendar(start, effective_end)
+    logs = (
+        db.session.query(LogActivity, MfOrgzSiaga.FLAG)
+        .join(MfOrgzSiaga, LogActivity.FUNGSIONAL == MfOrgzSiaga.FUNGSIONAL)
+        .filter(LogActivity.NIP == pegawai.NIP)
+        .filter(LogActivity.ACTIVITY == "Piket Siaga")
+        .filter(LogActivity.STATUS_ID == 3)
+        .filter(LogActivity.ACTIVITY_DATE >= start)
+        .filter(LogActivity.ACTIVITY_DATE <= effective_end)
+        .filter(LogActivity.SHIFT.isnot(None))
+        .order_by(LogActivity.ACTIVITY_DATE.asc())
+        .all()
+    )
+
+    excluded = {"", "I/A", "I/B", "I/C", "I/D", "II/A", "II/B", "II/C", "II/D"}
+    detail, work_count, holiday_count = [], 0, 0
+
+    for log, flag in logs:
+        d = _d(log.ACTIVITY_DATE)
+        if not d:
+            continue
+        row = cal.get(d)
+        is_holiday = (
+            str(row.IS_LIBUR or "N").upper() == "Y"
+            if row else d.weekday() >= 5
+        )
+        hk = 0 if is_holiday else 1
+        work_count += not is_holiday
+        holiday_count += is_holiday
+        shift = str(log.SHIFT or "").strip()
+
+        master = (
+            MfTunjangan.query
+            .filter(db.func.lower(MfTunjangan.JENIS_TUNJANGAN) == "u.transport")
+            .filter(MfTunjangan.ACTIVITY == "Piket Siaga")
+            .filter(MfTunjangan.HARI_KERJA == hk)
+            .filter(MfTunjangan.TGL_MULAI <= d)
+            .filter(MfTunjangan.FUNGSIONAL == flag)
+            .filter(MfTunjangan.ID_UNIT_KERJA == str(log.UNIT_KERJA_ID))
+            .filter(MfTunjangan.SHIFT == shift)
+            .filter(MfTunjangan.STATUS_PEG == pegawai.STATUS_PEG)
+            .order_by(MfTunjangan.TGL_MULAI.desc(), MfTunjangan.UPDATE_DATE.desc(), MfTunjangan.IDTUNJANGAN.desc())
+            .first()
+        )
+        nominal = float(master.NOMINAL or 0) if master else 0
+        shift1, shift2 = float(log.SHIFT_1 or 0), float(log.SHIFT_2 or 0)
+        brutto = (shift1 + shift2) * nominal
+        gol = str(pegawai.GOL or "").strip().upper()
+        pph21 = 0 if gol in excluded else brutto * 0.05
+        netto = brutto - pph21
+
+        detail.append({
+            "tanggal": d.isoformat(), "shift": shift,
+            "fungsional": str(log.FUNGSIONAL or ""), "flag": str(flag or ""),
+            "hari_kerja": not is_holiday, "status": "Hadir",
+            "shift1": shift1, "shift2": shift2, "nominal": round(nominal, 2),
+            "brutto": round(brutto, 2), "pph21": round(pph21, 2),
+            "netto": round(netto, 2),
+            "keterangan": "Hari Libur" if is_holiday else "Hari Kerja"
+        })
+
+    return {"status": "success", "data": {
+        "nip": str(pegawai.NIP), "nama": str(pegawai.NAMA or ""),
+        "year": year, "month": month,
+        "requested_period": {"start": start.isoformat(), "end": end.isoformat()},
+        "effective_period": {"start": start.isoformat(), "end": effective_end.isoformat()},
+        "jumlah_siaga_piket": len(detail), "hari_kerja": int(work_count),
+        "hari_libur": int(holiday_count),
+        "total_brutto": round(sum(x["brutto"] for x in detail), 2),
+        "total_pph21": round(sum(x["pph21"] for x in detail), 2),
+        "total_uang_siaga": round(sum(x["netto"] for x in detail), 2),
+        "detail": detail
+    }}
