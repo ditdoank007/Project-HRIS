@@ -15,7 +15,8 @@ from app.controllers.absenOnlineController import (
     punch_absen_online,
 )
 from app.controllers.dashboard_1HomeController import (
-    dashboard_kgb, dashboard_pangkat, dashboard_pelanggaran, dashboard_pensiun, dashboard_trt)
+    dashboard_kgb, dashboard_pangkat, dashboard_pelanggaran, dashboard_pensiun, dashboard_trt,
+    api_calendar_pelanggaran_internal)
 from app.controllers.dashboard_1MasterFileController import (
     get_google_calendar_config, save_google_calendar_config,
     test_google_calendar_connection,
@@ -33,7 +34,7 @@ from app.controllers.dashboard_1MasterFileController import (
     get_jabatan_by_id, get_jabatan_structure, update_jabatan, delete_jabatan,
 )
 from app.controllers.dashboard_1InfografisController import dashboard_infografis
-from app.controllers.dashboard_1StrukturOrganisasiController import dashboard_struktur_organisasi
+from app.controllers.dashboard_1StrukturOrganisasiController import dashboard_struktur_organisasi, api_calendar_struktur_organisasi_internal
 from app.controllers.dashboard_1KepegawaianController import (
     kepegawaian_cari_data_pegawai,
     kepegawaian_cari_dinas_luar_umum,
@@ -2222,6 +2223,22 @@ def api_calendar_sync_token_internal_route():
 def api_calendar_employee_profile_internal_route():
 
     return api_calendar_employee_profile_internal()
+
+
+@main.route(
+    '/api/internal/calendar/pelanggaran',
+    methods=['GET']
+)
+def api_calendar_pelanggaran_internal_route():
+    return api_calendar_pelanggaran_internal()
+
+
+@main.route(
+    '/api/internal/calendar/struktur-organisasi',
+    methods=['GET']
+)
+def api_calendar_struktur_organisasi_internal_route():
+    return api_calendar_struktur_organisasi_internal()
 
 
 @main.route(
