@@ -401,7 +401,10 @@ def api_absensi_kehadiran_update():
                 'status_id': status_id,
                 'shift1': 1 if shift1 else 0,
                 'shift2': 1 if shift2 else 0,
-                'update_by': 'admin',
+                'update_by': (
+                    getattr(getattr(g, 'user', None), 'NIP', None)
+                    or 'HRIS'
+                ),
                 'update_date': datetime.now(),
                 'guid_log': guid_log,
                 'nip': nip,
