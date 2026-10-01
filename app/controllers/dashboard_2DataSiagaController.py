@@ -267,6 +267,8 @@ def api_absensi_kehadiran_update():
         shift1 = bool(data.get('shift1'))
         shift2 = bool(data.get('shift2'))
 
+        no_urut = int(data.get('no') or 0)
+
         activity_date = (
             str(data.get('activity_date') or '')
             .strip()
@@ -303,6 +305,77 @@ def api_absensi_kehadiran_update():
         # Kedua flag boleh aktif bersamaan.
         status_id = 3 if (shift1 or shift2) else -1
 
+        # HRIS 2013 juga mengisi jam baku dan jam aktual ketika hadir.
+        # Rumus ini dipertahankan agar data Reborn tetap parity dengan
+        # KehadiranPiket.aspx.vb.
+        tgl_jam_in = None
+        tgl_jam_out = None
+        tgl_baku_in = None
+        tgl_baku_out = None
+
+        if status_id == 3:
+            employee = db.session.execute(
+                db.text("""
+                    SELECT Nama
+                    FROM PEGAWAI
+                    WHERE NIP = :nip
+                    LIMIT 1
+                """),
+                {'nip': nip},
+            ).mappings().first()
+
+            nama = str((employee or {}).get('Nama') or nip)
+
+            now = datetime.now()
+            konstanta = 9
+            batas_max = 61
+            jam_pulang = 27
+
+            int_jam = int(now.strftime('%I')) + now.second
+            tambahan = (
+                no_urut
+                + konstanta
+                + (
+                    (
+                        now.day
+                        + now.month
+                        + now.year
+                        + int_jam
+                        + len(nama)
+                    ) * no_urut
+                ) % batas_max
+            )
+
+            if tambahan > batas_max:
+                tambahan = (
+                    (tambahan % konstanta)
+                    + len(nama)
+                    + (no_urut % 19)
+                )
+
+            if tambahan < 7:
+                jam_pulang = tambahan + len(nama)
+            else:
+                jam_pulang = tambahan - (no_urut % 7)
+
+            base_date = datetime.strptime(
+                activity_date,
+                '%Y-%m-%d'
+            )
+
+            if shift1:
+                baku_in = base_date.replace(hour=16, minute=0, second=0)
+                baku_out = base_date.replace(hour=20, minute=0, second=0)
+            else:
+                next_date = base_date + timedelta(days=1)
+                baku_in = next_date.replace(hour=4, minute=0, second=0)
+                baku_out = next_date.replace(hour=8, minute=0, second=0)
+
+            tgl_baku_in = baku_in
+            tgl_baku_out = baku_out
+            tgl_jam_in = baku_in - timedelta(minutes=tambahan)
+            tgl_jam_out = baku_out + timedelta(minutes=jam_pulang)
+
         update_sql = db.text("""
             UPDATE LOG_ACTIVITIY
             SET
@@ -310,6 +383,10 @@ def api_absensi_kehadiran_update():
                 shift1 = :shift1,
                 shift2 = :shift2,
                 TglClosing = ActivityDate,
+                TglJamIn = :tgl_jam_in,
+                TglJamOut = :tgl_jam_out,
+                TglJamBakuIn = :tgl_baku_in,
+                TglJamBakuOut = :tgl_baku_out,
                 UpdateBy = :update_by,
                 UpdateDate = :update_date
             WHERE GUIDLog = :guid_log
@@ -329,6 +406,10 @@ def api_absensi_kehadiran_update():
                 'guid_log': guid_log,
                 'nip': nip,
                 'activity_date': activity_date,
+                'tgl_jam_in': tgl_jam_in,
+                'tgl_jam_out': tgl_jam_out,
+                'tgl_baku_in': tgl_baku_in,
+                'tgl_baku_out': tgl_baku_out,
             }
         )
 
