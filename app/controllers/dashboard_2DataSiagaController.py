@@ -190,6 +190,11 @@ def api_absensi_kehadiran_get():
                     if row['ActivityDate']
                     else ''
                 ),
+                'activity_date_iso': (
+                    row['ActivityDate'].strftime('%Y-%m-%d')
+                    if row['ActivityDate']
+                    else ''
+                ),
                 'fungsional': row['Fungsional'] or '',
                 'fungsional_ket': row['Fungsional'] or '',
                 'unit_kerja': row['NAMA_UNIT_KERJA'] or '',
