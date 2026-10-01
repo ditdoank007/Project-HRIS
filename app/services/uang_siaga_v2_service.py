@@ -220,8 +220,8 @@ def calculate_uang_siaga_v2(nip, year, month):
     }
 
     detail = []
-    work_count = 0
-    holiday_count = 0
+    work_count = 0.0
+    holiday_count = 0.0
     tariff_missing = 0
 
     for row in rows:
@@ -240,10 +240,14 @@ def calculate_uang_siaga_v2(nip, year, month):
         )
 
         hari_kerja = 0 if is_holiday else 1
+        shift1_raw = float(row["shift1"] or 0)
+        shift2_raw = float(row["shift2"] or 0)
+        shift_quantity = shift1_raw + shift2_raw
+
         if is_holiday:
-            holiday_count += 1
+            holiday_count += shift_quantity
         else:
-            work_count += 1
+            work_count += shift_quantity
 
         shift = str(row["Shift"] or "").strip()
         flag_row = db.session.execute(
@@ -269,8 +273,8 @@ def calculate_uang_siaga_v2(nip, year, month):
 
         nominal = float(tariff["Nominal"] or 0) if tariff else 0.0
 
-        shift1 = float(row["shift1"] or 0)
-        shift2 = float(row["shift2"] or 0)
+        shift1 = shift1_raw
+        shift2 = shift2_raw
 
         # Exact HRIS 2013 TTUPiket formula:
         # Brutto = shift1 * nominal + shift2 * nominal.
