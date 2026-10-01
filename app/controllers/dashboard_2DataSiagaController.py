@@ -141,14 +141,15 @@ def api_absensi_kehadiran_get():
                     l.UpdateBy,
                     l.UpdateDate,
                     l.IDUnitKerja,
-                    p.Nama AS NAMA,
+                            p.Nama AS NAMA,
                     u.UnitKerjaName AS NAMA_UNIT_KERJA,
-                COALESCE(ub.Nama, l.UpdateBy) AS UPDATE_BY_NAME
+                    COALESCE(ub.Nama, l.UpdateBy) AS UPDATE_BY_NAME
                 FROM LOG_ACTIVITIY l
                 LEFT JOIN PEGAWAI p
                     ON p.NIP = l.NIP
-            LEFT JOIN PEGAWAI ub
-                ON ub.NIP = l.UpdateBy                LEFT JOIN MF_UNIT_KERJA u
+                LEFT JOIN PEGAWAI ub
+                    ON ub.NIP = l.UpdateBy
+                LEFT JOIN MF_UNIT_KERJA u
                     ON u.IDUnitKerja = l.IDUnitKerja
                 WHERE l.Activity = 'Piket Siaga'
                   AND l.ActivityDate = :tgl
