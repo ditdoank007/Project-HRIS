@@ -175,6 +175,7 @@ def api_absensi_kehadiran_get():
         # Nilai lain ditempatkan setelah kelompok utama.
         order_clause = """
             ORDER BY
+                l.Shift ASC,
                 CASE
                     WHEN UPPER(COALESCE(u.UnitKerjaName, '')) LIKE 'KN %'
                       OR UPPER(COALESCE(u.UnitKerjaName, '')) LIKE '%KAPAL%'
