@@ -21,6 +21,7 @@ No database writes are performed.
 
 from calendar import monthrange
 from datetime import date, datetime, timedelta
+from decimal import Decimal, ROUND_HALF_UP
 
 from sqlalchemy import text
 
@@ -303,8 +304,26 @@ def calculate_uang_siaga_v2(nip, year, month):
         })
 
     total_brutto = sum(item["brutto"] for item in detail)
-    total_pph21 = total_brutto * 0.05 if str(employee["Gol"] or "").strip().upper() not in excluded_gol else 0.0
-    total_netto = total_brutto - total_pph21
+    total_pph21_raw = (
+        total_brutto * 0.05
+        if str(employee["Gol"] or "").strip().upper() not in excluded_gol
+        else 0.0
+    )
+
+    # HRIS 2013 report displays whole-rupiah PPh/netto using normal
+    # half-up rounding. Decimal avoids Python's bankers-rounding behavior.
+    total_pph21 = float(
+        Decimal(str(total_pph21_raw)).quantize(
+            Decimal("1"),
+            rounding=ROUND_HALF_UP,
+        )
+    )
+    total_netto = float(
+        Decimal(str(total_brutto - total_pph21_raw)).quantize(
+            Decimal("1"),
+            rounding=ROUND_HALF_UP,
+        )
+    )
 
     return {
         "status": "success",
