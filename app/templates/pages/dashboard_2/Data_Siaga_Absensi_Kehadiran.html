@@ -289,7 +289,7 @@ $(document).ready(function () {
             let namaHtml = nama;
             if (item.pengganti == 1) {
                 if (item.nama_asli_pengganti) {
-                    namaHtml += ' <button type="button" class="hris-badge-modern hris-badge-info btn-pengganti" ' +
+                    namaHtml += ' <button type="button" class="hris-badge-modern hris-badge-info btn-pengganti" style="border:0;cursor:pointer;" ' +
                         'data-original-name="' + escapeHtml(item.nama_asli_pengganti) + '" ' +
                         'title="Lihat pegawai yang digantikan">Pengganti</button>';
                 } else {
