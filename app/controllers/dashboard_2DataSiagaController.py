@@ -108,11 +108,13 @@ def api_absensi_kehadiran_get():
                 l.UpdateDate,
                 l.IDUnitKerja,
                 p.Nama AS NAMA,
-                u.UnitKerjaName AS NAMA_UNIT_KERJA
+                u.UnitKerjaName AS NAMA_UNIT_KERJA,
+                COALESCE(ub.Nama, l.UpdateBy) AS UPDATE_BY_NAME
             FROM LOG_ACTIVITIY l
             LEFT JOIN PEGAWAI p
                 ON p.NIP = l.NIP
-            LEFT JOIN MF_UNIT_KERJA u
+            LEFT JOIN PEGAWAI ub
+                ON ub.NIP = l.UpdateBy            LEFT JOIN MF_UNIT_KERJA u
                 ON u.IDUnitKerja = l.IDUnitKerja
             WHERE l.Activity = 'Piket Siaga'
               AND l.ActivityDate = :tgl
@@ -139,11 +141,13 @@ def api_absensi_kehadiran_get():
                     l.UpdateDate,
                     l.IDUnitKerja,
                     p.Nama AS NAMA,
-                    u.UnitKerjaName AS NAMA_UNIT_KERJA
+                    u.UnitKerjaName AS NAMA_UNIT_KERJA,
+                COALESCE(ub.Nama, l.UpdateBy) AS UPDATE_BY_NAME
                 FROM LOG_ACTIVITIY l
                 LEFT JOIN PEGAWAI p
                     ON p.NIP = l.NIP
-                LEFT JOIN MF_UNIT_KERJA u
+            LEFT JOIN PEGAWAI ub
+                ON ub.NIP = l.UpdateBy                LEFT JOIN MF_UNIT_KERJA u
                     ON u.IDUnitKerja = l.IDUnitKerja
                 WHERE l.Activity = 'Piket Siaga'
                   AND l.ActivityDate = :tgl
@@ -162,6 +166,47 @@ def api_absensi_kehadiran_get():
             )
             sql = db.text(sql_string)
             params['shift'] = shift
+
+        # Urutan baris mengikuti aturan HRIS 2013:
+        # Unit umum   : KGR/Kagahar -> KOM/Komunikasi -> RSC/Rescuer.
+        # Unit KN/Kapal: PW/Perwira -> ABK.
+        # Nilai lain ditempatkan setelah kelompok utama.
+        order_clause = """
+            ORDER BY
+                CASE
+                    WHEN UPPER(COALESCE(u.UnitKerjaName, '')) LIKE 'KN %'
+                      OR UPPER(COALESCE(u.UnitKerjaName, '')) LIKE '%KAPAL%'
+                      OR UPPER(COALESCE(u.UnitKerjaName, '')) LIKE '%KN SAR%'
+                    THEN
+                        CASE
+                            WHEN UPPER(COALESCE(l.Fungsional, '')) IN ('PW', 'PERWIRA')
+                              OR UPPER(COALESCE(l.Fungsional, '')) LIKE '%PERWIRA%'
+                            THEN 1
+                            WHEN UPPER(COALESCE(l.Fungsional, '')) = 'ABK'
+                              OR UPPER(COALESCE(l.Fungsional, '')) LIKE '%ABK%'
+                            THEN 2
+                            ELSE 99
+                        END
+                    ELSE
+                        CASE
+                            WHEN UPPER(COALESCE(l.Fungsional, '')) IN ('KGR', 'KAGAHAR')
+                              OR UPPER(COALESCE(l.Fungsional, '')) LIKE '%KAGAHAR%'
+                            THEN 1
+                            WHEN UPPER(COALESCE(l.Fungsional, '')) IN ('KOM', 'KOMUNIKASI')
+                              OR UPPER(COALESCE(l.Fungsional, '')) LIKE '%KOMUNIKASI%'
+                            THEN 2
+                            WHEN UPPER(COALESCE(l.Fungsional, '')) IN ('RSC', 'RESCUER')
+                              OR UPPER(COALESCE(l.Fungsional, '')) LIKE '%RESCUER%'
+                            THEN 3
+                            ELSE 99
+                        END
+                END,
+                l.Fungsional ASC,
+                p.Nama ASC
+        """
+
+        sql_string = str(sql) + "\n" + order_clause
+        sql = db.text(sql_string)
 
         rows = db.session.execute(
             sql,
@@ -205,7 +250,7 @@ def api_absensi_kehadiran_get():
                 'shift_2': row['shift2'] or 0,
                 'pengganti': row['Pengganti'] or 0,
                 'status_trx': row['StatusTrx'] or '-',
-                'update_by': row['UpdateBy'] or '',
+                'update_by': row['UPDATE_BY_NAME'] or row['UpdateBy'] or '',
                 'update_date': (
                     row['UpdateDate'].strftime('%d/%m/%Y %H:%M')
                     if row['UpdateDate']
