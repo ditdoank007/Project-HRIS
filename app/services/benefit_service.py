@@ -226,101 +226,206 @@ def calculate_tunjangan_kinerja(nip, start, end):
 
 
 def calculate_uang_makan(nip, year, month):
+    """
+    Calculate personal Uang Makan using the legacy HRIS 2013 MyUM logic.
+
+    Legacy source of truth (MyUM.aspx.vb):
+      - period = selected month, capped by SQL Server current date
+      - KALENDER rows with IsLibur='N' are the workdays
+      - employee workdays begin after TglMasuk when TglMasuk is inside period
+      - ABSENSI is the source for DinasLuar/Cuti/Sakit/Alpa
+      - DinasLuar counts only TransaksiIn='DinasLuar' and StatusUM=1
+      - Cuti/Sakit are classified by TingkatTLM
+      - Alpa with PendukungIN='Y' is counted as Alpa/Ijin
+      - Alpa with PendukungIN='N', plus missing attendance rows, becomes TA
+      - UM = payable days * latest MFTunjangan Nominal where JenisTunjangan='U.makan'
+
+    HRIS-Pegawai adaptation:
+      only records belonging to the logged-in NIP are returned.
+    """
     year, month = int(year), int(month)
     start = date(year, month, 1)
-    end = date(year + (month == 12), 1 if month == 12 else month + 1, 1) - timedelta(days=1)
+    end = (
+        date(year + (month == 12), 1 if month == 12 else month + 1, 1)
+        - timedelta(days=1)
+    )
     effective_end = min(end, date.today())
 
     pegawai = _employee(nip)
     if not _active(pegawai, start, effective_end):
-        return {"status": "success", "data": None,
-                "message": "Pegawai tidak aktif pada periode tersebut."}
+        return {
+            "status": "success",
+            "data": None,
+            "message": "Pegawai tidak aktif pada periode tersebut.",
+        }
 
     cal = _calendar(start, effective_end)
-    workdays = [d for d in sorted(cal) if not _holiday(d, cal)]
-    join = _d(pegawai.TGL_MASUK)
-    employee_days = [d for d in workdays if not join or join <= start or d > join]
 
+    # MyUM selects only calendar rows where IsLibur='N'.
+    workdays = [
+        d for d in sorted(cal)
+        if str(cal[d].IS_LIBUR or "").strip().upper() == "N"
+    ]
+
+    # MyUM:
+    #   if TglMasuk > period start:
+    #       calendar dates are selected with Tgl > TglMasuk
+    #   else:
+    #       all workdays in the period are counted.
+    join = _d(pegawai.TGL_MASUK)
+    if join and join > start:
+        employee_days = [d for d in workdays if d > join]
+    else:
+        employee_days = list(workdays)
+
+    # MyUM uses TOP(1) nominal ordered only by TglMulai DESC.
     um = (
         MfTunjangan.query
-        .filter(db.func.lower(MfTunjangan.JENIS_TUNJANGAN) == "u.makan")
+        .filter(
+            db.func.lower(MfTunjangan.JENIS_TUNJANGAN) == "u.makan"
+        )
         .filter(MfTunjangan.TGL_MULAI <= effective_end)
-        .order_by(MfTunjangan.TGL_MULAI.desc(), MfTunjangan.IDTUNJANGAN.desc())
+        .order_by(MfTunjangan.TGL_MULAI.desc())
         .first()
     )
-    nominal = float(um.NOMINAL or 0) if um else 0
+    nominal = float(um.NOMINAL or 0) if um else 0.0
 
+    # MyUM joins ABSENSI to KALENDER and keeps only workday attendance.
+    # Keep one row per date, matching the legacy monthly counting model.
     abs_rows = (
         Absensi.query
         .filter(Absensi.FINGER_ID == pegawai.FINGER_ID)
         .filter(Absensi.TGL_KERJA >= start)
         .filter(Absensi.TGL_KERJA <= effective_end)
+        .order_by(Absensi.TGL_KERJA.asc())
         .all()
     )
     abs_by_date = {}
     for row in abs_rows:
         d = _d(row.TGL_KERJA)
-        if d and d not in abs_by_date:
+        if d in employee_days and d not in abs_by_date:
             abs_by_date[d] = row
 
-    dl_rows = (
-        DinasLuar.query
-        .filter(DinasLuar.FINGER_ID == pegawai.FINGER_ID)
-        .filter(DinasLuar.TRANSAKSI == "DinasLuar")
-        .filter(DinasLuar.STATUS_UM == 1)
-        .filter(DinasLuar.TGL_AWAL_DINAS_LUAR <= effective_end)
-        .filter(DinasLuar.TGL_AKHIR_DINAS_LUAR >= start)
-        .all()
-    )
-    dl_dates = set()
-    for dl in dl_rows:
-        a, b = _d(dl.TGL_AWAL_DINAS_LUAR), _d(dl.TGL_AKHIR_DINAS_LUAR)
-        if not a or not b:
-            continue
-        d = max(a, start)
-        while d <= min(b, effective_end):
-            if d in employee_days:
-                dl_dates.add(d)
-            d += timedelta(days=1)
+    # Exact MyUM category counters.
+    cuti = {
+        x: 0 for x in ("CT", "CB-1", "CB-2", "CB-3", "CAP-M2", "CAP")
+    }
+    sakit = {
+        x: 0 for x in ("S-1", "S-2", "S-3", "S-4", "S-5")
+    }
+    dinas_luar = 0
+    alpa = 0
+    alpa_tanpa_keterangan = 0
 
-    cuti = {x: 0 for x in ("CT", "CB-1", "CB-2", "CB-3", "CAP-M2", "CAP")}
-    sakit = {x: 0 for x in ("S-1", "S-2", "S-3", "S-4", "S-5")}
-    ijin = 0
-    unsupported_alpa = 0
-
-    for d, row in abs_by_date.items():
-        if d not in employee_days:
-            continue
+    for row in abs_by_date.values():
         trx = str(row.TRANSAKSI_IN or "").strip().upper()
         level = str(row.TINGKAT_TLM or "").strip().upper()
-        if trx == "CUTI" and level in cuti:
+
+        if trx == "DINASLUAR" and row.STATUS_UM == 1:
+            dinas_luar += 1
+        elif trx == "CUTI" and level in cuti:
             cuti[level] += 1
         elif trx == "SAKIT" and level in sakit:
             sakit[level] += 1
         elif trx == "ALPA":
             if str(row.PENDUKUNG_IN or "").strip().upper() == "Y":
-                ijin += 1
+                alpa += 1
             else:
-                unsupported_alpa += 1
+                alpa_tanpa_keterangan += 1
 
-    absence_count = sum(1 for d in abs_by_date if d in employee_days)
-    tidak_absen = unsupported_alpa + max(0, len(employee_days) - absence_count)
-    cuti_total, sakit_total = sum(cuti.values()), sum(sakit.values())
-    um_days = max(0, len(employee_days) - cuti_total - sakit_total -
-                   len(dl_dates) - tidak_absen - ijin)
+    cuti_total = sum(cuti.values())
+    sakit_total = sum(sakit.values())
 
-    return {"status": "success", "data": {
-        "nip": str(pegawai.NIP), "nama": str(pegawai.NAMA or ""),
-        "year": year, "month": month,
-        "requested_period": {"start": start.isoformat(), "end": end.isoformat()},
-        "effective_period": {"start": start.isoformat(), "end": effective_end.isoformat()},
-        "nominal_per_hari": round(nominal, 2),
-        "hari_kerja": len(employee_days), "dinas_luar": len(dl_dates),
-        "cuti": cuti_total, "cuti_detail": cuti,
-        "ijin": ijin, "sakit": sakit_total, "sakit_detail": sakit,
-        "tidak_absen": tidak_absen, "um_hari": um_days,
-        "nominal": round(um_days * nominal, 2)
-    }}
+    # Legacy MyUM:
+    # xAlpaTanpaKet = xAlpaA + (xnTglKerja - attendance_row_count)
+    # TA is then this same value.
+    missing_attendance = max(0, len(employee_days) - len(abs_by_date))
+    ta = alpa_tanpa_keterangan + missing_attendance
+
+    # Legacy final payable-day formula:
+    # Periode - Cuti - Sakit - DinasLuar - TA - Alpa
+    um_days = max(
+        0,
+        len(employee_days)
+        - cuti_total
+        - sakit_total
+        - dinas_luar
+        - ta
+        - alpa,
+    )
+
+    detail = []
+    for d in employee_days:
+        row = abs_by_date.get(d)
+        if not row:
+            detail.append({
+                "tanggal": d.isoformat(),
+                "status": "TA",
+                "kategori": "TA",
+                "keterangan": "Tidak ada absensi",
+            })
+            continue
+
+        trx = str(row.TRANSAKSI_IN or "").strip().upper()
+        level = str(row.TINGKAT_TLM or "").strip().upper()
+
+        if trx == "DINASLUAR" and row.STATUS_UM == 1:
+            kategori = "Dinas Luar"
+            keterangan = row.KET_IN or "Dinas Luar"
+        elif trx == "CUTI" and level in cuti:
+            kategori = level
+            keterangan = row.KET_IN or level
+        elif trx == "SAKIT" and level in sakit:
+            kategori = level
+            keterangan = row.KET_IN or level
+        elif trx == "ALPA" and str(row.PENDUKUNG_IN or "").strip().upper() == "Y":
+            kategori = "Alpa"
+            keterangan = row.KET_IN or "Alpa"
+        elif trx == "ALPA":
+            kategori = "TA"
+            keterangan = row.KET_IN or "Alpa tanpa keterangan"
+        else:
+            kategori = "Hadir"
+            keterangan = row.KET_IN or "Hadir"
+
+        detail.append({
+            "tanggal": d.isoformat(),
+            "status": "Hadir" if kategori == "Hadir" else kategori,
+            "kategori": kategori,
+            "keterangan": keterangan,
+        })
+
+    return {
+        "status": "success",
+        "data": {
+            "nip": str(pegawai.NIP),
+            "nama": str(pegawai.NAMA or ""),
+            "year": year,
+            "month": month,
+            "requested_period": {
+                "start": start.isoformat(),
+                "end": end.isoformat(),
+            },
+            "effective_period": {
+                "start": start.isoformat(),
+                "end": effective_end.isoformat(),
+            },
+            "nominal_per_hari": round(nominal, 2),
+            "hari_kerja": len(employee_days),
+            "dinas_luar": dinas_luar,
+            "cuti": cuti_total,
+            "cuti_detail": cuti,
+            "ijin": alpa,
+            "alpa": alpa,
+            "sakit": sakit_total,
+            "sakit_detail": sakit,
+            "tidak_absen": ta,
+            "ta": ta,
+            "um_hari": um_days,
+            "nominal": round(um_days * nominal, 2),
+            "detail": detail,
+        },
+    }
 
 
 def calculate_uang_siaga(nip, year, month):
