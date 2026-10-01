@@ -115,6 +115,9 @@ from app.controllers.benefitController import (
     api_calendar_benefit_uang_makan_internal,
     api_calendar_benefit_uang_siaga_internal,
 )
+from app.controllers.uangSiagaV2Controller import (
+    api_calendar_benefit_uang_siaga_v2_internal,
+)
 
 from app.controllers.calendarAttendanceController import (
     api_calendar_rapat_attendance_info,
@@ -2253,6 +2256,14 @@ def api_calendar_benefit_uang_makan_internal_route():
 )
 def api_calendar_benefit_uang_siaga_internal_route():
     return api_calendar_benefit_uang_siaga_internal()
+
+
+@main.route(
+    '/api/internal/calendar/benefit/uang-siaga-v2',
+    methods=['GET']
+)
+def api_calendar_benefit_uang_siaga_v2_internal_route():
+    return api_calendar_benefit_uang_siaga_v2_internal()
 
 
 @main.route(
