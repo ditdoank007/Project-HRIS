@@ -9,6 +9,8 @@ HRIS 2013, tetapi hasilnya difilter hanya untuk NIP yang login.
 from calendar import monthrange
 from datetime import date, datetime, timedelta
 
+from sqlalchemy import text
+
 from app import db
 from app.models.absensiModel import Absensi
 from app.models.classModel import MfClass
@@ -322,86 +324,211 @@ def calculate_uang_makan(nip, year, month):
 
 
 def calculate_uang_siaga(nip, year, month):
+    """
+    Calculate personal Uang Siaga using the legacy HRIS 2013 TTUPiket
+    calculation as the business source of truth.
+
+    Legacy flow:
+      LOG_ACTIVITIY -> PEGAWAI -> MF_ORGZ_SIAGA -> KALENDER -> MF_TUNJANGAN
+      Activity='piket siaga'
+      StatusID=3
+      Shift IS NOT NULL
+      nominal selected by workday/holiday, TglMulai, Flag, Unit, Shift,
+      and StatusPeg
+      Brutto = (Shift1 + Shift2) * Nominal
+      PPh21 = 0 for Gol I/II, otherwise 5%
+      Netto = Brutto - PPh21
+
+    HRIS-Pegawai adaptation:
+      only records belonging to the logged-in NIP are returned.
+    """
     year, month = int(year), int(month)
     start = date(year, month, 1)
-    end = date(year + (month == 12), 1 if month == 12 else month + 1, 1) - timedelta(days=1)
-    effective_end = min(end, date.today())
+    end = date(
+        year + (month == 12),
+        1 if month == 12 else month + 1,
+        1,
+    ) - timedelta(days=1)
 
     pegawai = _employee(nip)
-    if not _active(pegawai, start, effective_end):
-        return {"status": "success", "data": None,
-                "message": "Pegawai tidak aktif pada periode tersebut."}
+    if not _active(pegawai, start, end):
+        return {
+            "status": "success",
+            "data": None,
+            "message": "Pegawai tidak aktif pada periode tersebut.",
+        }
 
-    cal = _calendar(start, effective_end)
-    logs = (
-        db.session.query(LogActivity, MfOrgzSiaga.FLAG)
-        .join(MfOrgzSiaga, LogActivity.FUNGSIONAL == MfOrgzSiaga.FUNGSIONAL)
-        .filter(LogActivity.NIP == pegawai.NIP)
-        .filter(LogActivity.ACTIVITY == "Piket Siaga")
-        .filter(LogActivity.STATUS_ID == 3)
-        .filter(LogActivity.ACTIVITY_DATE >= start)
-        .filter(LogActivity.ACTIVITY_DATE <= effective_end)
-        .filter(LogActivity.SHIFT.isnot(None))
-        .order_by(LogActivity.ACTIVITY_DATE.asc())
-        .all()
+    cal = _calendar(start, end)
+
+    # LOG_ACTIVITIY has no physical ID column in the migrated HRIS database.
+    # Therefore this query intentionally uses SQLAlchemy Core instead of the
+    # current ORM model, while preserving the legacy TTUPiket join/filter.
+    sql = text(
+        """
+        SELECT
+            la.NIP AS nip,
+            la.ACTIVITY AS activity,
+            la.ACTIVITY_DATE AS activity_date,
+            la.FUNGSIONAL AS fungsional,
+            la.UNIT_KERJA_ID AS unit_kerja_id,
+            la.SHIFT_1 AS shift_1,
+            la.SHIFT_2 AS shift_2,
+            la.SHIFT AS shift,
+            os.FLAG AS flag,
+            p.GOL AS gol,
+            p.STATUS_PEG AS status_peg
+        FROM LOG_ACTIVITIY la
+        INNER JOIN PEGAWAI p
+            ON la.NIP = p.NIP
+        INNER JOIN MF_ORGZ_SIAGA os
+            ON la.FUNGSIONAL = os.FUNGSIONAL
+        WHERE la.NIP = :nip
+          AND LOWER(la.ACTIVITY) = 'piket siaga'
+          AND la.STATUS_ID = 3
+          AND la.ACTIVITY_DATE >= :start_date
+          AND la.ACTIVITY_DATE <= :end_date
+          AND la.SHIFT IS NOT NULL
+        ORDER BY la.ACTIVITY_DATE ASC
+        """
     )
 
-    excluded = {"", "I/A", "I/B", "I/C", "I/D", "II/A", "II/B", "II/C", "II/D"}
-    detail, work_count, holiday_count = [], 0, 0
+    rows = db.session.execute(
+        sql,
+        {
+            "nip": str(pegawai.NIP),
+            "start_date": start,
+            "end_date": end,
+        },
+    ).mappings().all()
 
-    for log, flag in logs:
-        d = _d(log.ACTIVITY_DATE)
+    excluded_gol = {
+        "",
+        "I/A", "I/B", "I/C", "I/D",
+        "II/A", "II/B", "II/C", "II/D",
+    }
+
+    detail = []
+    work_count = 0
+    holiday_count = 0
+
+    for log in rows:
+        d = _d(log["activity_date"])
         if not d:
             continue
-        row = cal.get(d)
-        is_holiday = (
-            str(row.IS_LIBUR or "N").upper() == "Y"
-            if row else d.weekday() >= 5
-        )
-        hk = 0 if is_holiday else 1
-        work_count += not is_holiday
-        holiday_count += is_holiday
-        shift = str(log.SHIFT or "").strip()
 
-        master = (
+        calendar_row = cal.get(d)
+
+        # TTUPiket uses KALENDER.IsLibur directly. There is no weekend
+        # fallback in the legacy calculation. Missing calendar rows therefore
+        # follow the legacy CASE ELSE branch (HariKerja=0).
+        is_holiday = (
+            str(calendar_row.IS_LIBUR or "").strip().upper() != "N"
+            if calendar_row
+            else True
+        )
+
+        if is_holiday:
+            holiday_count += 1
+        else:
+            work_count += 1
+
+        hari_kerja = 0 if is_holiday else 1
+        shift = str(log["shift"] or "").strip()
+        flag = log["flag"]
+
+        master_query = (
             MfTunjangan.query
-            .filter(db.func.lower(MfTunjangan.JENIS_TUNJANGAN) == "u.transport")
+            .filter(
+                db.func.lower(MfTunjangan.JENIS_TUNJANGAN)
+                == "u.transport"
+            )
             .filter(MfTunjangan.ACTIVITY == "Piket Siaga")
-            .filter(MfTunjangan.HARI_KERJA == hk)
+            .filter(MfTunjangan.HARI_KERJA == hari_kerja)
             .filter(MfTunjangan.TGL_MULAI <= d)
             .filter(MfTunjangan.FUNGSIONAL == flag)
-            .filter(MfTunjangan.ID_UNIT_KERJA == str(log.UNIT_KERJA_ID))
+            .filter(
+                MfTunjangan.ID_UNIT_KERJA
+                == str(log["unit_kerja_id"])
+            )
             .filter(MfTunjangan.SHIFT == shift)
-            .filter(MfTunjangan.STATUS_PEG == pegawai.STATUS_PEG)
-            .order_by(MfTunjangan.TGL_MULAI.desc(), MfTunjangan.UPDATE_DATE.desc(), MfTunjangan.IDTUNJANGAN.desc())
-            .first()
+            .filter(MfTunjangan.STATUS_PEG == log["status_peg"])
         )
-        nominal = float(master.NOMINAL or 0) if master else 0
-        shift1, shift2 = float(log.SHIFT_1 or 0), float(log.SHIFT_2 or 0)
-        brutto = (shift1 + shift2) * nominal
-        gol = str(pegawai.GOL or "").strip().upper()
-        pph21 = 0 if gol in excluded else brutto * 0.05
+
+        # Preserve TTUPiket ordering:
+        # - workday: TglMulai DESC
+        # - holiday: TglMulai DESC, UpdateDate DESC
+        if hari_kerja == 1:
+            master = (
+                master_query
+                .order_by(MfTunjangan.TGL_MULAI.desc())
+                .first()
+            )
+        else:
+            master = (
+                master_query
+                .order_by(
+                    MfTunjangan.TGL_MULAI.desc(),
+                    MfTunjangan.UPDATE_DATE.desc(),
+                )
+                .first()
+            )
+
+        nominal = float(master.NOMINAL or 0) if master else 0.0
+        shift1 = float(log["shift_1"] or 0)
+        shift2 = float(log["shift_2"] or 0)
+
+        brutto = (shift1 * nominal) + (shift2 * nominal)
+
+        gol = str(log["gol"] or "").strip().upper()
+        pph21 = 0.0 if gol in excluded_gol else brutto * 0.05
         netto = brutto - pph21
 
         detail.append({
-            "tanggal": d.isoformat(), "shift": shift,
-            "fungsional": str(log.FUNGSIONAL or ""), "flag": str(flag or ""),
-            "hari_kerja": not is_holiday, "status": "Hadir",
-            "shift1": shift1, "shift2": shift2, "nominal": round(nominal, 2),
-            "brutto": round(brutto, 2), "pph21": round(pph21, 2),
+            "tanggal": d.isoformat(),
+            "shift": shift,
+            "fungsional": str(log["fungsional"] or ""),
+            "flag": str(flag or ""),
+            "hari_kerja": hari_kerja == 1,
+            "status": "Hadir",
+            "shift1": shift1,
+            "shift2": shift2,
+            "nominal": round(nominal, 2),
+            "brutto": round(brutto, 2),
+            "pph21": round(pph21, 2),
             "netto": round(netto, 2),
-            "keterangan": "Hari Libur" if is_holiday else "Hari Kerja"
+            "keterangan": (
+                "Hari Libur" if is_holiday else "Hari Kerja"
+            ),
         })
 
-    return {"status": "success", "data": {
-        "nip": str(pegawai.NIP), "nama": str(pegawai.NAMA or ""),
-        "year": year, "month": month,
-        "requested_period": {"start": start.isoformat(), "end": end.isoformat()},
-        "effective_period": {"start": start.isoformat(), "end": effective_end.isoformat()},
-        "jumlah_siaga_piket": len(detail), "hari_kerja": int(work_count),
-        "hari_libur": int(holiday_count),
-        "total_brutto": round(sum(x["brutto"] for x in detail), 2),
-        "total_pph21": round(sum(x["pph21"] for x in detail), 2),
-        "total_uang_siaga": round(sum(x["netto"] for x in detail), 2),
-        "detail": detail
-    }}
+    return {
+        "status": "success",
+        "data": {
+            "nip": str(pegawai.NIP),
+            "nama": str(pegawai.NAMA or ""),
+            "year": year,
+            "month": month,
+            "requested_period": {
+                "start": start.isoformat(),
+                "end": end.isoformat(),
+            },
+            "effective_period": {
+                "start": start.isoformat(),
+                "end": end.isoformat(),
+            },
+            "jumlah_siaga_piket": len(detail),
+            "hari_kerja": int(work_count),
+            "hari_libur": int(holiday_count),
+            "total_brutto": round(
+                sum(item["brutto"] for item in detail), 2
+            ),
+            "total_pph21": round(
+                sum(item["pph21"] for item in detail), 2
+            ),
+            "total_uang_siaga": round(
+                sum(item["netto"] for item in detail), 2
+            ),
+            "detail": detail,
+        },
+    }
+
