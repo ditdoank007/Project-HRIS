@@ -15,12 +15,29 @@ from app.models.logActivityBackupModel import LogActivityBackup
 from app.models.dinasLuarModel import DinasLuar
 
 def data_siaga_absensi_kehadiran():
-    """Render halaman Absensi Kehadiran Piket Siaga."""
-    unit_kerja_list = MfUnitKerja.query.order_by(MfUnitKerja.NAMA_UNIT_KERJA.asc()).all()
-    shift_list = MfShift.query.filter(
-        MfShift.NAMA_SHIFT != ''
-    ).order_by(MfShift.SHIFT_ID.asc()).all()
-    
+    """Render halaman Absensi Kehadiran Piket Siaga.
+
+    Master dropdown dibaca dengan SQL fisik agar halaman tidak bergantung
+    pada ORM legacy yang beberapa kolomnya tidak parity dengan database.
+    """
+    unit_kerja_list = db.session.execute(
+        db.text("""
+            SELECT IDUnitKerja, UnitKerjaName
+            FROM MF_UNIT_KERJA
+            WHERE isUse = 'Y'
+            ORDER BY UrutReport ASC, UnitKerjaName ASC
+        """)
+    ).mappings().all()
+
+    shift_list = db.session.execute(
+        db.text("""
+            SELECT SHIFT_ID, NAMA_SHIFT
+            FROM MF_SHIFT
+            WHERE COALESCE(NAMA_SHIFT, '') <> ''
+            ORDER BY SHIFT_ID ASC
+        """)
+    ).mappings().all()
+
     return render_template(
         'pages/dashboard_2/Data_Siaga_Absensi_Kehadiran.html',
         unit_kerja_list=unit_kerja_list,
