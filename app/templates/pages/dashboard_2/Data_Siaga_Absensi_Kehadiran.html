@@ -70,7 +70,7 @@
                         <select class="hris-select" id="filterShift">
                             <option value="">Semua Shift</option>
                             {% for s in shift_list %}
-                            <option value="{{ s['SHIFT_ID'] }}">{{ s['NAMA_SHIFT'] }}</option>
+                            <option value="{{ s['ShiftID'] }}">{{ s['NamaShift'] }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -139,6 +139,16 @@ $(document).ready(function () {
         .toISOString().split('T')[0];
 
     $('#filterTanggal').val(localToday);
+
+    // Default shift mengikuti jam saat operator membuka halaman:
+    // 08:00-19:59 = Shift 1
+    // 20:00-07:59 = Shift 2
+    const currentHour = new Date().getHours();
+    const defaultShift = (
+        currentHour >= 8 && currentHour < 20
+    ) ? '1' : '2';
+
+    $('#filterShift').val(defaultShift);
 
     let selectedGuidLog = '';
     let selectedNip = '';
