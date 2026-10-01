@@ -1,7 +1,14 @@
 # controllers/dashboard_2DataSiagaController.py
-from flask import render_template, request, jsonify, g, current_app
+from flask import render_template, request, jsonify, g, current_app, send_file
 from datetime import datetime, timedelta
 import uuid
+import io
+from xml.sax.saxutils import escape as xml_escape
+
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from app import db
 from app.models.otorisasiModel import Otorisasi
 from app.models.jabatanSiagaModel import MfJabatanSiaga
@@ -109,7 +116,21 @@ def api_absensi_kehadiran_get():
                 l.IDUnitKerja,
                 p.Nama AS NAMA,
                 u.UnitKerjaName AS NAMA_UNIT_KERJA,
-                COALESCE(ub.Nama, l.UpdateBy) AS UPDATE_BY_NAME
+                COALESCE(ub.Nama, l.UpdateBy) AS UPDATE_BY_NAME,
+                (
+                    SELECT p0.Nama
+                    FROM LOG_ACTIVITIY lo
+                    LEFT JOIN PEGAWAI p0 ON p0.NIP = lo.NIP
+                    WHERE lo.Activity = 'Piket Siaga'
+                      AND lo.ActivityDate = l.ActivityDate
+                      AND lo.Shift = l.Shift
+                      AND lo.IDUnitKerja = l.IDUnitKerja
+                      AND COALESCE(lo.Pengganti, 0) = 0
+                      AND NULLIF(TRIM(COALESCE(lo.NIPPengganti, '')), '') IS NOT NULL
+                      AND TRIM(lo.NIPPengganti) <> '-'
+                      AND TRIM(lo.NIPPengganti) = TRIM(l.NIP)
+                    LIMIT 1
+                ) AS NAMA_ASLI_PENGGANTI
             FROM LOG_ACTIVITIY l
             LEFT JOIN PEGAWAI p
                 ON p.NIP = l.NIP
@@ -148,7 +169,21 @@ def api_absensi_kehadiran_get():
                     l.IDUnitKerja,
                     p.Nama AS NAMA,
                     u.UnitKerjaName AS NAMA_UNIT_KERJA,
-                    COALESCE(ub.Nama, l.UpdateBy) AS UPDATE_BY_NAME
+                    COALESCE(ub.Nama, l.UpdateBy) AS UPDATE_BY_NAME,
+                (
+                    SELECT p0.Nama
+                    FROM LOG_ACTIVITIY lo
+                    LEFT JOIN PEGAWAI p0 ON p0.NIP = lo.NIP
+                    WHERE lo.Activity = 'Piket Siaga'
+                      AND lo.ActivityDate = l.ActivityDate
+                      AND lo.Shift = l.Shift
+                      AND lo.IDUnitKerja = l.IDUnitKerja
+                      AND COALESCE(lo.Pengganti, 0) = 0
+                      AND NULLIF(TRIM(COALESCE(lo.NIPPengganti, '')), '') IS NOT NULL
+                      AND TRIM(lo.NIPPengganti) <> '-'
+                      AND TRIM(lo.NIPPengganti) = TRIM(l.NIP)
+                    LIMIT 1
+                ) AS NAMA_ASLI_PENGGANTI
                 FROM LOG_ACTIVITIY l
                 LEFT JOIN PEGAWAI p
                     ON p.NIP = l.NIP
@@ -262,6 +297,7 @@ def api_absensi_kehadiran_get():
                 'shift_1': row['shift1'] or 0,
                 'shift_2': row['shift2'] or 0,
                 'pengganti': row['Pengganti'] or 0,
+                'nama_asli_pengganti': row['NAMA_ASLI_PENGGANTI'] or '',
                 'status_trx': row['StatusTrx'] or '-',
                 'update_by': row['UPDATE_BY_NAME'] or row['UpdateBy'] or '',
                 'update_date': (
@@ -289,6 +325,160 @@ def api_absensi_kehadiran_get():
             'data': []
         })
 
+
+
+def api_absensi_kehadiran_export_pdf():
+    """Export daftar hadir Piket Siaga ke PDF dengan filter yang sama seperti halaman."""
+    try:
+        shift = (request.args.get('shift', '') or '').strip()
+        unit_kerja_id = (request.args.get('unit_kerja_id', '') or '').strip()
+        tgl = (request.args.get('tgl', '') or '').strip()
+
+        if not tgl:
+            return jsonify({'success': False, 'error': 'Tanggal harus diisi.'}), 400
+        if shift not in ('1', '2'):
+            return jsonify({'success': False, 'error': 'Pilih Shift 1 atau Shift 2 sebelum mengunduh PDF.'}), 400
+        if not unit_kerja_id:
+            return jsonify({'success': False, 'error': 'Pilih Unit Kerja sebelum mengunduh PDF.'}), 400
+
+        response = api_absensi_kehadiran_get()
+        payload = response.get_json(silent=True) if hasattr(response, 'get_json') else None
+        if not payload or not payload.get('success'):
+            return jsonify({
+                'success': False,
+                'error': (payload or {}).get('error', 'Gagal mengambil data absensi.')
+            }), 500
+
+        rows = payload.get('data', [])
+
+        unit_row = db.session.execute(
+            db.text("""
+                SELECT UnitKerjaName
+                FROM MF_UNIT_KERJA
+                WHERE IDUnitKerja = :unit_kerja_id
+                LIMIT 1
+            """),
+            {'unit_kerja_id': int(unit_kerja_id)}
+        ).mappings().first()
+        unit_name = str((unit_row['UnitKerjaName'] if unit_row else 'Unit Kerja') or 'Unit Kerja').strip()
+
+        selected_date = datetime.strptime(tgl, '%Y-%m-%d')
+        hari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'][selected_date.weekday()]
+        bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'][selected_date.month - 1]
+
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=A4,
+            rightMargin=36,
+            leftMargin=36,
+            topMargin=36,
+            bottomMargin=36
+        )
+
+        styles = getSampleStyleSheet()
+        title_style = ParagraphStyle(
+            'DaftarHadirTitle', parent=styles['Heading1'],
+            fontName='Helvetica-Bold', fontSize=14, leading=17,
+            alignment=1, spaceAfter=8
+        )
+        subtitle_style = ParagraphStyle(
+            'DaftarHadirSubtitle', parent=styles['Normal'],
+            fontName='Helvetica', fontSize=10, leading=13,
+            alignment=1, spaceAfter=14
+        )
+        cell_style = ParagraphStyle(
+            'DaftarHadirCell', parent=styles['Normal'],
+            fontName='Helvetica', fontSize=8.5, leading=10
+        )
+        cell_center = ParagraphStyle(
+            'DaftarHadirCellCenter', parent=cell_style, alignment=1
+        )
+
+        elements = [
+            Paragraph('DAFTAR HADIR SIAGA SAR', title_style),
+            Paragraph(
+                f'{hari} {selected_date.day:02d}-{bulan}-{selected_date.year} Shift : {shift}',
+                subtitle_style
+            )
+        ]
+
+        table_data = [[
+            Paragraph('<b>No</b>', cell_center),
+            Paragraph('<b>Jabatan</b>', cell_center),
+            Paragraph('<b>Nama</b>', cell_center),
+            Paragraph(f'<b>Tanda Tangan<br/>Shift {shift}</b>', cell_center),
+            Paragraph('<b>Keterangan</b>', cell_center)
+        ]]
+
+        for idx, item in enumerate(rows, 1):
+            table_data.append([
+                Paragraph(str(idx), cell_center),
+                Paragraph(xml_escape(str(item.get('fungsional') or '-')), cell_center),
+                Paragraph(xml_escape(str(item.get('nama') or item.get('nip') or '-')), cell_style),
+                '',
+                ''
+            ])
+
+        if len(table_data) == 1:
+            table_data.append([
+                Paragraph('-', cell_center),
+                Paragraph('-', cell_center),
+                Paragraph('Tidak ada data Piket Siaga.', cell_style),
+                '',
+                ''
+            ])
+
+        table = Table(table_data, colWidths=[32, 70, 190, 115, 80], repeatRows=1)
+        table.setStyle(TableStyle([
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+            ('BACKGROUND', (0, 0), (-1, 0), colors.white),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('ALIGN', (0, 0), (1, -1), 'CENTER'),
+            ('ALIGN', (3, 1), (4, -1), 'CENTER'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 5),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 5),
+            ('TOPPADDING', (0, 0), (-1, 0), 7),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 7),
+            ('TOPPADDING', (0, 1), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 1), (-1, -1), 10),
+        ]))
+        elements.append(table)
+        elements.append(Spacer(1, 28))
+
+        sign_table = Table([
+            [Paragraph('<b>Mengetahui</b>', cell_center),
+             Paragraph(xml_escape(f'{unit_name}, {hari} {selected_date.day:02d}-{bulan}-{selected_date.year}'), cell_center)],
+            [Paragraph('Atasan Langsung', cell_center), Paragraph('<b>KAGAHAR</b>', cell_center)],
+            ['', ''],
+            ['', ''],
+            ['', '']
+        ], colWidths=[235, 252])
+        sign_table.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('TOPPADDING', (0, 0), (-1, -1), 4),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ]))
+        elements.append(sign_table)
+
+        doc.build(elements)
+        buffer.seek(0)
+
+        filename = f'{selected_date.day:02d}-{selected_date.month:02d}-{selected_date.year}-absen-kehadiran-shift{shift}.pdf'
+        return send_file(
+            buffer,
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=filename
+        )
+    except Exception as e:
+        db.session.rollback()
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 def api_absensi_kehadiran_update():
     """
