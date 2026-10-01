@@ -110,6 +110,12 @@ from app.controllers.calendarController import (
     api_calendar_agenda_rapat_notulen_internal,
 )
 
+from app.controllers.benefitController import (
+    api_calendar_benefit_tunjangan_kinerja_internal,
+    api_calendar_benefit_uang_makan_internal,
+    api_calendar_benefit_uang_siaga_internal,
+)
+
 from app.controllers.calendarAttendanceController import (
     api_calendar_rapat_attendance_info,
     api_calendar_rapat_employee_attendance,
@@ -2223,6 +2229,30 @@ def api_calendar_sync_token_internal_route():
 def api_calendar_employee_profile_internal_route():
 
     return api_calendar_employee_profile_internal()
+
+
+@main.route(
+    '/api/internal/calendar/benefit/tunjangan-kinerja',
+    methods=['GET']
+)
+def api_calendar_benefit_tunjangan_kinerja_internal_route():
+    return api_calendar_benefit_tunjangan_kinerja_internal()
+
+
+@main.route(
+    '/api/internal/calendar/benefit/uang-makan',
+    methods=['GET']
+)
+def api_calendar_benefit_uang_makan_internal_route():
+    return api_calendar_benefit_uang_makan_internal()
+
+
+@main.route(
+    '/api/internal/calendar/benefit/uang-siaga',
+    methods=['GET']
+)
+def api_calendar_benefit_uang_siaga_internal_route():
+    return api_calendar_benefit_uang_siaga_internal()
 
 
 @main.route(
