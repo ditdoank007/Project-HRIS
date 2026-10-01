@@ -245,19 +245,40 @@ def api_absensi_kehadiran_update():
         shift1 = bool(data.get('shift1'))
         shift2 = bool(data.get('shift2'))
 
-        if not guid_log or not nip:
+        activity_date = (
+            str(data.get('activity_date') or '')
+            .strip()
+        )
+
+        if not guid_log or not nip or not activity_date:
             return jsonify({
                 'success': False,
-                'error': 'GUID Log dan NIP wajib diisi'
+                'error': 'GUID Log, NIP, dan tanggal wajib diisi'
             })
 
-        # Tidak boleh dua shift sekaligus.
-        if shift1 and shift2:
+        authorization = db.session.execute(
+            db.text("""
+                SELECT 1
+                FROM OTORISASI
+                WHERE GUIDOto = :guid_log
+                  AND LevelOto = '1'
+                  AND act = '3'
+                LIMIT 1
+            """),
+            {'guid_log': guid_log},
+        ).first()
+
+        if not authorization:
             return jsonify({
                 'success': False,
-                'error': 'Shift 1 dan Shift 2 tidak boleh aktif bersamaan'
+                'error': (
+                    'Absensi Jadwal Piket Gagal. '
+                    'Jadwal belum diotorisasi Kasi Operasi.'
+                )
             })
 
+        # HRIS 2013: hadir jika minimal satu shift dipilih.
+        # Kedua flag boleh aktif bersamaan.
         status_id = 3 if (shift1 or shift2) else -1
 
         update_sql = db.text("""
@@ -272,6 +293,7 @@ def api_absensi_kehadiran_update():
             WHERE GUIDLog = :guid_log
               AND NIP = :nip
               AND Activity = 'Piket Siaga'
+              AND ActivityDate = :activity_date
         """)
 
         result = db.session.execute(
@@ -284,6 +306,7 @@ def api_absensi_kehadiran_update():
                 'update_date': datetime.now(),
                 'guid_log': guid_log,
                 'nip': nip,
+                'activity_date': activity_date,
             }
         )
 
