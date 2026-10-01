@@ -112,7 +112,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Konfirmasi Kehadiran</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div style="font-weight:700;color:var(--ui-ink);" id="modalNama"></div>
@@ -183,6 +183,13 @@ $(document).ready(function () {
     $('#btnTidakHadir').on('click', function (e) {
         e.preventDefault();
         updateKehadiran(false);
+    });
+
+    // Bootstrap pada Dashboard 2 menggunakan API jQuery Bootstrap 4.
+    // Pastikan backdrop selalu dibersihkan ketika modal ditutup.
+    $('#confirmModal').on('hidden.bs.modal', function () {
+        $('body').removeClass('modal-open').css('padding-right', '');
+        $('.modal-backdrop').remove();
     });
 
     loadData();
