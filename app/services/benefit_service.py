@@ -367,28 +367,28 @@ def calculate_uang_siaga(nip, year, month):
         """
         SELECT
             la.NIP AS nip,
-            la.ACTIVITY AS activity,
-            la.ACTIVITY_DATE AS activity_date,
-            la.FUNGSIONAL AS fungsional,
-            la.UNIT_KERJA_ID AS unit_kerja_id,
-            la.SHIFT_1 AS shift_1,
-            la.SHIFT_2 AS shift_2,
-            la.SHIFT AS shift,
-            os.FLAG AS flag,
-            p.GOL AS gol,
-            p.STATUS_PEG AS status_peg
+            la.Activity AS activity,
+            la.ActivityDate AS activity_date,
+            la.Fungsional AS fungsional,
+            la.IDUnitKerja AS unit_kerja_id,
+            la.shift1 AS shift_1,
+            la.shift2 AS shift_2,
+            la.Shift AS shift,
+            os.Flag AS flag,
+            p.Gol AS gol,
+            p.StatusPeg AS status_peg
         FROM LOG_ACTIVITIY la
         INNER JOIN PEGAWAI p
             ON la.NIP = p.NIP
         INNER JOIN MF_ORGZ_SIAGA os
-            ON la.FUNGSIONAL = os.FUNGSIONAL
+            ON la.Fungsional = os.Fungsional
         WHERE la.NIP = :nip
-          AND LOWER(la.ACTIVITY) = 'piket siaga'
-          AND la.STATUS_ID = 3
-          AND la.ACTIVITY_DATE >= :start_date
-          AND la.ACTIVITY_DATE <= :end_date
-          AND la.SHIFT IS NOT NULL
-        ORDER BY la.ACTIVITY_DATE ASC
+          AND LOWER(la.Activity) = 'piket siaga'
+          AND la.StatusID = 3
+          AND la.ActivityDate >= :start_date
+          AND la.ActivityDate <= :end_date
+          AND la.Shift IS NOT NULL
+        ORDER BY la.ActivityDate ASC
         """
     )
 
