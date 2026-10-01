@@ -134,6 +134,8 @@ $(document).ready(function() {
     
     let selectedGuidLog = '';
     let selectedNip = '';
+    let selectedActivityDate = '';
+    let selectedShift = '';
     
     // ✅ Event handlers dengan ID unik
     $('#btnRefresh').click(function(e) {
@@ -247,7 +249,8 @@ $(document).ready(function() {
                     <td><small>${item.update_by || '-'}<br>${item.update_date || ''}</small></td>
                     <td class="text-center">
                         <button class="btn btn-sm btn-outline-primary btn-aksi" type="button"
-                                data-guid="${item.guid_log}" data-nip="${item.nip}" 
+                                data-guid="${item.guid_log}" data-nip="${item.nip}"
+                                data-date="${item.activity_date}" data-shift="${item.shift}"
                                 data-nama="${item.nama}"
                                 title="Update Kehadiran">
                             <i class="bi bi-check2-square"></i>
@@ -261,19 +264,23 @@ $(document).ready(function() {
         $tbody.off('click', '.btn-aksi').on('click', '.btn-aksi', function() {
             selectedGuidLog = $(this).data('guid');
             selectedNip = $(this).data('nip');
-            $('#modalNama').text($(this).data('nama'));
+            selectedActivityDate = $(this).data('date');
+            selectedShift = String($(this).data('shift') || '');
+            $('#modalNama').text(
+                $(this).data('nama') + ' — Shift ' + selectedShift
+            );
             $('#confirmModal').modal('show');
         });
     }
     
     function updateKehadiran(isHadir) {
-        const shift = $('#filterShift').val();
-        const isShift1 = (shift == '1' || !shift);
-        const isShift2 = (shift == '2');
+        const isShift1 = selectedShift == '1';
+        const isShift2 = selectedShift == '2';
         
         const data = {
             guid_log: selectedGuidLog,
             nip: selectedNip,
+            activity_date: selectedActivityDate,
             shift1: isHadir && isShift1,
             shift2: isHadir && isShift2
         };
