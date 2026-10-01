@@ -97,6 +97,7 @@ from app.controllers.calendarController import (
     api_calendar_personal_sync_token,
     api_calendar_sync_token_internal,
     api_calendar_employee_profile_internal,
+    api_calendar_infografis_internal,
     api_calendar_my_agenda,
     api_calendar_conflict,
     api_calendar_create_event,
@@ -2222,6 +2223,13 @@ def api_calendar_employee_profile_internal_route():
 
     return api_calendar_employee_profile_internal()
 
+
+@main.route(
+    '/api/internal/calendar/infografis',
+    methods=['GET']
+)
+def api_calendar_infografis_internal_route():
+    return api_calendar_infografis_internal()
 
 @main.route(
     '/api/internal/calendar/personal',
