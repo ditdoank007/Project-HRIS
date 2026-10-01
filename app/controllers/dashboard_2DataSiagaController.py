@@ -119,6 +119,11 @@ def api_absensi_kehadiran_get():
                 ON u.IDUnitKerja = l.IDUnitKerja
             WHERE l.Activity = 'Piket Siaga'
               AND l.ActivityDate = :tgl
+              AND NOT (
+                  COALESCE(l.Pengganti, 0) = 0
+                  AND NULLIF(TRIM(COALESCE(l.NIPPengganti, '')), '') IS NOT NULL
+                  AND TRIM(l.NIPPengganti) <> '-'
+              )
         """)
 
         params = {
@@ -153,6 +158,11 @@ def api_absensi_kehadiran_get():
                     ON u.IDUnitKerja = l.IDUnitKerja
                 WHERE l.Activity = 'Piket Siaga'
                   AND l.ActivityDate = :tgl
+              AND NOT (
+                  COALESCE(l.Pengganti, 0) = 0
+                  AND NULLIF(TRIM(COALESCE(l.NIPPengganti, '')), '') IS NOT NULL
+                  AND TRIM(l.NIPPengganti) <> '-'
+              )
                   AND l.IDUnitKerja = :unit_kerja_id
             """)
             params['unit_kerja_id'] = int(unit_kerja_id)
