@@ -141,7 +141,7 @@ def api_absensi_kehadiran_get():
                     l.UpdateBy,
                     l.UpdateDate,
                     l.IDUnitKerja,
-                            p.Nama AS NAMA,
+                    p.Nama AS NAMA,
                     u.UnitKerjaName AS NAMA_UNIT_KERJA,
                     COALESCE(ub.Nama, l.UpdateBy) AS UPDATE_BY_NAME
                 FROM LOG_ACTIVITIY l
