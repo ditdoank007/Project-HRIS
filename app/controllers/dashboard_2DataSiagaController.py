@@ -114,7 +114,8 @@ def api_absensi_kehadiran_get():
             LEFT JOIN PEGAWAI p
                 ON p.NIP = l.NIP
             LEFT JOIN PEGAWAI ub
-                ON ub.NIP = l.UpdateBy            LEFT JOIN MF_UNIT_KERJA u
+                ON ub.NIP = l.UpdateBy
+            LEFT JOIN MF_UNIT_KERJA u
                 ON u.IDUnitKerja = l.IDUnitKerja
             WHERE l.Activity = 'Piket Siaga'
               AND l.ActivityDate = :tgl
