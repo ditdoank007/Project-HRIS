@@ -144,6 +144,7 @@ $(document).ready(function () {
     let selectedNip = '';
     let selectedActivityDate = '';
     let selectedShift = '';
+    let selectedNo = 0;
 
     $('#btnRefresh').on('click', function (e) {
         e.preventDefault();
@@ -273,6 +274,7 @@ $(document).ready(function () {
                 'data-guid="' + escapeHtml(item.guid_log) + '" ' +
                 'data-nip="' + escapeHtml(item.nip) + '" ' +
                 'data-date="' + escapeHtml(item.activity_date_iso) + '" ' +
+                'data-no="' + item.no + '" ' +
                 'data-shift="' + escapeHtml(item.shift) + '" ' +
                 'data-nama="' + nama + '" title="Update Kehadiran">' +
                 '<i class="bi bi-check2-square"></i></button>' +
@@ -295,6 +297,7 @@ $(document).ready(function () {
         selectedNip = $(this).data('nip');
         selectedActivityDate = $(this).data('date');
         selectedShift = String($(this).data('shift') || '');
+        selectedNo = Number($(this).data('no') || 0);
 
         $('#modalNama').text($(this).data('nama') || selectedNip);
         $('#modalDetail').text(
@@ -310,6 +313,7 @@ $(document).ready(function () {
             guid_log: selectedGuidLog,
             nip: selectedNip,
             activity_date: selectedActivityDate,
+            no: selectedNo,
             shift1: isHadir && selectedShift === '1',
             shift2: isHadir && selectedShift === '2'
         };
