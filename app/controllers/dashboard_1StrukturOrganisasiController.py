@@ -1,6 +1,6 @@
 # app/controllers/dashboard_1StrukturOrganisasiController.py
 
-from flask import render_template
+from flask import render_template, request, jsonify
 
 from app.models.jabatanModel import MfJabatan
 from app.utils.pegawaiHelper import get_operational_pegawai_query
