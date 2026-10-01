@@ -6,15 +6,14 @@ Business source:
     HRIS 2013 TTUPiket.aspx.vb
 
 Migration adaptation:
-    In the migrated HRIS database, LOG_ACTIVITIY contains one row per
-    employee/date/shift, while legacy TTUPiket consumes shift1/shift2
-    flags as attendance quantities. V2 therefore treats each LOG_ACTIVITIY
-    row as one shift and uses Shift as the tariff selector.
+    HRIS 2013 selects LOG_ACTIVITIY rows with StatusID='3'. Each selected
+    row carries shift1/shift2 quantities; those values are multiplied by the
+    tariff selected using Shift. Shift is the tariff selector, not the
+    payment quantity.
 
-    Explicit non-attendance rows (StatusID=-1) are excluded.
-    Existing schedule/attendance states 0, 2 and 3 remain eligible so the
-    migrated data can reproduce the legacy report before the final
-    attendance-state mapping is normalized.
+    V2 deliberately follows this legacy rule exactly. Any mismatch caused
+    by migrated source data is surfaced as a data-parity issue rather than
+    compensated for in the calculation engine.
 
 No database writes are performed.
 """
@@ -195,6 +194,7 @@ def calculate_uang_siaga_v2(nip, year, month):
                 shift1,
                 shift2,
                 Shift,
+                TransacID,
                 UpdateDate,
                 UpdateBy
             FROM LOG_ACTIVITIY
@@ -203,7 +203,7 @@ def calculate_uang_siaga_v2(nip, year, month):
               AND ActivityDate >= :start_date
               AND ActivityDate <= :end_date
               AND Shift IS NOT NULL
-              AND StatusID <> -1
+              AND StatusID = 3
             ORDER BY ActivityDate ASC, Shift ASC, UpdateDate ASC
         """),
         {
@@ -269,14 +269,13 @@ def calculate_uang_siaga_v2(nip, year, month):
 
         nominal = float(tariff["Nominal"] or 0) if tariff else 0.0
 
-        # V2 migration rule:
-        # one LOG_ACTIVITIY row represents one rostered/attended shift.
-        # We deliberately do NOT multiply by shift1/shift2 because those
-        # fields are currently zero in migrated June 2026 rows even though
-        # the HRIS 2013 report contains the corresponding shift counts.
-        quantity = 1.0
+        shift1 = float(row["shift1"] or 0)
+        shift2 = float(row["shift2"] or 0)
 
-        brutto = quantity * nominal
+        # Exact HRIS 2013 TTUPiket formula:
+        # Brutto = shift1 * nominal + shift2 * nominal.
+        # Shift selects the tariff; shift1/shift2 provide the quantity.
+        brutto = (shift1 * nominal) + (shift2 * nominal)
         gol = str(employee["Gol"] or "").strip().upper()
         pph21 = 0.0 if gol in excluded_gol else brutto * 0.05
         netto = brutto - pph21
@@ -286,15 +285,16 @@ def calculate_uang_siaga_v2(nip, year, month):
 
         detail.append({
             "guid_log": str(row["GUIDLog"] or ""),
+            "transac_id": row.get("TransacID"),
             "tanggal": activity_date.isoformat(),
             "shift": shift,
             "fungsional": str(row["Fungsional"] or ""),
             "flag": str(flag or ""),
             "status_id": row["StatusID"],
-            "shift1_raw": float(row["shift1"] or 0),
-            "shift2_raw": float(row["shift2"] or 0),
+            "shift1_raw": shift1,
+            "shift2_raw": shift2,
             "hari_kerja": hari_kerja == 1,
-            "quantity": quantity,
+            "quantity": shift1 + shift2,
             "nominal": round(nominal, 2),
             "brutto": round(brutto, 2),
             "pph21": round(pph21, 2),
