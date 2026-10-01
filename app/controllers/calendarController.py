@@ -29,6 +29,8 @@ from app.models.calendarCategoryModel import CalendarCategory
 from app.models.absensiModel import Absensi
 from app.models.dinasLuarModel import DinasLuar
 from app.models.pegawaiModel import Pegawai
+from app.models.unitKerjaModel import MfUnitKerja
+from app.utils.pegawaiHelper import get_operational_pegawai_query
 from app.models.kalenderModel import MfKalender
 from app.models.calendarSyncTokenModel import CalendarSyncToken
 from app.models.calendarEventModel import CalendarEvent
@@ -275,6 +277,169 @@ def api_calendar_employee_profile_internal():
             "nama": str(pegawai.NAMA or "").strip(),
             "jenis_kel": str(pegawai.JENIS_KEL or "").strip(),
         }
+    })
+
+
+def api_calendar_infografis_internal():
+    """
+    Internal read-only employee statistics for the Portal Pegawai.
+
+    Source of truth remains HRIS Reborn operational PEGAWAI data.
+    """
+    from datetime import date
+
+    from config import Config
+
+    internal_key = request.headers.get("X-Calendar-Internal-Key")
+    if not internal_key or internal_key != Config.CALENDAR_INTERNAL_API_KEY:
+        return jsonify({
+            "status": "error",
+            "message": "Unauthorized"
+        }), 401
+
+    today = date.today()
+
+    def calculate_age(birth_date):
+        if not birth_date:
+            return None
+        try:
+            age = today.year - birth_date.year
+            if (today.month, today.day) < (birth_date.month, birth_date.day):
+                age -= 1
+            return age if age >= 0 else None
+        except (AttributeError, TypeError):
+            return None
+
+    pegawai_rows = get_operational_pegawai_query().all()
+    pegawai_rows = [
+        row for row in pegawai_rows
+        if calculate_age(row.TGL_LAHIR) is None
+        or calculate_age(row.TGL_LAHIR) <= 60
+    ]
+
+    unit_rows = (
+        MfUnitKerja.query
+        .filter(MfUnitKerja.IS_USE == 'Y')
+        .all()
+    )
+
+    unit_map = {
+        str(row.UNIT_KERJA_ID).strip(): str(
+            row.NAMA_UNIT_KERJA or ''
+        ).strip()
+        for row in unit_rows
+        if row.UNIT_KERJA_ID is not None
+    }
+
+    total = len(pegawai_rows)
+    pns = sum(1 for row in pegawai_rows if row.STATUS_PEG == 1)
+    non_pns = sum(1 for row in pegawai_rows if row.STATUS_PEG == 2)
+
+    gender_counts = {
+        "Laki-laki": 0,
+        "Perempuan": 0,
+        "Belum diisi": 0,
+    }
+
+    age_buckets = {
+        "<=20 Tahun": 0,
+        "21 s/d 30 Tahun": 0,
+        "31 s/d 40 Tahun": 0,
+        "41 s/d 50 Tahun": 0,
+        "51 s/d 60 Tahun": 0,
+    }
+
+    age_unknown = 0
+
+    golongan_labels = [
+        "II/a", "II/b", "II/c", "II/d",
+        "III/a", "III/b", "III/c", "III/d",
+        "IV/a", "IV/b", "IV/c", "IV/d", "IV/e",
+    ]
+
+    golongan_counts = {label: 0 for label in golongan_labels}
+    golongan_employees = {label: [] for label in golongan_labels}
+    unit_counts = {}
+
+    for row in pegawai_rows:
+        gender = str(row.JENIS_KEL or "").strip().upper()
+
+        if gender in ("L", "LAKI-LAKI", "LAKI LAKI", "LAKI"):
+            gender_key = "Laki-laki"
+        elif gender in ("P", "PEREMPUAN", "WANITA"):
+            gender_key = "Perempuan"
+        else:
+            gender_key = "Belum diisi"
+
+        gender_counts[gender_key] += 1
+
+        age = calculate_age(row.TGL_LAHIR)
+
+        if age is None:
+            age_unknown += 1
+        elif age <= 20:
+            age_buckets["<=20 Tahun"] += 1
+        elif age <= 30:
+            age_buckets["21 s/d 30 Tahun"] += 1
+        elif age <= 40:
+            age_buckets["31 s/d 40 Tahun"] += 1
+        elif age <= 50:
+            age_buckets["41 s/d 50 Tahun"] += 1
+        elif age <= 60:
+            age_buckets["51 s/d 60 Tahun"] += 1
+
+        golongan = str(row.GOL_ID or "").strip().lower()
+
+        for label in golongan_labels:
+            if golongan == label.lower():
+                golongan_counts[label] += 1
+                golongan_employees[label].append({
+                    "nama": str(row.NAMA or "").strip(),
+                    "nip": str(row.NIP or "").strip(),
+                })
+                break
+
+        unit_id = str(row.UNIT_KERJA_ID or "").strip()
+        unit_name = (
+            unit_map.get(unit_id)
+            or str(row.UNIT_KERJA or "").strip()
+            or "Belum diisi"
+        )
+        unit_counts[unit_name] = unit_counts.get(unit_name, 0) + 1
+
+    for label in golongan_labels:
+        golongan_employees[label].sort(
+            key=lambda item: item["nama"].lower()
+        )
+
+    unit_distribution = sorted(
+        [
+            {"name": name, "total": count}
+            for name, count in unit_counts.items()
+        ],
+        key=lambda item: (-item["total"], item["name"].lower())
+    )
+
+    return jsonify({
+        "status": "success",
+        "today": today.isoformat(),
+        "data": {
+            "total": total,
+            "pns": pns,
+            "non_pns": non_pns,
+            "gender_counts": gender_counts,
+            "status_counts": {
+                "PNS": pns,
+                "Non PNS": non_pns,
+                "Lainnya": max(total - pns - non_pns, 0),
+            },
+            "age_buckets": age_buckets,
+            "age_unknown": age_unknown,
+            "golongan_labels": golongan_labels,
+            "golongan_counts": golongan_counts,
+            "golongan_employees": golongan_employees,
+            "unit_distribution": unit_distribution,
+        },
     })
 
 def api_calendar_personal():
