@@ -5,14 +5,33 @@
 {% block content %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/hris-ui.css') }}">
 <style>
-    /* Modal pada halaman Siaga tidak boleh memburamkan / membirukan halaman. */
+    /*
+     * Dashboard 2 theme.min.css memang sengaja melakukan:
+     * body.modal-open .nxl-container,
+     * body.modal-open .nxl-header,
+     * body.modal-open .nxl-navigation,
+     * body.modal-open .page-header { filter: blur(3px); }
+     *
+     * Halaman Absensi Kehadiran Piket Siaga tidak menggunakan efek blur.
+     */
+    body.siaga-modal-open .nxl-container,
+    body.siaga-modal-open .nxl-header,
+    body.siaga-modal-open .nxl-navigation,
+    body.siaga-modal-open .page-header {
+        filter: none !important;
+    }
+
     body.siaga-modal-open .modal-backdrop {
-        background: rgba(15, 23, 42, 0.28) !important;
+        background-color: rgba(0, 0, 0, 0.45) !important;
         opacity: 1 !important;
+        filter: none !important;
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
     }
-    body.siaga-modal-open .modal {
+
+    body.siaga-modal-open .modal,
+    body.siaga-modal-open .modal-content {
+        filter: none !important;
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
     }
@@ -112,10 +131,10 @@
                             <th>Nama / NIP</th>
                             <th style="width:90px;text-align:center;">Shift</th>
                             <th style="width:125px;">Kehadiran</th>
+                            <th style="width:80px;text-align:center;">Aksi</th>
                             <th>Fungsional</th>
                             <th>Unit Kerja</th>
                             <th>Update Terakhir</th>
-                            <th style="width:80px;text-align:center;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
@@ -339,10 +358,6 @@ $(document).ready(function () {
                 '<div style="font-size:11px;color:var(--ui-muted);margin-top:2px;">' + nip + '</div></td>' +
                 '<td style="text-align:center;"><span class="hris-badge-modern hris-badge-info">Shift ' + shift + '</span></td>' +
                 '<td>' + badge + '</td>' +
-                '<td>' + fungsi + '</td>' +
-                '<td>' + escapeHtml(item.unit_kerja || '-') + '</td>' +
-                '<td><div style="font-size:12px;">' + updateBy + '</div>' +
-                '<div style="font-size:11px;color:var(--ui-muted);">' + updateDate + '</div></td>' +
                 '<td style="text-align:center;">' +
                 '<button class="hris-btn hris-btn-secondary btn-aksi" type="button" ' +
                 'data-guid="' + escapeHtml(item.guid_log) + '" ' +
@@ -352,6 +367,12 @@ $(document).ready(function () {
                 'data-shift="' + escapeHtml(item.shift) + '" ' +
                 'data-nama="' + nama + '" title="Update Kehadiran">' +
                 '<i class="bi bi-check2-square"></i></button>' +
+                '</td>' +
+                '<td>' + fungsi + '</td>' +
+                '<td>' + escapeHtml(item.unit_kerja || '-') + '</td>' +
+                '<td><div style="font-size:12px;">' + updateBy + '</div>' +
+                '<div style="font-size:11px;color:var(--ui-muted);">' + updateDate + '</div></td>' +
+                '<td style="text-align:center;">' +
                 '</td>' +
                 '</tr>'
             );
