@@ -402,13 +402,19 @@ def api_dinas_luar_cari():
     """
     API pencarian Dinas Luar berdasarkan data DINAS_LUAR.
 
-    Pencarian tidak membaca SPRIN_HEADER karena database HRIS legacy
-    pada environment aktif memiliki perbedaan schema untuk tabel tersebut.
-    DINAS_LUAR adalah sumber peserta/header yang sudah dipakai modul
-    Dinas Luar Umum dan menyimpan GUID SPRIN, nomor surat, periode,
-    keterangan, penempatan, serta jenis Dinas Luar.
+    Business Rule HRIS Reborn:
+    - Dinas Luar hanya boleh tampil jika SELURUH peserta pada SPRIN
+      masih merupakan Pegawai Operasional:
+          PEGAWAI.IS_KELUAR = 'N'
+          AND MF_UNIT_KERJA.IS_USE = 'Y'
+    - Jika satu saja peserta berasal dari Unit Kerja yang sudah
+      dinonaktifkan, seluruh SPRIN tidak ditampilkan pada pencarian.
+    - DINAS_LUAR menjadi sumber data untuk modul ini; tidak membaca
+      SPRIN_HEADER karena schema legacy pada environment aktif berbeda.
     """
     try:
+        from sqlalchemy import exists, and_, extract
+
         filter_field = request.args.get('filter_field1', '').strip()
         filter_value = request.args.get('filter_value1', '').strip()
         periode = request.args.get('periode', '').strip()
@@ -422,19 +428,15 @@ def api_dinas_luar_cari():
         }
         jenis = jenis_map.get(type_sprin, 'DL')
 
-        # Satu record DinasLuar = satu peserta. Hasil pencarian kemudian
-        # dikelompokkan berdasarkan GUID SPRIN agar satu SPRIN hanya tampil
-        # satu kali di tabel hasil.
         query = DinasLuar.query.filter(
             DinasLuar.TRANSAKSI == 'DinasLuar',
             DinasLuar.JENIS == jenis,
         )
 
-        # Filter periode berdasarkan tanggal surat yang tersimpan di
-        # DINAS_LUAR. Ini ekuivalen dengan periode TGL_AWAL_SPRIN.
+        # --------------------------------------------------------
+        # PERIODE
+        # --------------------------------------------------------
         if periode:
-            from sqlalchemy import extract
-
             if periode_type == 'bulan':
                 try:
                     tahun, bulan = periode.split('-')
@@ -463,15 +465,95 @@ def api_dinas_luar_cari():
                         'total': 0,
                     }), 400
 
-        # Filter satu field.
+        # --------------------------------------------------------
+        # EXCLUDE SPRIN YANG MASIH MEMILIKI PESERTA NON-OPERASIONAL
+        #
+        # Penting: jangan hanya JOIN ke pegawai aktif, karena itu
+        # masih dapat membuat SPRIN tampil bila peserta lain aktif.
+        # Kita harus memastikan TIDAK ADA peserta pada GUID SPRIN
+        # yang unit kerjanya sudah nonaktif / pegawainya sudah keluar.
+        # --------------------------------------------------------
+        inactive_participant = (
+            db.session.query(DinasLuar.TRANSAKSI_ID)
+            .join(
+                Pegawai,
+                Pegawai.FINGER_ID == DinasLuar.FINGER_ID
+            )
+            .outerjoin(
+                MfUnitKerja,
+                Pegawai.UNIT_KERJA_ID == MfUnitKerja.UNIT_KERJA_ID
+            )
+            .filter(
+                DinasLuar.TRANSAKSI == 'DinasLuar',
+                DinasLuar.JENIS == jenis,
+                DinasLuar.GUID_SPRIN == db.orm.aliased(DinasLuar).GUID_SPRIN
+            )
+        )
+
+        # SQLAlchemy membutuhkan alias yang sama untuk korelasi. Dibuat
+        # ulang secara eksplisit agar query tetap aman di MariaDB.
+        from sqlalchemy.orm import aliased
+
+        dl_check = aliased(DinasLuar)
+        peg_check = aliased(Pegawai)
+        unit_check = aliased(MfUnitKerja)
+
+        inactive_exists = exists().where(
+            and_(
+                dl_check.GUID_SPRIN == DinasLuar.GUID_SPRIN,
+                dl_check.TRANSAKSI == 'DinasLuar',
+                dl_check.JENIS == jenis,
+                peg_check.FINGER_ID == dl_check.FINGER_ID,
+                (
+                    (peg_check.IS_KELUAR != 'N')
+                    | (unit_check.IS_USE != 'Y')
+                    | unit_check.IS_USE.is_(None)
+                ),
+                (
+                    (peg_check.IS_KELUAR.is_(None))
+                    | (unit_check.UNIT_KERJA_ID.is_(None))
+                    | (peg_check.UNIT_KERJA_ID == unit_check.UNIT_KERJA_ID)
+                ),
+            )
+        )
+
+        # Korelasi join pegawai/unit harus eksplisit. Kondisi kedua
+        # di atas menjaga unit check tetap terkait dengan pegawai.
+        inactive_exists = exists().where(
+            and_(
+                dl_check.GUID_SPRIN == DinasLuar.GUID_SPRIN,
+                dl_check.TRANSAKSI == 'DinasLuar',
+                dl_check.JENIS == jenis,
+                peg_check.FINGER_ID == dl_check.FINGER_ID,
+                unit_check.UNIT_KERJA_ID == peg_check.UNIT_KERJA_ID,
+                (
+                    (peg_check.IS_KELUAR != 'N')
+                    | (peg_check.IS_KELUAR.is_(None))
+                    | (unit_check.IS_USE != 'Y')
+                    | (unit_check.IS_USE.is_(None))
+                ),
+            )
+        )
+
+        query = query.filter(~inactive_exists)
+
+        # --------------------------------------------------------
+        # FILTER SATU FIELD
+        # --------------------------------------------------------
         if filter_field and filter_value:
             if filter_field == 'Nama':
-                # DINAS_LUAR menyimpan FingerID pada schema legacy.
                 query = query.join(
                     Pegawai,
                     Pegawai.FINGER_ID == DinasLuar.FINGER_ID
                 ).filter(
-                    Pegawai.NAMA.ilike(f'%{filter_value}%')
+                    Pegawai.NAMA.ilike(f'%{filter_value}%'),
+                    Pegawai.IS_KELUAR == 'N',
+                )
+                query = query.join(
+                    MfUnitKerja,
+                    Pegawai.UNIT_KERJA_ID == MfUnitKerja.UNIT_KERJA_ID
+                ).filter(
+                    MfUnitKerja.IS_USE == 'Y'
                 )
             else:
                 field_mapping = {
@@ -488,7 +570,7 @@ def api_dinas_luar_cari():
             DinasLuar.TRANSAKSI_ID.desc()
         ).limit(1000).all()
 
-        # Group by GUID SPRIN. Urutan mengikuti record terbaru.
+        # Group by GUID SPRIN agar satu SPRIN hanya tampil satu kali.
         grouped = {}
         for row in rows:
             key = row.GUID_SPRIN or row.TRANSAKSI_ID
@@ -555,6 +637,7 @@ def api_dinas_luar_cari():
             'data': [],
             'total': 0,
         }), 500
+
 
 def api_dinas_luar_get_filter_fields():
     """API: Get field pencarian Dinas Luar."""
@@ -1866,43 +1949,60 @@ def api_dinas_luar_delete():
         data = request.get_json(silent=True) or {}
         guid_sprin = str(data.get('guid_sprin') or '').strip()
         if not guid_sprin:
-            return jsonify({'success': False, 'error': 'GUID SPRIN wajib diisi.'}), 400
+            return jsonify({
+                'success': False,
+                'error': 'GUID SPRIN wajib diisi.'
+            }), 400
 
-        header = SprinHeader.query.filter(
-            SprinHeader.GUID_SPRIN == guid_sprin,
-            SprinHeader.TYPE_SPRIN_ID == 'DL'
-        ).first()
+        # DINAS_LUAR adalah sumber data modul Dinas Luar Umum.
+        # Jangan membaca SPRIN_HEADER karena schema legacy pada
+        # environment aktif tidak memiliki kolom yang dipetakan model
+        # SprinHeader (mis. GUID_SPRIN).
         rows = DinasLuar.query.filter(
             DinasLuar.GUID_SPRIN == guid_sprin,
-            DinasLuar.JENIS == 'DL'
+            DinasLuar.JENIS == 'DL',
+            DinasLuar.TRANSAKSI == 'DinasLuar',
         ).all()
 
-        if not header and not rows:
-            return jsonify({'success': False, 'error': 'Data tidak ditemukan.'}), 404
+        if not rows:
+            return jsonify({
+                'success': False,
+                'error': 'Data tidak ditemukan.'
+            }), 404
 
         file_path = None
-        if rows and rows[0].TGL_AWAL_SURAT:
+        first = rows[0]
+        if first.TGL_AWAL_SURAT and first.NAMA_FILE:
             file_path = dinas_luar_absolute_path_by_filename(
-                rows[0].TGL_AWAL_SURAT,
+                first.TGL_AWAL_SURAT,
                 'DL',
-                rows[0].NAMA_FILE or '',
+                first.NAMA_FILE,
             )
 
         db.session.query(DinasLuar).filter(
             DinasLuar.GUID_SPRIN == guid_sprin,
-            DinasLuar.JENIS == 'DL'
+            DinasLuar.JENIS == 'DL',
+            DinasLuar.TRANSAKSI == 'DinasLuar',
         ).delete(synchronize_session=False)
-        if header:
-            db.session.delete(header)
+
         db.session.commit()
 
         if file_path and os.path.isfile(file_path):
             os.unlink(file_path)
 
-        return jsonify({'success': True, 'message': 'SPRIN Dinas Luar berhasil dihapus.'})
+        return jsonify({
+            'success': True,
+            'message': 'SPRIN Dinas Luar berhasil dihapus.'
+        })
+
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'error': str(e)}), 500
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 
 def kepegawaian_mutasi_penempatan_pegawai():
