@@ -4,6 +4,23 @@
 
 {% block content %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/hris-ui.css') }}">
+<style>
+    /* Modal pada halaman Siaga tidak boleh memburamkan / membirukan halaman. */
+    body.siaga-modal-open .modal-backdrop {
+        background: rgba(15, 23, 42, 0.28) !important;
+        opacity: 1 !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+    body.siaga-modal-open .modal {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+    #btnSavePdf,
+    #btnDownloadPdf {
+        white-space: nowrap;
+    }
+</style>
 
 <div class="hris-modern">
     <div class="hris-page">
@@ -37,10 +54,16 @@
                     <h2 class="hris-card-title">Filter Kehadiran Piket</h2>
                     <div class="hris-page-subtitle">Pilih tanggal, unit, dan shift untuk menampilkan jadwal.</div>
                 </div>
-                <button type="button" class="hris-btn hris-btn-secondary" id="btnDownloadPdf" title="Download Daftar Hadir PDF">
-                    <i class="bi bi-file-earmark-pdf"></i>
-                    <span>Download PDF</span>
-                </button>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <button type="button" class="hris-btn hris-btn-primary" id="btnSavePdf" title="Simpan Daftar Hadir PDF ke HRIS-DATA">
+                        <i class="bi bi-cloud-arrow-up"></i>
+                        <span>Simpan</span>
+                    </button>
+                    <button type="button" class="hris-btn hris-btn-secondary" id="btnDownloadPdf" title="Download PDF yang sudah tersimpan di HRIS-DATA">
+                        <i class="bi bi-file-earmark-pdf"></i>
+                        <span>Download PDF</span>
+                    </button>
+                </div>
             </div>
 
             <div class="hris-toolbar">
@@ -204,6 +227,15 @@ $(document).ready(function () {
         updateKehadiran(false);
     });
 
+    $('#replacementModal, #confirmModal').on('show.bs.modal', function () {
+        $('body').addClass('siaga-modal-open');
+    });
+
+    $('#replacementModal, #confirmModal').on('hidden.bs.modal', function () {
+        $('body').removeClass('siaga-modal-open modal-open').css('padding-right', '');
+        $('.modal-backdrop').remove();
+    });
+
     // Bootstrap pada Dashboard 2 menggunakan API jQuery Bootstrap 4.
     // Pastikan backdrop selalu dibersihkan ketika modal ditutup.
     $('#confirmModal').on('hidden.bs.modal', function () {
@@ -334,6 +366,48 @@ $(document).ready(function () {
         );
     }
 
+    $('#btnSavePdf').on('click', async function (e) {
+        e.preventDefault();
+
+        const tgl = $('#filterTanggal').val();
+        const unit = $('#filterUnit').val();
+        const shift = $('#filterShift').val();
+        const $btn = $(this);
+
+        if (!unit) {
+            showAlert('error', 'Pilih Unit Kerja terlebih dahulu untuk menyimpan daftar hadir PDF.');
+            return;
+        }
+
+        if (shift !== '1' && shift !== '2') {
+            showAlert('error', 'Pilih Shift 1 atau Shift 2 terlebih dahulu untuk menyimpan daftar hadir PDF.');
+            return;
+        }
+
+        $btn.prop('disabled', true).find('span').text('Menyimpan...');
+
+        try {
+            const url = '/api/absensi-kehadiran/save-pdf?' +
+                $.param({ tgl: tgl, unit_kerja_id: unit, shift: shift });
+
+            const response = await fetch(url);
+
+            const payload = await response.json().catch(function () {
+                return {};
+            });
+
+            if (!response.ok || !payload.success) {
+                throw new Error(payload.error || 'Gagal menyimpan PDF.');
+            }
+
+            showAlert('success', payload.message || 'Daftar hadir PDF berhasil disimpan ke HRIS-DATA.');
+        } catch (err) {
+            showAlert('error', err.message || 'Gagal menyimpan PDF.');
+        } finally {
+            $btn.prop('disabled', false).find('span').text('Simpan');
+        }
+    });
+
     $('#btnDownloadPdf').on('click', async function (e) {
         e.preventDefault();
 
@@ -352,7 +426,7 @@ $(document).ready(function () {
             return;
         }
 
-        $btn.prop('disabled', true).find('span').text('Membuat PDF...');
+        $btn.prop('disabled', true).find('span').text('Mengambil PDF...');
 
         try {
             const url = '/api/absensi-kehadiran/export-pdf?' +
