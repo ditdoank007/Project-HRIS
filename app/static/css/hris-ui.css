@@ -2717,3 +2717,73 @@ body.hris-sidebar-mini .hris-submenu {
     max-height: 92vh;
   }
 }
+
+/* ============================================================
+   MASTER UANG MAKAN — SEARCH TABLE
+   ============================================================ */
+.hris-filter-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+.hris-filter-item {
+  display: grid;
+  grid-template-columns: minmax(145px, 1fr) minmax(180px, 1.35fr);
+  gap: 8px;
+  min-width: 0;
+}
+.hris-filter-and {
+  color: var(--ui-muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .05em;
+  text-align: center;
+  white-space: nowrap;
+}
+.hris-uang-makan-table {
+  width: 100%;
+  table-layout: fixed;
+}
+.hris-uang-makan-table th,
+.hris-uang-makan-table td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hris-uang-makan-table th:nth-child(1),
+.hris-uang-makan-table td:nth-child(1) { width: 42px; text-align: center; }
+.hris-uang-makan-table th:nth-child(2),
+.hris-uang-makan-table td:nth-child(2) { width: 82px; }
+.hris-uang-makan-table th:nth-child(3),
+.hris-uang-makan-table td:nth-child(3) { width: 105px; }
+.hris-uang-makan-table th:nth-child(4),
+.hris-uang-makan-table td:nth-child(4) { width: 105px; }
+.hris-uang-makan-table th:nth-child(5),
+.hris-uang-makan-table td:nth-child(5) { width: 105px; text-align: right; }
+.hris-uang-makan-table th:nth-child(6),
+.hris-uang-makan-table td:nth-child(6) { width: 250px; }
+.hris-uang-makan-table th:nth-child(7),
+.hris-uang-makan-table td:nth-child(7) { width: 105px; }
+.hris-uang-makan-table th:nth-child(8),
+.hris-uang-makan-table td:nth-child(8) { width: 145px; }
+.hris-uang-makan-table th:nth-child(9),
+.hris-uang-makan-table td:nth-child(9) { width: 88px; text-align: center; }
+.hris-uang-makan-table .hris-uang-makan-by { font-weight: 650; }
+.hris-uang-makan-table .hris-uang-makan-date {
+  color: var(--ui-muted);
+  font-size: 10px;
+}
+.hris-uang-makan-table .hris-btn-sm {
+  width: 34px;
+  min-width: 34px;
+  padding: 0 !important;
+}
+@media (max-width: 1050px) {
+  .hris-filter-grid { grid-template-columns: 1fr; }
+  .hris-filter-and { display: none; }
+}
+@media (max-width: 720px) {
+  .hris-filter-item { grid-template-columns: 1fr; }
+}
