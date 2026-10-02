@@ -2578,25 +2578,21 @@ def export_rekap_uang_makan(preview=False):
     )
     default_tgl_kerja = len(kalender_rows)
     
-    # Ambil nominal Uang Makan reguler yang berlaku.
-    # Master HRIS:
-    #   JenisTunjangan = U.Makan
-    #   Activity       = Intern
-    #   HariKerja      = 0
-    # Nominal tidak di-hardcode; tetap mengikuti MF_TUNJANGAN.
-    um_row = (
-        MfTunjangan.query
-        .filter(MfTunjangan.JENIS_TUNJANGAN == 'U.Makan')
-        .filter(MfTunjangan.ACTIVITY == 'Intern')
-        .filter(MfTunjangan.HARI_KERJA == 0)
-        .filter(MfTunjangan.TGL_MULAI <= tgl_akhir.date())
-        .order_by(
-            MfTunjangan.TGL_MULAI.desc(),
-            MfTunjangan.IDTUNJANGAN.desc()
-        )
-        .first()
-    )
-    nominal_um = um_row.NOMINAL if um_row else 0
+    # Ambil Master Uang Makan berdasarkan golongan pegawai.
+    uang_makan_rows=(MfTunjangan.query.filter(MfTunjangan.JENIS_TUNJANGAN=='U.Makan', MfTunjangan.ACTIVITY=='Intern', MfTunjangan.HARI_KERJA==0, MfTunjangan.TGL_MULAI<=tgl_akhir.date()).order_by(MfTunjangan.TGL_MULAI.desc(),MfTunjangan.IDTUNJANGAN.desc()).all())
+    def _golongan_level(value):
+        raw=str(value or '').strip().upper()
+        if not raw: return None
+        raw=raw.replace('GOLONGAN','').replace('GOL.','').strip()
+        return raw.split('/',1)[0].strip()
+    def _nominal_uang_makan(golongan):
+        level=_golongan_level(golongan)
+        if not level: return 0
+        for item in uang_makan_rows:
+            if str(item.FUNGSIONAL or '').strip().upper()==level: return item.NOMINAL or 0
+        for item in uang_makan_rows:
+            if str(item.FUNGSIONAL or '').strip().upper()=='ALL': return item.NOMINAL or 0
+        return 0
     
     # Ambil data absensi (join via NIP)
     absensi_rows = (
@@ -2944,6 +2940,7 @@ def export_rekap_uang_makan(preview=False):
         if jumlah_hari < 0:
             jumlah_hari = 0
 
+        nominal_um = _nominal_uang_makan(peg.GOL_ID)
         um = jumlah_hari * nominal_um
         total_um += um
 
@@ -2957,6 +2954,7 @@ def export_rekap_uang_makan(preview=False):
             "ijin": alpa_ijin,
             "sakit": sakit_all,
             "ta": ta,
+            "golongan": _golongan_level(peg.GOL_ID) or "-",
             "jumlah_hari": jumlah_hari,
             "jumlah_uang": um,
         })
@@ -2986,7 +2984,7 @@ def export_rekap_uang_makan(preview=False):
         ws.cell(
             row=row,
             column=5,
-            value=f"{peg.GOL_ID} - {pangkat_map.get(peg.GOL_ID, '-')}"
+            value=f"{_golongan_level(peg.GOL_ID) or '-'} - {pangkat_map.get(peg.GOL_ID, '-')}"
         ).alignment = Alignment(horizontal='left')
 
         if dl_count > 0:
@@ -3028,7 +3026,7 @@ def export_rekap_uang_makan(preview=False):
             "success": True,
             "bulan": bulan_str,
             "hari_kerja": default_tgl_kerja,
-            "nominal_um": nominal_um,
+            "nominal_um": "Sesuai Golongan",
             "unit_names": unit_names,
             "total_um": total_um,
             "rows": preview_rows,
