@@ -473,25 +473,14 @@ def api_dinas_luar_cari():
         # Kita harus memastikan TIDAK ADA peserta pada GUID SPRIN
         # yang unit kerjanya sudah nonaktif / pegawainya sudah keluar.
         # --------------------------------------------------------
-        inactive_participant = (
-            db.session.query(DinasLuar.TRANSAKSI_ID)
-            .join(
-                Pegawai,
-                Pegawai.FINGER_ID == DinasLuar.FINGER_ID
-            )
-            .outerjoin(
-                MfUnitKerja,
-                Pegawai.UNIT_KERJA_ID == MfUnitKerja.UNIT_KERJA_ID
-            )
-            .filter(
-                DinasLuar.TRANSAKSI == 'DinasLuar',
-                DinasLuar.JENIS == jenis,
-                DinasLuar.GUID_SPRIN == db.orm.aliased(DinasLuar).GUID_SPRIN
-            )
-        )
-
-        # SQLAlchemy membutuhkan alias yang sama untuk korelasi. Dibuat
-        # ulang secara eksplisit agar query tetap aman di MariaDB.
+        # --------------------------------------------------------
+        # EXCLUDE SPRIN YANG MEMILIKI PESERTA NON-OPERASIONAL
+        #
+        # Jangan hanya JOIN ke pegawai aktif. Jika sebuah SPRIN memiliki
+        # 20 peserta aktif dan 1 peserta dari Unit Kerja yang sudah
+        # dinonaktifkan, seluruh SPRIN tetap harus dikeluarkan dari
+        # hasil pencarian.
+        # --------------------------------------------------------
         from sqlalchemy.orm import aliased
 
         dl_check = aliased(DinasLuar)
@@ -505,20 +494,19 @@ def api_dinas_luar_cari():
                 dl_check.JENIS == jenis,
                 peg_check.FINGER_ID == dl_check.FINGER_ID,
                 (
-                    (peg_check.IS_KELUAR != 'N')
+                    peg_check.FINGER_ID.is_(None)
+                    | (peg_check.IS_KELUAR != 'N')
+                    | (peg_check.IS_KELUAR.is_(None))
+                    | unit_check.UNIT_KERJA_ID.is_(None)
                     | (unit_check.IS_USE != 'Y')
-                    | unit_check.IS_USE.is_(None)
-                ),
-                (
-                    (peg_check.IS_KELUAR.is_(None))
-                    | (unit_check.UNIT_KERJA_ID.is_(None))
-                    | (peg_check.UNIT_KERJA_ID == unit_check.UNIT_KERJA_ID)
+                    | (unit_check.IS_USE.is_(None))
                 ),
             )
         )
 
-        # Korelasi join pegawai/unit harus eksplisit. Kondisi kedua
-        # di atas menjaga unit check tetap terkait dengan pegawai.
+        # Korelasi unit kerja dilakukan melalui pegawai peserta.
+        # Jika pegawai tidak ditemukan atau unitnya nonaktif, SPRIN
+        # dianggap tidak operasional dan tidak ditampilkan.
         inactive_exists = exists().where(
             and_(
                 dl_check.GUID_SPRIN == DinasLuar.GUID_SPRIN,
@@ -527,15 +515,33 @@ def api_dinas_luar_cari():
                 peg_check.FINGER_ID == dl_check.FINGER_ID,
                 unit_check.UNIT_KERJA_ID == peg_check.UNIT_KERJA_ID,
                 (
-                    (peg_check.IS_KELUAR != 'N')
-                    | (peg_check.IS_KELUAR.is_(None))
+                    peg_check.IS_KELUAR.is_(None)
+                    | (peg_check.IS_KELUAR != 'N')
+                    | unit_check.IS_USE.is_(None)
                     | (unit_check.IS_USE != 'Y')
-                    | (unit_check.IS_USE.is_(None))
                 ),
             )
         )
 
-        query = query.filter(~inactive_exists)
+        # Peserta yang tidak punya record PEGAWAI juga dianggap
+        # non-operasional. Kondisi ini dicek terpisah agar tidak
+        # ada data legacy yang lolos hanya karena JOIN tidak menemukan
+        # pegawai.
+        missing_pegawai_exists = exists().where(
+            and_(
+                dl_check.GUID_SPRIN == DinasLuar.GUID_SPRIN,
+                dl_check.TRANSAKSI == 'DinasLuar',
+                dl_check.JENIS == jenis,
+                ~exists().where(
+                    Pegawai.FINGER_ID == dl_check.FINGER_ID
+                ),
+            )
+        )
+
+        query = query.filter(
+            ~inactive_exists,
+            ~missing_pegawai_exists,
+        )
 
         # --------------------------------------------------------
         # FILTER SATU FIELD
