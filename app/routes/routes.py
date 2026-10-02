@@ -57,6 +57,7 @@ from app.controllers.dashboard_1KepegawaianController import (
     api_dinas_luar_save as master_api_dinas_luar_save,
     api_dinas_luar_get as master_api_dinas_luar_get,
     api_dinas_luar_delete as master_api_dinas_luar_delete,
+    api_dinas_luar_pdf,
     api_sprin_header_save as master_api_sprin_header_save,
     api_dinas_luar_save_peserta as master_api_dinas_luar_save_peserta,
     api_dinas_luar_cari as master_api_dinas_luar_cari,
