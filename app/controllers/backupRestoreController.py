@@ -13,8 +13,22 @@ from app.services.backupRestoreService import (
     save_mssql_backup,
     save_mssql_job,
 )
-from app.utils.authorization import is_administrator
+from app.utils.authorization import is_administrator, has_form_access, can_modify
 
+
+BACKUP_RESTORE_FORM_ID = "BackupRestore.aspx"
+
+def _backup_restore_read_json():
+    if not has_form_access(BACKUP_RESTORE_FORM_ID):
+        return jsonify({"ok": False, "message": "Anda tidak memiliki hak akses Backup / Restore."}), 403
+    return None
+
+def _backup_restore_modify_json():
+    if not has_form_access(BACKUP_RESTORE_FORM_ID):
+        return jsonify({"ok": False, "message": "Anda tidak memiliki hak akses Backup / Restore."}), 403
+    if not can_modify(BACKUP_RESTORE_FORM_ID):
+        return jsonify({"ok": False, "message": "Hak akses Backup / Restore Anda adalah Read Only."}), 403
+    return None
 
 def _admin_json():
     if not is_administrator():
@@ -27,26 +41,26 @@ def backup_restore_home():
     return redirect(url_for("main.view_backup_mariadb"))
 
 def backup_mariadb_home():
-    denied = _admin_json()
+    denied = _backup_restore_read_json()
     if denied:
         return denied
     return render_template("pages/dashboard_1/Backup MariaDB.html")
 
 def restore_mariadb_home():
-    denied = _admin_json()
+    denied = _backup_restore_read_json()
     if denied:
         return denied
     return render_template("pages/dashboard_1/Restore MariaDB.html")
 
 def import_mssql_home():
-    denied = _admin_json()
+    denied = _backup_restore_read_json()
     if denied:
         return denied
     return render_template("pages/dashboard_1/Impor MSSQL 2013.html")
 
 
 def api_backup_mariadb():
-    denied = _admin_json()
+    denied = _backup_restore_modify_json()
     if denied:
         return denied
     try:
@@ -57,14 +71,14 @@ def api_backup_mariadb():
 
 
 def api_backup_mariadb_list():
-    denied = _admin_json()
+    denied = _backup_restore_read_json()
     if denied:
         return denied
     return jsonify({"ok": True, "data": list_mariadb_backups()})
 
 
 def api_restore_mariadb():
-    denied = _admin_json()
+    denied = _backup_restore_modify_json()
     if denied:
         return denied
 
@@ -81,7 +95,7 @@ def api_restore_mariadb():
 
 
 def api_import_mssql_upload():
-    denied = _admin_json()
+    denied = _backup_restore_modify_json()
     if denied:
         return denied
 
@@ -114,7 +128,7 @@ def api_import_mssql_upload():
 
 
 def api_import_mssql_preview():
-    denied = _admin_json()
+    denied = _backup_restore_read_json()
     if denied:
         return denied
 
@@ -134,7 +148,7 @@ def api_import_mssql_preview():
 
 
 def api_import_mssql_execute():
-    denied = _admin_json()
+    denied = _backup_restore_modify_json()
     if denied:
         return denied
 
