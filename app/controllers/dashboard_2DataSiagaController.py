@@ -717,6 +717,12 @@ def api_absensi_kehadiran_export_pdf():
 
 
 def api_absensi_kehadiran_internal_pdf():
+    from config import Config
+
+    internal_key = request.headers.get('X-Calendar-Internal-Key')
+    if not internal_key or internal_key != Config.CALENDAR_INTERNAL_API_KEY:
+        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 401
+
     try:
         from urllib.parse import unquote
         key = unquote(str(request.args.get('key') or '')).strip()
