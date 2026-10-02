@@ -77,7 +77,7 @@
 
         <div class="hris-card-body">
             <div class="hris-table-wrapper">
-                <table class="hris-table">
+                <table class="hris-table search-results-table">
                     <thead>
                         <tr>
                             <th>No</th>
@@ -105,13 +105,13 @@
 <style>
 .search-grid {
     display:grid;
-    grid-template-columns:180px 180px auto;
+    grid-template-columns:180px 180px minmax(0,1fr);
     gap:14px;
     align-items:end;
 }
 .filter-grid {
     display:grid;
-    grid-template-columns:280px minmax(280px,1fr);
+    grid-template-columns:280px minmax(320px,1fr);
     gap:14px;
     margin-top:18px;
     padding-top:18px;
@@ -123,6 +123,59 @@
     font-weight:700;
     color:#475569;
     margin-bottom:6px;
+}
+.hris-table.search-results-table {
+    width:100%;
+    min-width:1120px;
+    table-layout:fixed;
+    border-collapse:separate;
+    border-spacing:0;
+}
+.search-results-table thead th {
+    background:#172033;
+    color:#f8fafc;
+    border-color:#172033;
+    padding:12px 13px;
+    font-size:12px;
+    font-weight:700;
+    white-space:nowrap;
+}
+.search-results-table thead th:first-child { border-top-left-radius:8px; }
+.search-results-table thead th:last-child { border-top-right-radius:8px; }
+.search-results-table tbody td {
+    padding:12px 13px;
+    vertical-align:middle;
+    line-height:1.45;
+    color:#334155;
+}
+.search-results-table tbody tr:nth-child(even) {
+    background:#f8fafc;
+}
+.search-results-table tbody tr:hover {
+    background:#fff7ed;
+}
+.search-results-table th:nth-child(1),
+.search-results-table td:nth-child(1) { width:52px; text-align:center; }
+.search-results-table th:nth-child(2),
+.search-results-table td:nth-child(2) { width:260px; }
+.search-results-table th:nth-child(3),
+.search-results-table td:nth-child(3) { width:190px; white-space:nowrap; }
+.search-results-table th:nth-child(4),
+.search-results-table td:nth-child(4) { width:320px; white-space:normal; overflow-wrap:anywhere; }
+.search-results-table th:nth-child(5),
+.search-results-table td:nth-child(5) { width:245px; white-space:normal; overflow-wrap:anywhere; }
+.search-results-table th:nth-child(6),
+.search-results-table td:nth-child(6) { width:255px; white-space:normal; overflow-wrap:anywhere; }
+.search-results-table th:nth-child(7),
+.search-results-table td:nth-child(7) { width:70px; text-align:center; }
+.search-results-table td:nth-child(2) a {
+    color:#334155;
+    font-weight:700;
+    text-decoration:none;
+}
+.search-results-table td:nth-child(2) a:hover {
+    color:#ea580c;
+    text-decoration:underline;
 }
 .empty-row { text-align:center !important; color:#94a3b8; padding:28px !important; }
 @media(max-width:800px) {
