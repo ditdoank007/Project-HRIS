@@ -1645,14 +1645,16 @@ def api_dinas_luar_save():
         ).first()
 
         existing_filename = None
+        existing_file_date = None
         if header:
             existing_row = DinasLuar.query.filter(
                 DinasLuar.GUID_SPRIN == header.GUID_SPRIN,
                 DinasLuar.JENIS == 'DL',
             ).first()
             existing_filename = existing_row.NAMA_FILE if existing_row else None
+            existing_file_date = existing_row.TGL_AWAL_SURAT if existing_row else None
 
-        if not upload and not existing_filename:
+        if not upload and (not existing_filename or (existing_file_date and existing_file_date != start_date)):
             return jsonify({'success': False, 'error': 'File SPRIN PDF wajib dipilih untuk data baru.'}), 400
 
         if not header:
