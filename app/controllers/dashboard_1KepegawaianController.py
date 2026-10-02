@@ -630,7 +630,7 @@ def api_dinas_luar_get_filter_fields():
             {'field_id': 'Nama', 'field_name': 'Nama'},
             {'field_id': 'NoSurat', 'field_name': 'No. Surat'},
             {'field_id': 'KeteranganDinasLuar', 'field_name': 'Keterangan'},
-            {'field_id': 'PenempatanDinasLuar', 'field_name': 'Penempatan'},
+            {'field_id': 'PenempatanDinasLuar', 'field_name': 'Lokasi'},
         ]
         return jsonify({'success': True, 'data': fields})
     except Exception as e:
