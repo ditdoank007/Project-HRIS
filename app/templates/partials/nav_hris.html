@@ -486,7 +486,7 @@
                 </li>
                 {% endif %}
 
-                {% if is_administrator() %}
+                {% if is_administrator() or has_form_access('BackupRestore.aspx') %}
                 <li class="hris-nav-item hris-nav-group">
                     <a href="javascript:void(0);" class="hris-nav-link">
                         <span class="hris-nav-icon"><i class="feather-database"></i></span>
