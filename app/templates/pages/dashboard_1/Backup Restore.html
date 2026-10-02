@@ -1,0 +1,219 @@
+{% extends "layout/base.html" %}
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <div class="text-uppercase small fw-semibold text-muted">Administrasi Sistem</div>
+            <h2 class="mb-1">Backup / Restore</h2>
+            <div class="text-muted">Perlindungan database HRIS Reborn dan impor data HRIS 2013.</div>
+        </div>
+        <span class="badge bg-danger-subtle text-danger px-3 py-2">Administrator</span>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-xl-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5><i class="feather-database me-2"></i>Backup DB-MariaDB</h5>
+                    <p class="text-muted">Full logical backup database HRIS. Tidak menggunakan filter periode.</p>
+                    <div class="alert alert-info small">
+                        Backup mencakup seluruh database HRIS pada saat backup dibuat.
+                    </div>
+                    <button id="btnBackup" class="btn btn-primary w-100">
+                        <i class="feather-save me-1"></i> Buat Full Backup
+                    </button>
+                    <div id="backupResult" class="mt-3 small"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5><i class="feather-upload-cloud me-2"></i>Restore DB-MariaDB</h5>
+                    <p class="text-muted">Restore full backup MariaDB. Operasi ini dapat mengganti data database.</p>
+                    <select id="restoreFile" class="form-select mb-3">
+                        <option value="">Memuat daftar backup...</option>
+                    </select>
+                    <input id="restoreConfirm" class="form-control mb-3" placeholder="Ketik: RESTORE HRIS">
+                    <button id="btnRestore" class="btn btn-danger w-100">
+                        <i class="feather-alert-triangle me-1"></i> Restore Database
+                    </button>
+                    <div id="restoreResult" class="mt-3 small"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5><i class="feather-refresh-cw me-2"></i>Impor DB-MSSQL-2013</h5>
+                    <p class="text-muted">Upload backup .bak, pilih periode, validasi, preview, lalu impor INSERT-ONLY.</p>
+
+                    <label class="form-label">Backup MSSQL (.bak)</label>
+                    <input id="mssqlFile" type="file" accept=".bak" class="form-control mb-3">
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label">Tanggal awal</label>
+                            <input id="startDate" type="date" class="form-control">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Tanggal akhir</label>
+                            <input id="endDate" type="date" class="form-control">
+                        </div>
+                    </div>
+
+                    <button id="btnUploadMssql" class="btn btn-outline-primary w-100 mb-2">
+                        <i class="feather-upload me-1"></i> Upload & Validasi
+                    </button>
+                    <button id="btnPreviewMssql" class="btn btn-outline-secondary w-100 mb-2" disabled>
+                        Preview
+                    </button>
+
+                    <div id="mssqlState" class="alert alert-light small mt-3 mb-2">Belum ada file.</div>
+
+                    <input id="mssqlConfirm" class="form-control mb-2" placeholder="Ketik: IMPOR MSSQL HRIS 2013">
+                    <button id="btnImportMssql" class="btn btn-success w-100" disabled>
+                        <i class="feather-database me-1"></i> Impor ke MariaDB
+                    </button>
+                    <div id="mssqlResult" class="mt-3 small"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mt-4">
+        <div class="card-body">
+            <h6 class="mb-3">Arsip Full Backup MariaDB</h6>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead><tr><th>File</th><th>Ukuran</th><th>Dibuat</th></tr></thead>
+                    <tbody id="backupTable"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    let mssqlPath = "";
+
+    const el = id => document.getElementById(id);
+    const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"
+    }[c]));
+
+    async function jsonFetch(url, options = {}) {
+        const res = await fetch(url, options);
+        const data = await res.json();
+        if (!res.ok || data.ok === false) throw new Error(data.message || "Operasi gagal.");
+        return data;
+    }
+
+    async function loadBackups() {
+        try {
+            const data = await jsonFetch("{{ url_for('main.api_backup_mariadb_list') }}");
+            el("restoreFile").innerHTML = '<option value="">Pilih file backup...</option>';
+            el("backupTable").innerHTML = "";
+            data.data.forEach(row => {
+                const opt = document.createElement("option");
+                opt.value = row.filename;
+                opt.textContent = row.filename;
+                el("restoreFile").appendChild(opt);
+
+                const tr = document.createElement("tr");
+                tr.innerHTML = "<td>" + esc(row.filename) + "</td><td>" +
+                    (Number(row.size) / 1024 / 1024).toFixed(2) + " MB</td><td>" +
+                    esc(row.modified) + "</td>";
+                el("backupTable").appendChild(tr);
+            });
+        } catch (e) {
+            el("backupTable").innerHTML = '<tr><td colspan="3" class="text-danger">' + esc(e.message) + '</td></tr>';
+        }
+    }
+
+    el("btnBackup").addEventListener("click", async () => {
+        el("btnBackup").disabled = true;
+        el("backupResult").textContent = "Backup sedang dibuat...";
+        try {
+            const data = await jsonFetch("{{ url_for('main.api_backup_mariadb') }}", {method:"POST"});
+            el("backupResult").innerHTML = '<span class="text-success">' + esc(data.message) +
+                "<br>" + esc(data.data.filename) + "</span>";
+            loadBackups();
+        } catch (e) {
+            el("backupResult").innerHTML = '<span class="text-danger">' + esc(e.message) + "</span>";
+        } finally {
+            el("btnBackup").disabled = false;
+        }
+    });
+
+    el("btnRestore").addEventListener("click", async () => {
+        const body = new FormData();
+        body.append("filename", el("restoreFile").value);
+        body.append("confirmation", el("restoreConfirm").value);
+        if (!el("restoreFile").value) return alert("Pilih file backup.");
+        if (!confirm("Restore akan mengganti database HRIS sesuai isi backup. Lanjutkan?")) return;
+
+        try {
+            const data = await jsonFetch("{{ url_for('main.api_restore_mariadb') }}", {method:"POST", body});
+            el("restoreResult").innerHTML = '<span class="text-success">' + esc(data.message) + "</span>";
+        } catch (e) {
+            el("restoreResult").innerHTML = '<span class="text-danger">' + esc(e.message) + "</span>";
+        }
+    });
+
+    el("btnUploadMssql").addEventListener("click", async () => {
+        const file = el("mssqlFile").files[0];
+        if (!file) return alert("Pilih file .bak.");
+        if (!el("startDate").value || !el("endDate").value) return alert("Pilih tanggal awal dan akhir.");
+
+        const body = new FormData();
+        body.append("backup_file", file);
+        body.append("start_date", el("startDate").value);
+        body.append("end_date", el("endDate").value);
+
+        el("btnUploadMssql").disabled = true;
+        el("mssqlState").textContent = "Mengunggah backup...";
+        try {
+            const data = await jsonFetch("{{ url_for('main.api_import_mssql_upload') }}", {method:"POST", body});
+            mssqlPath = data.data.path;
+            el("mssqlState").className = "alert alert-success small mt-3 mb-2";
+            el("mssqlState").textContent = "File siap. " + data.data.filename;
+            el("btnPreviewMssql").disabled = false;
+            el("btnImportMssql").disabled = false;
+        } catch (e) {
+            el("mssqlState").className = "alert alert-danger small mt-3 mb-2";
+            el("mssqlState").textContent = e.message;
+        } finally {
+            el("btnUploadMssql").disabled = false;
+        }
+    });
+
+    async function runMssql(endpoint, confirmation) {
+        const body = new FormData();
+        body.append("backup_path", mssqlPath);
+        body.append("start_date", el("startDate").value);
+        body.append("end_date", el("endDate").value);
+        if (confirmation) body.append("confirmation", confirmation);
+        const data = await jsonFetch(endpoint, {method:"POST", body});
+        el("mssqlResult").innerHTML = '<pre class="small bg-light p-3 rounded">' +
+            esc(data.data.output || data.message || "") + "</pre>";
+    }
+
+    el("btnPreviewMssql").addEventListener("click", async () => {
+        try { await runMssql("{{ url_for('main.api_import_mssql_preview') }}"); }
+        catch (e) { el("mssqlResult").innerHTML = '<span class="text-danger">' + esc(e.message) + "</span>"; }
+    });
+
+    el("btnImportMssql").addEventListener("click", async () => {
+        if (!confirm("Impor akan menulis data baru ke MariaDB sesuai engine INSERT-ONLY. Lanjutkan?")) return;
+        try { await runMssql("{{ url_for('main.api_import_mssql_execute') }}", el("mssqlConfirm").value); }
+        catch (e) { el("mssqlResult").innerHTML = '<span class="text-danger">' + esc(e.message) + "</span>"; }
+    });
+
+    loadBackups();
+})();
+</script>
+{% endblock %}
