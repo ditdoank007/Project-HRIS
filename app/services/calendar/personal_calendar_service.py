@@ -27,7 +27,7 @@ from app.models.calendarEventModel import CalendarEvent
 from app.models.kesamaptaanKegiatanModel import KesamaptaanKegiatan
 from app.models.kesamaptaanKehadiranModel import KesamaptaanKehadiran
 from app.models.hrisDocumentModel import HrisDocument
-from app.services.dinas_luar_storage import dinas_luar_absolute_path
+from app.services.dinas_luar_storage import dinas_luar_absolute_path_by_filename
 
 from app.utils.absensiNormalisasiHelper import (
     get_label_dinas_luar,
@@ -161,10 +161,10 @@ def build_personal_calendar_events(
         if row.NAMA_FILE and row.NAMA_FILE != "-" and row.TGL_AWAL_SURAT:
             try:
                 pdf_available = os.path.isfile(
-                    dinas_luar_absolute_path(
+                    dinas_luar_absolute_path_by_filename(
                         row.TGL_AWAL_SURAT,
                         row.JENIS or "DL",
-                        row.KETERANGAN_DINAS_LUAR or "",
+                        row.NAMA_FILE,
                     )
                 )
             except (OSError, ValueError):
