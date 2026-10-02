@@ -439,6 +439,17 @@ def api_dinas_luar_delete():
     return master_api_dinas_luar_delete()
 
 
+@main.route('/api/dinas-luar/pdf')
+@login_required
+def api_dinas_luar_pdf_route():
+    return api_dinas_luar_pdf()
+
+
+@main.route('/api/internal/calendar/dinas-luar/pdf')
+def api_calendar_dinas_luar_pdf_internal_route():
+    return api_dinas_luar_pdf()
+
+
 @main.route('/kepegawaian/cari/dinas-luar-umum')
 @login_required
 def view_kepegawaian_cari_dinas_luar_umum():
