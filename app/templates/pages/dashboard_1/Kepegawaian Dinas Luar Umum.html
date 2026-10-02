@@ -177,7 +177,33 @@
 .autocomplete-item strong { display:block; color:#0f172a; font-size:13px; }
 .autocomplete-item small { color:#64748b; }
 .participant-add { height:40px; }
-.participant-table-wrap { margin-top:4px; }
+.participant-table-wrap { margin-top:4px; overflow-x:auto; }
+.participant-table-wrap .hris-table {
+    width:100%;
+    min-width:1050px;
+    table-layout:fixed;
+}
+.participant-table-wrap .hris-table th,
+.participant-table-wrap .hris-table td {
+    padding:11px 12px;
+    vertical-align:middle;
+}
+.participant-table-wrap .hris-table th:nth-child(1),
+.participant-table-wrap .hris-table td:nth-child(1) { width:52px; text-align:center; }
+.participant-table-wrap .hris-table th:nth-child(2),
+.participant-table-wrap .hris-table td:nth-child(2) { width:195px; }
+.participant-table-wrap .hris-table th:nth-child(3),
+.participant-table-wrap .hris-table td:nth-child(3) { width:330px; white-space:normal; overflow-wrap:anywhere; }
+.participant-table-wrap .hris-table th:nth-child(4),
+.participant-table-wrap .hris-table td:nth-child(4),
+.participant-table-wrap .hris-table th:nth-child(5),
+.participant-table-wrap .hris-table td:nth-child(5) { width:125px; white-space:nowrap; }
+.participant-table-wrap .hris-table th:nth-child(6),
+.participant-table-wrap .hris-table td:nth-child(6) { width:235px; }
+.participant-table-wrap .hris-table th:nth-child(7),
+.participant-table-wrap .hris-table td:nth-child(7) { width:72px; text-align:center; }
+.participant-table-wrap .hris-table tbody tr:nth-child(even) { background:#f8fafc; }
+.participant-table-wrap .hris-table tbody tr:hover { background:#fff7ed; }
 .empty-row { text-align:center !important; color:#94a3b8; padding:22px !important; }
 .hris-card-footer { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:16px 20px; border-top:1px solid var(--hris-border,#e2e8f0); }
 .hris-form-actions { display:flex; justify-content:flex-end; gap:10px; }
@@ -395,6 +421,7 @@
 
         const fd = new FormData();
         fd.append('no_surat', noSurat.value.trim());
+        fd.append('guid_sprin', guidSprin);
         fd.append('tgl_awal_surat', tglAwalSurat.value);
         fd.append('tgl_akhir_surat', tglAkhirSurat.value);
         fd.append('keterangan', keterangan.value.trim());
