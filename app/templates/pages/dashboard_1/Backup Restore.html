@@ -172,7 +172,7 @@
 
     async function loadBackups() {
         try {
-            const data = await jsonFetch("{{ url_for('main.api_backup_mariadb_list') }}");
+            const data = await jsonFetch("{{ url_for('main.api_backup_mariadb_route_list_route') }}");
             el("restoreFile").innerHTML = '<option value="">Pilih file backup...</option>';
             el("backupTable").innerHTML = "";
             data.data.forEach(row => {
@@ -196,7 +196,7 @@
         el("btnBackup").disabled = true;
         el("backupResult").textContent = "Backup sedang dibuat...";
         try {
-            const data = await jsonFetch("{{ url_for('main.api_backup_mariadb') }}", {method:"POST"});
+            const data = await jsonFetch("{{ url_for('main.api_backup_mariadb_route') }}", {method:"POST"});
             el("backupResult").innerHTML = '<span class="text-success">' + esc(data.message) +
                 "<br>" + esc(data.data.filename) + "</span>";
             loadBackups();
@@ -215,7 +215,7 @@
         if (!confirm("Restore akan mengganti database HRIS sesuai isi backup. Lanjutkan?")) return;
 
         try {
-            const data = await jsonFetch("{{ url_for('main.api_restore_mariadb') }}", {method:"POST", body});
+            const data = await jsonFetch("{{ url_for('main.api_restore_mariadb_route') }}", {method:"POST", body});
             el("restoreResult").innerHTML = '<span class="text-success">' + esc(data.message) + "</span>";
         } catch (e) {
             el("restoreResult").innerHTML = '<span class="text-danger">' + esc(e.message) + "</span>";
@@ -235,7 +235,7 @@
         el("btnUploadMssql").disabled = true;
         el("mssqlState").textContent = "Mengunggah backup...";
         try {
-            const data = await jsonFetch("{{ url_for('main.api_import_mssql_upload') }}", {method:"POST", body});
+            const data = await jsonFetch("{{ url_for('main.api_import_mssql_upload_route') }}", {method:"POST", body});
             mssqlPath = data.data.path;
             el("mssqlState").className = "alert alert-success small mt-3 mb-2";
             el("mssqlState").textContent = "File siap. " + data.data.filename;
@@ -261,13 +261,13 @@
     }
 
     el("btnPreviewMssql").addEventListener("click", async () => {
-        try { await runMssql("{{ url_for('main.api_import_mssql_preview') }}"); }
+        try { await runMssql("{{ url_for('main.api_import_mssql_preview_route') }}"); }
         catch (e) { el("mssqlResult").innerHTML = '<span class="text-danger">' + esc(e.message) + "</span>"; }
     });
 
     el("btnImportMssql").addEventListener("click", async () => {
         if (!confirm("Impor akan menulis data baru ke MariaDB sesuai engine INSERT-ONLY. Lanjutkan?")) return;
-        try { await runMssql("{{ url_for('main.api_import_mssql_execute') }}", el("mssqlConfirm").value); }
+        try { await runMssql("{{ url_for('main.api_import_mssql_execute_route') }}", el("mssqlConfirm").value); }
         catch (e) { el("mssqlResult").innerHTML = '<span class="text-danger">' + esc(e.message) + "</span>"; }
     });
 
