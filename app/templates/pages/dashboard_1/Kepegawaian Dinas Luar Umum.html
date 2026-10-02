@@ -1,19 +1,19 @@
 {% extends "layout/baseHRIS.html" %}
 
-{% block title %}- Dinas Luar Umum{% endblock %}
+{% block title %}- {{ dinas_label }}{% endblock %}
 {% block header_kicker %}KEPEGAWAIAN{% endblock %}
-{% block header_title %}Dinas Luar Umum{% endblock %}
+{% block header_title %}{{ dinas_label }}{% endblock %}
 
 {% block content %}
 <div class="hris-page">
     <div class="hris-page-header">
         <div>
-            <h2 class="hris-page-title">Dinas Luar Umum</h2>
+            <h2 class="hris-page-title">{{ dinas_label }}</h2>
             <p class="hris-page-subtitle">
                 Input SPRIN, periode Dinas Luar, dokumen PDF, dan pegawai yang ditugaskan.
             </p>
         </div>
-        <a href="{{ url_for('main.view_kepegawaian_cari_dinas_luar_umum') }}" class="hris-btn hris-btn-secondary">
+        <a href="{{ url_for(cari_endpoint) }}" class="hris-btn hris-btn-secondary">
             <i class="feather-search"></i>
             <span>Cari Data</span>
         </a>
@@ -25,9 +25,9 @@
         <div class="hris-card-header">
             <div>
                 <h3 class="hris-card-title">Header SPRIN</h3>
-                <p class="hris-section-subtitle">Data surat perintah Dinas Luar Umum.</p>
+                <p class="hris-section-subtitle">Data surat perintah {{ dinas_label }}.</p>
             </div>
-            <span class="hris-badge">DINAS LUAR / UMUM</span>
+            <span class="hris-badge">{{ dinas_badge }}</span>
         </div>
 
         <div class="hris-card-body">
@@ -422,7 +422,7 @@
         button.innerHTML = '<i class="feather-loader"></i><span>Memuat...</span>';
 
         try {
-            const response = await fetch('/api/dinas-luar/get?no_surat=' + encodeURIComponent(value), {credentials:'same-origin'});
+            const response = await fetch('{{ api_get }}?no_surat=' + encodeURIComponent(value), {credentials:'same-origin'});
             const payload = await response.json();
             if (!response.ok || !payload.success) throw new Error(payload.error || 'Data tidak ditemukan.');
 
@@ -468,6 +468,7 @@
         if (!participants.length) return showAlert('Minimal satu pegawai harus ditambahkan.', true);
 
         const fd = new FormData();
+        fd.append('type_sprin', '{{ dinas_type }}');
         fd.append('no_surat', noSurat.value.trim());
         fd.append('guid_sprin', guidSprin);
         fd.append('tgl_awal_surat', tglAwalSurat.value);
@@ -482,7 +483,7 @@
         button.innerHTML = '<i class="feather-loader"></i><span>Menyimpan...</span>';
 
         try {
-            const response = await fetch('/api/dinas-luar/save', {method:'POST', body:fd, credentials:'same-origin'});
+            const response = await fetch('{{ api_save }}', {method:'POST', body:fd, credentials:'same-origin'});
             const payload = await response.json();
             if (!response.ok || !payload.success) throw new Error(payload.error || 'Gagal menyimpan SPRIN.');
 
@@ -506,11 +507,11 @@
         if (!confirm('Hapus SPRIN, seluruh peserta, dan file PDF-nya?')) return;
 
         try {
-            const response = await fetch('/api/dinas-luar/delete', {
+            const response = await fetch('{{ api_delete }}', {
                 method:'POST',
                 headers:{'Content-Type':'application/json'},
                 credentials:'same-origin',
-                body:JSON.stringify({guid_sprin:guidSprin})
+                body:JSON.stringify({guid_sprin:guidSprin, type_sprin:'{{ dinas_type }}'})
             });
             const payload = await response.json();
             if (!response.ok || !payload.success) throw new Error(payload.error || 'Gagal menghapus.');
