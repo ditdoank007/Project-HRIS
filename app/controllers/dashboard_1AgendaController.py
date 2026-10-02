@@ -380,19 +380,43 @@ def api_agenda_rapat_complete(event_id):
     if event.STATUS == "BATAL":
         return jsonify({"status": "error", "message": "Rapat yang dibatalkan tidak dapat diselesaikan."}), 400
 
+    # Finalisasi harus menjadi sumber status yang persisten di CALENDAR_EVENT.
+    # Simpan status terlebih dahulu, lalu flush agar kegagalan DB terlihat
+    # sebelum response success dikirim ke browser.
+    update_by = session.get("nip", "system")
+    now = datetime.utcnow()
     event.STATUS = "SELESAI"
-    event.UPDATE_BY = session.get("nip", "system")
-    event.UPDATE_DATE = datetime.utcnow()
+    event.UPDATE_BY = update_by
+    event.UPDATE_DATE = now
+
     meta = get_meta(event.EVENT_ID)
     if meta:
         # Rapat selesai = attendance ditutup.
         # Hanya pegawai yang sudah scan sampai titik finalisasi
         # yang mendapatkan rapat secara permanen di kalender pribadi.
         meta.QR_ACTIVE = "N"
-        meta.UPDATE_BY = session.get("nip", "system")
-        meta.UPDATE_DATE = datetime.utcnow()
+        meta.UPDATE_BY = update_by
+        meta.UPDATE_DATE = now
+
+    db.session.flush()
     db.session.commit()
-    return jsonify({"status": "success", "data": _serialize_event(event)})
+
+    # Pastikan nilai yang sudah committed benar-benar terbaca kembali
+    # dari CALENDAR_EVENT sebelum endpoint mengembalikan success.
+    db.session.expire_all()
+    persisted_event = CalendarEvent.query.filter(
+        CalendarEvent.EVENT_ID == event.EVENT_ID,
+        CalendarEvent.EVENT_TYPE == "RAPAT",
+    ).first()
+
+    if not persisted_event or persisted_event.STATUS != "SELESAI":
+        db.session.rollback()
+        return jsonify({
+            "status": "error",
+            "message": "Status rapat gagal dipersistenkan sebagai SELESAI.",
+        }), 500
+
+    return jsonify({"status": "success", "data": _serialize_event(persisted_event)})
 
 
 def api_pegawai_agenda_search():
