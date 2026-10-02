@@ -49,11 +49,6 @@
                     </select>
                 </div>
 
-                <div class="search-action">
-                    <button type="button" class="hris-btn hris-btn-primary" id="btnSearch">
-                        <i class="feather-search"></i><span>Cari</span>
-                    </button>
-                </div>
             </div>
 
             <div class="filter-grid">
@@ -73,8 +68,11 @@
         <div class="hris-card-header">
             <div>
                 <h3 class="hris-card-title">Hasil Pencarian</h3>
-                <p class="hris-section-subtitle" id="resultInfo">Belum ada pencarian.</p>
+                <p class="hris-section-subtitle" id="resultInfo">Pilih periode lalu klik Cari.</p>
             </div>
+            <button type="button" class="hris-btn hris-btn-primary" id="btnSearch">
+                <i class="feather-search"></i><span>Cari</span>
+            </button>
         </div>
 
         <div class="hris-card-body">
@@ -126,11 +124,9 @@
     color:#475569;
     margin-bottom:6px;
 }
-.search-action { display:flex; justify-content:flex-start; }
 .empty-row { text-align:center !important; color:#94a3b8; padding:28px !important; }
 @media(max-width:800px) {
     .search-grid,.filter-grid { grid-template-columns:1fr; }
-    .search-action .hris-btn { width:100%; }
 }
 </style>
 {% endblock %}
