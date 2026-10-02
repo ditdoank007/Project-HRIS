@@ -20,7 +20,7 @@ SELECT
     2,
     'database',
     NULL,
-    NULL
+    89
 WHERE NOT EXISTS (
     SELECT 1
     FROM MF_FORM
@@ -32,6 +32,7 @@ SELECT
     Formname,
     FormType,
     Modul,
-    Model
+    Model,
+    TransacID
 FROM MF_FORM
 WHERE FormID = 'BackupRestore.aspx';
