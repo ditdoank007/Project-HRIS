@@ -184,7 +184,7 @@
 </div>
 {% endblock %}
 
-{% block style %}
+{% block styles %}
 <style>
 .hris-check-grid {
     display: grid;
@@ -271,7 +271,6 @@
 {% endblock %}
 
 {% block script %}
-<script>
 (function () {
     const previewBtn = document.getElementById('btnPreviewUM');
     const pdfBtn = document.getElementById('btnExportPdfUM');
@@ -523,5 +522,4 @@
     setupAutocomplete('stafKepegawaian', 'stafKepegawaianNip', 'stafKepegawaianResults');
     setupAutocomplete('kasubagUmum', 'kasubagUmumNip', 'kasubagUmumResults');
 })();
-</script>
 {% endblock %}
