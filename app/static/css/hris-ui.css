@@ -2742,6 +2742,23 @@ body.hris-sidebar-mini .hris-submenu {
   text-align: center;
   white-space: nowrap;
 }
+.hris-uang-makan-table th:nth-child(2),
+.hris-uang-makan-table th:nth-child(3),
+.hris-uang-makan-table th:nth-child(4),
+.hris-uang-makan-table th:nth-child(5),
+.hris-uang-makan-table th:nth-child(6),
+.hris-uang-makan-table th:nth-child(7),
+.hris-uang-makan-table th:nth-child(8),
+.hris-uang-makan-table td:nth-child(2),
+.hris-uang-makan-table td:nth-child(3),
+.hris-uang-makan-table td:nth-child(4),
+.hris-uang-makan-table td:nth-child(5),
+.hris-uang-makan-table td:nth-child(6),
+.hris-uang-makan-table td:nth-child(7),
+.hris-uang-makan-table td:nth-child(8) {
+  text-align: left;
+}
+
 .hris-uang-makan-table {
   width: 100%;
   table-layout: fixed;
