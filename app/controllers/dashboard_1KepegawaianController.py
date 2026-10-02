@@ -1816,7 +1816,6 @@ def api_dinas_luar_pdf():
         .join(Pegawai, DinasLuar.FINGER_ID == Pegawai.FINGER_ID)
         .filter(
             DinasLuar.GUID_SPRIN == guid_sprin,
-            DinasLuar.JENIS == 'DL',
             Pegawai.NIP == nip,
         )
         .all()
@@ -1834,7 +1833,7 @@ def api_dinas_luar_pdf():
 
     path = dinas_luar_absolute_path_by_filename(
         row.TGL_AWAL_SURAT,
-        'DL',
+        row.JENIS,
         row.NAMA_FILE,
     )
     if not os.path.isfile(path):
