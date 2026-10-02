@@ -2847,425 +2847,144 @@ def delete_user_account():
     })
 
 
+UANG_MAKAN_GOLONGAN_OPTIONS = ("II", "III", "IV")
+
+
+def _normalize_uang_makan_golongan(value):
+    """Normalisasi level golongan untuk Master Uang Makan."""
+    raw = str(value or "").strip().upper()
+    if not raw: return None
+    raw = raw.replace("GOLONGAN", "").replace("GOL.", "").strip()
+    level = raw.split("/", 1)[0].strip()
+    return level if level in UANG_MAKAN_GOLONGAN_OPTIONS else None
+
+
 def master_uang_makan():
-    """
-    Render halaman Master Uang Makan.
-
-    Halaman ini secara khusus hanya menangani:
-      JenisTunjangan = U.Makan
-      Activity       = Intern
-    """
-    edit_id = request.args.get("edit", type=int)
-
-    return render_template(
-        "pages/dashboard_1/Master File Uang Makan.html",
-        edit_id=edit_id,
-    )
+    """Render halaman Master Uang Makan."""
+    return render_template("pages/dashboard_1/Master File Uang Makan.html", edit_id=request.args.get("edit", type=int), golongan_options=UANG_MAKAN_GOLONGAN_OPTIONS)
 
 
 def save_uang_makan():
-    """
-    Insert Master Uang Makan.
-
-    Field bisnis mengikuti HRIS 2013:
-      JenisTunjangan = U.Makan
-      Activity       = Intern
-      HariKerja      = 1
-      Fungsional     = All
-
-    IDTunjangan dibuat oleh aplikasi karena tabel legacy tidak
-    memiliki AUTO_INCREMENT.
-    """
+    """Insert Master Uang Makan berdasarkan golongan."""
     payload = request.get_json(silent=True) or {}
-
     tgl_mulai_raw = (payload.get("tgl_mulai") or "").strip()
+    golongan = _normalize_uang_makan_golongan(payload.get("golongan"))
     nominal_raw = payload.get("nominal")
     no_surat = (payload.get("no_surat") or "").strip()
-
-    if not tgl_mulai_raw:
-        return jsonify({
-            "status": "error",
-            "message": "Tanggal Mulai wajib diisi"
-        }), 400
-
-    if nominal_raw in (None, ""):
-        return jsonify({
-            "status": "error",
-            "message": "Nominal wajib diisi"
-        }), 400
-
+    if not tgl_mulai_raw: return jsonify({"status":"error","message":"Tanggal Mulai wajib diisi"}), 400
+    if not golongan: return jsonify({"status":"error","message":"Golongan wajib dipilih (II, III, atau IV)"}), 400
+    if nominal_raw in (None, ""): return jsonify({"status":"error","message":"Nominal wajib diisi"}), 400
+    try: tgl_mulai = datetime.strptime(tgl_mulai_raw, "%Y-%m-%d").date()
+    except ValueError: return jsonify({"status":"error","message":"Format Tanggal Mulai tidak valid"}), 400
+    try: nominal = float(nominal_raw)
+    except (TypeError, ValueError): return jsonify({"status":"error","message":"Nominal harus berupa angka"}), 400
+    if nominal < 0: return jsonify({"status":"error","message":"Nominal tidak boleh negatif"}), 400
     try:
-        tgl_mulai = datetime.strptime(
-            tgl_mulai_raw, "%Y-%m-%d"
-        ).date()
-    except ValueError:
-        return jsonify({
-            "status": "error",
-            "message": "Format Tanggal Mulai tidak valid"
-        }), 400
-
-    try:
-        nominal = float(nominal_raw)
-    except (TypeError, ValueError):
-        return jsonify({
-            "status": "error",
-            "message": "Nominal harus berupa angka"
-        }), 400
-
-    if nominal < 0:
-        return jsonify({
-            "status": "error",
-            "message": "Nominal tidak boleh negatif"
-        }), 400
-
-    nip = session.get("nip", "system")
-
-    try:
-        # Karena tabel tidak mempunyai AUTO_INCREMENT, ambil ID
-        # terbesar kemudian +1.
-        last_id = db.session.execute(
-            sa_text("""
-                SELECT IDTunjangan
-                FROM MF_TUNJANGAN
-                ORDER BY IDTunjangan DESC
-                LIMIT 1
-                FOR UPDATE
-            """)
-        ).scalar()
-
+        last_id = db.session.execute(sa_text("SELECT IDTunjangan FROM MF_TUNJANGAN ORDER BY IDTunjangan DESC LIMIT 1 FOR UPDATE")).scalar()
         next_id = (int(last_id) + 1) if last_id is not None else 1
-
-        row = MfTunjangan(
-            IDTUNJANGAN=next_id,
-            JENIS_TUNJANGAN="U.Makan",
-            ACTIVITY="Intern",
-            NOMINAL=nominal,
-            TGL_MULAI=tgl_mulai,
-            HARI_KERJA=1,
-            FUNGSIONAL="All",
-            UPDATE_BY=nip,
-            UPDATE_DATE=datetime.now(),
-            DOKREFF=no_surat,
-        )
-
-        db.session.add(row)
-        db.session.commit()
-
-        return jsonify({
-            "status": "success",
-            "message": "Master Uang Makan berhasil disimpan",
-            "data": row.to_dict(),
-        })
-
+        row = MfTunjangan(IDTUNJANGAN=next_id, JENIS_TUNJANGAN="U.Makan", ACTIVITY="Intern", NOMINAL=nominal, TGL_MULAI=tgl_mulai, HARI_KERJA=0, FUNGSIONAL=golongan, UPDATE_BY=session.get("nip","system"), UPDATE_DATE=datetime.now(), DOKREFF=no_surat)
+        db.session.add(row); db.session.commit()
+        return jsonify({"status":"success","message":"Master Uang Makan berhasil disimpan","data":row.to_dict()})
     except Exception as exc:
-        db.session.rollback()
-        current_app.logger.exception(
-            "Gagal menyimpan Master Uang Makan"
-        )
-        return jsonify({
-            "status": "error",
-            "message": f"Gagal menyimpan Master Uang Makan: {exc}"
-        }), 500
+        db.session.rollback(); current_app.logger.exception("Gagal menyimpan Master Uang Makan")
+        return jsonify({"status":"error","message":f"Gagal menyimpan Master Uang Makan: {exc}"}), 500
 
 
 def get_uang_makan_detail():
-    """
-    Ambil satu record Uang Makan untuk kebutuhan Edit.
-    """
     tunjangan_id = request.args.get("id", type=int)
-
-    if tunjangan_id is None:
-        return jsonify({
-            "status": "error",
-            "message": "ID Tunjangan wajib diisi"
-        }), 400
-
-    row = (
-        MfTunjangan.query
-        .filter(
-            MfTunjangan.IDTUNJANGAN == tunjangan_id,
-            MfTunjangan.JENIS_TUNJANGAN == "U.Makan",
-            MfTunjangan.ACTIVITY == "Intern",
-        )
-        .first()
-    )
-
-    if row is None:
-        return jsonify({
-            "status": "error",
-            "message": "Data Uang Makan tidak ditemukan"
-        }), 404
-
-    return jsonify({
-        "status": "success",
-        "data": row.to_dict(),
-    })
+    if tunjangan_id is None: return jsonify({"status":"error","message":"ID Tunjangan wajib diisi"}), 400
+    row = MfTunjangan.query.filter(MfTunjangan.IDTUNJANGAN==tunjangan_id, MfTunjangan.JENIS_TUNJANGAN=="U.Makan", MfTunjangan.ACTIVITY=="Intern", MfTunjangan.HARI_KERJA==0).first()
+    if row is None: return jsonify({"status":"error","message":"Data Uang Makan tidak ditemukan"}), 404
+    return jsonify({"status":"success","data":row.to_dict()})
 
 
 def update_uang_makan():
-    """
-    Update Master Uang Makan berdasarkan IDTunjangan.
-
-    IDTunjangan TIDAK BOLEH berubah.
-    JenisTunjangan dan Activity dipaksa tetap U.Makan/Intern.
-    """
     payload = request.get_json(silent=True) or {}
-
-    tunjangan_id_raw = payload.get("tunjangan_id")
-    tgl_mulai_raw = (payload.get("tgl_mulai") or "").strip()
-    nominal_raw = payload.get("nominal")
-    no_surat = (payload.get("no_surat") or "").strip()
-
-    if tunjangan_id_raw in (None, ""):
-        return jsonify({
-            "status": "error",
-            "message": "ID Tunjangan wajib diisi"
-        }), 400
-
+    tunjangan_id_raw=payload.get("tunjangan_id"); tgl_mulai_raw=(payload.get("tgl_mulai") or "").strip(); golongan=_normalize_uang_makan_golongan(payload.get("golongan")); nominal_raw=payload.get("nominal"); no_surat=(payload.get("no_surat") or "").strip()
+    if tunjangan_id_raw in (None,""): return jsonify({"status":"error","message":"ID Tunjangan wajib diisi"}),400
+    try: tunjangan_id=int(tunjangan_id_raw)
+    except (TypeError,ValueError): return jsonify({"status":"error","message":"ID Tunjangan tidak valid"}),400
+    if not tgl_mulai_raw: return jsonify({"status":"error","message":"Tanggal Mulai wajib diisi"}),400
+    if not golongan: return jsonify({"status":"error","message":"Golongan wajib dipilih (II, III, atau IV)"}),400
+    try: tgl_mulai=datetime.strptime(tgl_mulai_raw,"%Y-%m-%d").date(); nominal=float(nominal_raw)
+    except (TypeError,ValueError): return jsonify({"status":"error","message":"Tanggal atau Nominal tidak valid"}),400
+    if nominal<0: return jsonify({"status":"error","message":"Nominal tidak boleh negatif"}),400
+    row=MfTunjangan.query.filter(MfTunjangan.IDTUNJANGAN==tunjangan_id, MfTunjangan.JENIS_TUNJANGAN=="U.Makan", MfTunjangan.ACTIVITY=="Intern", MfTunjangan.HARI_KERJA==0).first()
+    if row is None: return jsonify({"status":"error","message":"Data Uang Makan tidak ditemukan"}),404
+    row.TGL_MULAI=tgl_mulai; row.NOMINAL=nominal; row.FUNGSIONAL=golongan; row.DOKREFF=no_surat; row.UPDATE_BY=session.get("nip","system"); row.UPDATE_DATE=datetime.now()
     try:
-        tunjangan_id = int(tunjangan_id_raw)
-    except (TypeError, ValueError):
-        return jsonify({
-            "status": "error",
-            "message": "ID Tunjangan tidak valid"
-        }), 400
-
-    if not tgl_mulai_raw:
-        return jsonify({
-            "status": "error",
-            "message": "Tanggal Mulai wajib diisi"
-        }), 400
-
-    try:
-        tgl_mulai = datetime.strptime(
-            tgl_mulai_raw, "%Y-%m-%d"
-        ).date()
-    except ValueError:
-        return jsonify({
-            "status": "error",
-            "message": "Format Tanggal Mulai tidak valid"
-        }), 400
-
-    try:
-        nominal = float(nominal_raw)
-    except (TypeError, ValueError):
-        return jsonify({
-            "status": "error",
-            "message": "Nominal harus berupa angka"
-        }), 400
-
-    if nominal < 0:
-        return jsonify({
-            "status": "error",
-            "message": "Nominal tidak boleh negatif"
-        }), 400
-
-    row = (
-        MfTunjangan.query
-        .filter(
-            MfTunjangan.IDTUNJANGAN == tunjangan_id,
-            MfTunjangan.JENIS_TUNJANGAN == "U.Makan",
-            MfTunjangan.ACTIVITY == "Intern",
-        )
-        .first()
-    )
-
-    if row is None:
-        return jsonify({
-            "status": "error",
-            "message": "Data Uang Makan tidak ditemukan"
-        }), 404
-
-    row.TGL_MULAI = tgl_mulai
-    row.NOMINAL = nominal
-    row.DOKREFF = no_surat
-    row.UPDATE_BY = session.get("nip", "system")
-    row.UPDATE_DATE = datetime.now()
-
-    # Field domain Uang Makan tidak diubah saat EDIT.
-    # Khusus HariKerja: pertahankan nilai existing agar data historis
-    # tidak berubah hanya karena Tanggal/Nominal/No Surat diedit.
-
-    try:
-        db.session.commit()
-
-        return jsonify({
-            "status": "success",
-            "message": "Master Uang Makan berhasil diupdate",
-            "data": row.to_dict(),
-        })
-
+        db.session.commit(); return jsonify({"status":"success","message":"Master Uang Makan berhasil diupdate","data":row.to_dict()})
     except Exception as exc:
-        db.session.rollback()
-        current_app.logger.exception(
-            "Gagal update Master Uang Makan"
-        )
-        return jsonify({
-            "status": "error",
-            "message": f"Gagal update Master Uang Makan: {exc}"
-        }), 500
+        db.session.rollback(); current_app.logger.exception("Gagal update Master Uang Makan")
+        return jsonify({"status":"error","message":f"Gagal update Master Uang Makan: {exc}"}),500
 
 
 def _get_uang_makan_reference_counts(tunjangan_id):
-    """
-    Cari tabel lain yang mempunyai kolom IDTunjangan.
-
-    Kita tidak mengasumsikan FK legacy karena database memang tidak
-    mendeklarasikan seluruh relasi sebagai foreign key.
-    """
-    tables = db.session.execute(
-        sa_text("""
-            SELECT TABLE_NAME
-            FROM information_schema.COLUMNS
-            WHERE TABLE_SCHEMA = DATABASE()
-              AND LOWER(COLUMN_NAME) = LOWER('IDTunjangan')
-              AND TABLE_NAME <> 'MF_TUNJANGAN'
-        """)
-    ).scalars().all()
-
-    references = []
-
+    tables=db.session.execute(sa_text("SELECT TABLE_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND LOWER(COLUMN_NAME)=LOWER('IDTunjangan') AND TABLE_NAME<>'MF_TUNJANGAN'")).scalars().all()
+    references=[]
     for table_name in tables:
-        safe_table = str(table_name).replace("`", "``")
-
-        count = db.session.execute(
-            sa_text(
-                f"SELECT COUNT(*) FROM `{safe_table}` "
-                "WHERE IDTunjangan = :id"
-            ),
-            {"id": tunjangan_id},
-        ).scalar()
-
-        if count and int(count) > 0:
-            references.append({
-                "table": table_name,
-                "count": int(count),
-            })
-
+        safe_table=str(table_name).replace(chr(96), chr(96)*2)
+        count=db.session.execute(sa_text('SELECT COUNT(*) FROM ' + chr(96) + safe_table + chr(96) + ' WHERE IDTunjangan = :id'), {'id':tunjangan_id}).scalar()
+        if count and int(count)>0: references.append({'table':table_name,'count':int(count)})
     return references
 
 
 def delete_uang_makan():
-    """
-    Hapus Master Uang Makan dengan pemeriksaan referensi.
-
-    Tidak langsung DELETE apabila record masih direferensikan tabel lain.
-    """
-    payload = request.get_json(silent=True) or {}
-
-    tunjangan_id_raw = payload.get("tunjangan_id")
-
-    if tunjangan_id_raw in (None, ""):
-        return jsonify({
-            "status": "error",
-            "message": "ID Tunjangan wajib diisi"
-        }), 400
-
+    payload=request.get_json(silent=True) or {}; tunjangan_id_raw=payload.get("tunjangan_id")
+    if tunjangan_id_raw in (None,""): return jsonify({"status":"error","message":"ID Tunjangan wajib diisi"}),400
+    try: tunjangan_id=int(tunjangan_id_raw)
+    except (TypeError,ValueError): return jsonify({"status":"error","message":"ID Tunjangan tidak valid"}),400
+    row=MfTunjangan.query.filter(MfTunjangan.IDTUNJANGAN==tunjangan_id, MfTunjangan.JENIS_TUNJANGAN=="U.Makan", MfTunjangan.ACTIVITY=="Intern", MfTunjangan.HARI_KERJA==0).first()
+    if row is None: return jsonify({"status":"error","message":"Data Uang Makan tidak ditemukan"}),404
     try:
-        tunjangan_id = int(tunjangan_id_raw)
-    except (TypeError, ValueError):
-        return jsonify({
-            "status": "error",
-            "message": "ID Tunjangan tidak valid"
-        }), 400
-
-    row = (
-        MfTunjangan.query
-        .filter(
-            MfTunjangan.IDTUNJANGAN == tunjangan_id,
-            MfTunjangan.JENIS_TUNJANGAN == "U.Makan",
-            MfTunjangan.ACTIVITY == "Intern",
-        )
-        .first()
-    )
-
-    if row is None:
-        return jsonify({
-            "status": "error",
-            "message": "Data Uang Makan tidak ditemukan"
-        }), 404
-
-    try:
-        references = _get_uang_makan_reference_counts(tunjangan_id)
-
+        references=_get_uang_makan_reference_counts(tunjangan_id)
         if references:
-            detail = "; ".join(
-                f"{item['table']} ({item['count']} referensi)"
-                for item in references
-            )
-
-            return jsonify({
-                "status": "error",
-                "message": (
-                    "Data tidak dapat dihapus karena masih digunakan "
-                    f"oleh: {detail}"
-                ),
-                "references": references,
-            }), 409
-
-        db.session.delete(row)
-        db.session.commit()
-
-        return jsonify({
-            "status": "success",
-            "message": "Master Uang Makan berhasil dihapus",
-        })
-
+            detail="; ".join(f"{item['table']} ({item['count']} referensi)" for item in references)
+            return jsonify({"status":"error","message":"Data tidak dapat dihapus karena masih digunakan oleh: "+detail,"references":references}),409
+        db.session.delete(row); db.session.commit(); return jsonify({"status":"success","message":"Master Uang Makan berhasil dihapus"})
     except Exception as exc:
-        db.session.rollback()
-        current_app.logger.exception(
-            "Gagal menghapus Master Uang Makan"
-        )
-        return jsonify({
-            "status": "error",
-            "message": f"Gagal menghapus Master Uang Makan: {exc}"
-        }), 500
+        db.session.rollback(); current_app.logger.exception("Gagal menghapus Master Uang Makan")
+        return jsonify({"status":"error","message":f"Gagal menghapus Master Uang Makan: {exc}"}),500
 
 
 def get_tunjangan_list():
-    """
-    API daftar Master Uang Makan.
+    rows=_query_tunjangan().all(); data=[]
+    for idx,row in enumerate(rows,1):
+        data.append({'no':idx,'tunjangan_id':row.IDTUNJANGAN,'jenis_tunjangan':row.JENIS_TUNJANGAN or '-', 'activity':row.ACTIVITY or '-', 'tgl_mulai':row.TGL_MULAI.strftime('%d/%m/%Y') if row.TGL_MULAI else '-', 'nominal':f'{row.NOMINAL:,.0f}' if row.NOMINAL is not None else '0', 'hari_kerja':row.HARI_KERJA, 'golongan':row.FUNGSIONAL or '-', 'fungsional':row.FUNGSIONAL or '-', 'no_surat':row.DOKREFF or '-', 'updated':row.UPDATE_DATE.strftime('%d/%m/%Y %H:%M:%S') if row.UPDATE_DATE else '-'})
+    return jsonify({'status':'success','data':data})
 
-    Selalu hanya mengembalikan:
-      JenisTunjangan = U.Makan
-      Activity       = Intern
-    """
-    rows = _query_tunjangan().all()
 
-    data = []
+def cari_master_uang_makan():
+    return render_template('pages/dashboard_1/Cari Master Uang Makan.html')
 
-    for idx, row in enumerate(rows, start=1):
-        updated = "-"
 
-        if row.UPDATE_DATE:
-            updated = row.UPDATE_DATE.strftime(
-                "%d/%m/%Y %H:%M:%S"
-            )
+def _query_tunjangan():
+    query=MfTunjangan.query.filter(MfTunjangan.JENIS_TUNJANGAN=='U.Makan', MfTunjangan.ACTIVITY=='Intern', MfTunjangan.HARI_KERJA==0)
+    field_map={'Golongan':MfTunjangan.FUNGSIONAL,'Nominal':MfTunjangan.NOMINAL,'No Surat':MfTunjangan.DOKREFF,'Tanggal Mulai':MfTunjangan.TGL_MULAI}
+    for suffix in ('1','2'):
+        field=(request.args.get(f'field{suffix}') or '').strip(); keyword=(request.args.get(f'keyword{suffix}') or '').strip()
+        if not field or not keyword: continue
+        column=field_map.get(field)
+        if column is None: continue
+        if field=='Tanggal Mulai':
+            try: query=query.filter(column>=datetime.strptime(keyword,'%Y-%m-%d').date())
+            except ValueError: continue
+        elif field=='Nominal':
+            try: query=query.filter(column==float(keyword))
+            except ValueError: continue
+        else: query=query.filter(column.ilike(f'%{keyword}%'))
+    return query.order_by(MfTunjangan.TGL_MULAI.desc(),MfTunjangan.FUNGSIONAL.asc(),MfTunjangan.IDTUNJANGAN.desc())
 
-        data.append({
-            "no": idx,
-            "tunjangan_id": row.IDTUNJANGAN,
-            "jenis_tunjangan": row.JENIS_TUNJANGAN or "-",
-            "activity": row.ACTIVITY or "-",
-            "tgl_mulai": (
-                row.TGL_MULAI.strftime("%d/%m/%Y")
-                if row.TGL_MULAI else "-"
-            ),
-            "nominal": (
-                f"{row.NOMINAL:,.0f}"
-                if row.NOMINAL is not None else "0"
-            ),
-            "hari_kerja": row.HARI_KERJA,
-            "shift": row.SHIFT or "-",
-            "fungsional": row.FUNGSIONAL or "-",
-            "no_surat": row.DOKREFF or "-",
-            "updated": updated,
-        })
 
-    return jsonify({
-        "status": "success",
-        "data": data,
-    })
+def export_tunjangan_excel():
+    rows=_query_tunjangan().all(); wb=Workbook(); ws=wb.active; ws.title='Master Uang Makan'
+    headers=['No','ID Tunjangan','Jenis Tunjangan','Tanggal Mulai','Golongan','Nominal','Hari Kerja','No Surat','Updated']; ws.append(headers)
+    for cell in ws[1]: cell.font=Font(bold=True); cell.alignment=Alignment(horizontal='center')
+    for idx,row in enumerate(rows,1): ws.append([idx,row.IDTUNJANGAN,row.JENIS_TUNJANGAN,row.TGL_MULAI.strftime('%d/%m/%Y') if row.TGL_MULAI else '',row.FUNGSIONAL or '',row.NOMINAL,'Hari Kerja',row.DOKREFF or '',row.UPDATE_DATE.strftime('%d/%m/%Y %H:%M:%S') if row.UPDATE_DATE else ''])
+    for column_cells in ws.columns:
+        length=max(len(str(cell.value or '')) for cell in column_cells); ws.column_dimensions[column_cells[0].column_letter].width=min(max(length+2,12),40)
+    output=BytesIO(); wb.save(output); output.seek(0)
+    return send_file(output,as_attachment=True,download_name='Master_Uang_Makan.xlsx',mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
 def cari_master_jabatan():
     """Render halaman Cari Master Jabatan."""
