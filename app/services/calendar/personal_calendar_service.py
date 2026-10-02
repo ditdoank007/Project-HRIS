@@ -14,6 +14,7 @@ Service ini mengembalikan list event dictionary.
 """
 
 from sqlalchemy import text
+import os
 
 from app import db
 
@@ -26,6 +27,7 @@ from app.models.calendarEventModel import CalendarEvent
 from app.models.kesamaptaanKegiatanModel import KesamaptaanKegiatan
 from app.models.kesamaptaanKehadiranModel import KesamaptaanKehadiran
 from app.models.hrisDocumentModel import HrisDocument
+from app.services.dinas_luar_storage import dinas_luar_absolute_path
 
 from app.utils.absensiNormalisasiHelper import (
     get_label_dinas_luar,
@@ -155,6 +157,19 @@ def build_personal_calendar_events(
             else start_date
         )
 
+        pdf_available = False
+        if row.NAMA_FILE and row.NAMA_FILE != "-" and row.TGL_AWAL_SURAT:
+            try:
+                pdf_available = os.path.isfile(
+                    dinas_luar_absolute_path(
+                        row.TGL_AWAL_SURAT,
+                        row.JENIS or "DL",
+                        row.KETERANGAN_DINAS_LUAR or "",
+                    )
+                )
+            except (OSError, ValueError):
+                pdf_available = False
+
         events.append({
             "id": f"DINAS-LUAR-{row.TRANSAKSI_ID}",
             "title": get_label_dinas_luar(row.JENIS),
@@ -166,8 +181,15 @@ def build_personal_calendar_events(
             "description": row.KETERANGAN_DINAS_LUAR,
             "location": row.PENEMPATAN_DINAS_LUAR,
             "no_surat": row.NO_SURAT,
+            "guid_sprin": row.GUID_SPRIN,
             "status_um": row.STATUS_UM,
             "color": get_warna_dinas_luar(row.STATUS_UM),
+            "pdf_available": pdf_available,
+            "pdf_filename": row.NAMA_FILE if pdf_available else None,
+            "pdf_url": (
+                f"/api/agenda/dinas-luar/pdf?guid_sprin={row.GUID_SPRIN}"
+                if pdf_available and row.GUID_SPRIN else None
+            ),
         })
 
     # ============================================================
