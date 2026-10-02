@@ -1139,6 +1139,11 @@ def export_laporan_rekap_absensi_individu():
 def api_laporan_search_pegawai():
     return search_pegawai_by_name()
 
+@main.route('/api/laporan/rekap-uang-makan/search-pegawai')
+@form_access_required('RekapUM.aspx')
+def api_rekap_uang_makan_search_pegawai():
+    return search_pegawai_by_name()
+
 @main.route('/laporan/rekap-absensi-log-finger')
 @form_access_required('RTimerecorder.aspx')
 def view_laporan_rekap_absensi_log_finger():
