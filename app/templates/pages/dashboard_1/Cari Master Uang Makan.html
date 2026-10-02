@@ -42,38 +42,42 @@
 
         <div class="hris-card-body">
             <div class="hris-form-stack">
-                <div class="hris-form-inline">
-                    <select class="hris-select" id="filterField1">
+                <div class="hris-filter-grid">
+                    <div class="hris-filter-item">
+                        <select class="hris-select" id="filterField1">
                         <option value="">Pilih Field</option>
                         <option value="Golongan">Golongan</option>
                         <option value="Nominal">Nominal</option>
                         <option value="No Surat">No Surat</option>
                         <option value="Tanggal Mulai">Tanggal Mulai</option>
-                    </select>
+                        </select>
 
-                    <input type="text"
-                           class="hris-input"
-                           id="filterKeyword1"
-                           placeholder="Nilai filter">
+                        <input type="text"
+                               class="hris-input"
+                               id="filterKeyword1"
+                               placeholder="Nilai filter">
+                    </div>
 
-                    <span class="hris-range-separator">DAN</span>
+                    <span class="hris-filter-and">DAN</span>
 
-                    <select class="hris-select" id="filterField2">
+                    <div class="hris-filter-item">
+                        <select class="hris-select" id="filterField2">
                         <option value="">Pilih Field</option>
                         <option value="Golongan">Golongan</option>
                         <option value="Nominal">Nominal</option>
                         <option value="No Surat">No Surat</option>
                         <option value="Tanggal Mulai">Tanggal Mulai</option>
-                    </select>
+                        </select>
 
-                    <input type="text"
-                           class="hris-input"
-                           id="filterKeyword2"
-                           placeholder="Nilai filter">
+                        <input type="text"
+                               class="hris-input"
+                               id="filterKeyword2"
+                               placeholder="Nilai filter">
+                    </div>
                 </div>
 
                 <div class="hris-table-wrap">
-                    <table class="hris-table">
+                    <table class="hris-table hris-uang-makan-table">
                         <thead>
                             <tr>
                                 <th>No</th>
@@ -83,12 +87,13 @@
                                 <th>Nominal</th>
                                 <th>No Surat</th>
                                 <th>Updated</th>
+                                <th>BY</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="tunjanganTableBody">
                             <tr>
-                                <td colspan="8" class="hris-table-empty">
+                                <td colspan="9" class="hris-table-empty">
                                     Memuat data...
                                 </td>
                             </tr>
@@ -156,7 +161,7 @@ document.addEventListener('DOMContentLoaded', function () {
         } catch (err) {
             console.error(err);
             tbody.innerHTML =
-                '<tr><td colspan="8" class="hris-table-empty">' +
+                '<tr><td colspan="9" class="hris-table-empty">' +
                 escapeHtml(err.message || 'Gagal mengambil data.') +
                 '</td></tr>';
         }
@@ -167,7 +172,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (!data.length) {
             tbody.innerHTML =
-                '<tr><td colspan="8" class="hris-table-empty">' +
+                '<tr><td colspan="9" class="hris-table-empty">' +
                 'Belum ada data Master Uang Makan.' +
                 '</td></tr>';
             return;
@@ -181,8 +186,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     <td>${escapeHtml(row.tgl_mulai)}</td>
                     <td><strong>Golongan ${escapeHtml(row.golongan || row.fungsional)}</strong></td>
                     <td class="text-end">Rp ${escapeHtml(row.nominal)}</td>
-                    <td>${escapeHtml(row.no_surat)}</td>
-                    <td>${escapeHtml(row.updated)}</td>
+                    <td class="hris-uang-makan-reference" title="${escapeHtml(row.no_surat)}">${escapeHtml(row.no_surat)}</td>
+                    <td class="hris-uang-makan-date">${escapeHtml(row.updated)}</td>
+                    <td class="hris-uang-makan-by" title="${escapeHtml(row.updated_by)}">${escapeHtml(row.updated_by)}</td>
                     <td>
                         <a href="/master/uang-makan?edit=${encodeURIComponent(row.tunjangan_id)}"
                            class="hris-btn hris-btn-sm hris-btn-secondary"
