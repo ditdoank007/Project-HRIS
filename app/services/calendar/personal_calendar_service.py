@@ -13,7 +13,7 @@ Sumber:
 Service ini mengembalikan list event dictionary.
 """
 
-from sqlalchemy import text
+from sqlalchemy import text, func
 import os
 
 from app import db
@@ -133,6 +133,9 @@ def build_personal_calendar_events(
     dinas_rows = (
         DinasLuar.query
         .filter(DinasLuar.FINGER_ID == pegawai.FINGER_ID)
+        .filter(
+            func.upper(DinasLuar.TRANSAKSI) == "DINASLUAR"
+        )
         .filter(
             DinasLuar.TGL_AWAL_DINAS_LUAR < tanggal_akhir
         )
