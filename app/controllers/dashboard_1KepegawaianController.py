@@ -32,7 +32,7 @@ from app.utils.pegawaiHelper import (
 )
 from app.utils.pegawaiSortHelper import sort_pegawai_rows
 from app.utils.pegawaiLegacyHelper import derive_employee_metrics
-from app.services.dinas_luar_storage import save_dinas_luar_pdf, dinas_luar_absolute_path
+from app.services.dinas_luar_storage import save_dinas_luar_pdf, dinas_luar_absolute_path, dinas_luar_relative_path
 from app.utils.authorization import is_administrator
 import json
 import os
@@ -1551,6 +1551,17 @@ def api_sprin_header_save():
             SprinHeader.TYPE_SPRIN_ID == 'DL'
         ).first()
 
+        existing_filename = None
+        if header:
+            existing_row = DinasLuar.query.filter(
+                DinasLuar.GUID_SPRIN == header.GUID_SPRIN,
+                DinasLuar.JENIS == 'DL',
+            ).first()
+            existing_filename = existing_row.NAMA_FILE if existing_row else None
+
+        if not upload and not existing_filename:
+            return jsonify({'success': False, 'error': 'File SPRIN PDF wajib dipilih untuk data baru.'}), 400
+
         if not header:
             header = SprinHeader(
                 GUID_SPRIN=f"DLU_{datetime.now():%Y-%m}_{uuid.uuid4()}",
@@ -1598,9 +1609,6 @@ def api_dinas_luar_save():
             return jsonify({'success': False, 'error': 'Tanggal surat wajib diisi.'}), 400
         if not keterangan:
             return jsonify({'success': False, 'error': 'Keterangan wajib diisi.'}), 400
-        if not upload:
-            return jsonify({'success': False, 'error': 'File SPRIN PDF wajib dipilih.'}), 400
-
         start_date = datetime.strptime(tgl_awal_text, '%Y-%m-%d').date()
         end_date = datetime.strptime(tgl_akhir_text, '%Y-%m-%d').date()
         if end_date < start_date:
@@ -1672,7 +1680,13 @@ def api_dinas_luar_save():
             db.session.delete(row)
         db.session.flush()
 
-        saved_file = save_dinas_luar_pdf(upload, start_date, 'DL', keterangan)
+        if upload:
+            saved_file = save_dinas_luar_pdf(upload, start_date, 'DL', keterangan)
+        else:
+            saved_file = {
+                'filename': existing_filename,
+                'relative_path': dinas_luar_relative_path(start_date, 'DL', keterangan),
+            }
 
         for item in normalized:
             pegawai = item['pegawai']
