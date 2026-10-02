@@ -616,7 +616,9 @@ document.querySelector('.btn-pill-run').addEventListener('click', async function
             data.hari_kerja ?? 0;
 
         document.getElementById('previewNominal').textContent =
-            'Rp ' + Number(data.nominal_um || 0).toLocaleString('id-ID');
+            data.nominal_um === 'Sesuai Golongan'
+                ? 'Sesuai Golongan'
+                : 'Rp ' + Number(data.nominal_um || 0).toLocaleString('id-ID');
 
         const tbody = document.getElementById('previewRekapUMBody');
         tbody.innerHTML = '';
