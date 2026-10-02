@@ -1916,7 +1916,13 @@ def api_dinas_luar_get(type_sprin=None):
 
         rows = (
             db.session.query(DinasLuar, Pegawai)
-            .outerjoin(Pegawai, DinasLuar.FINGER_ID == Pegawai.FINGER_ID)
+            .outerjoin(
+                Pegawai,
+                or_(
+                    DinasLuar.FINGER_ID == Pegawai.FINGER_ID,
+                    DinasLuar.NIP == Pegawai.NIP,
+                )
+            )
             .filter(
                 DinasLuar.NO_SURAT == no_surat,
                 DinasLuar.TRANSAKSI == 'DinasLuar',
