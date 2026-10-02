@@ -487,61 +487,39 @@ def api_dinas_luar_cari():
         peg_check = aliased(Pegawai)
         unit_check = aliased(MfUnitKerja)
 
-        inactive_exists = exists().where(
-            and_(
+        # Cari peserta non-operasional dalam GUID SPRIN yang sama.
+        # OUTER JOIN sengaja dipakai agar peserta legacy yang sudah
+        # tidak punya record PEGAWAI / Unit Kerja juga ikut dianggap
+        # non-operasional.
+        inactive_exists = (
+            db.session.query(dl_check.TRANSAKSI_ID)
+            .outerjoin(
+                peg_check,
+                peg_check.FINGER_ID == dl_check.FINGER_ID
+            )
+            .outerjoin(
+                unit_check,
+                peg_check.UNIT_KERJA_ID == unit_check.UNIT_KERJA_ID
+            )
+            .filter(
                 dl_check.GUID_SPRIN == DinasLuar.GUID_SPRIN,
                 dl_check.TRANSAKSI == 'DinasLuar',
                 dl_check.JENIS == jenis,
-                peg_check.FINGER_ID == dl_check.FINGER_ID,
-                (
-                    peg_check.FINGER_ID.is_(None)
-                    | (peg_check.IS_KELUAR != 'N')
-                    | (peg_check.IS_KELUAR.is_(None))
-                    | unit_check.UNIT_KERJA_ID.is_(None)
-                    | (unit_check.IS_USE != 'Y')
-                    | (unit_check.IS_USE.is_(None))
+                or_(
+                    peg_check.FINGER_ID.is_(None),
+                    peg_check.IS_KELUAR.is_(None),
+                    peg_check.IS_KELUAR != 'N',
+                    unit_check.UNIT_KERJA_ID.is_(None),
+                    unit_check.IS_USE.is_(None),
+                    unit_check.IS_USE != 'Y',
                 ),
             )
+            .exists()
         )
 
-        # Korelasi unit kerja dilakukan melalui pegawai peserta.
-        # Jika pegawai tidak ditemukan atau unitnya nonaktif, SPRIN
-        # dianggap tidak operasional dan tidak ditampilkan.
-        inactive_exists = exists().where(
-            and_(
-                dl_check.GUID_SPRIN == DinasLuar.GUID_SPRIN,
-                dl_check.TRANSAKSI == 'DinasLuar',
-                dl_check.JENIS == jenis,
-                peg_check.FINGER_ID == dl_check.FINGER_ID,
-                unit_check.UNIT_KERJA_ID == peg_check.UNIT_KERJA_ID,
-                (
-                    peg_check.IS_KELUAR.is_(None)
-                    | (peg_check.IS_KELUAR != 'N')
-                    | unit_check.IS_USE.is_(None)
-                    | (unit_check.IS_USE != 'Y')
-                ),
-            )
-        )
-
-        # Peserta yang tidak punya record PEGAWAI juga dianggap
-        # non-operasional. Kondisi ini dicek terpisah agar tidak
-        # ada data legacy yang lolos hanya karena JOIN tidak menemukan
-        # pegawai.
-        missing_pegawai_exists = exists().where(
-            and_(
-                dl_check.GUID_SPRIN == DinasLuar.GUID_SPRIN,
-                dl_check.TRANSAKSI == 'DinasLuar',
-                dl_check.JENIS == jenis,
-                ~exists().where(
-                    Pegawai.FINGER_ID == dl_check.FINGER_ID
-                ),
-            )
-        )
-
-        query = query.filter(
-            ~inactive_exists,
-            ~missing_pegawai_exists,
-        )
+        # Jika satu saja peserta non-operasional, seluruh SPRIN tidak
+        # ditampilkan pada hasil pencarian.
+        query = query.filter(~inactive_exists)
 
         # --------------------------------------------------------
         # FILTER SATU FIELD
