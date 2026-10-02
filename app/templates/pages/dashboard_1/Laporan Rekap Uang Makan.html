@@ -10,7 +10,7 @@
         <div>
             <h2 class="hris-page-title">Rekap Uang Makan</h2>
             <p class="hris-page-subtitle">
-                Rekap pembayaran Uang Makan berdasarkan absensi, golongan pegawai, dan Master Uang Makan yang berlaku.
+                Rekap pembayaran Uang Makan berdasarkan absensi, golongan pegawai, dan master Uang Makan yang berlaku.
             </p>
         </div>
     </div>
@@ -20,7 +20,7 @@
             <div>
                 <h3 class="hris-card-title">Filter Rekap</h3>
                 <p class="hris-section-subtitle">
-                    Pilih periode dan unit kerja. Nominal setiap pegawai mengikuti golongan dan ID Master Uang Makan yang berlaku.
+                    Pilih periode dan unit kerja. Nominal setiap pegawai mengikuti golongan dan master Uang Makan yang berlaku.
                 </p>
             </div>
         </div>
@@ -127,7 +127,6 @@
                             <th>NIP</th>
                             <th>Nama</th>
                             <th>Gol</th>
-                            <th>ID Master</th>
                             <th>DL</th>
                             <th>CT</th>
                             <th>Ijin</th>
@@ -141,7 +140,7 @@
                     <tbody id="previewRekapUMBody"></tbody>
                     <tfoot>
                         <tr>
-                            <th colspan="10" class="hris-text-right">TOTAL</th>
+                            <th colspan="9" class="hris-text-right">TOTAL</th>
                             <th id="previewTotalHariFoot">0</th>
                             <th></th>
                             <th id="previewTotalUangFoot">Rp 0</th>
@@ -317,7 +316,6 @@
                     item.nip,
                     item.nama,
                     item.golongan || '-',
-                    item.id_tunjangan || '-',
                     item.dl || 0,
                     item.cuti || 0,
                     item.ijin || 0,
