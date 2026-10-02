@@ -452,26 +452,36 @@ def api_dinas_luar_cari():
                 except (ValueError, TypeError):
                     pass
 
-        # Filter field
+        # Filter satu field. Nama dicari melalui peserta SPRIN.
         field_mapping = {
+            'Nama': None,
             'KeteranganDinasLuar': SprinHeader.PERIHAL_SPRIN,
             'PenempatanDinasLuar': SprinHeader.PENEMPATAN,
             'NoSurat': SprinHeader.NO_SPRIN,
         }
 
         if filter_field1 and filter_value1:
-            field = field_mapping.get(filter_field1)
-            if field is not None:
-                query = query.filter(
-                    field.ilike(f'%{filter_value1}%')
+            if filter_field1 == 'Nama':
+                query = (
+                    query
+                    .join(
+                        DinasLuar,
+                        DinasLuar.GUID_SPRIN == SprinHeader.GUID_SPRIN
+                    )
+                    .join(
+                        Pegawai,
+                        Pegawai.FINGER_ID == DinasLuar.FINGER_ID
+                    )
+                    .filter(
+                        DinasLuar.TRANSAKSI.ilike('DinasLuar'),
+                        Pegawai.NAMA.ilike(f'%{filter_value1}%')
+                    )
+                    .distinct()
                 )
-
-        if filter_field2 and filter_value2:
-            field = field_mapping.get(filter_field2)
-            if field is not None:
-                query = query.filter(
-                    field.ilike(f'%{filter_value2}%')
-                )
+            else:
+                field = field_mapping.get(filter_field1)
+                if field is not None:
+                    query = query.filter(field.ilike(f'%{filter_value1}%'))
 
         query = query.order_by(
             SprinHeader.TGL_AWAL_SPRIN.desc()
@@ -539,13 +549,13 @@ def api_dinas_luar_cari():
         })
 
 def api_dinas_luar_get_filter_fields():
-    """API: Get list field untuk filter dropdown"""
+    """API: Get field pencarian Dinas Luar."""
     try:
         fields = [
+            {'field_id': 'Nama', 'field_name': 'Nama'},
+            {'field_id': 'NoSurat', 'field_name': 'No. Surat'},
             {'field_id': 'KeteranganDinasLuar', 'field_name': 'Keterangan'},
             {'field_id': 'PenempatanDinasLuar', 'field_name': 'Penempatan'},
-            {'field_id': 'NoSurat', 'field_name': 'No. Surat'},
-            {'field_id': 'NamaFile', 'field_name': 'Nama File (Y/N)'},
         ]
         return jsonify({'success': True, 'data': fields})
     except Exception as e:
