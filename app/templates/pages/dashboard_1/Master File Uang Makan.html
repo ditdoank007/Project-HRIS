@@ -1,4 +1,3 @@
-<!-- pages/dashboard_1/Master File Uang Makan.html -->
 {% extends "layout/baseHRIS.html" %}
 
 {% block title %}- Uang Makan{% endblock %}
@@ -11,148 +10,68 @@
     <div class="hris-page-header">
         <div>
             <h2 class="hris-page-title">Master Uang Makan</h2>
-            <p class="hris-page-subtitle">Kelola data Master Uang Makan HRIS.</p>
+            <p class="hris-page-subtitle" id="pageSubtitle">Tambah dan kelola data Master Uang Makan HRIS.</p>
         </div>
-        <a href="{{ url_for('main.view_cari_master_uang_makan') }}" class="hris-btn hris-btn-secondary"><i class="feather-search"></i><span>Cari Uang Makan</span></a>
+        <div class="hris-form-inline">
+            <a href="{{ url_for('main.view_cari_master_uang_makan') }}" class="hris-btn hris-btn-secondary">
+                <i class="feather-search"></i>
+                <span>Cari Uang Makan</span>
+            </a>
+            <a href="{{ url_for('main.view_cari_master_uang_makan') }}" id="btnKembaliUangMakan" class="hris-btn hris-btn-secondary" style="display:none;">
+                <i class="feather-arrow-left"></i>
+                <span>Kembali</span>
+            </a>
+        </div>
     </div>
-    <div class="page-header">
-        <div class="page-header-left d-flex align-items-center">
-            <div class="page-header-title">
-                <h5 class="m-b-10">Master File</h5>
+
+    <div class="hris-card">
+        <div class="hris-card-header">
+            <div>
+                <h3 class="hris-card-title" id="formTitle">Tambah Master Uang Makan</h3>
+                <p class="hris-section-subtitle">Tentukan tanggal berlaku, nominal uang makan, dan nomor surat referensi.</p>
             </div>
-            <ul class="breadcrumb">
-                <li class="breadcrumb-item">
-                    <a href="{{ url_for('main.view_master_uang_makan') }}">
-                        Master Uang Makan
-                    </a>
-                </li>
-            </ul>
         </div>
-    </div>
 
-    <div class="main-content">
-        <div class="container-fluid">
-            <div class="hris-card">
-                <div class="hris-card-header"
-                     style="border-radius:10px;">
-                    <h6 class="mb-0">
-                        <i class="ti ti-tools-kitchen-2 me-2"></i>
-                        <span id="pageTitle">Master Uang Makan</span>
-                    </h6>
-
-                    <div class="header-actions">
-                        <a href="{{ url_for('main.view_cari_master_uang_makan') }}"
-                           class="hris-btn hris-btn-ghost hris-btn-icon">
-                            <i class="bi bi-search"
-                               style="color:#333;font-size:1.1rem;"></i>
-                        </a>
-                    </div>
+        <div class="hris-card-body">
+            <div class="hris-form-stack">
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="inputTglMulai">Tanggal Mulai</label>
+                    <input type="date" id="inputTglMulai" class="hris-input">
                 </div>
 
-                <div class="hris-card-body">
-                    <div class="hris-form-stack">
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="inputJenisTunjangan">Jenis Tunjangan</label>
+                    <input type="text" id="inputJenisTunjangan" class="hris-input" value="U.Makan" readonly>
+                </div>
 
-                        <div class="hris-form-control align-items-center">
-                            <div class="hris-form-control"></div>
-                            <label class="hris-form-row-label">
-                                Tanggal Mulai
-                            </label>
-                            <div class="hris-form-control">
-                                <div class="hris-input-group w-100">
-                                    <input type="date"
-                                           id="inputTglMulai"
-                                           class="hris-input w-100">
-                                    <span class="hris-input-addon">
-                                        <i class="bi bi-calendar3"></i>
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="inputActivity">Activity</label>
+                    <input type="text" id="inputActivity" class="hris-input" value="Intern" readonly>
+                </div>
 
-                        <div class="hris-form-control align-items-center">
-                            <div class="hris-form-control"></div>
-                            <label class="hris-form-row-label">
-                                Jenis Tunjangan
-                            </label>
-                            <div class="hris-form-control">
-                                <input type="text"
-                                       class="hris-input w-100"
-                                       value="U.Makan"
-                                       readonly>
-                            </div>
-                        </div>
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="inputNominal">Nominal</label>
+                    <input type="number" id="inputNominal" class="hris-input" min="0" step="1" value="0">
+                </div>
 
-                        <div class="hris-form-control align-items-center">
-                            <div class="hris-form-control"></div>
-                            <label class="hris-form-row-label">
-                                Activity
-                            </label>
-                            <div class="hris-form-control">
-                                <input type="text"
-                                       class="hris-input w-100"
-                                       value="Intern"
-                                       readonly>
-                            </div>
-                        </div>
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="inputNoSurat">No Surat</label>
+                    <input type="text" id="inputNoSurat" class="hris-input" placeholder="Nomor surat referensi">
+                </div>
 
-                        <div class="hris-form-control align-items-center">
-                            <div class="hris-form-control"></div>
-                            <label class="hris-form-row-label">
-                                Nominal
-                            </label>
-                            <div class="hris-form-control">
-                                <div class="hris-input-group w-100">
-                                    <input type="number"
-                                           id="inputNominal"
-                                           class="hris-input w-100 text-end"
-                                           min="0"
-                                           step="1"
-                                           value="0">
-                                    <span class="hris-input-addon">
-                                        <i class="bi bi-sort-numeric-down"></i>
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
+                <div class="hris-form-actions">
+                    <button type="button" id="btnBatalEdit" class="hris-btn hris-btn-secondary" style="display:none;">
+                        <i class="feather-x-circle"></i>
+                        <span>Batal</span>
+                    </button>
+                    <button type="button" id="btnSimpanTunjangan" class="hris-btn hris-btn-primary">
+                        <i class="feather-save"></i>
+                        <span id="btnText">Simpan</span>
+                    </button>
+                </div>
 
-                        <div class="hris-form-control align-items-center">
-                            <div class="hris-form-control"></div>
-                            <label class="hris-form-row-label">
-                                No Surat
-                            </label>
-                            <div class="hris-form-control">
-                                <div class="hris-input-group w-100">
-                                    <input type="text"
-                                           id="inputNoSurat"
-                                           class="hris-input w-100">
-                                    <span class="hris-input-addon">
-                                        <i class="bi bi-pencil-fill"></i>
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-12 d-flex justify-content-center mt-3">
-                            <button type="button"
-                                    id="btnSimpanTunjangan"
-                                    class="hris-btn hris-btn-primary">
-                                <i class="bi bi-save me-1"></i>
-                                <span id="btnText">Simpan</span>
-                            </button>
-
-                            <button type="button"
-                                    id="btnBatalEdit"
-                                    class="hris-btn hris-btn-secondary ms-2 px-4"
-                                    style="display:none;">
-                                Batal
-                            </button>
-                        </div>
-
-                        <div class="col-12 text-center">
-                            <small id="editInfo" class="text-muted"></small>
-                        </div>
-
-                    </div>
+                <div class="text-center">
+                    <small id="editInfo" class="text-muted"></small>
                 </div>
             </div>
         </div>
@@ -166,12 +85,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const btnSimpan = document.getElementById('btnSimpanTunjangan');
     const btnBatal = document.getElementById('btnBatalEdit');
+    const btnKembali = document.getElementById('btnKembaliUangMakan');
 
     const inputTglMulai = document.getElementById('inputTglMulai');
     const inputNominal = document.getElementById('inputNominal');
     const inputNoSurat = document.getElementById('inputNoSurat');
 
-    const pageTitle = document.getElementById('pageTitle');
+    const formTitle = document.getElementById('formTitle');
+    const pageSubtitle = document.getElementById('pageSubtitle');
     const btnText = document.getElementById('btnText');
     const editInfo = document.getElementById('editInfo');
 
@@ -183,46 +104,40 @@ document.addEventListener('DOMContentLoaded', function () {
         inputNominal.value = '0';
         inputNoSurat.value = '';
 
-        pageTitle.textContent = 'Master Uang Makan';
+        formTitle.textContent = 'Tambah Master Uang Makan';
+        pageSubtitle.textContent = 'Tambah dan kelola data Master Uang Makan HRIS.';
         btnText.textContent = 'Simpan';
         editInfo.textContent = '';
         btnBatal.style.display = 'none';
+        btnKembali.style.display = 'none';
 
-        history.replaceState(
-            {},
-            '',
-            '{{ url_for("main.view_master_uang_makan") }}'
-        );
+        history.replaceState({}, '', '{{ url_for("main.view_master_uang_makan") }}');
     }
 
     async function loadEditData(id) {
         try {
-            const res = await fetch(
-                '/api/uang-makan/detail?id=' +
-                encodeURIComponent(id)
-            );
-
+            const res = await fetch('/api/uang-makan/detail?id=' + encodeURIComponent(id));
             const json = await res.json();
 
-            if (json.status !== 'success') {
+            if (!res.ok || json.status !== 'success') {
                 alert(json.message || 'Data tidak ditemukan');
                 clearForm();
                 return;
             }
 
-            const row = json.data;
+            const row = json.data || {};
 
             currentEditId = row.tunjangan_id;
             inputTglMulai.value = row.tgl_mulai || '';
             inputNominal.value = row.nominal ?? 0;
             inputNoSurat.value = row.dokreff || '';
 
-            pageTitle.textContent = 'Edit Master Uang Makan';
-            btnText.textContent = 'UPDATE';
-            btnBatal.style.display = 'inline-block';
-            editInfo.textContent =
-                'ID Tunjangan: ' + row.tunjangan_id;
-
+            formTitle.textContent = 'Edit Master Uang Makan';
+            pageSubtitle.textContent = 'Perbarui data Master Uang Makan yang sudah tersimpan.';
+            btnText.textContent = 'Simpan Perubahan';
+            btnBatal.style.display = '';
+            btnKembali.style.display = '';
+            editInfo.textContent = 'ID Tunjangan: ' + row.tunjangan_id;
         } catch (err) {
             console.error(err);
             alert('Gagal mengambil data untuk Edit.');
@@ -245,12 +160,8 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        const isEdit = currentEditId !== null &&
-                       currentEditId !== undefined;
-
-        const url = isEdit
-            ? '/api/uang-makan/update'
-            : '/api/uang-makan/save';
+        const isEdit = currentEditId !== null && currentEditId !== undefined;
+        const url = isEdit ? '/api/uang-makan/update' : '/api/uang-makan/save';
 
         const body = {
             tgl_mulai: tglMulai,
@@ -262,33 +173,49 @@ document.addEventListener('DOMContentLoaded', function () {
             body.tunjangan_id = currentEditId;
         }
 
+        btnSimpan.disabled = true;
+
         try {
             const res = await fetch(url, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
                 },
                 body: JSON.stringify(body)
             });
 
             const json = await res.json();
 
-            alert(json.message);
-
-            if (json.status === 'success') {
-                clearForm();
+            if (!res.ok || json.status !== 'success') {
+                alert(json.message || 'Gagal menyimpan data Master Uang Makan.');
+                return;
             }
 
+            alert(json.message || 'Data Master Uang Makan berhasil disimpan.');
+
+            if (isEdit) {
+                window.location.href = '{{ url_for("main.view_cari_master_uang_makan") }}';
+            } else {
+                clearForm();
+            }
         } catch (err) {
             console.error(err);
             alert('Gagal menghubungi server, coba lagi.');
+        } finally {
+            btnSimpan.disabled = false;
         }
     });
 
-    btnBatal.addEventListener('click', clearForm);
+    btnBatal.addEventListener('click', function () {
+        if (currentEditId !== null && currentEditId !== undefined) {
+            window.location.href = '{{ url_for("main.view_cari_master_uang_makan") }}';
+        } else {
+            clearForm();
+        }
+    });
 
-    if (currentEditId !== null &&
-        currentEditId !== undefined) {
+    if (currentEditId !== null && currentEditId !== undefined) {
         loadEditData(currentEditId);
     }
 });
