@@ -2584,7 +2584,8 @@ def export_rekap_uang_makan(preview=False):
         raw=str(value or '').strip().upper()
         if not raw: return None
         raw=raw.replace('GOLONGAN','').replace('GOL.','').strip()
-        return raw.split('/',1)[0].strip()
+        level=raw.split('/',1)[0].strip()
+        return {'2':'II','3':'III','4':'IV'}.get(level, level)
     def _nominal_uang_makan(golongan):
         level=_golongan_level(golongan)
         if not level: return 0
