@@ -324,11 +324,19 @@
 
     searchBtn.addEventListener('click', searchDinasLuar);
 
+    // Periode langsung mencari saat halaman dibuka dan saat Tahun/Bulan berubah.
+    // Tombol CARI tetap tersedia untuk pencarian ulang setelah filter teks diubah.
+    tahunEl.addEventListener('change', searchDinasLuar);
+    bulanEl.addEventListener('change', searchDinasLuar);
+
     valueEl.addEventListener('keydown', event => {
         if (event.key === 'Enter') {
             event.preventDefault();
             searchDinasLuar();
         }
     });
+
+    // Tampilkan data periode default tanpa menunggu pengguna menekan CARI.
+    searchDinasLuar();
 })();
 {% endblock %}
