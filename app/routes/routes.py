@@ -580,8 +580,7 @@ def api_dinas_luar_operasi_delete():
 @main.route('/api/dinas-luar-operasi/save-peserta', methods=['POST'])
 @login_required
 def api_dinas_luar_operasi_save_peserta():
-    from app.controllers.dashboard_1KepegawaianController import api_dinas_luar_operasi_save_peserta
-    return api_dinas_luar_operasi_save_peserta()
+    return master_api_dinas_luar_save('OP')
 
 @main.route('/kepegawaian/dinas-luar-pelatihan')
 @login_required
