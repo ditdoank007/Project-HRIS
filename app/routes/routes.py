@@ -62,6 +62,16 @@ from app.controllers.dashboard_1KepegawaianController import (
     api_dinas_luar_cari as master_api_dinas_luar_cari,
     api_dinas_luar_get_filter_fields as master_api_dinas_luar_get_filter_fields,
 )
+from app.controllers.backupRestoreController import (
+    backup_restore_home,
+    api_backup_mariadb,
+    api_backup_mariadb_list,
+    api_restore_mariadb,
+    api_import_mssql_upload,
+    api_import_mssql_preview,
+    api_import_mssql_execute,
+)
+
 from app.controllers.dashboard_1MediaInformasiController import (
     media_informasi, media_informasi_detail,
     save_media_informasi, save_media_informasi_slide,
@@ -322,6 +332,54 @@ def preview_pegawai():
         'count': len(data),
         'data': [pegawai.to_dict() for pegawai in data]
     })
+
+
+# ============================================================
+# BACKUP / RESTORE
+# Administrator only
+# ============================================================
+
+@main.route('/backup-restore')
+@login_required
+def view_backup_restore():
+    return backup_restore_home()
+
+
+@main.route('/api/backup-mariadb', methods=['POST'])
+@login_required
+def api_backup_mariadb_route():
+    return api_backup_mariadb()
+
+
+@main.route('/api/backup-mariadb/list', methods=['GET'])
+@login_required
+def api_backup_mariadb_list_route():
+    return api_backup_mariadb_list()
+
+
+@main.route('/api/restore-mariadb', methods=['POST'])
+@login_required
+def api_restore_mariadb_route():
+    return api_restore_mariadb()
+
+
+@main.route('/api/import-mssql-2013/upload', methods=['POST'])
+@login_required
+def api_import_mssql_upload_route():
+    return api_import_mssql_upload()
+
+
+@main.route('/api/import-mssql-2013/preview', methods=['POST'])
+@login_required
+def api_import_mssql_preview_route():
+    return api_import_mssql_preview()
+
+
+@main.route('/api/import-mssql-2013/execute', methods=['POST'])
+@login_required
+def api_import_mssql_execute_route():
+    return api_import_mssql_execute()
+
 
 # ============================
 # ---- Dashboard 1 Routes ----

@@ -485,6 +485,36 @@
                     </ul>
                 </li>
                 {% endif %}
+
+                {% if is_administrator() %}
+                <li class="hris-nav-item hris-nav-group">
+                    <a href="javascript:void(0);" class="hris-nav-link">
+                        <span class="hris-nav-icon"><i class="feather-database"></i></span>
+                        <span class="hris-nav-text">Backup / Restore</span><span class="hris-nav-arrow"><i
+                                class="feather-chevron-right"></i></span>
+                    </a>
+                    <ul class="hris-submenu">
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_backup_restore') }}">
+                                <span class="hris-nav-icon"><i class="feather-save"></i></span>
+                                <span class="hris-nav-text">Backup DB-MariaDB</span>
+                            </a>
+                        </li>
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_backup_restore') }}">
+                                <span class="hris-nav-icon"><i class="feather-upload-cloud"></i></span>
+                                <span class="hris-nav-text">Restore DB-MariaDB</span>
+                            </a>
+                        </li>
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_backup_restore') }}">
+                                <span class="hris-nav-icon"><i class="feather-refresh-cw"></i></span>
+                                <span class="hris-nav-text">Impor DB-MSSQL-2013</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                {% endif %}
                 <li class="hris-nav-item hris-nav-group">
                     <a href="{{ url_for('main.index') }}" class="hris-nav-link">
                         <span class="hris-nav-icon"><i class="bi feather-home"></i></span>
