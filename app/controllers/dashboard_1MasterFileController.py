@@ -2856,6 +2856,8 @@ def _normalize_uang_makan_golongan(value):
     if not raw: return None
     raw = raw.replace("GOLONGAN", "").replace("GOL.", "").strip()
     level = raw.split("/", 1)[0].strip()
+    legacy_map = {"2": "II", "3": "III", "4": "IV"}
+    level = legacy_map.get(level, level)
     return level if level in UANG_MAKAN_GOLONGAN_OPTIONS else None
 
 
@@ -2950,7 +2952,8 @@ def delete_uang_makan():
 def get_tunjangan_list():
     rows=_query_tunjangan().all(); data=[]
     for idx,row in enumerate(rows,1):
-        data.append({'no':idx,'tunjangan_id':row.IDTUNJANGAN,'jenis_tunjangan':row.JENIS_TUNJANGAN or '-', 'activity':row.ACTIVITY or '-', 'tgl_mulai':row.TGL_MULAI.strftime('%d/%m/%Y') if row.TGL_MULAI else '-', 'nominal':f'{row.NOMINAL:,.0f}' if row.NOMINAL is not None else '0', 'hari_kerja':row.HARI_KERJA, 'golongan':row.FUNGSIONAL or '-', 'fungsional':row.FUNGSIONAL or '-', 'no_surat':row.DOKREFF or '-', 'updated':row.UPDATE_DATE.strftime('%d/%m/%Y %H:%M:%S') if row.UPDATE_DATE else '-'})
+        golongan = _normalize_uang_makan_golongan(row.FUNGSIONAL) or (row.FUNGSIONAL or "-")
+        data.append({'no':idx,'tunjangan_id':row.IDTUNJANGAN,'jenis_tunjangan':row.JENIS_TUNJANGAN or '-', 'activity':row.ACTIVITY or '-', 'tgl_mulai':row.TGL_MULAI.strftime('%d/%m/%Y') if row.TGL_MULAI else '-', 'nominal':f'{row.NOMINAL:,.0f}' if row.NOMINAL is not None else '0', 'hari_kerja':row.HARI_KERJA, 'golongan':golongan, 'fungsional':golongan, 'no_surat':row.DOKREFF or '-', 'updated':row.UPDATE_DATE.strftime('%d/%m/%Y %H:%M:%S') if row.UPDATE_DATE else '-'})
     return jsonify({'status':'success','data':data})
 
 
