@@ -1204,6 +1204,12 @@ def preview_laporan_rekap_uang_makan():
 def export_laporan_rekap_uang_makan():
     return export_rekap_uang_makan()
 
+
+@main.route('/laporan/rekap-uang-makan/export/pdf', methods=['POST'])
+@form_access_required('RekapUM.aspx')
+def export_laporan_rekap_uang_makan_pdf():
+    return export_rekap_uang_makan(pdf=True)
+
 @main.route('/laporan/rekap-tunjangan-kinerja')
 @form_access_required('RRincianBayar.aspx')
 def view_laporan_rekap_tunjangan_kinerja():
