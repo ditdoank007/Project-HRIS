@@ -32,7 +32,7 @@ from app.utils.pegawaiHelper import (
 )
 from app.utils.pegawaiSortHelper import sort_pegawai_rows
 from app.utils.pegawaiLegacyHelper import derive_employee_metrics
-from app.services.dinas_luar_storage import save_dinas_luar_pdf, dinas_luar_absolute_path, dinas_luar_relative_path
+from app.services.dinas_luar_storage import save_dinas_luar_pdf, dinas_luar_absolute_path_by_filename, dinas_luar_relative_path
 from app.utils.authorization import is_administrator
 import json
 import os
@@ -1755,7 +1755,11 @@ def api_dinas_luar_get():
             return jsonify({'success': False, 'error': 'Data tidak ditemukan.'}), 404
 
         first = rows[0][0]
-        pdf_path = dinas_luar_absolute_path(first.TGL_AWAL_SURAT, 'DL', first.KETERANGAN_DINAS_LUAR or '')
+        pdf_path = dinas_luar_absolute_path_by_filename(
+            first.TGL_AWAL_SURAT,
+            'DL',
+            first.NAMA_FILE or '',
+        )
         return jsonify({
             'success': True,
             'data': {
@@ -1826,7 +1830,11 @@ def api_dinas_luar_pdf():
     if not row.NAMA_FILE or row.NAMA_FILE == '-':
         return jsonify({'status': 'error', 'message': 'File SPRIN belum tersedia.'}), 404
 
-    path = dinas_luar_absolute_path(row.TGL_AWAL_SURAT, 'DL', row.KETERANGAN_DINAS_LUAR or '')
+    path = dinas_luar_absolute_path_by_filename(
+        row.TGL_AWAL_SURAT,
+        'DL',
+        row.NAMA_FILE,
+    )
     if not os.path.isfile(path):
         return jsonify({'status': 'error', 'message': 'File SPRIN tidak ditemukan di NFS.'}), 404
 
@@ -1855,7 +1863,11 @@ def api_dinas_luar_delete():
 
         file_path = None
         if rows and rows[0].TGL_AWAL_SURAT:
-            file_path = dinas_luar_absolute_path(rows[0].TGL_AWAL_SURAT, 'DL', rows[0].KETERANGAN_DINAS_LUAR or '')
+            file_path = dinas_luar_absolute_path_by_filename(
+                rows[0].TGL_AWAL_SURAT,
+                'DL',
+                rows[0].NAMA_FILE or '',
+            )
 
         db.session.query(DinasLuar).filter(
             DinasLuar.GUID_SPRIN == guid_sprin,
