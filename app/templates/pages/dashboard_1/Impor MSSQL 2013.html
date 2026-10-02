@@ -65,8 +65,10 @@
                 </div>
             </div>
 
-            <div class="hris-form-actions">
-                <button id="btnUploadMssql" type="button" class="hris-btn hris-btn-primary">
+    {% if not can_modify %}<div class="hris-info-panel mt-3"><strong>Read Only.</strong> Anda dapat melihat halaman ini, tetapi operasi perubahan database memerlukan hak akses Modify.</div>{% endif %}
+
+        <div class="hris-form-actions">
+                <button id="btnUploadMssql" type="button" class="hris-btn hris-btn-primary" {% if not can_modify %}disabled{% endif %}>
                     <i class="feather-upload"></i>
                     Upload & Validasi
                 </button>
