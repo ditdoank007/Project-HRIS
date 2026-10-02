@@ -412,7 +412,7 @@ def api_dinas_luar_cari():
     historis tetap dapat dicari dan dibuka kembali.
     """
     try:
-        from sqlalchemy import extract
+        from sqlalchemy import extract, func
 
         filter_field = request.args.get('filter_field1', '').strip()
         filter_value = request.args.get('filter_value1', '').strip()
@@ -447,8 +447,20 @@ def api_dinas_luar_cari():
                 try:
                     tahun, bulan = periode.split('-')
                     query = query.filter(
-                        extract('year', DinasLuar.TGL_AWAL_SURAT) == int(tahun),
-                        extract('month', DinasLuar.TGL_AWAL_SURAT) == int(bulan),
+                        extract(
+                            'year',
+                            func.coalesce(
+                                DinasLuar.TGL_AWAL_SURAT,
+                                DinasLuar.TGL_AWAL_DINAS_LUAR
+                            )
+                        ) == int(tahun),
+                        extract(
+                            'month',
+                            func.coalesce(
+                                DinasLuar.TGL_AWAL_SURAT,
+                                DinasLuar.TGL_AWAL_DINAS_LUAR
+                            )
+                        ) == int(bulan),
                     )
                 except (ValueError, TypeError):
                     return jsonify({
@@ -461,7 +473,13 @@ def api_dinas_luar_cari():
             elif periode_type == 'tahun':
                 try:
                     query = query.filter(
-                        extract('year', DinasLuar.TGL_AWAL_SURAT) == int(periode)
+                        extract(
+                            'year',
+                            func.coalesce(
+                                DinasLuar.TGL_AWAL_SURAT,
+                                DinasLuar.TGL_AWAL_DINAS_LUAR
+                            )
+                        ) == int(periode)
                     )
                 except (ValueError, TypeError):
                     return jsonify({
