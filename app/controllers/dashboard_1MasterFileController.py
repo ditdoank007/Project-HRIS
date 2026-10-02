@@ -2884,7 +2884,7 @@ def save_uang_makan():
     try:
         last_id = db.session.execute(sa_text("SELECT IDTunjangan FROM MF_TUNJANGAN ORDER BY IDTunjangan DESC LIMIT 1 FOR UPDATE")).scalar()
         next_id = (int(last_id) + 1) if last_id is not None else 1
-        row = MfTunjangan(IDTUNJANGAN=next_id, JENIS_TUNJANGAN="U.Makan", ACTIVITY="Intern", NOMINAL=nominal, TGL_MULAI=tgl_mulai, HARI_KERJA=0, FUNGSIONAL=golongan, UPDATE_BY=session.get("nip","system"), UPDATE_DATE=datetime.now(), DOKREFF=no_surat)
+        row = MfTunjangan(IDTUNJANGAN=next_id, JENIS_TUNJANGAN="U.Makan", ACTIVITY="Intern", NOMINAL=nominal, TGL_MULAI=tgl_mulai, HARI_KERJA=0, FUNGSIONAL=golongan, UPDATE_BY=("SYSADMIN" if session.get("sysadmin") else (session.get("nama") or session.get("nip") or "system")), UPDATE_DATE=datetime.now(), DOKREFF=no_surat)
         db.session.add(row); db.session.commit()
         return jsonify({"status":"success","message":"Master Uang Makan berhasil disimpan","data":row.to_dict()})
     except Exception as exc:
@@ -2913,7 +2913,7 @@ def update_uang_makan():
     if nominal<0: return jsonify({"status":"error","message":"Nominal tidak boleh negatif"}),400
     row=MfTunjangan.query.filter(MfTunjangan.IDTUNJANGAN==tunjangan_id, MfTunjangan.JENIS_TUNJANGAN=="U.Makan", MfTunjangan.ACTIVITY=="Intern", MfTunjangan.HARI_KERJA==0).first()
     if row is None: return jsonify({"status":"error","message":"Data Uang Makan tidak ditemukan"}),404
-    row.TGL_MULAI=tgl_mulai; row.NOMINAL=nominal; row.FUNGSIONAL=golongan; row.DOKREFF=no_surat; row.UPDATE_BY=session.get("nip","system"); row.UPDATE_DATE=datetime.now()
+    row.TGL_MULAI=tgl_mulai; row.NOMINAL=nominal; row.FUNGSIONAL=golongan; row.DOKREFF=no_surat; row.UPDATE_BY=("SYSADMIN" if session.get("sysadmin") else (session.get("nama") or session.get("nip") or "system")); row.UPDATE_DATE=datetime.now()
     try:
         db.session.commit(); return jsonify({"status":"success","message":"Master Uang Makan berhasil diupdate","data":row.to_dict()})
     except Exception as exc:
@@ -2950,11 +2950,53 @@ def delete_uang_makan():
 
 
 def get_tunjangan_list():
-    rows=_query_tunjangan().all(); data=[]
-    for idx,row in enumerate(rows,1):
-        golongan = _normalize_uang_makan_golongan(row.FUNGSIONAL) or (row.FUNGSIONAL or "-")
-        data.append({'no':idx,'tunjangan_id':row.IDTUNJANGAN,'jenis_tunjangan':row.JENIS_TUNJANGAN or '-', 'activity':row.ACTIVITY or '-', 'tgl_mulai':row.TGL_MULAI.strftime('%d/%m/%Y') if row.TGL_MULAI else '-', 'nominal':f'{row.NOMINAL:,.0f}' if row.NOMINAL is not None else '0', 'hari_kerja':row.HARI_KERJA, 'golongan':golongan, 'fungsional':golongan, 'no_surat':row.DOKREFF or '-', 'updated':row.UPDATE_DATE.strftime('%d/%m/%Y %H:%M:%S') if row.UPDATE_DATE else '-'})
-    return jsonify({'status':'success','data':data})
+    rows = _query_tunjangan().all()
+    data = []
+
+    for idx, row in enumerate(rows, 1):
+        golongan = _normalize_uang_makan_golongan(
+            row.FUNGSIONAL
+        ) or (row.FUNGSIONAL or "-")
+
+        updated_by = str(row.UPDATE_BY or "").strip()
+
+        # Legacy records menyimpan NIP pada UpdateBy. Untuk tampilan,
+        # resolve ke nama pegawai agar kolom BY konsisten dengan operator/admin.
+        if updated_by and updated_by not in ("system", "SYSADMIN"):
+            pegawai = Pegawai.query.filter(
+                Pegawai.NIP == updated_by
+            ).first()
+            if pegawai and pegawai.NAMA:
+                updated_by = pegawai.NAMA
+
+        if not updated_by:
+            updated_by = "SYSADMIN" if session.get("sysadmin") else "-"
+
+        data.append({
+            "no": idx,
+            "tunjangan_id": row.IDTUNJANGAN,
+            "jenis_tunjangan": row.JENIS_TUNJANGAN or "-",
+            "activity": row.ACTIVITY or "-",
+            "tgl_mulai": (
+                row.TGL_MULAI.strftime("%d/%m/%Y")
+                if row.TGL_MULAI else "-"
+            ),
+            "nominal": (
+                f"{row.NOMINAL:,.0f}"
+                if row.NOMINAL is not None else "0"
+            ),
+            "hari_kerja": row.HARI_KERJA,
+            "golongan": golongan,
+            "fungsional": golongan,
+            "no_surat": row.DOKREFF or "-",
+            "updated": (
+                row.UPDATE_DATE.strftime("%d/%m/%Y")
+                if row.UPDATE_DATE else "-"
+            ),
+            "updated_by": updated_by,
+        })
+
+    return jsonify({"status": "success", "data": data})
 
 
 def cari_master_uang_makan():
