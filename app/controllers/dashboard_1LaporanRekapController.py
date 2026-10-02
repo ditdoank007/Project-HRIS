@@ -3103,7 +3103,7 @@ def export_rekap_uang_makan(preview=False, pdf=False):
         for item in preview_rows:
             table_data.append([
                 item["no"],
-                item["nip"],
+                Paragraph(str(item["nip"] or ""), small_style),
                 Paragraph(str(item["nama"] or ""), small_style),
                 item["golongan"],
                 item["id_tunjangan"] or "-",
@@ -3127,7 +3127,7 @@ def export_rekap_uang_makan(preview=False, pdf=False):
         table = Table(
             table_data,
             repeatRows=1,
-            colWidths=[24, 65, 125, 34, 46, 25, 25, 28, 30, 28, 40, 62, 75],
+            colWidths=[24, 82, 178, 34, 48, 27, 27, 30, 32, 30, 45, 70, 82],
         )
         table.setStyle(TableStyle([
             ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f36b2c")),
@@ -3146,15 +3146,6 @@ def export_rekap_uang_makan(preview=False, pdf=False):
             ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
         ]))
         story.append(table)
-        story.append(Spacer(1, 18))
-        story.append(
-            Paragraph(
-                f"Staf Kepegawaian: {staf_kepegawaian or '................................................'}"
-                f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
-                f"Kasubag Umum: {kasubag_umum or '................................................'}",
-                small_style,
-            )
-        )
         doc.build(story)
         buffer.seek(0)
 
