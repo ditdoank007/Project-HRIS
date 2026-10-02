@@ -5,6 +5,8 @@ This script is intentionally read-only:
 - It scans legacy PDF files.
 - It reads DINAS_LUAR from HRIS-DB.
 - It matches PDFs by exact NamaFile.
+- Multiple DINAS_LUAR rows for one NamaFile are treated as one SPRIN document.
+- It validates that duplicate rows agree on the SPRIN metadata used for migration.
 - It calculates the HRIS Reborn destination path.
 - It NEVER copies, renames, moves, or updates database rows.
 
@@ -216,11 +218,27 @@ def main() -> int:
             })
             continue
 
-        if len(matches) > 1:
-            counters["DB_DUPLICATE"] += 1
-            row = matches[0]
+        # Satu SPRIN dapat memiliki banyak peserta, sehingga satu NamaFile
+        # memang dapat muncul pada banyak row DINAS_LUAR. Itu bukan duplicate
+        # dokumen. Kita collapse menjadi satu unit migrasi berbasis NamaFile.
+        row = matches[0]
+        metadata_keys = (
+            "GUIDSprin",
+            "Nosurat",
+            "TglAwalSurat",
+            "TglAkhirSurat",
+            "KeteranganDinasLuar",
+            "Jenis",
+        )
+        signatures = {
+            tuple(str(item.get(key) or "").strip() for key in metadata_keys)
+            for item in matches
+        }
+
+        if len(signatures) > 1:
+            counters["DB_CONFLICT"] += 1
             result_rows.append({
-                "status": "DB_DUPLICATE",
+                "status": "DB_CONFLICT",
                 "source_filename": name,
                 "guid_sprin": row.get("GUIDSprin") or "",
                 "no_surat": row.get("Nosurat") or "",
@@ -231,7 +249,7 @@ def main() -> int:
                 "destination": "",
                 "destination_filename": "",
                 "db_match_count": len(matches),
-                "notes": "NamaFile muncul pada lebih dari satu row",
+                "notes": "Row dengan NamaFile sama memiliki metadata SPRIN berbeda",
             })
             continue
 
@@ -301,7 +319,7 @@ def main() -> int:
     for key in [
         "MATCH",
         "NOT_FOUND",
-        "DB_DUPLICATE",
+        "DB_CONFLICT",
         "DESTINATION_COLLISION",
         "UNSUPPORTED_JENIS",
         "MISSING_TGL_AWAL_SURAT",
@@ -309,7 +327,7 @@ def main() -> int:
         print(f"{key:24s}: {counters[key]:,}")
 
     print()
-    print("Per Jenis untuk file MATCH:")
+    print("Per Jenis untuk file MATCH (termasuk NamaFile dengan banyak peserta):")
     jenis_counts = Counter(
         row["jenis"]
         for row in result_rows
