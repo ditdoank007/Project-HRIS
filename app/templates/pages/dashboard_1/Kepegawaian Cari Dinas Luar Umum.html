@@ -322,12 +322,9 @@
         )).join('');
     }
 
+    // Pola standar HRIS: periode dipilih terlebih dahulu,
+    // kemudian pengguna menekan tombol CARI.
     searchBtn.addEventListener('click', searchDinasLuar);
-
-    // Periode langsung mencari saat halaman dibuka dan saat Tahun/Bulan berubah.
-    // Tombol CARI tetap tersedia untuk pencarian ulang setelah filter teks diubah.
-    tahunEl.addEventListener('change', searchDinasLuar);
-    bulanEl.addEventListener('change', searchDinasLuar);
 
     valueEl.addEventListener('keydown', event => {
         if (event.key === 'Enter') {
@@ -335,8 +332,5 @@
             searchDinasLuar();
         }
     });
-
-    // Tampilkan data periode default tanpa menunggu pengguna menekan CARI.
-    searchDinasLuar();
 })();
 {% endblock %}
