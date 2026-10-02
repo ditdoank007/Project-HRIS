@@ -2538,7 +2538,7 @@ def laporan_rekap_uang_makan():
         current_year=current_year
     )
 
-def export_rekap_uang_makan(preview=False):
+def export_rekap_uang_makan(preview=False, pdf=False):
     """Export / Preview Rekap Uang Makan (seperti RekapUM di VB.NET)."""
     unit_list = request.form.getlist('unit_kerja[]')
     bulan_str = request.form.get('bulan', '')  # Format: YYYY-MM
@@ -2587,13 +2587,19 @@ def export_rekap_uang_makan(preview=False):
         level=raw.split('/',1)[0].strip()
         return {'2':'II','3':'III','4':'IV'}.get(level, level)
     def _nominal_uang_makan(golongan):
-        level=_golongan_level(golongan)
-        if not level: return 0
+        level = _golongan_level(golongan)
+        if not level:
+            return None, 0
+
         for item in uang_makan_rows:
-            if str(item.FUNGSIONAL or '').strip().upper()==level: return item.NOMINAL or 0
+            if _golongan_level(item.FUNGSIONAL) == level:
+                return item, item.NOMINAL or 0
+
         for item in uang_makan_rows:
-            if str(item.FUNGSIONAL or '').strip().upper()=='ALL': return item.NOMINAL or 0
-        return 0
+            if str(item.FUNGSIONAL or '').strip().upper() == 'ALL':
+                return item, item.NOMINAL or 0
+
+        return None, 0
     
     # Ambil data absensi (join via NIP)
     absensi_rows = (
@@ -2941,7 +2947,7 @@ def export_rekap_uang_makan(preview=False):
         if jumlah_hari < 0:
             jumlah_hari = 0
 
-        nominal_um = _nominal_uang_makan(peg.GOL_ID)
+        master_um, nominal_um = _nominal_uang_makan(peg.GOL_ID)
         um = jumlah_hari * nominal_um
         total_um += um
 
@@ -2956,6 +2962,12 @@ def export_rekap_uang_makan(preview=False):
             "sakit": sakit_all,
             "ta": ta,
             "golongan": _golongan_level(peg.GOL_ID) or "-",
+            "id_tunjangan": (
+                int(master_um.IDTUNJANGAN)
+                if master_um and master_um.IDTUNJANGAN is not None
+                else None
+            ),
+            "nominal_per_hari": nominal_um,
             "jumlah_hari": jumlah_hari,
             "jumlah_uang": um,
         })
@@ -3032,6 +3044,126 @@ def export_rekap_uang_makan(preview=False):
             "total_um": total_um,
             "rows": preview_rows,
         }
+
+    if pdf:
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=landscape(A4),
+            rightMargin=24,
+            leftMargin=24,
+            topMargin=24,
+            bottomMargin=24,
+        )
+
+        styles = getSampleStyleSheet()
+        title_style = ParagraphStyle(
+            "UMTitle",
+            parent=styles["Title"],
+            fontSize=15,
+            leading=18,
+            alignment=1,
+            spaceAfter=4,
+        )
+        subtitle_style = ParagraphStyle(
+            "UMSubtitle",
+            parent=styles["Normal"],
+            fontSize=9,
+            leading=11,
+            alignment=1,
+            spaceAfter=8,
+        )
+        small_style = ParagraphStyle(
+            "UMSmall",
+            parent=styles["Normal"],
+            fontSize=7,
+            leading=8,
+        )
+
+        story = [
+            Paragraph("REKAP UANG MAKAN", title_style),
+            Paragraph(
+                f"PEGAWAI KANTOR PENCARIAN DAN PERTOLONGAN {unit_names}",
+                subtitle_style,
+            ),
+            Paragraph(
+                f"Periode: {tgl_awal:%d %B %Y} s/d {tgl_akhir:%d %B %Y} &nbsp;&nbsp; "
+                f"Hari Kerja: {default_tgl_kerja}",
+                small_style,
+            ),
+            Spacer(1, 8),
+        ]
+
+        table_data = [[
+            "No", "NIP", "Nama", "Gol", "ID Master",
+            "DL", "CT", "Ijin", "Sakit", "TA",
+            "UM (Hari)", "Nominal/Hari", "Jumlah Uang"
+        ]]
+
+        for item in preview_rows:
+            table_data.append([
+                item["no"],
+                item["nip"],
+                Paragraph(str(item["nama"] or ""), small_style),
+                item["golongan"],
+                item["id_tunjangan"] or "-",
+                item["dl"],
+                item["cuti"],
+                item["ijin"],
+                item["sakit"],
+                item["ta"],
+                item["jumlah_hari"],
+                f"Rp {item['nominal_per_hari']:,.0f}".replace(",", "."),
+                f"Rp {item['jumlah_uang']:,.0f}".replace(",", "."),
+            ])
+
+        table_data.append([
+            "", "", "", "", "", "", "", "", "", "",
+            "",
+            "TOTAL",
+            f"Rp {total_um:,.0f}".replace(",", "."),
+        ])
+
+        table = Table(
+            table_data,
+            repeatRows=1,
+            colWidths=[24, 65, 125, 34, 46, 25, 25, 28, 30, 28, 40, 62, 75],
+        )
+        table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f36b2c")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, -1), 7),
+            ("LEADING", (0, 0), (-1, -1), 8),
+            ("GRID", (0, 0), (-1, -1), 0.35, colors.HexColor("#d9dee5")),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("ALIGN", (0, 0), (0, -1), "CENTER"),
+            ("ALIGN", (3, 1), (10, -1), "CENTER"),
+            ("ALIGN", (11, 1), (12, -1), "RIGHT"),
+            ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#f2f4f7")),
+            ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+            ("TOPPADDING", (0, 0), (-1, -1), 4),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+        ]))
+        story.append(table)
+        story.append(Spacer(1, 18))
+        story.append(
+            Paragraph(
+                f"Staf Kepegawaian: {staf_kepegawaian or '................................................'}"
+                f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+                f"Kasubag Umum: {kasubag_umum or '................................................'}",
+                small_style,
+            )
+        )
+        doc.build(story)
+        buffer.seek(0)
+
+        return send_file(
+            buffer,
+            as_attachment=True,
+            download_name=f"Rekap_Uang_Makan_{tgl_awal:%Y%m}.pdf",
+            mimetype="application/pdf",
+        )
 
     # === BARIS TOTAL ===
     if no % 2 == 0:
