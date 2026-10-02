@@ -400,42 +400,48 @@ def kepegawaian_cari_dinas_luar_umum(type_sprin='DL'):
 
 def api_dinas_luar_cari():
     """
-    API pencarian Dinas Luar berdasarkan data DINAS_LUAR.
+    API pencarian Dinas Luar berdasarkan DINAS_LUAR.
 
-    Business Rule HRIS Reborn:
-    - Dinas Luar hanya boleh tampil jika SELURUH peserta pada SPRIN
-      masih merupakan Pegawai Operasional:
-          PEGAWAI.IS_KELUAR = 'N'
-          AND MF_UNIT_KERJA.IS_USE = 'Y'
-    - Jika satu saja peserta berasal dari Unit Kerja yang sudah
-      dinonaktifkan, seluruh SPRIN tidak ditampilkan pada pencarian.
-    - DINAS_LUAR menjadi sumber data untuk modul ini; tidak membaca
-      SPRIN_HEADER karena schema legacy pada environment aktif berbeda.
+    Satu logic dipakai untuk:
+      DL = Dinas Luar Umum
+      OP = Dinas Luar Operasi
+      PL = Dinas Luar SD
+
+    DINAS_LUAR adalah sumber data utama. Peserta tidak disaring
+    berdasarkan status pegawai aktif/unit kerja agar data SPRIN
+    historis tetap dapat dicari dan dibuka kembali.
     """
     try:
-        from sqlalchemy import exists, and_, extract
+        from sqlalchemy import extract
 
         filter_field = request.args.get('filter_field1', '').strip()
         filter_value = request.args.get('filter_value1', '').strip()
         periode = request.args.get('periode', '').strip()
         periode_type = request.args.get('periode_type', 'bulan').strip().lower()
-        type_sprin = request.args.get('type_sprin', 'DL').upper()
+        type_sprin = request.args.get('type_sprin', 'DL').strip().upper()
 
         jenis_map = {
             'DL': 'DL',
             'OPR': 'OP',
+            'OP': 'OP',
             'POT': 'PL',
+            'PL': 'PL',
         }
-        jenis = jenis_map.get(type_sprin, 'DL')
+        jenis = jenis_map.get(type_sprin)
+        if not jenis:
+            return jsonify({
+                'success': False,
+                'error': 'Jenis Dinas Luar tidak valid.',
+                'data': [],
+                'total': 0,
+            }), 400
 
         query = DinasLuar.query.filter(
             DinasLuar.TRANSAKSI == 'DinasLuar',
             DinasLuar.JENIS == jenis,
         )
 
-        # --------------------------------------------------------
-        # PERIODE
-        # --------------------------------------------------------
+        # Periode menggunakan tanggal SPRIN/header.
         if periode:
             if periode_type == 'bulan':
                 try:
@@ -465,84 +471,20 @@ def api_dinas_luar_cari():
                         'total': 0,
                     }), 400
 
-        # --------------------------------------------------------
-        # EXCLUDE SPRIN YANG MASIH MEMILIKI PESERTA NON-OPERASIONAL
-        #
-        # Penting: jangan hanya JOIN ke pegawai aktif, karena itu
-        # masih dapat membuat SPRIN tampil bila peserta lain aktif.
-        # Kita harus memastikan TIDAK ADA peserta pada GUID SPRIN
-        # yang unit kerjanya sudah nonaktif / pegawainya sudah keluar.
-        # --------------------------------------------------------
-        # --------------------------------------------------------
-        # EXCLUDE SPRIN YANG MEMILIKI PESERTA NON-OPERASIONAL
-        #
-        # Jangan hanya JOIN ke pegawai aktif. Jika sebuah SPRIN memiliki
-        # 20 peserta aktif dan 1 peserta dari Unit Kerja yang sudah
-        # dinonaktifkan, seluruh SPRIN tetap harus dikeluarkan dari
-        # hasil pencarian.
-        # --------------------------------------------------------
-        from sqlalchemy.orm import aliased
-
-        dl_check = aliased(DinasLuar)
-        peg_check = aliased(Pegawai)
-        unit_check = aliased(MfUnitKerja)
-
-        # Cari peserta non-operasional dalam GUID SPRIN yang sama.
-        # OUTER JOIN sengaja dipakai agar peserta legacy yang sudah
-        # tidak punya record PEGAWAI / Unit Kerja juga ikut dianggap
-        # non-operasional.
-        inactive_exists = (
-            db.session.query(dl_check.TRANSAKSI_ID)
-            .outerjoin(
-                peg_check,
-                peg_check.FINGER_ID == dl_check.FINGER_ID
-            )
-            .outerjoin(
-                unit_check,
-                peg_check.UNIT_KERJA_ID == unit_check.UNIT_KERJA_ID
-            )
-            .filter(
-                dl_check.GUID_SPRIN == DinasLuar.GUID_SPRIN,
-                dl_check.TRANSAKSI == 'DinasLuar',
-                dl_check.JENIS == jenis,
-                or_(
-                    peg_check.FINGER_ID.is_(None),
-                    peg_check.IS_KELUAR.is_(None),
-                    peg_check.IS_KELUAR != 'N',
-                    unit_check.UNIT_KERJA_ID.is_(None),
-                    unit_check.IS_USE.is_(None),
-                    unit_check.IS_USE != 'Y',
-                ),
-            )
-            .exists()
-        )
-
-        # Jika satu saja peserta non-operasional, seluruh SPRIN tidak
-        # ditampilkan pada hasil pencarian.
-        query = query.filter(~inactive_exists)
-
-        # --------------------------------------------------------
-        # FILTER SATU FIELD
-        # --------------------------------------------------------
+        # Filter satu field.
         if filter_field and filter_value:
             if filter_field == 'Nama':
                 query = query.join(
                     Pegawai,
                     Pegawai.FINGER_ID == DinasLuar.FINGER_ID
                 ).filter(
-                    Pegawai.NAMA.ilike(f'%{filter_value}%'),
-                    Pegawai.IS_KELUAR == 'N',
-                )
-                query = query.join(
-                    MfUnitKerja,
-                    Pegawai.UNIT_KERJA_ID == MfUnitKerja.UNIT_KERJA_ID
-                ).filter(
-                    MfUnitKerja.IS_USE == 'Y'
+                    Pegawai.NAMA.ilike(f'%{filter_value}%')
                 )
             else:
                 field_mapping = {
                     'KeteranganDinasLuar': DinasLuar.KETERANGAN_DINAS_LUAR,
                     'PenempatanDinasLuar': DinasLuar.PENEMPATAN_DINAS_LUAR,
+                    'LokasiDinasLuar': DinasLuar.PENEMPATAN_DINAS_LUAR,
                     'NoSurat': DinasLuar.NO_SURAT,
                 }
                 field = field_mapping.get(filter_field)
@@ -554,10 +496,10 @@ def api_dinas_luar_cari():
             DinasLuar.TRANSAKSI_ID.desc()
         ).limit(1000).all()
 
-        # Group by GUID SPRIN agar satu SPRIN hanya tampil satu kali.
+        # Satu SPRIN hanya tampil satu kali.
         grouped = {}
         for row in rows:
-            key = row.GUID_SPRIN or row.TRANSAKSI_ID
+            key = row.GUID_SPRIN or row.NO_SURAT or row.TRANSAKSI_ID
             if key not in grouped:
                 grouped[key] = row
 
@@ -573,15 +515,15 @@ def api_dinas_luar_cari():
                 update_by_name = peg.NAMA if peg else row.UPDATE_BY
 
             tgl_awal = (
-                row.TGL_AWAL_SURAT.strftime('%d-%b-%Y')
+                row.TGL_AWAL_SURAT.strftime('%d-%m-%Y')
                 if row.TGL_AWAL_SURAT else '-'
             )
             tgl_akhir = (
-                row.TGL_AKHIR_SURAT.strftime('%d-%b-%Y')
+                row.TGL_AKHIR_SURAT.strftime('%d-%m-%Y')
                 if row.TGL_AKHIR_SURAT else '-'
             )
             update_date_str = (
-                row.UPDATE_DATE.strftime('%d-%b-%Y')
+                row.UPDATE_DATE.strftime('%d-%m-%Y')
                 if row.UPDATE_DATE else ''
             )
 
@@ -621,6 +563,7 @@ def api_dinas_luar_cari():
             'data': [],
             'total': 0,
         }), 500
+
 
 
 def api_dinas_luar_get_filter_fields():
