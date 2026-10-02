@@ -73,32 +73,6 @@
                     </div>
                 </div>
 
-                <div class="hris-form-row">
-                    <label class="hris-form-row-label" for="stafKepegawaian">Staf Kepegawaian</label>
-                    <div class="hris-autocomplete-wrap">
-                        <input type="text"
-                               id="stafKepegawaian"
-                               class="hris-input"
-                               placeholder="Ketik nama pegawai..."
-                               autocomplete="off">
-                        <input type="hidden" id="stafKepegawaianNip">
-                        <div id="stafKepegawaianResults" class="hris-autocomplete-results"></div>
-                    </div>
-                </div>
-
-                <div class="hris-form-row">
-                    <label class="hris-form-row-label" for="kasubagUmum">Kasubag Umum</label>
-                    <div class="hris-autocomplete-wrap">
-                        <input type="text"
-                               id="kasubagUmum"
-                               class="hris-input"
-                               placeholder="Ketik nama pegawai..."
-                               autocomplete="off">
-                        <input type="hidden" id="kasubagUmumNip">
-                        <div id="kasubagUmumResults" class="hris-autocomplete-results"></div>
-                    </div>
-                </div>
-
                 <div class="hris-form-actions">
                     <button type="button" id="btnPreviewUM" class="hris-btn hris-btn-primary">
                         <i class="feather-eye"></i>
@@ -138,10 +112,6 @@
                 <div class="hris-summary-item">
                     <span>Unit Kerja</span>
                     <strong id="previewUnit">-</strong>
-                </div>
-                <div class="hris-summary-item">
-                    <span>Total Hari UM</span>
-                    <strong id="previewTotalHari">0</strong>
                 </div>
                 <div class="hris-summary-item">
                     <span>Total Uang Makan</span>
@@ -213,31 +183,6 @@
     border-radius: 0;
     padding-bottom: 11px;
 }
-.hris-autocomplete-wrap { position: relative; width: 100%; }
-.hris-autocomplete-results {
-    display: none;
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: calc(100% + 4px);
-    z-index: 20;
-    max-height: 220px;
-    overflow-y: auto;
-    background: var(--hris-surface, #fff);
-    border: 1px solid var(--hris-border, #e2e8f0);
-    border-radius: 10px;
-    box-shadow: 0 8px 24px rgba(15,23,42,.12);
-}
-.hris-autocomplete-results button {
-    display: block;
-    width: 100%;
-    border: 0;
-    background: transparent;
-    text-align: left;
-    padding: 10px 12px;
-    cursor: pointer;
-}
-.hris-autocomplete-results button:hover { background: rgba(243,107,44,.08); }
 .hris-badge {
     display: inline-flex;
     align-items: center;
@@ -304,8 +249,6 @@
         const fd = new FormData();
         checked.forEach(cb => fd.append('unit_kerja[]', cb.value));
         fd.append('bulan', tahun.value + '-' + bulan.value);
-        fd.append('staf_kepegawaian', document.getElementById('stafKepegawaian').value.trim());
-        fd.append('kasubag_umum', document.getElementById('kasubagUmum').value.trim());
         return fd;
     }
 
@@ -396,7 +339,6 @@
                 tbody.appendChild(tr);
             });
 
-            document.getElementById('previewTotalHari').textContent = totalHari.toLocaleString('id-ID');
             document.getElementById('previewTotalHariFoot').textContent = totalHari.toLocaleString('id-ID');
 
             previewCard.style.display = '';
@@ -466,70 +408,5 @@
     });
     items.forEach(x => x.addEventListener('change', updateUnits));
 
-    function setupAutocomplete(inputId, nipId, resultId) {
-        const input = document.getElementById(inputId);
-        const nip = document.getElementById(nipId);
-        const box = document.getElementById(resultId);
-        let timer = null;
-
-        input.addEventListener('input', () => {
-            nip.value = '';
-            clearTimeout(timer);
-            const keyword = input.value.trim();
-
-            if (!keyword) {
-                box.innerHTML = '';
-                box.style.display = 'none';
-                return;
-            }
-
-            timer = setTimeout(async () => {
-                try {
-                    const res = await fetch('/api/search_pegawai?keyword=' + encodeURIComponent(keyword), {
-                        method: 'GET',
-                        credentials: 'same-origin',
-                        headers: { 'Accept': 'application/json' }
-                    });
-
-                    const contentType = res.headers.get('content-type') || '';
-                    if (!res.ok || !contentType.includes('application/json')) {
-                        throw new Error('Endpoint pencarian pegawai tidak dapat diakses.');
-                    }
-
-                    const data = await res.json();
-                    box.innerHTML = '';
-
-                    (data.data || []).forEach(row => {
-                        const button = document.createElement('button');
-                        button.type = 'button';
-                        button.innerHTML = '<strong>' + esc(row.nama || '') + '</strong><br><small>' + esc(row.nip || '') + '</small>';
-                        button.addEventListener('click', () => {
-                            input.value = row.nama || '';
-                            nip.value = row.nip || '';
-                            box.style.display = 'none';
-                        });
-                        box.appendChild(button);
-                    });
-
-                    if (!box.children.length) {
-                        box.innerHTML = '<button type="button" disabled>Pegawai tidak ditemukan</button>';
-                    }
-                    box.style.display = '';
-                } catch (_) {
-                    box.innerHTML = '<button type="button" disabled>Gagal mencari pegawai</button>';
-                    box.style.display = '';
-                }
-            }, 250);
-        });
-
-        document.addEventListener('click', event => {
-            if (!event.target.closest('#' + inputId) && !event.target.closest('#' + resultId)) {
-                box.style.display = 'none';
-            }
-        });
-    }
-
-    setupAutocomplete('stafKepegawaian', 'stafKepegawaianNip', 'stafKepegawaianResults');
-    setupAutocomplete('kasubagUmum', 'kasubagUmumNip', 'kasubagUmumResults');
 })();
 {% endblock %}
