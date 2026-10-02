@@ -1,292 +1,285 @@
-<!-- pages/dashboard_1/Kepegawaian Cari Dinas Luar Umum.html -->
-{% extends "layout/baseDashboard1.html" %}
+{% extends "layout/baseHRIS.html" %}
 
 {% block title %}- {{ search_title }}{% endblock %}
+{% block header_kicker %}KEPEGAWAIAN{% endblock %}
+{% block header_title %}{{ search_title }}{% endblock %}
 
 {% block content %}
-<div class="nxl-content">
-    <div class="page-header">
-        <div class="page-header-left d-flex align-items-center">
-            <div class="page-header-title">
-                <h5 class="m-b-10">Kepegawaian</h5>
-            </div>
-            <ul class="breadcrumb">
-                <li class="breadcrumb-item"><a href="/">Home</a></li>
-                <li class="breadcrumb-item"><a href="{{ url_for(main_url) }}">{{ page_title }}</a></li>
-                <li class="breadcrumb-item">{{ search_title }}</li>
-            </ul>
+<div class="hris-page">
+    <div class="hris-page-header">
+        <div>
+            <h2 class="hris-page-title">{{ search_title }}</h2>
+            <p class="hris-page-subtitle">Cari SPRIN Dinas Luar berdasarkan periode dan satu kriteria pencarian.</p>
         </div>
+        <a href="{{ url_for(main_url) }}" class="hris-btn hris-btn-secondary">
+            <i class="feather-x"></i><span>Tutup</span>
+        </a>
     </div>
 
-    <div class="main-content">
-        <div class="container-fluid">
-            <div class="card mb-4 shadow-sm" style="border-radius: 10px; overflow: hidden; border: none;">
-                <div class="card-header-custom d-flex justify-content-between align-items-center p-3"
-                    style="background: #ffffff; border-bottom: 1px solid #eee;">
-                    <h6 class="mb-0"><i class="bi bi-search me-2"></i>{{ search_title }}</h6>
-                    <a href="{{ url_for(main_url) }}" class="btn-close-custom text-dark">
-                        <i class="bi bi-x-lg"></i>
-                    </a>
+    <section class="hris-card">
+        <div class="hris-card-header">
+            <div>
+                <h3 class="hris-card-title">Pencarian Dinas Luar</h3>
+                <p class="hris-section-subtitle">Pilih tahun dan bulan, lalu gunakan satu filter bila diperlukan.</p>
+            </div>
+        </div>
+
+        <div class="hris-card-body">
+            <div class="search-grid">
+                <div class="search-field">
+                    <label for="filterTahun">Tahun</label>
+                    <select id="filterTahun" class="hris-select"></select>
                 </div>
 
-                <div class="card-body p-4">
-                    <!-- Filter Section -->
-                    <div class="filter-section mb-4">
-                        <!-- Baris Periode -->
-                        <div class="row mb-3 align-items-center">
-                            <div class="col-md-12 d-flex flex-column flex-md-row align-items-start align-items-md-center flex-wrap gap-2">
-                                <label class="fw-bold">Periode</label>
+                <div class="search-field">
+                    <label for="filterBulan">Bulan</label>
+                    <select id="filterBulan" class="hris-select">
+                        <option value="01">Januari</option>
+                        <option value="02">Februari</option>
+                        <option value="03">Maret</option>
+                        <option value="04">April</option>
+                        <option value="05">Mei</option>
+                        <option value="06">Juni</option>
+                        <option value="07">Juli</option>
+                        <option value="08">Agustus</option>
+                        <option value="09">September</option>
+                        <option value="10">Oktober</option>
+                        <option value="11">November</option>
+                        <option value="12">Desember</option>
+                    </select>
+                </div>
 
-                                <select id="filterBulan" class="form-select-sm border" style="width:150px;">
-                                    <option value="">- Bulan -</option>
-                                    <option value="01">Januari</option>
-                                    <option value="02">Februari</option>
-                                    <option value="03">Maret</option>
-                                    <option value="04">April</option>
-                                    <option value="05">Mei</option>
-                                    <option value="06">Juni</option>
-                                    <option value="07">Juli</option>
-                                    <option value="08">Agustus</option>
-                                    <option value="09">September</option>
-                                    <option value="10">Oktober</option>
-                                    <option value="11">November</option>
-                                    <option value="12">Desember</option>
-                                </select>
+                <div class="search-action">
+                    <button type="button" class="hris-btn hris-btn-primary" id="btnSearch">
+                        <i class="feather-search"></i><span>Cari</span>
+                    </button>
+                </div>
+            </div>
 
-                                <select id="filterTahun" class="form-select-sm border" style="width:110px;">
-                                    <option value="">- Tahun -</option>
-                                </select>
-
-                                <div class="form-check form-check-inline mb-0">
-                                    <input class="form-check-input" type="radio" name="periodeType" id="periodeBulan" value="bulan" checked>
-                                    <label class="form-check-label small" for="periodeBulan">Bulan</label>
-                                </div>
-
-                                <div class="form-check form-check-inline mb-0">
-                                    <input class="form-check-input" type="radio" name="periodeType" id="periodeTahun" value="tahun">
-                                    <label class="form-check-label small" for="periodeTahun">Tahun</label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Baris Filter -->
-                        <div class="row mb-3 align-items-center">
-                            <div class="col-md-12 d-flex flex-column flex-md-row align-items-start align-items-md-center flex-wrap gap-2">
-                                <label class="fw-bold">Filter</label>
-                                <select class="form-select-sm border" id="filterField1" style="width:180px;">
-                                    <option value="">- Pilih Field -</option>
-                                </select>
-                                <div class="input-group-custom" style="width:220px;">
-                                    <input type="text" class="form-control-sm border w-100" id="filterValue1" placeholder="Ketik lalu Enter...">
-                                </div>
-                                <span class="mx-md-2 fw-bold">Dan</span>
-                                <select class="form-select-sm border" id="filterField2" style="width:180px;">
-                                    <option value="">- Pilih Field -</option>
-                                </select>
-                                <div class="input-group-custom" style="width:220px;">
-                                    <input type="text" class="form-control-sm border w-100" id="filterValue2" placeholder="Ketik lalu Enter...">
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Tombol Refresh -->
-                        <div class="row">
-                            <div class="col-md-12 text-md-end mt-2">
-                                <button class="btn btn-orange-figma" id="btnRefresh">
-                                    <i class="bi bi-arrow-clockwise me-1"></i> Refresh
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Total Records -->
-                    <div class="mb-2">
-                        <span class="badge bg-primary" id="totalRecords">0 data</span>
-                    </div>
-
-                    <!-- Data Table -->
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-striped text-center align-middle">
-                            <thead style="background:#EB6831;">
-                                <tr>
-                                    <th style="color:white;">No</th>
-                                    <th style="color:white;">No. Surat</th>
-                                    <th style="color:white;">Tgl Surat</th>
-                                    <th style="color:white;">Keterangan</th>
-                                    <th style="color:white;">Penempatan</th>
-                                    <th style="color:white;">Update By</th>
-                                    <th style="color:white;">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tableBody">
-                                <tr>
-                                    <td colspan="7" style="padding: 20px;">
-                                        <i class="bi bi-inbox me-2"></i>Memuat data...
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+            <div class="filter-grid">
+                <div class="search-field">
+                    <label for="filterField">Filter</label>
+                    <select id="filterField" class="hris-select"></select>
+                </div>
+                <div class="search-field filter-value-wrap">
+                    <label for="filterValue">Nilai</label>
+                    <input type="text" class="hris-input" id="filterValue" placeholder="Ketik nama, nomor SPRIN, atau kata kunci...">
                 </div>
             </div>
         </div>
-    </div>
+    </section>
+
+    <section class="hris-card">
+        <div class="hris-card-header">
+            <div>
+                <h3 class="hris-card-title">Hasil Pencarian</h3>
+                <p class="hris-section-subtitle" id="resultInfo">Belum ada pencarian.</p>
+            </div>
+        </div>
+
+        <div class="hris-card-body">
+            <div class="hris-table-wrapper">
+                <table class="hris-table">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>No. Surat</th>
+                            <th>Tgl Surat</th>
+                            <th>Keterangan</th>
+                            <th>Penempatan</th>
+                            <th>Update By</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr>
+                            <td colspan="7" class="empty-row">Pilih periode lalu klik Cari.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
 </div>
+{% endblock %}
 
+{% block styles %}
 <style>
-    .btn-orange-figma {
-        background-color: #e66b30;
-        color: #fff;
-        border: none;
-        border-radius: 5px;
-        font-weight: 600;
-        padding: 6px 16px;
-    }
-    .btn-orange-figma:hover { background-color: #cc5a20; color: #fff; }
+.search-grid {
+    display:grid;
+    grid-template-columns:180px 180px auto;
+    gap:14px;
+    align-items:end;
+}
+.filter-grid {
+    display:grid;
+    grid-template-columns:280px minmax(280px,1fr);
+    gap:14px;
+    margin-top:18px;
+    padding-top:18px;
+    border-top:1px solid var(--hris-border,#e2e8f0);
+}
+.search-field label {
+    display:block;
+    font-size:12px;
+    font-weight:700;
+    color:#475569;
+    margin-bottom:6px;
+}
+.search-action { display:flex; justify-content:flex-start; }
+.empty-row { text-align:center !important; color:#94a3b8; padding:28px !important; }
+@media(max-width:800px) {
+    .search-grid,.filter-grid { grid-template-columns:1fr; }
+    .search-action .hris-btn { width:100%; }
+}
 </style>
 {% endblock %}
 
 {% block script %}
-<script>
-$(document).ready(function() {
-
-    // Jenis pencarian dikirim dari controller:
-    // DL  = Umum
-    // OPR = Operasi
-    // POT = SD/Pelatihan
+(function () {
     const typeSprin = "{{ type_sprin }}";
+    const tahunEl = document.getElementById('filterTahun');
+    const bulanEl = document.getElementById('filterBulan');
+    const fieldEl = document.getElementById('filterField');
+    const valueEl = document.getElementById('filterValue');
+    const searchBtn = document.getElementById('btnSearch');
+    const bodyEl = document.getElementById('tableBody');
+    const resultInfo = document.getElementById('resultInfo');
 
-    // Isi pilihan tahun secara dinamis
-    const currentYear = new Date().getFullYear();
-    for (let year = currentYear + 1; year >= 2000; year--) {
-        $('#filterTahun').append(
-            $('<option>', {
-                value: year,
-                text: year
-            })
-        );
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = String(now.getMonth() + 1).padStart(2, '0');
+
+    for (let year = currentYear; year >= 2000; year--) {
+        const option = document.createElement('option');
+        option.value = String(year);
+        option.textContent = String(year);
+        tahunEl.appendChild(option);
     }
 
-    loadFilterFields();
-    searchDinasLuar();
+    tahunEl.value = String(currentYear);
+    bulanEl.value = currentMonth;
 
-    $('#btnRefresh').click(searchDinasLuar);
-
-    $('#periodeBulan, #periodeTahun').on('change', function() {
-        updatePeriodeControl();
-    });
-
-    $('#filterBulan, #filterTahun').on('change', function() {
-        searchDinasLuar();
-    });
-
-    // Enter untuk search
-    $('#filterValue1, #filterValue2').on('keydown', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            searchDinasLuar();
-        }
-    });
-
-    function updatePeriodeControl() {
-        const periodeType = $('input[name="periodeType"]:checked').val();
-
-        if (periodeType === 'bulan') {
-            $('#filterBulan').prop('disabled', false);
-            $('#filterTahun').prop('disabled', false);
-        } else {
-            $('#filterBulan').prop('disabled', true).val('');
-            $('#filterTahun').prop('disabled', false);
-        }
-    }
-
-    updatePeriodeControl();
-
-    function loadFilterFields() {
-        $.get('/api/dinas-luar/filter-fields', function(response) {
-            if (response.success) {
-                const options = response.data.map(f =>
-                    `<option value="${f.field_id}">${f.field_name}</option>`
+    fetch('/api/dinas-luar/filter-fields', {credentials:'same-origin'})
+        .then(response => response.json())
+        .then(payload => {
+            if (!payload.success) return;
+            fieldEl.innerHTML = '<option value="">- Tanpa Filter -</option>' +
+                payload.data.map(item =>
+                    '<option value="' + escapeHtml(item.field_id) + '">' +
+                    escapeHtml(item.field_name) + '</option>'
                 ).join('');
-
-                $('#filterField1, #filterField2').append(options);
-            }
+        })
+        .catch(() => {
+            fieldEl.innerHTML =
+                '<option value="">- Tanpa Filter -</option>' +
+                '<option value="Nama">Nama</option>' +
+                '<option value="NoSurat">No. Surat</option>' +
+                '<option value="KeteranganDinasLuar">Keterangan</option>' +
+                '<option value="PenempatanDinasLuar">Penempatan</option>';
         });
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replaceAll('&','&amp;')
+            .replaceAll('<','&lt;')
+            .replaceAll('>','&gt;')
+            .replaceAll('"','&quot;')
+            .replaceAll("'","&#039;");
     }
 
     function searchDinasLuar() {
-        const periodeType = $('input[name="periodeType"]:checked').val();
+        const tahun = tahunEl.value;
+        const bulan = bulanEl.value;
+        const filterField = fieldEl.value;
+        const filterValue = valueEl.value.trim();
 
-        let periode = '';
-
-        if (periodeType === 'bulan') {
-            const bulan = $('#filterBulan').val();
-            const tahun = $('#filterTahun').val();
-
-            if (bulan && tahun) {
-                periode = `${tahun}-${bulan}`;
-            }
-        } else {
-            periode = $('#filterTahun').val();
+        if (!tahun || !bulan) {
+            resultInfo.textContent = 'Tahun dan bulan wajib dipilih.';
+            return;
         }
 
-        const params = {
-            filter_field1: $('#filterField1').val(),
-            filter_value1: $('#filterValue1').val(),
-            filter_field2: $('#filterField2').val(),
-            filter_value2: $('#filterValue2').val(),
-            periode: periode,
-            periode_type: periodeType,
+        searchBtn.disabled = true;
+        searchBtn.innerHTML = '<i class="feather-loader"></i><span>Mencari...</span>';
+        bodyEl.innerHTML =
+            '<tr><td colspan="7" class="empty-row">Memuat data...</td></tr>';
+
+        const params = new URLSearchParams({
+            periode: tahun + '-' + bulan,
+            periode_type: 'bulan',
+            filter_field1: filterField,
+            filter_value1: filterValue,
+            filter_field2: '',
+            filter_value2: '',
             type_sprin: typeSprin
-        };
-        
-        $('#btnRefresh').prop('disabled', true).html('<i class="bi bi-hourglass-split me-1"></i>Memuat...');
-        $('#tableBody').html('<tr><td colspan="7"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Memuat data...</td></tr>');
-        
-        $.get('/api/dinas-luar/cari', params, function(response) {
-            if (response.success) {
-                renderTable(response.data);
-                $('#totalRecords').text(`${response.total} data`);
+        });
+
+        fetch('/api/dinas-luar/cari?' + params.toString(), {
+            credentials:'same-origin'
+        })
+        .then(response => response.json().then(payload => ({response,payload})))
+        .then(({response,payload}) => {
+            if (!response.ok || !payload.success) {
+                throw new Error(payload.error || 'Gagal memuat data.');
             }
-        }).fail(function() {
-            $('#tableBody').html('<tr><td colspan="7" class="text-danger">Gagal memuat data</td></tr>');
-        }).always(function() {
-            $('#btnRefresh').prop('disabled', false).html('<i class="bi bi-arrow-clockwise me-1"></i> Refresh');
+
+            resultInfo.textContent =
+                payload.total + ' data ditemukan untuk ' +
+                bulanEl.options[bulanEl.selectedIndex].text + ' ' + tahun;
+
+            renderTable(payload.data || []);
+        })
+        .catch(error => {
+            resultInfo.textContent = 'Pencarian gagal.';
+            bodyEl.innerHTML =
+                '<tr><td colspan="7" class="empty-row" style="color:#b91c1c;">' +
+                escapeHtml(error.message || 'Gagal memuat data.') +
+                '</td></tr>';
+        })
+        .finally(() => {
+            searchBtn.disabled = false;
+            searchBtn.innerHTML = '<i class="feather-search"></i><span>Cari</span>';
         });
     }
-    
+
     function getDetailUrl(noSurat) {
         if (typeSprin === 'OPR') {
             return '/kepegawaian/dinas-luar-operasi?no_surat=' + encodeURIComponent(noSurat);
         }
-
         if (typeSprin === 'POT') {
             return '/kepegawaian/dinas-luar-pelatihan?no_surat=' + encodeURIComponent(noSurat);
         }
-
         return '/kepegawaian/dinas-luar-umum?no_surat=' + encodeURIComponent(noSurat);
     }
 
     function renderTable(data) {
-        const $tbody = $('#tableBody').empty();
-        if (!data || data.length === 0) {
-            $tbody.html('<tr><td colspan="7" class="text-center py-3 text-muted"><i class="bi bi-inbox me-2"></i>Tidak ada data</td></tr>');
+        if (!data.length) {
+            bodyEl.innerHTML =
+                '<tr><td colspan="7" class="empty-row">Tidak ada data pada periode dan filter yang dipilih.</td></tr>';
             return;
         }
-        data.forEach(function(item) {
-            $tbody.append(`
-                <tr>
-                    <td>${item.no}</td>
-                    <td><a href="${getDetailUrl(item.no_surat)}" class="text-primary fw-bold">${item.no_surat}</a></td>
-                    <td><small>${item.tgl_sprin}</small></td>
-                    <td class="text-start"><small>${item.keterangan}</small></td>
-                    <td class="text-start">${item.penempatan}</td>
-                    <td><small>${item.update_by}</small></td>
-                    <td><a href="${getDetailUrl(item.no_surat)}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i></a></td>
-                </tr>
-            `);
-        });
+
+        bodyEl.innerHTML = data.map(item => (
+            '<tr>' +
+            '<td class="hris-text-center">' + escapeHtml(item.no) + '</td>' +
+            '<td><a href="' + getDetailUrl(item.no_surat) + '">' + escapeHtml(item.no_surat) + '</a></td>' +
+            '<td>' + escapeHtml(item.tgl_sprin) + '</td>' +
+            '<td>' + escapeHtml(item.keterangan) + '</td>' +
+            '<td>' + escapeHtml(item.penempatan) + '</td>' +
+            '<td>' + escapeHtml(item.update_by) + '</td>' +
+            '<td class="hris-text-center"><a class="hris-icon-btn" title="Buka SPRIN" href="' +
+                getDetailUrl(item.no_surat) + '"><i class="feather-edit-2"></i></a></td>' +
+            '</tr>'
+        )).join('');
     }
-});
-</script>
+
+    searchBtn.addEventListener('click', searchDinasLuar);
+
+    valueEl.addEventListener('keydown', event => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            searchDinasLuar();
+        }
+    });
+})();
 {% endblock %}
