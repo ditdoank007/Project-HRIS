@@ -343,12 +343,17 @@
         try {
             const res = await fetch('/laporan/rekap-uang-makan/preview', {
                 method: 'POST',
+                credentials: 'same-origin',
                 body: buildFormData()
             });
-            const data = await res.json();
+
+            const contentType = res.headers.get('content-type') || '';
+            const data = contentType.includes('application/json')
+                ? await res.json()
+                : { error: await res.text() };
 
             if (!res.ok || !data.success) {
-                throw new Error(data.error || 'Gagal membuat preview.');
+                throw new Error(data.error || ('Gagal membuat preview. HTTP ' + res.status));
             }
 
             document.getElementById('previewPeriod').textContent = data.bulan || '-';
@@ -481,7 +486,7 @@
 
             timer = setTimeout(async () => {
                 try {
-                    const res = await fetch('/api/laporan/search-pegawai?keyword=' + encodeURIComponent(keyword));
+                    const res = await fetch('/api/laporan/rekap-uang-makan/search-pegawai?keyword=' + encodeURIComponent(keyword));
                     const data = await res.json();
                     box.innerHTML = '';
 
