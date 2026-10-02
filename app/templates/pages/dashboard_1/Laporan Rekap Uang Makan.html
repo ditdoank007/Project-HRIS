@@ -485,7 +485,17 @@
 
             timer = setTimeout(async () => {
                 try {
-                    const res = await fetch('/api/laporan/rekap-uang-makan/search-pegawai?keyword=' + encodeURIComponent(keyword));
+                    const res = await fetch('/api/search_pegawai?keyword=' + encodeURIComponent(keyword), {
+                        method: 'GET',
+                        credentials: 'same-origin',
+                        headers: { 'Accept': 'application/json' }
+                    });
+
+                    const contentType = res.headers.get('content-type') || '';
+                    if (!res.ok || !contentType.includes('application/json')) {
+                        throw new Error('Endpoint pencarian pegawai tidak dapat diakses.');
+                    }
+
                     const data = await res.json();
                     box.innerHTML = '';
 
