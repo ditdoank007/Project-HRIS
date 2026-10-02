@@ -400,153 +400,161 @@ def kepegawaian_cari_dinas_luar_umum(type_sprin='DL'):
 
 def api_dinas_luar_cari():
     """
-    API pencarian Dinas Luar berdasarkan jenis SPRIN dan periode.
-    DL  = Umum
-    OPR = Operasi
-    POT = Pelatihan/SD
+    API pencarian Dinas Luar berdasarkan data DINAS_LUAR.
+
+    Pencarian tidak membaca SPRIN_HEADER karena database HRIS legacy
+    pada environment aktif memiliki perbedaan schema untuk tabel tersebut.
+    DINAS_LUAR adalah sumber peserta/header yang sudah dipakai modul
+    Dinas Luar Umum dan menyimpan GUID SPRIN, nomor surat, periode,
+    keterangan, penempatan, serta jenis Dinas Luar.
     """
     try:
-        filter_field1 = request.args.get('filter_field1', '')
-        filter_value1 = request.args.get('filter_value1', '')
-        filter_field2 = request.args.get('filter_field2', '')
-        filter_value2 = request.args.get('filter_value2', '')
-
-        periode = request.args.get('periode', '')
-        periode_type = request.args.get('periode_type', 'bulan')
+        filter_field = request.args.get('filter_field1', '').strip()
+        filter_value = request.args.get('filter_value1', '').strip()
+        periode = request.args.get('periode', '').strip()
+        periode_type = request.args.get('periode_type', 'bulan').strip().lower()
         type_sprin = request.args.get('type_sprin', 'DL').upper()
 
-        if type_sprin not in ('DL', 'OPR', 'POT'):
-            type_sprin = 'DL'
+        jenis_map = {
+            'DL': 'DL',
+            'OPR': 'OP',
+            'POT': 'PL',
+        }
+        jenis = jenis_map.get(type_sprin, 'DL')
 
-        query = SprinHeader.query.filter(
-            SprinHeader.TYPE_SPRIN_ID == type_sprin
+        # Satu record DinasLuar = satu peserta. Hasil pencarian kemudian
+        # dikelompokkan berdasarkan GUID SPRIN agar satu SPRIN hanya tampil
+        # satu kali di tabel hasil.
+        query = DinasLuar.query.filter(
+            DinasLuar.TRANSAKSI == 'DinasLuar',
+            DinasLuar.JENIS == jenis,
         )
 
-        # Filter periode
+        # Filter periode berdasarkan tanggal surat yang tersimpan di
+        # DINAS_LUAR. Ini ekuivalen dengan periode TGL_AWAL_SPRIN.
         if periode:
+            from sqlalchemy import extract
+
             if periode_type == 'bulan':
-                # Format: YYYY-MM
                 try:
                     tahun, bulan = periode.split('-')
-                    tahun = int(tahun)
-                    bulan = int(bulan)
-
-                    from sqlalchemy import extract
-
                     query = query.filter(
-                        extract('year', SprinHeader.TGL_AWAL_SPRIN) == tahun,
-                        extract('month', SprinHeader.TGL_AWAL_SPRIN) == bulan
+                        extract('year', DinasLuar.TGL_AWAL_SURAT) == int(tahun),
+                        extract('month', DinasLuar.TGL_AWAL_SURAT) == int(bulan),
                     )
                 except (ValueError, TypeError):
-                    pass
+                    return jsonify({
+                        'success': False,
+                        'error': 'Format periode tidak valid.',
+                        'data': [],
+                        'total': 0,
+                    }), 400
 
             elif periode_type == 'tahun':
                 try:
-                    tahun = int(periode)
-
-                    from sqlalchemy import extract
-
                     query = query.filter(
-                        extract('year', SprinHeader.TGL_AWAL_SPRIN) == tahun
+                        extract('year', DinasLuar.TGL_AWAL_SURAT) == int(periode)
                     )
                 except (ValueError, TypeError):
-                    pass
+                    return jsonify({
+                        'success': False,
+                        'error': 'Format tahun tidak valid.',
+                        'data': [],
+                        'total': 0,
+                    }), 400
 
-        # Filter satu field. Nama dicari melalui peserta SPRIN.
-        field_mapping = {
-            'Nama': None,
-            'KeteranganDinasLuar': SprinHeader.PERIHAL_SPRIN,
-            'PenempatanDinasLuar': SprinHeader.PENEMPATAN,
-            'NoSurat': SprinHeader.NO_SPRIN,
-        }
-
-        if filter_field1 and filter_value1:
-            if filter_field1 == 'Nama':
-                query = (
-                    query
-                    .join(
-                        DinasLuar,
-                        DinasLuar.GUID_SPRIN == SprinHeader.GUID_SPRIN
-                    )
-                    .join(
-                        Pegawai,
-                        Pegawai.FINGER_ID == DinasLuar.FINGER_ID
-                    )
-                    .filter(
-                        DinasLuar.TRANSAKSI.ilike('DinasLuar'),
-                        Pegawai.NAMA.ilike(f'%{filter_value1}%')
-                    )
-                    .distinct()
+        # Filter satu field.
+        if filter_field and filter_value:
+            if filter_field == 'Nama':
+                # DINAS_LUAR menyimpan FingerID pada schema legacy.
+                query = query.join(
+                    Pegawai,
+                    Pegawai.FINGER_ID == DinasLuar.FINGER_ID
+                ).filter(
+                    Pegawai.NAMA.ilike(f'%{filter_value}%')
                 )
             else:
-                field = field_mapping.get(filter_field1)
+                field_mapping = {
+                    'KeteranganDinasLuar': DinasLuar.KETERANGAN_DINAS_LUAR,
+                    'PenempatanDinasLuar': DinasLuar.PENEMPATAN_DINAS_LUAR,
+                    'NoSurat': DinasLuar.NO_SURAT,
+                }
+                field = field_mapping.get(filter_field)
                 if field is not None:
-                    query = query.filter(field.ilike(f'%{filter_value1}%'))
+                    query = query.filter(field.ilike(f'%{filter_value}%'))
 
-        query = query.order_by(
-            SprinHeader.TGL_AWAL_SPRIN.desc()
-        )
+        rows = query.order_by(
+            DinasLuar.TGL_AWAL_SURAT.desc(),
+            DinasLuar.TRANSAKSI_ID.desc()
+        ).limit(1000).all()
 
-        results = query.limit(500).all()
+        # Group by GUID SPRIN. Urutan mengikuti record terbaru.
+        grouped = {}
+        for row in rows:
+            key = row.GUID_SPRIN or row.TRANSAKSI_ID
+            if key not in grouped:
+                grouped[key] = row
 
-        jenis_map = {
-            'DL': 'Umum',
-            'OPR': 'Operasi',
-            'POT': 'Pelatihan'
-        }
+        results = list(grouped.values())[:500]
 
         data = []
-
-        for i, sprin in enumerate(results, 1):
+        for i, row in enumerate(results, 1):
             update_by_name = ''
-
-            if sprin.UPDATE_BY:
-                peg = Pegawai.query.filter(Pegawai.NIP == sprin.UPDATE_BY).first()
-                update_by_name = peg.NAMA if peg else sprin.UPDATE_BY
-
-            update_date_str = (
-                sprin.UPDATE_DATE.strftime('%d-%b-%Y')
-                if sprin.UPDATE_DATE else ''
-            )
+            if row.UPDATE_BY:
+                peg = Pegawai.query.filter(
+                    Pegawai.NIP == row.UPDATE_BY
+                ).first()
+                update_by_name = peg.NAMA if peg else row.UPDATE_BY
 
             tgl_awal = (
-                sprin.TGL_AWAL_SPRIN.strftime('%d-%b-%Y')
-                if sprin.TGL_AWAL_SPRIN else '-'
+                row.TGL_AWAL_SURAT.strftime('%d-%b-%Y')
+                if row.TGL_AWAL_SURAT else '-'
             )
-
-            tgl_akhir = sprin.TGL_AKHIR_SPRIN or '-'
+            tgl_akhir = (
+                row.TGL_AKHIR_SURAT.strftime('%d-%b-%Y')
+                if row.TGL_AKHIR_SURAT else '-'
+            )
+            update_date_str = (
+                row.UPDATE_DATE.strftime('%d-%b-%Y')
+                if row.UPDATE_DATE else ''
+            )
 
             data.append({
                 'no': i,
-                'no_surat': sprin.NO_SPRIN or '-',
-                'tgl_sprin': f"{tgl_awal} - {tgl_akhir}",
-                'keterangan': sprin.PERIHAL_SPRIN or '-',
-                'penempatan': sprin.PENEMPATAN or '-',
+                'no_surat': row.NO_SURAT or '-',
+                'tgl_sprin': (
+                    f'{tgl_awal} - {tgl_akhir}'
+                    if tgl_akhir != '-' else tgl_awal
+                ),
+                'keterangan': row.KETERANGAN_DINAS_LUAR or '-',
+                'penempatan': row.PENEMPATAN_DINAS_LUAR or '-',
                 'update_by': (
-                    f"{update_by_name} - {update_date_str}"
+                    f'{update_by_name} - {update_date_str}'
                     if update_by_name else '-'
                 ),
-                'guid_sprin': sprin.GUID_SPRIN,
-                'jenis': jenis_map.get(type_sprin, 'Umum'),
+                'guid_sprin': row.GUID_SPRIN,
+                'jenis': type_sprin,
             })
 
         return jsonify({
             'success': True,
             'type_sprin': type_sprin,
             'data': data,
-            'total': len(data)
+            'total': len(data),
         })
 
     except Exception as e:
+        db.session.rollback()
         import traceback
-        print("ERROR in api_dinas_luar_cari:")
+        print('ERROR in api_dinas_luar_cari:')
         traceback.print_exc()
 
         return jsonify({
+            'success': False,
             'error': str(e),
             'data': [],
-            'success': False
-        })
+            'total': 0,
+        }), 500
 
 def api_dinas_luar_get_filter_fields():
     """API: Get field pencarian Dinas Luar."""
