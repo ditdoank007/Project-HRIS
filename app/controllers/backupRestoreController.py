@@ -44,19 +44,19 @@ def backup_mariadb_home():
     denied = _backup_restore_read_json()
     if denied:
         return denied
-    return render_template("pages/dashboard_1/Backup MariaDB.html")
+    return render_template("pages/dashboard_1/Backup MariaDB.html", can_modify=can_modify(BACKUP_RESTORE_FORM_ID))
 
 def restore_mariadb_home():
     denied = _backup_restore_read_json()
     if denied:
         return denied
-    return render_template("pages/dashboard_1/Restore MariaDB.html")
+    return render_template("pages/dashboard_1/Restore MariaDB.html", can_modify=can_modify(BACKUP_RESTORE_FORM_ID))
 
 def import_mssql_home():
     denied = _backup_restore_read_json()
     if denied:
         return denied
-    return render_template("pages/dashboard_1/Impor MSSQL 2013.html")
+    return render_template("pages/dashboard_1/Impor MSSQL 2013.html", can_modify=can_modify(BACKUP_RESTORE_FORM_ID))
 
 
 def api_backup_mariadb():
