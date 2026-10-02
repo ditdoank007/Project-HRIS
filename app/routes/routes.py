@@ -64,6 +64,9 @@ from app.controllers.dashboard_1KepegawaianController import (
 )
 from app.controllers.backupRestoreController import (
     backup_restore_home,
+    backup_mariadb_home,
+    restore_mariadb_home,
+    import_mssql_home,
     api_backup_mariadb,
     api_backup_mariadb_list,
     api_restore_mariadb,
@@ -343,6 +346,21 @@ def preview_pegawai():
 @login_required
 def view_backup_restore():
     return backup_restore_home()
+
+@main.route('/backup-restore/backup-mariadb')
+@login_required
+def view_backup_mariadb():
+    return backup_mariadb_home()
+
+@main.route('/backup-restore/restore-mariadb')
+@login_required
+def view_restore_mariadb():
+    return restore_mariadb_home()
+
+@main.route('/backup-restore/import-mssql-2013')
+@login_required
+def view_import_mssql_2013():
+    return import_mssql_home()
 
 
 @main.route('/api/backup-mariadb', methods=['POST'])
