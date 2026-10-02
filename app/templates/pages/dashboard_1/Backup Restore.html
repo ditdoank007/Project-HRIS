@@ -172,7 +172,7 @@
 
     async function loadBackups() {
         try {
-            const data = await jsonFetch("{{ url_for('main.api_backup_mariadb_route_list_route') }}");
+            const data = await jsonFetch("{{ url_for('main.api_backup_mariadb_list_route') }}");
             el("restoreFile").innerHTML = '<option value="">Pilih file backup...</option>';
             el("backupTable").innerHTML = "";
             data.data.forEach(row => {
