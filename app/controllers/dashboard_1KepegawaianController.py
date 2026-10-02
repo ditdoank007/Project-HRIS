@@ -1667,9 +1667,10 @@ def api_dinas_luar_save_peserta():
 
 
 def api_dinas_luar_save():
-    """Simpan header SPRIN, PDF NFS, dan seluruh peserta."""
+    """Simpan SPRIN Dinas Luar Umum langsung ke DINAS_LUAR."""
     try:
         no_surat = str(request.form.get('no_surat') or '').strip()
+        guid_requested = str(request.form.get('guid_sprin') or '').strip()
         tgl_awal_text = str(request.form.get('tgl_awal_surat') or '').strip()
         tgl_akhir_text = str(request.form.get('tgl_akhir_surat') or '').strip()
         keterangan = str(request.form.get('keterangan') or '').strip()
@@ -1683,6 +1684,7 @@ def api_dinas_luar_save():
             return jsonify({'success': False, 'error': 'Tanggal surat wajib diisi.'}), 400
         if not keterangan:
             return jsonify({'success': False, 'error': 'Keterangan wajib diisi.'}), 400
+
         start_date = datetime.strptime(tgl_awal_text, '%Y-%m-%d').date()
         end_date = datetime.strptime(tgl_akhir_text, '%Y-%m-%d').date()
         if end_date < start_date:
@@ -1699,19 +1701,25 @@ def api_dinas_luar_save():
             nip = str(peserta.get('nip') or '').strip()
             start_text = str(peserta.get('tgl_awal') or '').strip()
             end_text = str(peserta.get('tgl_akhir') or '').strip()
+
             if not nip or not start_text or not end_text:
                 continue
+
             if nip in seen:
                 return jsonify({'success': False, 'error': f'Pegawai {nip} tercatat lebih dari satu kali.'}), 400
 
             person_start = datetime.strptime(start_text, '%Y-%m-%d')
             person_end = datetime.strptime(end_text, '%Y-%m-%d')
+
             if person_end < person_start:
                 return jsonify({'success': False, 'error': f'Periode Dinas Luar {nip} tidak valid.'}), 400
 
             pegawai = Pegawai.query.filter(Pegawai.NIP == nip).first()
             if not pegawai or not pegawai.FINGER_ID:
-                return jsonify({'success': False, 'error': f'Data pegawai {nip} tidak ditemukan atau FingerID belum tersedia.'}), 400
+                return jsonify({
+                    'success': False,
+                    'error': f'Data pegawai {nip} tidak ditemukan atau FingerID belum tersedia.'
+                }), 400
 
             seen.add(nip)
             normalized.append({
@@ -1724,62 +1732,85 @@ def api_dinas_luar_save():
         if not normalized:
             return jsonify({'success': False, 'error': 'Tidak ada peserta yang valid.'}), 400
 
-        header = SprinHeader.query.filter(
-            SprinHeader.NO_SPRIN == no_surat,
-            SprinHeader.TYPE_SPRIN_ID == 'DL'
-        ).first()
+        # ========================================================
+        # DINAS_LUAR = SINGLE SOURCE OF TRUTH MODUL INI
+        #
+        # Jangan query SPRIN_HEADER. Schema legacy pada database
+        # aktif tidak sesuai dengan model SprinHeader.
+        # ========================================================
+        existing_rows = []
 
-        existing_filename = None
-        existing_file_date = None
-        if header:
-            existing_row = DinasLuar.query.filter(
-                DinasLuar.GUID_SPRIN == header.GUID_SPRIN,
+        if guid_requested:
+            existing_rows = DinasLuar.query.filter(
+                DinasLuar.GUID_SPRIN == guid_requested,
                 DinasLuar.JENIS == 'DL',
-            ).first()
-            existing_filename = existing_row.NAMA_FILE if existing_row else None
-            existing_file_date = existing_row.TGL_AWAL_SURAT if existing_row else None
+                DinasLuar.TRANSAKSI == 'DinasLuar',
+            ).all()
 
-        if not upload and (not existing_filename or (existing_file_date and existing_file_date != start_date)):
-            return jsonify({'success': False, 'error': 'File SPRIN PDF wajib dipilih untuk data baru.'}), 400
+        if not existing_rows:
+            existing_rows = DinasLuar.query.filter(
+                DinasLuar.NO_SURAT == no_surat,
+                DinasLuar.JENIS == 'DL',
+                DinasLuar.TRANSAKSI == 'DinasLuar',
+            ).all()
 
-        if not header:
-            header = SprinHeader(
-                GUID_SPRIN=f"DLU_{datetime.now():%Y-%m}_{uuid.uuid4()}",
-                TYPE_SPRIN_ID='DL',
-                NO_SPRIN=no_surat,
-            )
-            db.session.add(header)
+        existing_guid = existing_rows[0].GUID_SPRIN if existing_rows else None
+        guid_sprin = existing_guid or guid_requested or f"DLU_{datetime.now():%Y-%m}_{uuid.uuid4()}"
 
-        header.TGL_SPRIN = start_date
-        header.TGL_AWAL_SPRIN = start_date
-        header.TGL_AKHIR_SPRIN = end_date
-        header.PERIHAL_SPRIN = keterangan
-        header.PENEMPATAN = penempatan
-        header.UPDATE_BY = session.get('nip') or 'admin'
-        header.UPDATE_DATE = datetime.now()
-        db.session.flush()
+        existing_filename = existing_rows[0].NAMA_FILE if existing_rows else None
+        existing_file_date = existing_rows[0].TGL_AWAL_SURAT if existing_rows else None
 
-        old_rows = DinasLuar.query.filter(
-            DinasLuar.GUID_SPRIN == header.GUID_SPRIN,
-            DinasLuar.JENIS == 'DL'
-        ).all()
-        for row in old_rows:
-            db.session.delete(row)
-        db.session.flush()
+        # Jika record lama dipindah tanggal, file lama tidak boleh
+        # dianggap sebagai file untuk folder tanggal baru.
+        if not upload and (
+            not existing_filename
+            or (existing_file_date and existing_file_date != start_date)
+        ):
+            return jsonify({
+                'success': False,
+                'error': 'File SPRIN PDF wajib dipilih jika tanggal SPRIN berubah atau file belum tersedia.'
+            }), 400
+
+        # Hapus peserta lama dari SPRIN yang sama sebelum menulis
+        # snapshot peserta terbaru.
+        if existing_rows:
+            DinasLuar.query.filter(
+                DinasLuar.GUID_SPRIN == guid_sprin,
+                DinasLuar.JENIS == 'DL',
+                DinasLuar.TRANSAKSI == 'DinasLuar',
+            ).delete(synchronize_session=False)
+            db.session.flush()
 
         if upload:
-            saved_file = save_dinas_luar_pdf(upload, start_date, 'DL', keterangan)
+            saved_file = save_dinas_luar_pdf(
+                upload,
+                start_date,
+                'DL',
+                keterangan
+            )
         else:
             saved_file = {
                 'filename': existing_filename,
-                'relative_path': dinas_luar_relative_path(start_date, 'DL', keterangan),
+                'relative_path': dinas_luar_relative_path(
+                    start_date,
+                    'DL',
+                    keterangan
+                ),
             }
+
+        update_by = session.get('nip') or 'admin'
+        update_date = datetime.now()
 
         for item in normalized:
             pegawai = item['pegawai']
             person_start = item['start']
             person_end = item['end']
-            transaksi_id = f"DLU_{pegawai.FINGER_ID}_{person_start:%Y-%m-%d}_{person_end:%Y-%m-%d}"
+
+            transaksi_id = (
+                f"DLU_{pegawai.FINGER_ID}_"
+                f"{person_start:%Y-%m-%d}_"
+                f"{person_end:%Y-%m-%d}"
+            )
 
             db.session.add(DinasLuar(
                 TRANSAKSI_ID=transaksi_id,
@@ -1788,13 +1819,13 @@ def api_dinas_luar_save():
                 TGL_AKHIR_DINAS_LUAR=person_end,
                 KETERANGAN_DINAS_LUAR=keterangan,
                 PENEMPATAN_DINAS_LUAR=penempatan,
-                UPDATE_BY=session.get('nip') or 'admin',
-                UPDATE_DATE=datetime.now(),
+                UPDATE_BY=update_by,
+                UPDATE_DATE=update_date,
                 TRANSAKSI='DinasLuar',
                 PENDUKUNG='Y',
                 NO_SURAT=no_surat,
                 STATUS_UM=item['status_um'],
-                GUID_SPRIN=header.GUID_SPRIN,
+                GUID_SPRIN=guid_sprin,
                 JENIS='DL',
                 TGL_AWAL_SURAT=start_date,
                 TGL_AKHIR_SURAT=end_date,
@@ -1803,16 +1834,19 @@ def api_dinas_luar_save():
             ))
 
         db.session.commit()
+
         return jsonify({
             'success': True,
-            'guid_sprin': header.GUID_SPRIN,
+            'guid_sprin': guid_sprin,
             'filename': saved_file['filename'],
             'relative_path': saved_file['relative_path'],
             'message': f'SPRIN {no_surat} berhasil disimpan dengan {len(normalized)} peserta.'
         })
+
     except ValueError as e:
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 400
+
     except Exception as e:
         db.session.rollback()
         import traceback
