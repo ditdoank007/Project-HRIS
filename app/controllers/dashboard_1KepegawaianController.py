@@ -1590,7 +1590,42 @@ def api_dinas_luar_pelatihan_delete():
 
 
 def kepegawaian_dinas_luar_umum():
-    return render_template('pages/dashboard_1/Kepegawaian Dinas Luar Umum.html')
+    return render_template(
+        'pages/dashboard_1/Kepegawaian Dinas Luar Umum.html',
+        dinas_type='DL',
+        dinas_label='Dinas Luar Umum',
+        dinas_badge='DINAS LUAR / UMUM',
+        cari_endpoint='main.view_kepegawaian_cari_dinas_luar_umum',
+        api_save='/api/dinas-luar/save',
+        api_get='/api/dinas-luar/get',
+        api_delete='/api/dinas-luar/delete',
+    )
+
+
+def kepegawaian_dinas_luar_operasi():
+    return render_template(
+        'pages/dashboard_1/Kepegawaian Dinas Luar Umum.html',
+        dinas_type='OP',
+        dinas_label='Dinas Luar Operasi',
+        dinas_badge='DINAS LUAR / OPERASI',
+        cari_endpoint='main.view_kepegawaian_cari_dinas_luar_operasi',
+        api_save='/api/dinas-luar-operasi/save',
+        api_get='/api/dinas-luar-operasi/get',
+        api_delete='/api/dinas-luar-operasi/delete',
+    )
+
+
+def kepegawaian_dinas_luar_pelatihan():
+    return render_template(
+        'pages/dashboard_1/Kepegawaian Dinas Luar Umum.html',
+        dinas_type='PL',
+        dinas_label='Dinas Luar SD',
+        dinas_badge='DINAS LUAR / SD',
+        cari_endpoint='main.view_kepegawaian_cari_dinas_luar_pelatihan',
+        api_save='/api/dinas-luar-sd/save',
+        api_get='/api/dinas-luar-sd/get',
+        api_delete='/api/dinas-luar-sd/delete',
+    )
 
 
 def api_dinas_luar_search_pegawai():
