@@ -407,9 +407,9 @@ def api_dinas_luar_cari():
       OP = Dinas Luar Operasi
       PL = Dinas Luar SD
 
-    DINAS_LUAR adalah sumber data utama. Peserta tidak disaring
-    berdasarkan status pegawai aktif/unit kerja agar data SPRIN
-    historis tetap dapat dicari dan dibuka kembali.
+    DINAS_LUAR adalah sumber data utama, tetapi hasil operasional
+    tetap dibatasi pada peserta yang masih merupakan pegawai aktif
+    pada Unit Kerja yang masih digunakan HRIS.
     """
     try:
         from sqlalchemy import extract, func
@@ -442,12 +442,38 @@ def api_dinas_luar_cari():
         # TRANSAKSI tetap dipakai bila tersedia, tetapi record historis yang
         # JENIS-nya benar tidak boleh hilang hanya karena nilai Transaksi
         # berbeda/NULL.
-        query = DinasLuar.query.filter(
-            DinasLuar.JENIS.in_(jenis_values)
-        ).filter(
-            or_(
-                DinasLuar.TRANSAKSI == 'DinasLuar',
-                DinasLuar.TRANSAKSI.is_(None),
+        # ========================================================
+        # POPULASI OPERASIONAL HRIS
+        #
+        # SPRIN Dinas Luar hanya boleh muncul jika record peserta
+        # terhubung ke pegawai yang:
+        #
+        #   Pegawai.IS_KELUAR = 'N'
+        #   AND
+        #   MfUnitKerja.IS_USE = 'Y'
+        #
+        # Ini penting untuk mencegah pegawai dari Unit Kerja yang
+        # sudah dinonaktifkan (mis. Banyuwangi/Jember) tetap muncul
+        # pada pencarian Dinas Luar.
+        # ========================================================
+        query = (
+            DinasLuar.query
+            .join(
+                Pegawai,
+                Pegawai.FINGER_ID == DinasLuar.FINGER_ID
+            )
+            .join(
+                MfUnitKerja,
+                Pegawai.UNIT_KERJA_ID == MfUnitKerja.UNIT_KERJA_ID
+            )
+            .filter(
+                DinasLuar.JENIS.in_(jenis_values),
+                or_(
+                    DinasLuar.TRANSAKSI == 'DinasLuar',
+                    DinasLuar.TRANSAKSI.is_(None),
+                ),
+                Pegawai.IS_KELUAR == 'N',
+                MfUnitKerja.IS_USE == 'Y',
             )
         )
 
@@ -502,10 +528,7 @@ def api_dinas_luar_cari():
         # Filter satu field.
         if filter_field and filter_value:
             if filter_field == 'Nama':
-                query = query.join(
-                    Pegawai,
-                    Pegawai.FINGER_ID == DinasLuar.FINGER_ID
-                ).filter(
+                query = query.filter(
                     Pegawai.NAMA.ilike(f'%{filter_value}%')
                 )
             else:
