@@ -278,17 +278,54 @@ def calculate_uang_makan(nip, year, month):
     else:
         employee_days = list(workdays)
 
-    # MyUM uses TOP(1) nominal ordered only by TglMulai DESC.
-    um = (
+    # Master Uang Makan HRIS Reborn:
+    #   1. hanya U.Makan + Intern + HariKerja=0
+    #   2. pilih record yang sudah berlaku pada akhir periode
+    #   3. cocokkan Fungsional dengan level golongan pegawai
+    #   4. fallback ke legacy Fungsional='All'
+    #   5. IDTunjangan menjadi identitas master yang benar-benar dipakai
+    def _golongan_level(value):
+        raw = str(value or "").strip().upper()
+        if not raw:
+            return None
+        raw = raw.replace("GOLONGAN", "").replace("GOL.", "").strip()
+        level = raw.split("/", 1)[0].strip()
+        return {"2": "II", "3": "III", "4": "IV"}.get(level, level)
+
+    master_rows = (
         MfTunjangan.query
-        .filter(
-            db.func.lower(MfTunjangan.JENIS_TUNJANGAN) == "u.makan"
-        )
+        .filter(db.func.lower(MfTunjangan.JENIS_TUNJANGAN) == "u.makan")
+        .filter(db.func.lower(MfTunjangan.ACTIVITY) == "intern")
+        .filter(MfTunjangan.HARI_KERJA == 0)
         .filter(MfTunjangan.TGL_MULAI <= effective_end)
-        .order_by(MfTunjangan.TGL_MULAI.desc())
-        .first()
+        .order_by(
+            MfTunjangan.TGL_MULAI.desc(),
+            MfTunjangan.IDTUNJANGAN.desc()
+        )
+        .all()
     )
-    nominal = float(um.NOMINAL or 0) if um else 0.0
+
+    employee_golongan = _golongan_level(pegawai.GOL_ID)
+    master_uang_makan = None
+
+    if employee_golongan:
+        for item in master_rows:
+            if _golongan_level(item.FUNGSIONAL) == employee_golongan:
+                master_uang_makan = item
+                break
+
+    if master_uang_makan is None:
+        for item in master_rows:
+            if str(item.FUNGSIONAL or "").strip().upper() == "ALL":
+                master_uang_makan = item
+                break
+
+    nominal = float(master_uang_makan.NOMINAL or 0) if master_uang_makan else 0.0
+    master_tunjangan_id = (
+        int(master_uang_makan.IDTUNJANGAN)
+        if master_uang_makan and master_uang_makan.IDTUNJANGAN is not None
+        else None
+    )
 
     # MyUM joins ABSENSI to KALENDER and keeps only workday attendance.
     # Keep one row per date, matching the legacy monthly counting model.
@@ -410,6 +447,8 @@ def calculate_uang_makan(nip, year, month):
                 "start": start.isoformat(),
                 "end": effective_end.isoformat(),
             },
+            "golongan": employee_golongan or "-",
+            "id_tunjangan": master_tunjangan_id,
             "nominal_per_hari": round(nominal, 2),
             "hari_kerja": len(employee_days),
             "dinas_luar": dinas_luar,
