@@ -421,14 +421,16 @@ def api_dinas_luar_cari():
         type_sprin = request.args.get('type_sprin', 'DL').strip().upper()
 
         jenis_map = {
-            'DL': 'DL',
-            'OPR': 'OP',
-            'OP': 'OP',
-            'POT': 'PL',
-            'PL': 'PL',
+            'DL': ['DL'],
+            'OPR': ['OP', 'OPR'],
+            'OP': ['OP', 'OPR'],
+            # SD/Sumda di data lama pernah tersimpan dengan beberapa
+            # penanda, sedangkan standar baru menggunakan JENIS='PL'.
+            'POT': ['PL', 'POT', 'SD'],
+            'PL': ['PL', 'POT', 'SD'],
         }
-        jenis = jenis_map.get(type_sprin)
-        if not jenis:
+        jenis_values = jenis_map.get(type_sprin)
+        if not jenis_values:
             return jsonify({
                 'success': False,
                 'error': 'Jenis Dinas Luar tidak valid.',
@@ -436,9 +438,17 @@ def api_dinas_luar_cari():
                 'total': 0,
             }), 400
 
+        # Jangan mengunci pencarian SD hanya pada satu variasi kode lama.
+        # TRANSAKSI tetap dipakai bila tersedia, tetapi record historis yang
+        # JENIS-nya benar tidak boleh hilang hanya karena nilai Transaksi
+        # berbeda/NULL.
         query = DinasLuar.query.filter(
-            DinasLuar.TRANSAKSI == 'DinasLuar',
-            DinasLuar.JENIS == jenis,
+            DinasLuar.JENIS.in_(jenis_values)
+        ).filter(
+            or_(
+                DinasLuar.TRANSAKSI == 'DinasLuar',
+                DinasLuar.TRANSAKSI.is_(None),
+            )
         )
 
         # Periode menggunakan tanggal SPRIN/header.
