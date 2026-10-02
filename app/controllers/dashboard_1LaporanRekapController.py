@@ -3095,7 +3095,7 @@ def export_rekap_uang_makan(preview=False, pdf=False):
         ]
 
         table_data = [[
-            "No", "NIP", "Nama", "Gol", "ID Master",
+            "No", "NIP", "Nama", "Gol",
             "DL", "CT", "Ijin", "Sakit", "TA",
             "UM (Hari)", "Nominal/Hari", "Jumlah Uang"
         ]]
@@ -3106,7 +3106,6 @@ def export_rekap_uang_makan(preview=False, pdf=False):
                 Paragraph(str(item["nip"] or ""), small_style),
                 Paragraph(str(item["nama"] or ""), small_style),
                 item["golongan"],
-                item["id_tunjangan"] or "-",
                 item["dl"],
                 item["cuti"],
                 item["ijin"],
@@ -3118,7 +3117,7 @@ def export_rekap_uang_makan(preview=False, pdf=False):
             ])
 
         table_data.append([
-            "", "", "", "", "", "", "", "", "", "",
+            "", "", "", "", "", "", "", "", "",
             "",
             "TOTAL",
             f"Rp {total_um:,.0f}".replace(",", "."),
@@ -3127,7 +3126,7 @@ def export_rekap_uang_makan(preview=False, pdf=False):
         table = Table(
             table_data,
             repeatRows=1,
-            colWidths=[24, 82, 178, 34, 48, 27, 27, 30, 32, 30, 45, 70, 82],
+            colWidths=[24, 105, 190, 34, 27, 27, 30, 32, 30, 45, 70, 82],
         )
         table.setStyle(TableStyle([
             ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f36b2c")),
@@ -3138,8 +3137,8 @@ def export_rekap_uang_makan(preview=False, pdf=False):
             ("GRID", (0, 0), (-1, -1), 0.35, colors.HexColor("#d9dee5")),
             ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
             ("ALIGN", (0, 0), (0, -1), "CENTER"),
-            ("ALIGN", (3, 1), (10, -1), "CENTER"),
-            ("ALIGN", (11, 1), (12, -1), "RIGHT"),
+            ("ALIGN", (3, 1), (9, -1), "CENTER"),
+            ("ALIGN", (10, 1), (11, -1), "RIGHT"),
             ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#f2f4f7")),
             ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
             ("TOPPADDING", (0, 0), (-1, -1), 4),
