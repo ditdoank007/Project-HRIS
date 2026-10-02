@@ -1816,7 +1816,6 @@ def api_dinas_luar_save(type_sprin=None):
             db.session.add(DinasLuar(
                 TRANSAKSI_ID=transaksi_id,
                 FINGER_ID=str(pegawai.FINGER_ID).strip(),
-                NIP=pegawai.NIP,
                 TGL_AWAL_DINAS_LUAR=item['start'],
                 TGL_AKHIR_DINAS_LUAR=item['end'],
                 KETERANGAN_DINAS_LUAR=keterangan,
@@ -1871,10 +1870,7 @@ def api_dinas_luar_get(type_sprin=None):
             db.session.query(DinasLuar, Pegawai)
             .outerjoin(
                 Pegawai,
-                or_(
-                    DinasLuar.FINGER_ID == Pegawai.FINGER_ID,
-                    DinasLuar.NIP == Pegawai.NIP,
-                )
+                DinasLuar.FINGER_ID == Pegawai.FINGER_ID
             )
             .filter(
                 DinasLuar.NO_SURAT == no_surat,
@@ -1905,7 +1901,7 @@ def api_dinas_luar_get(type_sprin=None):
                 'peserta': [
                     {
                         'transaksi_id': dl.TRANSAKSI_ID,
-                        'nip': peg.NIP if peg else (dl.NIP or ''),
+                        'nip': peg.NIP if peg else '',
                         'nama': peg.NAMA if peg else '-',
                         'tgl_awal': dl.TGL_AWAL_DINAS_LUAR.strftime('%Y-%m-%d') if dl.TGL_AWAL_DINAS_LUAR else '',
                         'tgl_akhir': dl.TGL_AKHIR_DINAS_LUAR.strftime('%Y-%m-%d') if dl.TGL_AKHIR_DINAS_LUAR else '',
