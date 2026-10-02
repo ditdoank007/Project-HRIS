@@ -2,7 +2,7 @@
 from datetime import datetime
 from pathlib import Path
 
-from flask import jsonify, render_template, request
+from flask import jsonify, redirect, render_template, request, url_for
 
 from app.services.backupRestoreService import (
     create_full_mariadb_backup,
@@ -23,10 +23,26 @@ def _admin_json():
 
 
 def backup_restore_home():
+    """Legacy entry point; redirect to the dedicated MariaDB backup page."""
+    return redirect(url_for("main.view_backup_mariadb"))
+
+def backup_mariadb_home():
     denied = _admin_json()
     if denied:
         return denied
-    return render_template("pages/dashboard_1/Backup Restore.html")
+    return render_template("pages/dashboard_1/Backup MariaDB.html")
+
+def restore_mariadb_home():
+    denied = _admin_json()
+    if denied:
+        return denied
+    return render_template("pages/dashboard_1/Restore MariaDB.html")
+
+def import_mssql_home():
+    denied = _admin_json()
+    if denied:
+        return denied
+    return render_template("pages/dashboard_1/Impor MSSQL 2013.html")
 
 
 def api_backup_mariadb():
