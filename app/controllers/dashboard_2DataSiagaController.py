@@ -3,6 +3,10 @@ from flask import render_template, request, jsonify, g, current_app, send_file
 from datetime import datetime, timedelta
 import uuid
 import io
+import os
+import hashlib
+import tempfile
+from pathlib import Path
 from xml.sax.saxutils import escape as xml_escape
 
 from reportlab.lib import colors
@@ -327,13 +331,363 @@ def api_absensi_kehadiran_get():
 
 
 
+
+def _siaga_document_key(tgl, unit_kerja_id, shift):
+    return f"{tgl}|{int(unit_kerja_id)}|{str(shift).strip()}"
+
+
+def _siaga_pdf_relative_path(selected_date, unit_kerja_id, shift):
+    return os.path.join(
+        "ABSEN_KEHADIRAN_SIAGA",
+        selected_date.strftime("%Y"),
+        selected_date.strftime("%m"),
+        selected_date.strftime("%d"),
+        str(int(unit_kerja_id)),
+        f"absen-kehadiran-shift{shift}.pdf",
+    ).replace(os.sep, "/")
+
+
+def _siaga_pdf_absolute_path(relative_path):
+    root = Path(current_app.config.get("HRIS_DATA_ROOT") or "/mnt/hris-data").resolve()
+    candidate = (root / relative_path).resolve()
+    if candidate != root and root not in candidate.parents:
+        raise ValueError("Path storage Absen Kehadiran Siaga tidak valid.")
+    return candidate
+
+
+def _siaga_signature_path(nip, finger_id=None):
+    root = Path(
+        current_app.config.get("HRIS_TTD_ROOT")
+        or "/mnt/hris-data/TTD_PEGAWAI"
+    ).resolve()
+    candidates = []
+    if nip:
+        candidates.append(root / f"{str(nip).strip()}.png")
+    if finger_id:
+        candidates.append(root / f"{str(finger_id).strip()}.png")
+    for candidate in candidates:
+        if candidate.is_file() and root in candidate.parents:
+            return candidate
+    return None
+
+
+def _siaga_kagahar(tgl, unit_kerja_id, shift):
+    row = db.session.execute(
+        db.text("""
+            SELECT
+                l.NIP,
+                p.Nama AS Nama,
+                p.Pangkat AS Pangkat,
+                p.FingerID AS FingerID,
+                p.Jabatan AS Jabatan
+            FROM LOG_ACTIVITIY l
+            LEFT JOIN PEGAWAI p ON p.NIP = l.NIP
+            WHERE l.Activity = 'Piket Siaga'
+              AND l.ActivityDate = :tgl
+              AND l.IDUnitKerja = :unit_kerja_id
+              AND l.Shift = :shift
+              AND UPPER(COALESCE(l.Fungsional, '')) IN ('KGR', 'KAGAHAR')
+              AND COALESCE(l.Pengganti, 0) = 0
+            ORDER BY l.NIP ASC
+            LIMIT 1
+        """),
+        {
+            "tgl": tgl,
+            "unit_kerja_id": int(unit_kerja_id),
+            "shift": str(shift),
+        }
+    ).mappings().first()
+    return row
+
+
+def _siaga_atasan_langsung():
+    return db.session.execute(
+        db.text("""
+            SELECT
+                NIP,
+                Nama,
+                Pangkat,
+                FingerID,
+                Jabatan
+            FROM PEGAWAI
+            WHERE isKeluar <> 'Y'
+              AND UPPER(COALESCE(Jabatan, '')) LIKE '%KEPALA SEKSI OPERASI%'
+            ORDER BY NIP ASC
+            LIMIT 1
+        """)
+    ).mappings().first()
+
+
+def _build_siaga_pdf(tgl, unit_kerja_id, shift):
+    response = api_absensi_kehadiran_get()
+    payload = response.get_json(silent=True) if hasattr(response, 'get_json') else None
+    if not payload or not payload.get('success'):
+        raise ValueError((payload or {}).get('error', 'Gagal mengambil data absensi.'))
+
+    rows = payload.get('data', [])
+    unit_row = db.session.execute(
+        db.text("""
+            SELECT UnitKerjaName
+            FROM MF_UNIT_KERJA
+            WHERE IDUnitKerja = :unit_kerja_id
+            LIMIT 1
+        """),
+        {'unit_kerja_id': int(unit_kerja_id)}
+    ).mappings().first()
+
+    unit_name = str((unit_row['UnitKerjaName'] if unit_row else 'Unit Kerja') or 'Unit Kerja').strip()
+    selected_date = datetime.strptime(tgl, '%Y-%m-%d')
+    hari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'][selected_date.weekday()]
+    bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+             'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'][selected_date.month - 1]
+
+    atasan = _siaga_atasan_langsung()
+    kagahar = _siaga_kagahar(tgl, unit_kerja_id, shift)
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=36,
+        leftMargin=36,
+        topMargin=36,
+        bottomMargin=36
+    )
+
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'DaftarHadirTitle', parent=styles['Heading1'],
+        fontName='Helvetica-Bold', fontSize=14, leading=17,
+        alignment=1, spaceAfter=8
+    )
+    subtitle_style = ParagraphStyle(
+        'DaftarHadirSubtitle', parent=styles['Normal'],
+        fontName='Helvetica', fontSize=10, leading=13,
+        alignment=1, spaceAfter=14
+    )
+    cell_style = ParagraphStyle(
+        'DaftarHadirCell', parent=styles['Normal'],
+        fontName='Helvetica', fontSize=8.5, leading=10
+    )
+    cell_center = ParagraphStyle(
+        'DaftarHadirCellCenter', parent=cell_style, alignment=1
+    )
+
+    elements = [
+        Paragraph('DAFTAR HADIR SIAGA SAR', title_style),
+        Paragraph(
+            f'{hari} {selected_date.day:02d}-{bulan}-{selected_date.year} Shift : {shift}',
+            subtitle_style
+        )
+    ]
+
+    table_data = [[
+        Paragraph('<b>No</b>', cell_center),
+        Paragraph('<b>Jabatan</b>', cell_center),
+        Paragraph('<b>Nama</b>', cell_center),
+        Paragraph(f'<b>Tanda Tangan<br/>Shift {shift}</b>', cell_center),
+        Paragraph('<b>Keterangan</b>', cell_center)
+    ]]
+
+    for idx, item in enumerate(rows, 1):
+        table_data.append([
+            Paragraph(str(idx), cell_center),
+            Paragraph(xml_escape(str(item.get('fungsional') or '-')), cell_center),
+            Paragraph(xml_escape(str(item.get('nama') or item.get('nip') or '-')), cell_style),
+            '',
+            ''
+        ])
+
+    if len(table_data) == 1:
+        table_data.append([
+            Paragraph('-', cell_center),
+            Paragraph('-', cell_center),
+            Paragraph('Tidak ada data Piket Siaga.', cell_style),
+            '',
+            ''
+        ])
+
+    table = Table(table_data, colWidths=[32, 70, 190, 115, 80], repeatRows=1)
+    table.setStyle(TableStyle([
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('ALIGN', (0, 0), (1, -1), 'CENTER'),
+        ('ALIGN', (3, 1), (4, -1), 'CENTER'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 5),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 5),
+        ('TOPPADDING', (0, 0), (-1, 0), 7),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 7),
+        ('TOPPADDING', (0, 1), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 10),
+    ]))
+    elements.append(table)
+    elements.append(Spacer(1, 28))
+
+    def person_cell(person):
+        if not person:
+            return Paragraph('-', cell_center)
+        name = xml_escape(str(person.get('Nama') or '-'))
+        nip = xml_escape(str(person.get('NIP') or '-'))
+        pangkat = xml_escape(str(person.get('Pangkat') or ''))
+        return Paragraph(
+            f'<b><u>{name}</u></b><br/>NIP. {nip}'
+            + (f'<br/>{pangkat}' if pangkat else ''),
+            cell_center
+        )
+
+    signature_cells = []
+    for person in (atasan, kagahar):
+        signature_path = _siaga_signature_path(
+            person.get('NIP') if person else None,
+            person.get('FingerID') if person else None
+        )
+        if signature_path:
+            from reportlab.platypus import Image
+            sig = Image(str(signature_path), width=110, height=42, kind='proportional')
+        else:
+            sig = ''
+        signature_cells.append(sig)
+
+    left_title = Paragraph('<b>Mengetahui</b><br/>Atasan Langsung', cell_center)
+    right_title = Paragraph(
+        xml_escape(f'{unit_name}, {hari} {selected_date.day:02d}-{bulan}-{selected_date.year}')
+        + '<br/><b>KAGAHAR</b>',
+        cell_center
+    )
+
+    sign_table = Table([
+        [left_title, right_title],
+        [signature_cells[0], signature_cells[1]],
+        [person_cell(atasan), person_cell(kagahar)],
+    ], colWidths=[235, 252])
+    sign_table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('TOPPADDING', (0, 0), (-1, 0), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 4),
+        ('TOPPADDING', (0, 1), (-1, 1), 5),
+        ('BOTTOMPADDING', (0, 1), (-1, 1), 5),
+        ('TOPPADDING', (0, 2), (-1, 2), 4),
+        ('BOTTOMPADDING', (0, 2), (-1, 2), 4),
+    ]))
+    elements.append(sign_table)
+    elements.append(Spacer(1, 8))
+
+    kagahar_log = kagahar.get('NIP') if kagahar else ''
+    if kagahar_log:
+        latest_log = db.session.execute(
+            db.text("""
+                SELECT GUIDLog
+                FROM LOG_ACTIVITIY
+                WHERE Activity = 'Piket Siaga'
+                  AND ActivityDate = :tgl
+                  AND IDUnitKerja = :unit_kerja_id
+                  AND Shift = :shift
+                  AND NIP = :nip
+                ORDER BY UpdateDate DESC
+                LIMIT 1
+            """),
+            {
+                'tgl': tgl,
+                'unit_kerja_id': int(unit_kerja_id),
+                'shift': str(shift),
+                'nip': kagahar_log,
+            }
+        ).mappings().first()
+        if latest_log:
+            elements.append(
+                Paragraph(
+                    xml_escape(f'LogID : {latest_log["GUIDLog"]}'),
+                    ParagraphStyle(
+                        'LogId', parent=styles['Normal'],
+                        fontSize=7.5, textColor=colors.grey
+                    )
+                )
+            )
+
+    doc.build(elements)
+    buffer.seek(0)
+    return buffer
+
+
+def _save_siaga_pdf(tgl, unit_kerja_id, shift, created_by=None):
+    selected_date = datetime.strptime(tgl, '%Y-%m-%d')
+    relative_path = _siaga_pdf_relative_path(selected_date, unit_kerja_id, shift)
+    target = _siaga_pdf_absolute_path(relative_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+
+    buffer = _build_siaga_pdf(tgl, unit_kerja_id, shift)
+    content = buffer.getvalue()
+    sha256 = hashlib.sha256(content).hexdigest()
+
+    fd, temp_path = tempfile.mkstemp(
+        prefix='.absen-siaga-', suffix='.tmp', dir=str(target.parent)
+    )
+    try:
+        with os.fdopen(fd, 'wb') as handle:
+            handle.write(content)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temp_path, target)
+    except Exception:
+        try:
+            os.unlink(temp_path)
+        except FileNotFoundError:
+            pass
+        raise
+
+    from app.models.hrisDocumentModel import HrisDocument
+    document_type = 'ABSEN_KEHADIRAN_SIAGA'
+    entity_type = 'PIKET_SIAGA'
+    entity_id = _siaga_document_key(tgl, unit_kerja_id, shift)
+    now = datetime.now()
+    document = (
+        HrisDocument.query
+        .filter(
+            HrisDocument.DOCUMENT_TYPE == document_type,
+            HrisDocument.ENTITY_TYPE == entity_type,
+            HrisDocument.ENTITY_ID == entity_id,
+        )
+        .first()
+    )
+    if document:
+        document.ORIGINAL_FILENAME = f'{selected_date.day:02d}-{selected_date.month:02d}-{selected_date.year}-absen-kehadiran-shift{shift}.pdf'
+        document.STORAGE_PATH = relative_path
+        document.MIME_TYPE = 'application/pdf'
+        document.FILE_SIZE = len(content)
+        document.SHA256 = sha256
+        document.UPDATE_BY = created_by
+        document.UPDATE_DATE = now
+    else:
+        document = HrisDocument(
+            DOCUMENT_TYPE=document_type,
+            ENTITY_TYPE=entity_type,
+            ENTITY_ID=entity_id,
+            ORIGINAL_FILENAME=f'{selected_date.day:02d}-{selected_date.month:02d}-{selected_date.year}-absen-kehadiran-shift{shift}.pdf',
+            STORAGE_PATH=relative_path,
+            MIME_TYPE='application/pdf',
+            FILE_SIZE=len(content),
+            SHA256=sha256,
+            CREATED_BY=created_by or 'HRIS',
+            CREATED_DATE=now,
+        )
+        db.session.add(document)
+    db.session.commit()
+    return {
+        'relative_path': relative_path,
+        'absolute_path': str(target),
+        'filename': document.ORIGINAL_FILENAME,
+        'sha256': sha256,
+        'entity_id': entity_id,
+    }
+
+
 def api_absensi_kehadiran_export_pdf():
-    """Export daftar hadir Piket Siaga ke PDF dengan filter yang sama seperti halaman."""
     try:
         shift = (request.args.get('shift', '') or '').strip()
         unit_kerja_id = (request.args.get('unit_kerja_id', '') or '').strip()
         tgl = (request.args.get('tgl', '') or '').strip()
-
         if not tgl:
             return jsonify({'success': False, 'error': 'Tanggal harus diisi.'}), 400
         if shift not in ('1', '2'):
@@ -341,144 +695,96 @@ def api_absensi_kehadiran_export_pdf():
         if not unit_kerja_id:
             return jsonify({'success': False, 'error': 'Pilih Unit Kerja sebelum mengunduh PDF.'}), 400
 
-        response = api_absensi_kehadiran_get()
-        payload = response.get_json(silent=True) if hasattr(response, 'get_json') else None
-        if not payload or not payload.get('success'):
-            return jsonify({
-                'success': False,
-                'error': (payload or {}).get('error', 'Gagal mengambil data absensi.')
-            }), 500
-
-        rows = payload.get('data', [])
-
-        unit_row = db.session.execute(
-            db.text("""
-                SELECT UnitKerjaName
-                FROM MF_UNIT_KERJA
-                WHERE IDUnitKerja = :unit_kerja_id
-                LIMIT 1
-            """),
-            {'unit_kerja_id': int(unit_kerja_id)}
-        ).mappings().first()
-        unit_name = str((unit_row['UnitKerjaName'] if unit_row else 'Unit Kerja') or 'Unit Kerja').strip()
-
-        selected_date = datetime.strptime(tgl, '%Y-%m-%d')
-        hari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'][selected_date.weekday()]
-        bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-                 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'][selected_date.month - 1]
-
-        buffer = io.BytesIO()
-        doc = SimpleDocTemplate(
-            buffer,
-            pagesize=A4,
-            rightMargin=36,
-            leftMargin=36,
-            topMargin=36,
-            bottomMargin=36
+        saved = _save_siaga_pdf(
+            tgl, unit_kerja_id, shift,
+            created_by=getattr(getattr(g, 'user', None), 'NIP', None) or 'HRIS'
         )
-
-        styles = getSampleStyleSheet()
-        title_style = ParagraphStyle(
-            'DaftarHadirTitle', parent=styles['Heading1'],
-            fontName='Helvetica-Bold', fontSize=14, leading=17,
-            alignment=1, spaceAfter=8
-        )
-        subtitle_style = ParagraphStyle(
-            'DaftarHadirSubtitle', parent=styles['Normal'],
-            fontName='Helvetica', fontSize=10, leading=13,
-            alignment=1, spaceAfter=14
-        )
-        cell_style = ParagraphStyle(
-            'DaftarHadirCell', parent=styles['Normal'],
-            fontName='Helvetica', fontSize=8.5, leading=10
-        )
-        cell_center = ParagraphStyle(
-            'DaftarHadirCellCenter', parent=cell_style, alignment=1
-        )
-
-        elements = [
-            Paragraph('DAFTAR HADIR SIAGA SAR', title_style),
-            Paragraph(
-                f'{hari} {selected_date.day:02d}-{bulan}-{selected_date.year} Shift : {shift}',
-                subtitle_style
-            )
-        ]
-
-        table_data = [[
-            Paragraph('<b>No</b>', cell_center),
-            Paragraph('<b>Jabatan</b>', cell_center),
-            Paragraph('<b>Nama</b>', cell_center),
-            Paragraph(f'<b>Tanda Tangan<br/>Shift {shift}</b>', cell_center),
-            Paragraph('<b>Keterangan</b>', cell_center)
-        ]]
-
-        for idx, item in enumerate(rows, 1):
-            table_data.append([
-                Paragraph(str(idx), cell_center),
-                Paragraph(xml_escape(str(item.get('fungsional') or '-')), cell_center),
-                Paragraph(xml_escape(str(item.get('nama') or item.get('nip') or '-')), cell_style),
-                '',
-                ''
-            ])
-
-        if len(table_data) == 1:
-            table_data.append([
-                Paragraph('-', cell_center),
-                Paragraph('-', cell_center),
-                Paragraph('Tidak ada data Piket Siaga.', cell_style),
-                '',
-                ''
-            ])
-
-        table = Table(table_data, colWidths=[32, 70, 190, 115, 80], repeatRows=1)
-        table.setStyle(TableStyle([
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
-            ('BACKGROUND', (0, 0), (-1, 0), colors.white),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('ALIGN', (0, 0), (1, -1), 'CENTER'),
-            ('ALIGN', (3, 1), (4, -1), 'CENTER'),
-            ('LEFTPADDING', (0, 0), (-1, -1), 5),
-            ('RIGHTPADDING', (0, 0), (-1, -1), 5),
-            ('TOPPADDING', (0, 0), (-1, 0), 7),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 7),
-            ('TOPPADDING', (0, 1), (-1, -1), 10),
-            ('BOTTOMPADDING', (0, 1), (-1, -1), 10),
-        ]))
-        elements.append(table)
-        elements.append(Spacer(1, 28))
-
-        sign_table = Table([
-            [Paragraph('<b>Mengetahui</b>', cell_center),
-             Paragraph(xml_escape(f'{unit_name}, {hari} {selected_date.day:02d}-{bulan}-{selected_date.year}'), cell_center)],
-            [Paragraph('Atasan Langsung', cell_center), Paragraph('<b>KAGAHAR</b>', cell_center)],
-            ['', ''],
-            ['', ''],
-            ['', '']
-        ], colWidths=[235, 252])
-        sign_table.setStyle(TableStyle([
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('TOPPADDING', (0, 0), (-1, -1), 4),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-        ]))
-        elements.append(sign_table)
-
-        doc.build(elements)
-        buffer.seek(0)
-
-        filename = f'{selected_date.day:02d}-{selected_date.month:02d}-{selected_date.year}-absen-kehadiran-shift{shift}.pdf'
         return send_file(
-            buffer,
+            saved['absolute_path'],
             mimetype='application/pdf',
             as_attachment=True,
-            download_name=filename
+            download_name=saved['filename'],
+            max_age=0
         )
     except Exception as e:
         db.session.rollback()
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
+
+
+def api_absensi_kehadiran_internal_pdf():
+    try:
+        from urllib.parse import unquote
+        key = unquote(str(request.args.get('key') or '')).strip()
+        parts = key.split('|')
+        if len(parts) != 3:
+            return jsonify({'status': 'error', 'message': 'Dokumen Piket Siaga tidak valid.'}), 400
+        tgl, unit_kerja_id, shift = parts
+        if shift not in ('1', '2'):
+            return jsonify({'status': 'error', 'message': 'Shift tidak valid.'}), 400
+
+        nip = str(request.headers.get('X-Calendar-NIP') or '').strip()
+        if not nip:
+            return jsonify({'status': 'error', 'message': 'NIP wajib diisi.'}), 400
+
+        allowed = db.session.execute(
+            db.text("""
+                SELECT 1
+                FROM LOG_ACTIVITIY
+                WHERE Activity = 'Piket Siaga'
+                  AND ActivityDate = :tgl
+                  AND IDUnitKerja = :unit_kerja_id
+                  AND Shift = :shift
+                  AND NIP = :nip
+                  AND StatusID = 3
+                LIMIT 1
+            """),
+            {
+                'tgl': tgl,
+                'unit_kerja_id': int(unit_kerja_id),
+                'shift': shift,
+                'nip': nip,
+            }
+        ).first()
+        if not allowed:
+            return jsonify({'status': 'error', 'message': 'Dokumen belum tersedia untuk pegawai ini.'}), 403
+
+        document_type = 'ABSEN_KEHADIRAN_SIAGA'
+        entity_type = 'PIKET_SIAGA'
+        entity_id = _siaga_document_key(tgl, unit_kerja_id, shift)
+        from app.models.hrisDocumentModel import HrisDocument
+        document = HrisDocument.query.filter(
+            HrisDocument.DOCUMENT_TYPE == document_type,
+            HrisDocument.ENTITY_TYPE == entity_type,
+            HrisDocument.ENTITY_ID == entity_id,
+        ).first()
+
+        if not document:
+            _save_siaga_pdf(tgl, unit_kerja_id, shift, created_by=nip)
+            document = HrisDocument.query.filter(
+                HrisDocument.DOCUMENT_TYPE == document_type,
+                HrisDocument.ENTITY_TYPE == entity_type,
+                HrisDocument.ENTITY_ID == entity_id,
+            ).first()
+
+        path = _siaga_pdf_absolute_path(document.STORAGE_PATH)
+        if not path.is_file():
+            return jsonify({'status': 'error', 'message': 'File PDF tidak ditemukan di central storage.'}), 404
+
+        return send_file(
+            path,
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=document.ORIGINAL_FILENAME,
+            max_age=0
+        )
+    except Exception as e:
+        db.session.rollback()
+        import traceback
+        traceback.print_exc()
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
 
 def api_absensi_kehadiran_update():
     """
@@ -673,6 +979,37 @@ def api_absensi_kehadiran_update():
             })
 
         db.session.commit()
+
+        # Setiap kehadiran yang berhasil dicatat memperbarui satu PDF resmi
+        # di central HRIS-DATA agar Kalender Pribadi selalu memiliki dokumen
+        # terbaru untuk pegawai yang sudah hadir.
+        try:
+            row_meta = db.session.execute(
+                db.text("""
+                    SELECT IDUnitKerja, Shift
+                    FROM LOG_ACTIVITIY
+                    WHERE GUIDLog = :guid_log
+                      AND NIP = :nip
+                      AND Activity = 'Piket Siaga'
+                      AND ActivityDate = :activity_date
+                    LIMIT 1
+                """),
+                {
+                    'guid_log': guid_log,
+                    'nip': nip,
+                    'activity_date': activity_date,
+                }
+            ).mappings().first()
+            if row_meta and status_id == 3 and row_meta['IDUnitKerja'] is not None:
+                _save_siaga_pdf(
+                    activity_date,
+                    row_meta['IDUnitKerja'],
+                    str(row_meta['Shift'] or shift1 and '1' or shift2 and '2' or '').strip(),
+                    created_by=getattr(getattr(g, 'user', None), 'NIP', None) or 'HRIS'
+                )
+        except Exception:
+            db.session.rollback()
+            raise
 
         return jsonify({
             'success': True,
