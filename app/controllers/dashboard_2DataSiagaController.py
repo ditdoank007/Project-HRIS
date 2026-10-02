@@ -419,7 +419,10 @@ def _siaga_atasan_langsung():
 
 
 def _build_siaga_pdf(tgl, unit_kerja_id, shift):
-    response = api_absensi_kehadiran_get()
+    with current_app.test_request_context(
+        f'/api/absensi-kehadiran/get?tgl={tgl}&unit_kerja_id={int(unit_kerja_id)}&shift={shift}'
+    ):
+        response = api_absensi_kehadiran_get()
     payload = response.get_json(silent=True) if hasattr(response, 'get_json') else None
     if not payload or not payload.get('success'):
         raise ValueError((payload or {}).get('error', 'Gagal mengambil data absensi.'))
