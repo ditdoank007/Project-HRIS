@@ -1,7 +1,6 @@
 {% extends "layout/baseHRIS.html" %}
 
-{% block title %}- Uang Makan{% endblock %}
-
+{% block title %}- Master Uang Makan{% endblock %}
 {% block header_kicker %}MASTER FILE{% endblock %}
 {% block header_title %}Master Uang Makan{% endblock %}
 
@@ -10,14 +9,21 @@
     <div class="hris-page-header">
         <div>
             <h2 class="hris-page-title">Master Uang Makan</h2>
-            <p class="hris-page-subtitle" id="pageSubtitle">Tambah dan kelola data Master Uang Makan HRIS.</p>
+            <p class="hris-page-subtitle" id="pageSubtitle">
+                Kelola nominal uang makan berdasarkan golongan pegawai.
+            </p>
         </div>
+
         <div class="hris-form-inline">
-            <a href="{{ url_for('main.view_cari_master_uang_makan') }}" class="hris-btn hris-btn-secondary">
+            <a href="{{ url_for('main.view_cari_master_uang_makan') }}"
+               class="hris-btn hris-btn-secondary">
                 <i class="feather-search"></i>
                 <span>Cari Uang Makan</span>
             </a>
-            <a href="{{ url_for('main.view_cari_master_uang_makan') }}" id="btnKembaliUangMakan" class="hris-btn hris-btn-secondary" style="display:none;">
+            <a href="{{ url_for('main.view_cari_master_uang_makan') }}"
+               id="btnKembaliUangMakan"
+               class="hris-btn hris-btn-secondary"
+               style="display:none;">
                 <i class="feather-arrow-left"></i>
                 <span>Kembali</span>
             </a>
@@ -28,7 +34,9 @@
         <div class="hris-card-header">
             <div>
                 <h3 class="hris-card-title" id="formTitle">Tambah Master Uang Makan</h3>
-                <p class="hris-section-subtitle">Tentukan tanggal berlaku, nominal uang makan, dan nomor surat referensi.</p>
+                <p class="hris-section-subtitle">
+                    Satu record berlaku untuk satu golongan mulai dari tanggal yang ditentukan.
+                </p>
             </div>
         </div>
 
@@ -40,31 +48,62 @@
                 </div>
 
                 <div class="hris-form-row">
-                    <label class="hris-form-row-label" for="inputJenisTunjangan">Jenis Tunjangan</label>
-                    <input type="text" id="inputJenisTunjangan" class="hris-input" value="U.Makan" readonly>
-                </div>
-
-                <div class="hris-form-row">
-                    <label class="hris-form-row-label" for="inputActivity">Activity</label>
-                    <input type="text" id="inputActivity" class="hris-input" value="Intern" readonly>
+                    <label class="hris-form-row-label" for="inputGolongan">Golongan</label>
+                    <select id="inputGolongan" class="hris-select">
+                        <option value="">Pilih Golongan</option>
+                        {% for golongan in golongan_options %}
+                        <option value="{{ golongan }}">Golongan {{ golongan }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
 
                 <div class="hris-form-row">
                     <label class="hris-form-row-label" for="inputNominal">Nominal</label>
-                    <input type="number" id="inputNominal" class="hris-input" min="0" step="1" value="0">
+                    <div class="hris-form-inline">
+                        <span class="hris-input-prefix">Rp</span>
+                        <input type="number"
+                               id="inputNominal"
+                               class="hris-input"
+                               min="0"
+                               step="1"
+                               value="0"
+                               inputmode="numeric">
+                    </div>
                 </div>
 
                 <div class="hris-form-row">
                     <label class="hris-form-row-label" for="inputNoSurat">No Surat</label>
-                    <input type="text" id="inputNoSurat" class="hris-input" placeholder="Nomor surat referensi">
+                    <input type="text"
+                           id="inputNoSurat"
+                           class="hris-input"
+                           maxlength="250"
+                           placeholder="Nomor surat referensi">
+                </div>
+
+                <div class="hris-info-panel">
+                    <div class="hris-section-header">
+                        <div>
+                            <h3 class="hris-section-title">Ketentuan</h3>
+                            <p class="hris-section-subtitle">
+                                Jenis Tunjangan <strong>U.Makan</strong>, Activity <strong>Intern</strong>,
+                                dan Hari Kerja <strong>0</strong> ditetapkan otomatis oleh sistem.
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="hris-form-actions">
-                    <button type="button" id="btnBatalEdit" class="hris-btn hris-btn-secondary" style="display:none;">
+                    <button type="button"
+                            id="btnBatalEdit"
+                            class="hris-btn hris-btn-secondary"
+                            style="display:none;">
                         <i class="feather-x-circle"></i>
                         <span>Batal</span>
                     </button>
-                    <button type="button" id="btnSimpanTunjangan" class="hris-btn hris-btn-primary">
+
+                    <button type="button"
+                            id="btnSimpanTunjangan"
+                            class="hris-btn hris-btn-primary">
                         <i class="feather-save"></i>
                         <span id="btnText">Simpan</span>
                     </button>
@@ -88,6 +127,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const btnKembali = document.getElementById('btnKembaliUangMakan');
 
     const inputTglMulai = document.getElementById('inputTglMulai');
+    const inputGolongan = document.getElementById('inputGolongan');
     const inputNominal = document.getElementById('inputNominal');
     const inputNoSurat = document.getElementById('inputNoSurat');
 
@@ -101,26 +141,34 @@ document.addEventListener('DOMContentLoaded', function () {
     function clearForm() {
         currentEditId = null;
         inputTglMulai.value = '';
+        inputGolongan.value = '';
         inputNominal.value = '0';
         inputNoSurat.value = '';
 
         formTitle.textContent = 'Tambah Master Uang Makan';
-        pageSubtitle.textContent = 'Tambah dan kelola data Master Uang Makan HRIS.';
+        pageSubtitle.textContent =
+            'Kelola nominal uang makan berdasarkan golongan pegawai.';
         btnText.textContent = 'Simpan';
         editInfo.textContent = '';
         btnBatal.style.display = 'none';
         btnKembali.style.display = 'none';
 
-        history.replaceState({}, '', '{{ url_for("main.view_master_uang_makan") }}');
+        history.replaceState(
+            {},
+            '',
+            '{{ url_for("main.view_master_uang_makan") }}'
+        );
     }
 
     async function loadEditData(id) {
         try {
-            const res = await fetch('/api/uang-makan/detail?id=' + encodeURIComponent(id));
+            const res = await fetch(
+                '/api/uang-makan/detail?id=' + encodeURIComponent(id)
+            );
             const json = await res.json();
 
             if (!res.ok || json.status !== 'success') {
-                alert(json.message || 'Data tidak ditemukan');
+                alert(json.message || 'Data tidak ditemukan.');
                 clearForm();
                 return;
             }
@@ -129,11 +177,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
             currentEditId = row.tunjangan_id;
             inputTglMulai.value = row.tgl_mulai || '';
+            inputGolongan.value = row.fungsional || row.golongan || '';
             inputNominal.value = row.nominal ?? 0;
             inputNoSurat.value = row.dokreff || '';
 
             formTitle.textContent = 'Edit Master Uang Makan';
-            pageSubtitle.textContent = 'Perbarui data Master Uang Makan yang sudah tersimpan.';
+            pageSubtitle.textContent =
+                'Perbarui data Master Uang Makan yang sudah tersimpan.';
             btnText.textContent = 'Simpan Perubahan';
             btnBatal.style.display = '';
             btnKembali.style.display = '';
@@ -147,24 +197,36 @@ document.addEventListener('DOMContentLoaded', function () {
 
     btnSimpan.addEventListener('click', async function () {
         const tglMulai = inputTglMulai.value;
+        const golongan = inputGolongan.value;
         const nominal = inputNominal.value;
         const noSurat = inputNoSurat.value.trim();
 
         if (!tglMulai) {
-            alert('Tanggal Mulai wajib diisi');
+            alert('Tanggal Mulai wajib diisi.');
+            return;
+        }
+
+        if (!golongan) {
+            alert('Golongan wajib dipilih.');
             return;
         }
 
         if (nominal === '' || Number(nominal) < 0) {
-            alert('Nominal wajib diisi dan tidak boleh negatif');
+            alert('Nominal wajib diisi dan tidak boleh negatif.');
             return;
         }
 
-        const isEdit = currentEditId !== null && currentEditId !== undefined;
-        const url = isEdit ? '/api/uang-makan/update' : '/api/uang-makan/save';
+        const isEdit =
+            currentEditId !== null &&
+            currentEditId !== undefined;
+
+        const url = isEdit
+            ? '/api/uang-makan/update'
+            : '/api/uang-makan/save';
 
         const body = {
             tgl_mulai: tglMulai,
+            golongan: golongan,
             nominal: nominal,
             no_surat: noSurat
         };
@@ -188,14 +250,21 @@ document.addEventListener('DOMContentLoaded', function () {
             const json = await res.json();
 
             if (!res.ok || json.status !== 'success') {
-                alert(json.message || 'Gagal menyimpan data Master Uang Makan.');
+                alert(
+                    json.message ||
+                    'Gagal menyimpan data Master Uang Makan.'
+                );
                 return;
             }
 
-            alert(json.message || 'Data Master Uang Makan berhasil disimpan.');
+            alert(
+                json.message ||
+                'Data Master Uang Makan berhasil disimpan.'
+            );
 
             if (isEdit) {
-                window.location.href = '{{ url_for("main.view_cari_master_uang_makan") }}';
+                window.location.href =
+                    '{{ url_for("main.view_cari_master_uang_makan") }}';
             } else {
                 clearForm();
             }
@@ -209,7 +278,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     btnBatal.addEventListener('click', function () {
         if (currentEditId !== null && currentEditId !== undefined) {
-            window.location.href = '{{ url_for("main.view_cari_master_uang_makan") }}';
+            window.location.href =
+                '{{ url_for("main.view_cari_master_uang_makan") }}';
         } else {
             clearForm();
         }
