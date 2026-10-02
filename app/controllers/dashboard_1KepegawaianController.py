@@ -1551,17 +1551,6 @@ def api_sprin_header_save():
             SprinHeader.TYPE_SPRIN_ID == 'DL'
         ).first()
 
-        existing_filename = None
-        if header:
-            existing_row = DinasLuar.query.filter(
-                DinasLuar.GUID_SPRIN == header.GUID_SPRIN,
-                DinasLuar.JENIS == 'DL',
-            ).first()
-            existing_filename = existing_row.NAMA_FILE if existing_row else None
-
-        if not upload and not existing_filename:
-            return jsonify({'success': False, 'error': 'File SPRIN PDF wajib dipilih untuk data baru.'}), 400
-
         if not header:
             header = SprinHeader(
                 GUID_SPRIN=f"DLU_{datetime.now():%Y-%m}_{uuid.uuid4()}",
@@ -1654,6 +1643,17 @@ def api_dinas_luar_save():
             SprinHeader.NO_SPRIN == no_surat,
             SprinHeader.TYPE_SPRIN_ID == 'DL'
         ).first()
+
+        existing_filename = None
+        if header:
+            existing_row = DinasLuar.query.filter(
+                DinasLuar.GUID_SPRIN == header.GUID_SPRIN,
+                DinasLuar.JENIS == 'DL',
+            ).first()
+            existing_filename = existing_row.NAMA_FILE if existing_row else None
+
+        if not upload and not existing_filename:
+            return jsonify({'success': False, 'error': 'File SPRIN PDF wajib dipilih untuk data baru.'}), 400
 
         if not header:
             header = SprinHeader(
