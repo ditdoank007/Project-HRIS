@@ -1622,9 +1622,9 @@ def kepegawaian_dinas_luar_pelatihan():
         dinas_label='Dinas Luar SD',
         dinas_badge='DINAS LUAR / SD',
         cari_endpoint='main.view_kepegawaian_cari_dinas_luar_pelatihan',
-        api_save='/api/dinas-luar-sd/save',
-        api_get='/api/dinas-luar-sd/get',
-        api_delete='/api/dinas-luar-sd/delete',
+        api_save='/api/dinas-luar-pelatihan/save-peserta',
+        api_get='/api/dinas-luar-pelatihan/get',
+        api_delete='/api/dinas-luar-pelatihan/delete',
     )
 
 
