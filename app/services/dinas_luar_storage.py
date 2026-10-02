@@ -73,6 +73,21 @@ def dinas_luar_absolute_path(tanggal_surat, jenis, keterangan):
     )
 
 
+def dinas_luar_absolute_path_by_filename(tanggal_surat, jenis, filename):
+    folder = dinas_luar_folder(jenis)
+    safe_name = os.path.basename(str(filename or "").strip())
+    return _ensure_under_root(
+        os.path.join(
+            storage_root(),
+            "DINAS LUAR",
+            folder,
+            tanggal_surat.strftime("%Y"),
+            tanggal_surat.strftime("%m"),
+            safe_name,
+        )
+    )
+
+
 def validate_dinas_luar_pdf(file_storage: FileStorage):
     if not file_storage or not file_storage.filename:
         raise ValueError("File SPRIN PDF wajib dipilih.")
