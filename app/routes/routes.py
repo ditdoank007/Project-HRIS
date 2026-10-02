@@ -183,6 +183,7 @@ from app.controllers.dashboard_2DataSiagaController import (
     api_absensi_kehadiran_get as data_siaga_api_absensi_kehadiran_get,
     api_absensi_kehadiran_update as data_siaga_api_absensi_kehadiran_update,
     api_absensi_kehadiran_export_pdf as data_siaga_api_absensi_kehadiran_export_pdf,
+    api_absensi_kehadiran_save_pdf as data_siaga_api_absensi_kehadiran_save_pdf,
     api_absensi_kehadiran_internal_pdf as data_siaga_api_absensi_kehadiran_internal_pdf,
     api_pembuatan_jadwal_siaga_save as data_siaga_api_pembuatan_jadwal_siaga_save,
     api_siaga_view_jadwal_edit as data_siaga_api_view_jadwal_edit,
@@ -1454,6 +1455,11 @@ def api_absensi_kehadiran_get():
 @login_required
 def api_absensi_kehadiran_update():
     return data_siaga_api_absensi_kehadiran_update()
+
+@main.route('/api/absensi-kehadiran/save-pdf')
+@login_required
+def api_absensi_kehadiran_save_pdf():
+    return data_siaga_api_absensi_kehadiran_save_pdf()
 
 @main.route('/api/absensi-kehadiran/export-pdf')
 @login_required
