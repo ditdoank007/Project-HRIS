@@ -3,7 +3,7 @@ from operator import and_
 import uuid
 from config import Config
 
-from flask import render_template, request, jsonify, session
+from flask import render_template, request, jsonify, session, send_file
 from datetime import datetime
 from datetime import timedelta
 
@@ -32,6 +32,10 @@ from app.utils.pegawaiHelper import (
 )
 from app.utils.pegawaiSortHelper import sort_pegawai_rows
 from app.utils.pegawaiLegacyHelper import derive_employee_metrics
+from app.services.dinas_luar_storage import save_dinas_luar_pdf, dinas_luar_absolute_path
+from app.utils.authorization import is_administrator
+import json
+import os
 
 
 def kepegawaian_cari_data_pegawai():
@@ -1505,346 +1509,355 @@ def kepegawaian_dinas_luar_umum():
 
 
 def api_dinas_luar_search_pegawai():
-    """
-    API: Pencarian pegawai untuk autocomplete.
-
-    Standar HRIS Reborn:
-
-        - Minimal 1 karakter
-        - Hanya Pegawai Operasional
-        - IS_KELUAR = N
-        - Unit Kerja IS_USE = Y
-        - Maksimal 15 kandidat
-        - Pencarian sebagian nama
-    """
-
     try:
         keyword = request.args.get('keyword', '').strip()
-
         if not keyword:
-            return jsonify({
-                'data': []
-            })
-
-        # ========================================================
-        # AUTOCOMPLETE PEGAWAI TERPUSAT
-        #
-        # Business Rule:
-        #
-        #   app/utils/pegawaiHelper.py
-        #
-        # Jangan melakukan query Pegawai langsung di endpoint.
-        # ========================================================
-
-        pegawai_list = search_operational_pegawai(
-            keyword,
-            limit=15
-        )
-
+            return jsonify({'data': []})
+        pegawai_list = search_operational_pegawai(keyword, limit=15)
         return jsonify({
             'data': [
                 {
                     'nip': pegawai.NIP,
-                    'nama': pegawai.NAMA or ''
+                    'nama': pegawai.NAMA or '',
+                    'finger_id': str(pegawai.FINGER_ID or '').strip(),
                 }
                 for pegawai in pegawai_list
             ]
         })
-
     except Exception as e:
-        return jsonify({
-            'error': str(e),
-            'data': []
-        })
+        return jsonify({'error': str(e), 'data': []}), 500
 
 
 def api_sprin_header_save():
-    """API: Simpan Header SPRIN saja"""
+    """Kompatibilitas API lama untuk menyimpan header SPRIN Umum."""
     try:
-        data = request.get_json()
-        
-        no_surat = data.get('no_surat', '').strip()
-        tgl_awal = data.get('tgl_awal_surat', '')
-        tgl_akhir = data.get('tgl_akhir_surat', '')
-        keterangan = data.get('keterangan', '')
-        penempatan = data.get('penempatan', '')
-        type_sprin_id = data.get('type_sprin_id', 'DL')  # ✅ Default 'DL', bisa 'OPR'
-        
-        if not no_surat: 
-            return jsonify({'error': 'No. Surat tidak boleh kosong'})
-        
-        # Cek existing
-        existing = SprinHeader.query.filter(
+        data = request.get_json(silent=True) or {}
+        no_surat = str(data.get('no_surat') or '').strip()
+        tgl_awal = str(data.get('tgl_awal_surat') or '').strip()
+        tgl_akhir = str(data.get('tgl_akhir_surat') or '').strip()
+        keterangan = str(data.get('keterangan') or '').strip()
+        penempatan = str(data.get('penempatan') or '').strip()
+
+        if not no_surat or not tgl_awal or not tgl_akhir:
+            return jsonify({'success': False, 'error': 'No. Surat dan periode surat wajib diisi.'}), 400
+
+        start_date = datetime.strptime(tgl_awal, '%Y-%m-%d').date()
+        end_date = datetime.strptime(tgl_akhir, '%Y-%m-%d').date()
+        if end_date < start_date:
+            return jsonify({'success': False, 'error': 'Tanggal akhir surat tidak valid.'}), 400
+
+        header = SprinHeader.query.filter(
             SprinHeader.NO_SPRIN == no_surat,
-            SprinHeader.TYPE_SPRIN_ID == type_sprin_id  # ✅ Filter by type juga
+            SprinHeader.TYPE_SPRIN_ID == 'DL'
         ).first()
-        
-        if existing:
-            return jsonify({
-                'success': True, 
-                'guid_sprin': existing.GUID_SPRIN, 
-                'message': 'Header sudah ada'
-            })
-        
-        # Generate GUID sesuai type
-        prefix = 'DLU_' if type_sprin_id == 'DL' else 'DLO_'
-        guid_sprin = f"{prefix}{datetime.now().strftime('%Y-%m')}_{str(uuid.uuid4())}"
-        
-        new_sprin = SprinHeader(
-            GUID_SPRIN=guid_sprin,
-            TYPE_SPRIN_ID=type_sprin_id,  # ✅ Bisa 'DL' atau 'OPR'
-            NO_SPRIN=no_surat,
-            TGL_SPRIN=datetime.strptime(tgl_awal, '%Y-%m-%d') if tgl_awal else None,
-            TGL_AWAL_SPRIN=datetime.strptime(tgl_awal, '%Y-%m-%d') if tgl_awal else None,
-            TGL_AKHIR_SPRIN=tgl_akhir,
-            PERIHAL_SPRIN=keterangan,
-            PENEMPATAN=penempatan,
-            UPDATE_BY='admin',
-            UPDATE_DATE=datetime.now()
-        )
-        db.session.add(new_sprin)
+
+        if not header:
+            header = SprinHeader(
+                GUID_SPRIN=f"DLU_{datetime.now():%Y-%m}_{uuid.uuid4()}",
+                TYPE_SPRIN_ID='DL',
+                NO_SPRIN=no_surat,
+            )
+            db.session.add(header)
+
+        header.TGL_SPRIN = start_date
+        header.TGL_AWAL_SPRIN = start_date
+        header.TGL_AKHIR_SPRIN = end_date
+        header.PERIHAL_SPRIN = keterangan
+        header.PENEMPATAN = penempatan
+        header.UPDATE_BY = session.get('nip') or 'admin'
+        header.UPDATE_DATE = datetime.now()
         db.session.commit()
-        
-        return jsonify({
-            'success': True, 
-            'guid_sprin': guid_sprin, 
-            'message': 'Header berhasil disimpan'
-        })
+
+        return jsonify({'success': True, 'guid_sprin': header.GUID_SPRIN, 'message': 'Header SPRIN berhasil disimpan.'})
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)})
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 
 def api_dinas_luar_save_peserta():
-    """API: Simpan Peserta ke DINAS_LUAR (setelah header ada)"""
-    try:
-        data = request.get_json()
-        guid_sprin = data.get('guid_sprin', '')
-        peserta_list = data.get('peserta', [])
-        
-        if not guid_sprin: return jsonify({'error': 'GUID SPRIN tidak boleh kosong'})
-        if not peserta_list: return jsonify({'error': 'Peserta tidak boleh kosong'})
-        
-        # Ambil data header
-        header = SprinHeader.query.get(guid_sprin)
-        if not header: return jsonify({'error': 'Header tidak ditemukan'})
-        
-        saved_count = 0
-        for peserta in peserta_list:
-            nip = peserta.get('nip', '')
-            tgl_awal = peserta.get('tgl_awal', '')
-            tgl_akhir = peserta.get('tgl_akhir', '')
-            status_um = peserta.get('status_um', '0')
-            
-            if not nip or not tgl_awal or not tgl_akhir: continue
-            pegawai = Pegawai.query.filter(Pegawai.NIP == str(nip).strip()).first()
-            if not pegawai: continue
-            finger_id = str(pegawai.FINGER_ID or "").strip()
-            if not finger_id: continue
-            
-            transaksi_id = f"DLU_{finger_id}_{tgl_awal}_{tgl_akhir}"
-            existing = DinasLuar.query.filter(DinasLuar.TRANSAKSI_ID == transaksi_id).first()
-            
-            if existing:
-                existing.TGL_AWAL_DINAS_LUAR = datetime.strptime(tgl_awal, '%Y-%m-%d')
-                existing.TGL_AKHIR_DINAS_LUAR = datetime.strptime(tgl_akhir, '%Y-%m-%d')
-                existing.STATUS_UM = int(status_um)
-                existing.UPDATE_BY = 'admin'
-                existing.UPDATE_DATE = datetime.now()
-            else:
-                new_dl = DinasLuar(
-                    TRANSAKSI_ID=transaksi_id, FINGER_ID=finger_id, GUID_SPRIN=guid_sprin,
-                    TGL_AWAL_DINAS_LUAR=datetime.strptime(tgl_awal, '%Y-%m-%d'),
-                    TGL_AKHIR_DINAS_LUAR=datetime.strptime(tgl_akhir, '%Y-%m-%d'),
-                    KETERANGAN_DINAS_LUAR=header.PERIHAL_SPRIN or '',
-                    PENEMPATAN_DINAS_LUAR=header.PENEMPATAN or '',
-                    TRANSAKSI='DinasLuar', PENDUKUNG='Y',
-                    NO_SURAT=header.NO_SPRIN or '', JENIS='DL', NAMA_FILE='-',
-                    TGL_AWAL_SURAT=header.TGL_AWAL_SPRIN,
-                    TGL_AKHIR_SURAT=header.TGL_SPRIN,
-                    TIPE=0, STATUS_UM=int(status_um),
-                    UPDATE_BY='admin', UPDATE_DATE=datetime.now()
-                )
-                db.session.add(new_dl)
-            saved_count += 1
-        
-        db.session.commit()
-        return jsonify({'success': True, 'message': f'{saved_count} peserta berhasil disimpan'})
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)})
+    return jsonify({
+        'success': False,
+        'error': 'Gunakan tombol Simpan SPRIN pada halaman Dinas Luar Umum.'
+    }), 410
+
 
 def api_dinas_luar_save():
-    """API: Simpan Dinas Luar Umum"""
+    """Simpan header SPRIN, PDF NFS, dan seluruh peserta."""
     try:
-        data = request.get_json()
-        
-        no_surat = data.get('no_surat', '').strip()
-        tgl_awal_surat = data.get('tgl_awal_surat', '')
-        tgl_akhir_surat = data.get('tgl_akhir_surat', '')
-        keterangan = data.get('keterangan', '')
-        penempatan = data.get('penempatan', '')
-        status_um = data.get('status_um', '0')
-        peserta_list = data.get('peserta', [])
-        guid_sprin = data.get('guid_sprin', '')
-        is_update = data.get('is_update', False)
-        save_header_only = data.get('save_header_only', False)  # ✅ Flag baru
-        
-        if not no_surat: return jsonify({'error': 'No. Surat tidak boleh kosong'})
-        if not tgl_awal_surat or not tgl_akhir_surat: return jsonify({'error': 'Tanggal Surat tidak boleh kosong'})
-        
-        # STEP 1: Simpan/Cari SPRIN_HEADER dulu
-        existing_sprin = SprinHeader.query.filter(SprinHeader.NO_SPRIN == no_surat).first()
-        
-        if existing_sprin:
-            guid_sprin = existing_sprin.GUID_SPRIN
-        else:
-            guid_sprin = f"DLU_{datetime.now().strftime('%Y-%m')}_{str(uuid.uuid4())}"
-            new_sprin = SprinHeader(
-                GUID_SPRIN=guid_sprin, TYPE_SPRIN_ID='DL', NO_SPRIN=no_surat,
-                TGL_SPRIN=datetime.strptime(tgl_awal_surat, '%Y-%m-%d'),
-                TGL_AWAL_SPRIN=datetime.strptime(tgl_awal_surat, '%Y-%m-%d'),
-                TGL_AKHIR_SPRIN=tgl_akhir_surat, PERIHAL_SPRIN=keterangan,
-                PENEMPATAN=penempatan, STATUS_UM=int(status_um),
-                UPDATE_BY='admin', UPDATE_DATE=datetime.now()
-            )
-            db.session.add(new_sprin)
-            db.session.flush()
-        
-        # ✅ Jika hanya simpan header, commit dan return
-        if save_header_only:
-            db.session.commit()
-            return jsonify({'success': True, 'message': 'Header berhasil disimpan', 'guid_sprin': guid_sprin})
-        
-        # STEP 2: Simpan peserta ke DINAS_LUAR
-        if not peserta_list: return jsonify({'error': 'Peserta tidak boleh kosong'})
-        
-        saved_count = 0
+        no_surat = str(request.form.get('no_surat') or '').strip()
+        tgl_awal_text = str(request.form.get('tgl_awal_surat') or '').strip()
+        tgl_akhir_text = str(request.form.get('tgl_akhir_surat') or '').strip()
+        keterangan = str(request.form.get('keterangan') or '').strip()
+        penempatan = str(request.form.get('penempatan') or '').strip()
+        peserta_raw = request.form.get('peserta_json') or '[]'
+        upload = request.files.get('sprin_file')
+
+        if not no_surat:
+            return jsonify({'success': False, 'error': 'No. Surat wajib diisi.'}), 400
+        if not tgl_awal_text or not tgl_akhir_text:
+            return jsonify({'success': False, 'error': 'Tanggal surat wajib diisi.'}), 400
+        if not keterangan:
+            return jsonify({'success': False, 'error': 'Keterangan wajib diisi.'}), 400
+        if not upload:
+            return jsonify({'success': False, 'error': 'File SPRIN PDF wajib dipilih.'}), 400
+
+        start_date = datetime.strptime(tgl_awal_text, '%Y-%m-%d').date()
+        end_date = datetime.strptime(tgl_akhir_text, '%Y-%m-%d').date()
+        if end_date < start_date:
+            return jsonify({'success': False, 'error': 'Tanggal akhir surat tidak boleh sebelum tanggal awal.'}), 400
+
+        peserta_list = json.loads(peserta_raw)
+        if not isinstance(peserta_list, list) or not peserta_list:
+            return jsonify({'success': False, 'error': 'Minimal satu peserta wajib dimasukkan.'}), 400
+
+        normalized = []
+        seen = set()
+
         for peserta in peserta_list:
-            nip = peserta.get('nip', '')
-            tgl_awal_dl = peserta.get('tgl_awal', '')
-            pegawai = Pegawai.query.filter(Pegawai.NIP == str(nip).strip()).first()
-            if not pegawai: continue
-            finger_id = str(pegawai.FINGER_ID or "").strip()
-            if not finger_id: continue
-            tgl_akhir_dl = peserta.get('tgl_akhir', '')
-            status_um_peserta = peserta.get('status_um', status_um)
-            
-            if not nip or not tgl_awal_dl or not tgl_akhir_dl: continue
-            
-            transaksi_id = f"DLU_{finger_id}_{tgl_awal_dl}_{tgl_akhir_dl}"
-            existing = DinasLuar.query.filter(DinasLuar.TRANSAKSI_ID == transaksi_id).first()
-            
-            if existing:
-                existing.TGL_AWAL_DINAS_LUAR = datetime.strptime(tgl_awal_dl, '%Y-%m-%d')
-                existing.TGL_AKHIR_DINAS_LUAR = datetime.strptime(tgl_akhir_dl, '%Y-%m-%d')
-                existing.KETERANGAN_DINAS_LUAR = keterangan
-                existing.PENEMPATAN_DINAS_LUAR = penempatan
-                existing.STATUS_UM = int(status_um_peserta)
-                existing.UPDATE_BY = 'admin'
-                existing.UPDATE_DATE = datetime.now()
-            else:
-                new_dl = DinasLuar(
-                    TRANSAKSI_ID=transaksi_id, FINGER_ID=finger_id, GUID_SPRIN=guid_sprin,
-                    TGL_AWAL_DINAS_LUAR=datetime.strptime(tgl_awal_dl, '%Y-%m-%d'),
-                    TGL_AKHIR_DINAS_LUAR=datetime.strptime(tgl_akhir_dl, '%Y-%m-%d'),
-                    KETERANGAN_DINAS_LUAR=keterangan, PENEMPATAN_DINAS_LUAR=penempatan,
-                    TRANSAKSI='DinasLuar', PENDUKUNG='Y', NO_SURAT=no_surat,
-                    JENIS='DL', NAMA_FILE='-',
-                    TGL_AWAL_SURAT=datetime.strptime(tgl_awal_surat, '%Y-%m-%d'),
-                    TGL_AKHIR_SURAT=datetime.strptime(tgl_akhir_surat, '%Y-%m-%d'),
-                    TIPE=0, STATUS_UM=int(status_um_peserta),
-                    UPDATE_BY='admin', UPDATE_DATE=datetime.now()
-                )
-                db.session.add(new_dl)
-            saved_count += 1
-        
-        db.session.commit()
-        return jsonify({'success': True, 'message': f'{saved_count} peserta berhasil disimpan', 'guid_sprin': guid_sprin})
-    except Exception as e:
-        db.session.rollback()
-        import traceback
-        traceback.print_exc()
-        return jsonify({'error': str(e)})
+            nip = str(peserta.get('nip') or '').strip()
+            start_text = str(peserta.get('tgl_awal') or '').strip()
+            end_text = str(peserta.get('tgl_akhir') or '').strip()
+            if not nip or not start_text or not end_text:
+                continue
+            if nip in seen:
+                return jsonify({'success': False, 'error': f'Pegawai {nip} tercatat lebih dari satu kali.'}), 400
 
+            person_start = datetime.strptime(start_text, '%Y-%m-%d')
+            person_end = datetime.strptime(end_text, '%Y-%m-%d')
+            if person_end < person_start:
+                return jsonify({'success': False, 'error': f'Periode Dinas Luar {nip} tidak valid.'}), 400
 
-def api_dinas_luar_get():
-    """API: Get data Dinas Luar by No Surat"""
-    try:
-        no_surat = request.args.get('no_surat', '')
-        if not no_surat: return jsonify({'error': 'No Surat tidak boleh kosong'})
-        
-        dinas_list = DinasLuar.query.filter(
-            DinasLuar.NO_SURAT == no_surat,
-            DinasLuar.TRANSAKSI == 'DinasLuar',
+            pegawai = Pegawai.query.filter(Pegawai.NIP == nip).first()
+            if not pegawai or not pegawai.FINGER_ID:
+                return jsonify({'success': False, 'error': f'Data pegawai {nip} tidak ditemukan atau FingerID belum tersedia.'}), 400
+
+            seen.add(nip)
+            normalized.append({
+                'pegawai': pegawai,
+                'start': person_start,
+                'end': person_end,
+                'status_um': int(peserta.get('status_um') or 0),
+            })
+
+        if not normalized:
+            return jsonify({'success': False, 'error': 'Tidak ada peserta yang valid.'}), 400
+
+        header = SprinHeader.query.filter(
+            SprinHeader.NO_SPRIN == no_surat,
+            SprinHeader.TYPE_SPRIN_ID == 'DL'
+        ).first()
+
+        if not header:
+            header = SprinHeader(
+                GUID_SPRIN=f"DLU_{datetime.now():%Y-%m}_{uuid.uuid4()}",
+                TYPE_SPRIN_ID='DL',
+                NO_SPRIN=no_surat,
+            )
+            db.session.add(header)
+
+        header.TGL_SPRIN = start_date
+        header.TGL_AWAL_SPRIN = start_date
+        header.TGL_AKHIR_SPRIN = end_date
+        header.PERIHAL_SPRIN = keterangan
+        header.PENEMPATAN = penempatan
+        header.UPDATE_BY = session.get('nip') or 'admin'
+        header.UPDATE_DATE = datetime.now()
+        db.session.flush()
+
+        old_rows = DinasLuar.query.filter(
+            DinasLuar.GUID_SPRIN == header.GUID_SPRIN,
             DinasLuar.JENIS == 'DL'
         ).all()
-        
-        if not dinas_list: return jsonify({'error': 'Data tidak ditemukan'})
-        
-        first = dinas_list[0]
-        header = {
-            'guid_sprin': first.GUID_SPRIN, 'no_surat': first.NO_SURAT,
-            'tgl_awal_surat': first.TGL_AWAL_SURAT.strftime('%Y-%m-%d') if first.TGL_AWAL_SURAT else '',
-            'tgl_akhir_surat': first.TGL_AKHIR_SURAT.strftime('%Y-%m-%d') if first.TGL_AKHIR_SURAT else '',
-            'keterangan': first.KETERANGAN_DINAS_LUAR or '', 'penempatan': first.PENEMPATAN_DINAS_LUAR or '',
-            'status_um': str(first.STATUS_UM) if first.STATUS_UM else '0',
-        }
-        
-        peserta = []
-        for dl in dinas_list:
-            peg = Pegawai.query.filter(
-                db.func.trim(Pegawai.FINGER_ID) == db.func.trim(dl.FINGER_ID)
-            ).first()
-            peserta.append({
-                'transaksi_id': dl.TRANSAKSI_ID,
-                'nip': peg.NIP if peg else '',
-                'nama': peg.NAMA if peg else '-',
-                'tgl_awal': dl.TGL_AWAL_DINAS_LUAR.strftime('%Y-%m-%d') if dl.TGL_AWAL_DINAS_LUAR else '',
-                'tgl_akhir': dl.TGL_AKHIR_DINAS_LUAR.strftime('%Y-%m-%d') if dl.TGL_AKHIR_DINAS_LUAR else '',
-                'status_um': str(dl.STATUS_UM) if dl.STATUS_UM else '0',
-            })
-        
-        return jsonify({'success': True, 'data': {'header': header, 'peserta': peserta}})
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return jsonify({'error': str(e)})
+        for row in old_rows:
+            db.session.delete(row)
+        db.session.flush()
 
+        saved_file = save_dinas_luar_pdf(upload, start_date, 'DL', keterangan)
 
-def api_dinas_luar_delete():
-    """API: Delete Dinas Luar"""
-    try:
-        data = request.get_json()
-        guid_sprin = data.get('guid_sprin', '')
-        transaksi_id = data.get('transaksi_id', '')
-        
-        if transaksi_id:
-            query = DinasLuar.query.filter(
-                DinasLuar.TRANSAKSI_ID == transaksi_id
-            )
-        elif guid_sprin:
-            query = DinasLuar.query.filter(
-                DinasLuar.GUID_SPRIN == guid_sprin
-            )
-        else:
-            return jsonify({'error': 'Parameter tidak lengkap'})
+        for item in normalized:
+            pegawai = item['pegawai']
+            person_start = item['start']
+            person_end = item['end']
+            transaksi_id = f"DLU_{pegawai.FINGER_ID}_{person_start:%Y-%m-%d}_{person_end:%Y-%m-%d}"
 
-        deleted_ids = [
-            row.TRANSAKSI_ID
-            for row in query.with_entities(DinasLuar.TRANSAKSI_ID).all()
-        ]
+            db.session.add(DinasLuar(
+                TRANSAKSI_ID=transaksi_id,
+                FINGER_ID=str(pegawai.FINGER_ID).strip(),
+                TGL_AWAL_DINAS_LUAR=person_start,
+                TGL_AKHIR_DINAS_LUAR=person_end,
+                KETERANGAN_DINAS_LUAR=keterangan,
+                PENEMPATAN_DINAS_LUAR=penempatan,
+                UPDATE_BY=session.get('nip') or 'admin',
+                UPDATE_DATE=datetime.now(),
+                TRANSAKSI='DinasLuar',
+                PENDUKUNG='Y',
+                NO_SURAT=no_surat,
+                STATUS_UM=item['status_um'],
+                GUID_SPRIN=header.GUID_SPRIN,
+                JENIS='DL',
+                TGL_AWAL_SURAT=start_date,
+                TGL_AKHIR_SURAT=end_date,
+                NAMA_FILE=saved_file['filename'],
+                TIPE=0,
+            ))
 
-        query.delete(synchronize_session=False)
-        
         db.session.commit()
         return jsonify({
             'success': True,
-            'message': 'Data berhasil dihapus',
-            'deleted_transaksi_ids': deleted_ids
+            'guid_sprin': header.GUID_SPRIN,
+            'filename': saved_file['filename'],
+            'relative_path': saved_file['relative_path'],
+            'message': f'SPRIN {no_surat} berhasil disimpan dengan {len(normalized)} peserta.'
         })
+    except ValueError as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 400
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)})
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+def api_dinas_luar_get():
+    """Ambil SPRIN Dinas Luar Umum berdasarkan No. Surat."""
+    try:
+        no_surat = request.args.get('no_surat', '').strip()
+        if not no_surat:
+            return jsonify({'success': False, 'error': 'No. Surat wajib diisi.'}), 400
+
+        rows = (
+            db.session.query(DinasLuar, Pegawai)
+            .outerjoin(Pegawai, DinasLuar.FINGER_ID == Pegawai.FINGER_ID)
+            .filter(
+                DinasLuar.NO_SURAT == no_surat,
+                DinasLuar.TRANSAKSI == 'DinasLuar',
+                DinasLuar.JENIS == 'DL',
+            )
+            .order_by(Pegawai.NAMA.asc())
+            .all()
+        )
+        if not rows:
+            return jsonify({'success': False, 'error': 'Data tidak ditemukan.'}), 404
+
+        first = rows[0][0]
+        pdf_path = dinas_luar_absolute_path(first.TGL_AWAL_SURAT, 'DL', first.KETERANGAN_DINAS_LUAR or '')
+        return jsonify({
+            'success': True,
+            'data': {
+                'header': {
+                    'guid_sprin': first.GUID_SPRIN,
+                    'no_surat': first.NO_SURAT,
+                    'tgl_awal_surat': first.TGL_AWAL_SURAT.strftime('%Y-%m-%d') if first.TGL_AWAL_SURAT else '',
+                    'tgl_akhir_surat': first.TGL_AKHIR_SURAT.strftime('%Y-%m-%d') if first.TGL_AKHIR_SURAT else '',
+                    'keterangan': first.KETERANGAN_DINAS_LUAR or '',
+                    'penempatan': first.PENEMPATAN_DINAS_LUAR or '',
+                    'nama_file': first.NAMA_FILE or '',
+                    'pdf_available': bool(first.NAMA_FILE and first.NAMA_FILE != '-' and os.path.isfile(pdf_path)),
+                },
+                'peserta': [
+                    {
+                        'transaksi_id': dl.TRANSAKSI_ID,
+                        'nip': peg.NIP if peg else '',
+                        'nama': peg.NAMA if peg else '-',
+                        'tgl_awal': dl.TGL_AWAL_DINAS_LUAR.strftime('%Y-%m-%d') if dl.TGL_AWAL_DINAS_LUAR else '',
+                        'tgl_akhir': dl.TGL_AKHIR_DINAS_LUAR.strftime('%Y-%m-%d') if dl.TGL_AKHIR_DINAS_LUAR else '',
+                        'status_um': str(dl.STATUS_UM if dl.STATUS_UM is not None else 0),
+                    }
+                    for dl, peg in rows
+                ],
+            }
+        })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+def api_dinas_luar_pdf():
+    """Serve SPRIN PDF for participant, administrator, or Calendar Portal."""
+    from config import Config
+
+    guid_sprin = str(request.args.get('guid_sprin') or '').strip()
+    internal_key = request.headers.get('X-Calendar-Internal-Key')
+    internal_nip = str(request.headers.get('X-Calendar-NIP') or '').strip()
+
+    if internal_key:
+        if internal_key != Config.CALENDAR_INTERNAL_API_KEY or not internal_nip:
+            return jsonify({'status': 'error', 'message': 'Unauthorized'}), 401
+        nip = internal_nip
+    else:
+        nip = str(session.get('nip') or '').strip()
+        if not nip:
+            return jsonify({'status': 'error', 'message': 'NIP tidak ditemukan.'}), 401
+
+    rows = (
+        db.session.query(DinasLuar)
+        .join(Pegawai, DinasLuar.FINGER_ID == Pegawai.FINGER_ID)
+        .filter(
+            DinasLuar.GUID_SPRIN == guid_sprin,
+            DinasLuar.JENIS == 'DL',
+            Pegawai.NIP == nip,
+        )
+        .all()
+    )
+
+    if not rows and not internal_key and is_administrator():
+        rows = DinasLuar.query.filter(DinasLuar.GUID_SPRIN == guid_sprin, DinasLuar.JENIS == 'DL').all()
+
+    if not rows:
+        return jsonify({'status': 'error', 'message': 'SPRIN tidak ditemukan atau Anda bukan peserta.'}), 404
+
+    row = rows[0]
+    if not row.NAMA_FILE or row.NAMA_FILE == '-':
+        return jsonify({'status': 'error', 'message': 'File SPRIN belum tersedia.'}), 404
+
+    path = dinas_luar_absolute_path(row.TGL_AWAL_SURAT, 'DL', row.KETERANGAN_DINAS_LUAR or '')
+    if not os.path.isfile(path):
+        return jsonify({'status': 'error', 'message': 'File SPRIN tidak ditemukan di NFS.'}), 404
+
+    return send_file(path, mimetype='application/pdf', as_attachment=False, download_name=row.NAMA_FILE)
+
+
+def api_dinas_luar_delete():
+    """Hapus SPRIN Dinas Luar Umum."""
+    try:
+        data = request.get_json(silent=True) or {}
+        guid_sprin = str(data.get('guid_sprin') or '').strip()
+        if not guid_sprin:
+            return jsonify({'success': False, 'error': 'GUID SPRIN wajib diisi.'}), 400
+
+        header = SprinHeader.query.filter(
+            SprinHeader.GUID_SPRIN == guid_sprin,
+            SprinHeader.TYPE_SPRIN_ID == 'DL'
+        ).first()
+        rows = DinasLuar.query.filter(
+            DinasLuar.GUID_SPRIN == guid_sprin,
+            DinasLuar.JENIS == 'DL'
+        ).all()
+
+        if not header and not rows:
+            return jsonify({'success': False, 'error': 'Data tidak ditemukan.'}), 404
+
+        file_path = None
+        if rows and rows[0].TGL_AWAL_SURAT:
+            file_path = dinas_luar_absolute_path(rows[0].TGL_AWAL_SURAT, 'DL', rows[0].KETERANGAN_DINAS_LUAR or '')
+
+        db.session.query(DinasLuar).filter(
+            DinasLuar.GUID_SPRIN == guid_sprin,
+            DinasLuar.JENIS == 'DL'
+        ).delete(synchronize_session=False)
+        if header:
+            db.session.delete(header)
+        db.session.commit()
+
+        if file_path and os.path.isfile(file_path):
+            os.unlink(file_path)
+
+        return jsonify({'success': True, 'message': 'SPRIN Dinas Luar berhasil dihapus.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 def kepegawaian_mutasi_penempatan_pegawai():
