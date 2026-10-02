@@ -686,11 +686,46 @@ def _save_siaga_pdf(tgl, unit_kerja_id, shift, created_by=None):
     }
 
 
+def api_absensi_kehadiran_save_pdf():
+    try:
+        shift = (request.args.get('shift', '') or '').strip()
+        unit_kerja_id = (request.args.get('unit_kerja_id', '') or '').strip()
+        tgl = (request.args.get('tgl', '') or '').strip()
+
+        if not tgl:
+            return jsonify({'success': False, 'error': 'Tanggal harus diisi.'}), 400
+        if shift not in ('1', '2'):
+            return jsonify({'success': False, 'error': 'Pilih Shift 1 atau Shift 2.'}), 400
+        if not unit_kerja_id:
+            return jsonify({'success': False, 'error': 'Pilih Unit Kerja terlebih dahulu.'}), 400
+
+        saved = _save_siaga_pdf(
+            tgl, unit_kerja_id, shift,
+            created_by=getattr(getattr(g, 'user', None), 'NIP', None) or 'HRIS'
+        )
+        return jsonify({
+            'success': True,
+            'message': 'Daftar hadir PDF berhasil disimpan ke HRIS-DATA.',
+            'data': {
+                'filename': saved['filename'],
+                'relative_path': saved['relative_path'],
+                'entity_id': saved['entity_id'],
+                'sha256': saved['sha256'],
+            }
+        })
+    except Exception as e:
+        db.session.rollback()
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 def api_absensi_kehadiran_export_pdf():
     try:
         shift = (request.args.get('shift', '') or '').strip()
         unit_kerja_id = (request.args.get('unit_kerja_id', '') or '').strip()
         tgl = (request.args.get('tgl', '') or '').strip()
+
         if not tgl:
             return jsonify({'success': False, 'error': 'Tanggal harus diisi.'}), 400
         if shift not in ('1', '2'):
@@ -698,15 +733,32 @@ def api_absensi_kehadiran_export_pdf():
         if not unit_kerja_id:
             return jsonify({'success': False, 'error': 'Pilih Unit Kerja sebelum mengunduh PDF.'}), 400
 
-        saved = _save_siaga_pdf(
-            tgl, unit_kerja_id, shift,
-            created_by=getattr(getattr(g, 'user', None), 'NIP', None) or 'HRIS'
-        )
+        from app.models.hrisDocumentModel import HrisDocument
+        entity_id = _siaga_document_key(tgl, unit_kerja_id, shift)
+        document = HrisDocument.query.filter(
+            HrisDocument.DOCUMENT_TYPE == 'ABSEN_KEHADIRAN_SIAGA',
+            HrisDocument.ENTITY_TYPE == 'PIKET_SIAGA',
+            HrisDocument.ENTITY_ID == entity_id,
+        ).first()
+
+        if not document:
+            return jsonify({
+                'success': False,
+                'error': 'PDF belum disimpan ke HRIS-DATA. Tekan tombol SIMPAN terlebih dahulu.'
+            }), 404
+
+        path = _siaga_pdf_absolute_path(document.STORAGE_PATH)
+        if not path.is_file():
+            return jsonify({
+                'success': False,
+                'error': 'Metadata PDF tersedia tetapi file tidak ditemukan di HRIS-DATA. Tekan SIMPAN untuk membuat ulang.'
+            }), 404
+
         return send_file(
-            saved['absolute_path'],
+            path,
             mimetype='application/pdf',
             as_attachment=True,
-            download_name=saved['filename'],
+            download_name=document.ORIGINAL_FILENAME,
             max_age=0
         )
     except Exception as e:
@@ -714,6 +766,7 @@ def api_absensi_kehadiran_export_pdf():
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
+
 
 
 def api_absensi_kehadiran_internal_pdf():
@@ -770,12 +823,10 @@ def api_absensi_kehadiran_internal_pdf():
         ).first()
 
         if not document:
-            _save_siaga_pdf(tgl, unit_kerja_id, shift, created_by=nip)
-            document = HrisDocument.query.filter(
-                HrisDocument.DOCUMENT_TYPE == document_type,
-                HrisDocument.ENTITY_TYPE == entity_type,
-                HrisDocument.ENTITY_ID == entity_id,
-            ).first()
+            return jsonify({
+                'status': 'error',
+                'message': 'PDF belum disimpan oleh operator.'
+            }), 404
 
         path = _siaga_pdf_absolute_path(document.STORAGE_PATH)
         if not path.is_file():
@@ -988,37 +1039,6 @@ def api_absensi_kehadiran_update():
             })
 
         db.session.commit()
-
-        # Setiap kehadiran yang berhasil dicatat memperbarui satu PDF resmi
-        # di central HRIS-DATA agar Kalender Pribadi selalu memiliki dokumen
-        # terbaru untuk pegawai yang sudah hadir.
-        try:
-            row_meta = db.session.execute(
-                db.text("""
-                    SELECT IDUnitKerja, Shift
-                    FROM LOG_ACTIVITIY
-                    WHERE GUIDLog = :guid_log
-                      AND NIP = :nip
-                      AND Activity = 'Piket Siaga'
-                      AND ActivityDate = :activity_date
-                    LIMIT 1
-                """),
-                {
-                    'guid_log': guid_log,
-                    'nip': nip,
-                    'activity_date': activity_date,
-                }
-            ).mappings().first()
-            if row_meta and status_id == 3 and row_meta['IDUnitKerja'] is not None:
-                _save_siaga_pdf(
-                    activity_date,
-                    row_meta['IDUnitKerja'],
-                    str(row_meta['Shift'] or shift1 and '1' or shift2 and '2' or '').strip(),
-                    created_by=getattr(getattr(g, 'user', None), 'NIP', None) or 'HRIS'
-                )
-        except Exception:
-            db.session.rollback()
-            raise
 
         return jsonify({
             'success': True,
