@@ -25,6 +25,7 @@ from app.models.agendaRapatAttendanceModel import AgendaRapatAttendance
 from app.models.calendarEventModel import CalendarEvent
 from app.models.kesamaptaanKegiatanModel import KesamaptaanKegiatan
 from app.models.kesamaptaanKehadiranModel import KesamaptaanKehadiran
+from app.models.hrisDocumentModel import HrisDocument
 
 from app.utils.absensiNormalisasiHelper import (
     get_label_dinas_luar,
@@ -179,7 +180,8 @@ def build_personal_calendar_events(
                 ActivityDate,
                 Shift,
                 StatusID,
-                shift2
+                shift2,
+                IDUnitKerja
             FROM LOG_ACTIVITIY
             WHERE NIP = :nip
               AND Activity = 'Piket Siaga'
@@ -210,6 +212,7 @@ def build_personal_calendar_events(
         )
 
         shift = str(row["Shift"] or "").strip()
+        unit_kerja_id = row["IDUnitKerja"]
 
         if shift == "1":
             warna = "#166534"
@@ -220,8 +223,15 @@ def build_personal_calendar_events(
         else:
             continue
 
+        document_key = f"{tanggal.isoformat()}|{int(unit_kerja_id)}|{shift}"
+        document = HrisDocument.query.filter(
+            HrisDocument.DOCUMENT_TYPE == "ABSEN_KEHADIRAN_SIAGA",
+            HrisDocument.ENTITY_TYPE == "PIKET_SIAGA",
+            HrisDocument.ENTITY_ID == document_key,
+        ).first()
+
         events.append({
-            "id": f"PIKET-SIAGA-{shift}-{tanggal.isoformat()}",
+            "id": f"PIKET-SIAGA-{shift}-{tanggal.isoformat()}-{int(unit_kerja_id)}",
             "title": label,
             "type": "PIKET_SIAGA",
             "source": "LOG_ACTIVITIY",
@@ -232,6 +242,13 @@ def build_personal_calendar_events(
             "location": None,
             "shift": shift,
             "color": warna,
+            "pdf_available": bool(document),
+            "pdf_filename": document.ORIGINAL_FILENAME if document else None,
+            "pdf_key": document_key if document else None,
+            "pdf_url": (
+                f"/api/agenda/piket-siaga/pdf?key={document_key}"
+                if document else None
+            ),
         })
 
     # ============================================================
