@@ -563,22 +563,19 @@ def view_kepegawaian_dinas_luar_operasi():
 @main.route('/api/dinas-luar-operasi/save', methods=['POST'])
 @login_required
 def api_dinas_luar_operasi_save():
-    from app.controllers.dashboard_1KepegawaianController import api_dinas_luar_operasi_save
-    return api_dinas_luar_operasi_save()
+    return master_api_dinas_luar_save('OP')
 
 # API: Get Dinas Luar Operasi by No Surat
 @main.route('/api/dinas-luar-operasi/get')
 @login_required
 def api_dinas_luar_operasi_get():
-    from app.controllers.dashboard_1KepegawaianController import api_dinas_luar_operasi_get
-    return api_dinas_luar_operasi_get()
+    return master_api_dinas_luar_get('OP')
 
 # API: Delete Dinas Luar Operasi
 @main.route('/api/dinas-luar-operasi/delete', methods=['POST'])
 @login_required
 def api_dinas_luar_operasi_delete():
-    from app.controllers.dashboard_1KepegawaianController import api_dinas_luar_operasi_delete
-    return api_dinas_luar_operasi_delete()
+    return master_api_dinas_luar_delete('OP')
 
 @main.route('/api/dinas-luar-operasi/save-peserta', methods=['POST'])
 @login_required
@@ -594,20 +591,17 @@ def view_kepegawaian_dinas_luar_pelatihan():
 @main.route('/api/dinas-luar-pelatihan/save-peserta', methods=['POST'])
 @login_required
 def api_dinas_luar_pelatihan_save_peserta():
-    from app.controllers.dashboard_1KepegawaianController import api_dinas_luar_pelatihan_save_peserta
-    return api_dinas_luar_pelatihan_save_peserta()
+    return master_api_dinas_luar_save('PL')
 
 @main.route('/api/dinas-luar-pelatihan/get')
 @login_required
 def api_dinas_luar_pelatihan_get():
-    from app.controllers.dashboard_1KepegawaianController import api_dinas_luar_pelatihan_get
-    return api_dinas_luar_pelatihan_get()
+    return master_api_dinas_luar_get('PL')
 
 @main.route('/api/dinas-luar-pelatihan/delete', methods=['POST'])
 @login_required
 def api_dinas_luar_pelatihan_delete():
-    from app.controllers.dashboard_1KepegawaianController import api_dinas_luar_pelatihan_delete
-    return api_dinas_luar_pelatihan_delete()
+    return master_api_dinas_luar_delete('PL')
 
 @main.route('/kepegawaian/pegawai-cuti')
 @login_required
