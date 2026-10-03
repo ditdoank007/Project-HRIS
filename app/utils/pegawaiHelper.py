@@ -232,7 +232,15 @@ def is_unit_pegawai_aktif(pegawai):
         False -> Unit tidak ditemukan / IS_USE != Y
     """
 
-    return is_operational_pegawai(pegawai)
+    unit = get_pegawai_unit(pegawai)
+
+    if unit is None:
+        return False
+
+    return (
+        str(unit.IS_USE or '').strip().upper()
+        in ACTIVE_UNIT_VALUES
+    )
 
 
 # ============================================================
