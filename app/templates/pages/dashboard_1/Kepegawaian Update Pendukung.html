@@ -18,6 +18,35 @@
     .hris-alert-danger { color:var(--ui-danger); background:var(--ui-danger-bg); }
     .hris-alert-warning { color:var(--ui-warning); background:var(--ui-warning-bg); }
     .hris-table-scroll { max-height:520px; overflow:auto; }
+    .hris-autocomplete { position:relative; }
+    .hris-autocomplete-menu {
+        position:absolute;
+        z-index:1050;
+        left:0;
+        right:0;
+        top:calc(100% + 4px);
+        max-height:240px;
+        overflow-y:auto;
+        background:#fff;
+        border:1px solid var(--ui-border);
+        border-radius:var(--ui-radius-sm);
+        box-shadow:0 8px 24px rgba(0,0,0,.12);
+    }
+    .hris-autocomplete-item {
+        display:block;
+        width:100%;
+        padding:9px 12px;
+        border:0;
+        border-bottom:1px solid var(--ui-border);
+        background:#fff;
+        text-align:left;
+        font-size:12px;
+        color:var(--ui-text);
+        cursor:pointer;
+    }
+    .hris-autocomplete-item:last-child { border-bottom:0; }
+    .hris-autocomplete-item:hover { background:var(--ui-primary-soft); }
+
 </style>
 {% endblock %}
 
@@ -42,8 +71,12 @@
         <div class="hris-card-body">
             <div class="hris-form-grid" style="grid-template-columns:repeat(4,minmax(0,1fr));">
                 <div class="hris-field">
-                    <label class="hris-label" for="periode">Periode <span class="text-danger">*</span></label>
-                    <input type="month" id="periode" class="hris-input">
+                    <label class="hris-label" for="tahun">Tahun <span class="text-danger">*</span></label>
+                    <select id="tahun" class="hris-select"></select>
+                </div>
+                <div class="hris-field">
+                    <label class="hris-label" for="bulan">Bulan <span class="text-danger">*</span></label>
+                    <select id="bulan" class="hris-select"></select>
                 </div>
                 <div class="hris-field">
                     <label class="hris-label" for="tingkatan">Tingkatan</label>
@@ -52,24 +85,25 @@
                     </select>
                 </div>
                 <div class="hris-field">
-                    <label class="hris-label" for="filterField">Field</label>
-                    <select id="filterField" class="hris-select">
-                        <option value="">- Pilih -</option>
-                    </select>
-                </div>
-                <div class="hris-field">
-                    <label class="hris-label" for="filterValue">Cari</label>
-                    <input type="text" id="filterValue" class="hris-input" placeholder="Ketik pencarian...">
+                    <label class="hris-label" for="namaPegawai">Nama Pegawai</label>
+                    <div class="hris-autocomplete">
+                        <input type="text" id="namaPegawai" class="hris-input"
+                               autocomplete="off" placeholder="Ketik nama pegawai...">
+                        <input type="hidden" id="pegawaiNip">
+                        <div id="pegawaiSuggestions" class="hris-autocomplete-menu d-none"></div>
+                    </div>
                 </div>
             </div>
 
             <div class="hris-toolbar" style="padding:14px 0 0;border-bottom:0;">
                 <div class="hris-toolbar-left">
-                    <span style="font-size:12px;color:var(--ui-muted);">Pilih periode lalu muat data pendukung.</span>
+                    <span style="font-size:12px;color:var(--ui-muted);">
+                        Pilih tahun, bulan, dan opsional Nama Pegawai/Tingkatan lalu klik Cari.
+                    </span>
                 </div>
                 <div class="hris-toolbar-right">
-                    <button class="hris-btn hris-btn-primary" id="btnRefresh">
-                        <i class="feather-refresh-cw"></i> Refresh
+                    <button class="hris-btn hris-btn-primary" id="btnCari">
+                        <i class="feather-search"></i> Cari
                     </button>
                 </div>
             </div>
@@ -85,8 +119,8 @@
                 <table class="hris-table-modern">
                     <thead>
                         <tr>
-                            <th>No</th><th>Tanggal</th><th>Pendukung</th>
-                            <th>Status</th><th>NIP</th><th>Nama</th><th>Keterangan</th>
+                            <th>No</th><th>Tgl</th><th>Ada Pendukung</th>
+                            <th>Status</th><th>FingerID</th><th>Nama</th><th>Keterangan</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
@@ -108,95 +142,188 @@
 {% block script %}
 <script>
 $(document).ready(function() {
-    // Load filter fields & tingkatan
-    $.get('/api/update-pendukung/filter-fields', function(r) {
-        if (r.success) {
-            r.data.forEach(function(f) {
-                $('#filterField').append(`<option value="${f.field_id}">${f.field_name}</option>`);
-            });
-        }
+    const bulanNama = [
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+
+    // Tahun legacy HRIS 2013 sampai tahun berjalan.
+    for (let year = 2013; year <= currentYear; year++) {
+        $('#tahun').append(
+            $('<option>').val(year).text(year)
+        );
+    }
+    $('#tahun').val(currentYear);
+
+    bulanNama.forEach(function(nama, index) {
+        $('#bulan').append(
+            $('<option>').val(index + 1).text(nama)
+        );
     });
-    
+    $('#bulan').val(currentMonth);
+
+    // Tingkatan mengikuti daMFTingkatPot HRIS 2013.
     $.get('/api/update-pendukung/tingkatan', function(r) {
         if (r.success) {
             r.data.forEach(function(t) {
-                $('#tingkatan').append(`<option value="${t}">${t}</option>`);
+                $('#tingkatan').append(
+                    $('<option>').val(t).text(t)
+                );
             });
         }
     });
 
-    // Set default periode ke bulan ini
-    const now = new Date();
-    $('#periode').val(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`);
+    // ------------------------------------------------------------
+    // Autocomplete Nama Pegawai
+    // ------------------------------------------------------------
+    let autocompleteTimer = null;
 
-    // Refresh
-    $('#btnRefresh').click(function() {
-        const periode = $('#periode').val();
-        if (!periode) { 
-            showAlert('warning', 'Pilih periode terlebih dahulu!'); 
-            return; 
+    $('#namaPegawai').on('input', function() {
+        const keyword = $(this).val().trim();
+        $('#pegawaiNip').val('');
+
+        clearTimeout(autocompleteTimer);
+
+        if (keyword.length < 2) {
+            $('#pegawaiSuggestions').addClass('d-none').empty();
+            return;
+        }
+
+        autocompleteTimer = setTimeout(function() {
+            $.get('/api/update-pendukung/autocomplete', { q: keyword }, function(r) {
+                const $menu = $('#pegawaiSuggestions').empty();
+
+                if (!r.success || !r.data.length) {
+                    $menu.addClass('d-none');
+                    return;
+                }
+
+                r.data.forEach(function(p) {
+                    const $item = $('<button>')
+                        .attr('type', 'button')
+                        .addClass('hris-autocomplete-item')
+                        .text(p.label)
+                        .on('click', function() {
+                            $('#namaPegawai').val(p.nama);
+                            $('#pegawaiNip').val(p.nip || '');
+                            $menu.addClass('d-none').empty();
+                        });
+
+                    $menu.append($item);
+                });
+
+                $menu.removeClass('d-none');
+            });
+        }, 250);
+    });
+
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('.hris-autocomplete').length) {
+            $('#pegawaiSuggestions').addClass('d-none');
+        }
+    });
+
+    // ------------------------------------------------------------
+    // Cari data
+    // ------------------------------------------------------------
+    $('#btnCari').click(function() {
+        const tahun = $('#tahun').val();
+        const bulan = $('#bulan').val();
+
+        if (!tahun || !bulan) {
+            showAlert('warning', 'Tahun dan bulan harus dipilih.');
+            return;
         }
 
         const params = {
-            periode: periode,
-            filter_field: $('#filterField').val(),
-            filter_value: $('#filterValue').val().trim(),
+            periode: tahun + '-' + String(bulan).padStart(2, '0'),
+            filter_field: $('#namaPegawai').val().trim() ? 'Nama' : '',
+            filter_value: $('#namaPegawai').val().trim(),
             tingkatan: $('#tingkatan').val()
         };
 
-        const $btn = $(this).prop('disabled', true).html('<i class="bi bi-hourglass-split me-1"></i>Loading...');
-        $('#tableBody').html('<tr><td colspan="7"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Memuat data...</td></tr>');
+        const $btn = $(this)
+            .prop('disabled', true)
+            .html('<i class="feather-loader"></i> Mencari...');
+
+        $('#tableBody').html(
+            '<tr><td colspan="7" class="hris-empty">Memuat data...</td></tr>'
+        );
 
         $.get('/api/update-pendukung/search', params, function(r) {
-            console.log('🔍 Search response:', r);
             const $tbody = $('#tableBody').empty();
-            
+
             if (r.success && r.data.length) {
-                r.data.forEach(function(d, i) {
+                r.data.forEach(function(d) {
                     const checked = d.pendukung ? 'checked' : '';
-                    $tbody.append(`
+
+                    const $row = $(`
                         <tr>
                             <td>${d.no}</td>
                             <td>${d.tgl_kerja}</td>
-                            <td class="text-center"><input type="checkbox" class="cb-pendukung" ${checked}></td>
+                            <td class="text-center">
+                                <input type="checkbox" class="cb-pendukung" ${checked}
+                                       title="Centang bila ada pendukung">
+                            </td>
                             <td>${d.tingkat}</td>
-                            <td>${d.nip}</td>
+                            <td>${d.finger_id || ''}</td>
                             <td class="text-start">${d.nama}</td>
-                            <td><input type="text" class="form-control form-control-sm txt-ket" value="${d.keterangan || ''}" style="width:100%;"></td>
+                            <td>
+                                <input type="text"
+                                       class="form-control form-control-sm txt-ket"
+                                       value="${escapeHtmlAttr(d.keterangan || '')}"
+                                       style="width:100%;">
+                            </td>
                         </tr>
                     `);
-                    // FingerID adalah key fisik ABSENSI dan tidak ditampilkan.
-                    $tbody.find('tr:last').append(`
-                        <input type="hidden" class="hd-finger-id" value="${d.finger_id || ''}">
-                        <input type="hidden" class="hd-transaksi" value="${d.transaksi}">
-                        <input type="hidden" class="hd-transac" value="${d.transac}">
-                        <input type="hidden" class="hd-transaksi-id" value="${d.transaksi_id_from}">
+
+                    $row.append(`
+                        <input type="hidden" class="hd-nip" value="${d.nip || ''}">
+                        <input type="hidden" class="hd-transaksi" value="${d.transaksi || ''}">
+                        <input type="hidden" class="hd-transac" value="${d.transac || ''}">
+                        <input type="hidden" class="hd-transaksi-id" value="${d.transaksi_id_from || ''}">
                     `);
+
+                    $tbody.append($row);
                 });
-                showAlert('info', `Ditemukan ${r.total} data`);
+
+                showAlert('info', 'Ditemukan ' + r.total + ' data pegawai.');
             } else {
-                $tbody.html('<tr><td colspan="7" class="py-3 text-muted">Tidak ada data</td></tr>');
+                $tbody.html(
+                    '<tr><td colspan="7" class="hris-empty">Tidak ada data TLM/PSW untuk periode dan filter tersebut.</td></tr>'
+                );
             }
         }).fail(function(xhr) {
-            console.error('❌ Search error:', xhr.responseText);
-            $('#tableBody').html('<tr><td colspan="7" class="text-danger">Gagal memuat data</td></tr>');
+            console.error('Update Pendukung search error:', xhr.responseText);
+            $('#tableBody').html(
+                '<tr><td colspan="7" class="hris-empty text-danger">Gagal memuat data.</td></tr>'
+            );
+            showAlert('danger', 'Gagal mengambil data absensi.');
         }).always(function() {
-            $btn.prop('disabled', false).html('<i class="bi bi-arrow-clockwise me-1"></i>Refresh');
+            $btn.prop('disabled', false)
+                .html('<i class="feather-search"></i> Cari');
         });
     });
 
-    // Save
+    // ------------------------------------------------------------
+    // Simpan
+    // ------------------------------------------------------------
     $('#btnSave').click(function() {
         const items = [];
+
         $('#tableBody tr').each(function() {
             const $row = $(this);
             const tgl = $row.find('td:eq(1)').text().trim();
-            const nip = $row.find('td:eq(4)').text().trim();
-            const fingerId = $row.find('.hd-finger-id').val() || '';
-            
-            if (!tgl || (!nip && !fingerId)) return;
-            if (tgl.includes('Silakan') || tgl.includes('Tidak ada')) return;
-            
+            const fingerId = $row.find('td:eq(4)').text().trim();
+            const nip = $row.find('.hd-nip').val() || '';
+
+            if (!tgl || !fingerId || !nip) return;
+            if (tgl.includes('Tidak ada') || tgl.includes('Memuat')) return;
+
             items.push({
                 tgl_kerja: tgl,
                 nip: nip,
@@ -209,14 +336,16 @@ $(document).ready(function() {
             });
         });
 
-        if (!items.length) { 
-            showAlert('warning', 'Tidak ada data untuk disimpan! Lakukan Refresh dulu.'); 
-            return; 
+        if (!items.length) {
+            showAlert('warning', 'Tidak ada data untuk disimpan. Klik Cari terlebih dahulu.');
+            return;
         }
-        
-        if (!confirm(`Simpan perubahan untuk ${items.length} data?`)) return;
 
-        const $btn = $(this).prop('disabled', true).html('<i class="bi bi-hourglass-split me-1"></i>Menyimpan...');
+        if (!confirm('Simpan perubahan untuk ' + items.length + ' data?')) return;
+
+        const $btn = $(this)
+            .prop('disabled', true)
+            .html('<i class="feather-loader"></i> Menyimpan...');
 
         $.ajax({
             url: '/api/update-pendukung/save',
@@ -227,34 +356,35 @@ $(document).ready(function() {
                 if (r.success) {
                     showAlert('success', r.message);
                 } else {
-                    showAlert('danger', r.error || 'Gagal menyimpan');
+                    showAlert('danger', r.error || 'Gagal menyimpan.');
                 }
             },
             error: function(xhr) {
-                console.error('❌ Save error:', xhr.responseText);
-                showAlert('danger', 'Gagal menyimpan data!');
+                console.error('Update Pendukung save error:', xhr.responseText);
+                showAlert('danger', 'Gagal menyimpan data.');
             },
             complete: function() {
-                $btn.prop('disabled', false).html('<i class="bi bi-save me-1"></i>SAVE');
+                $btn.prop('disabled', false)
+                    .html('<i class="feather-save"></i> Simpan');
             }
         });
     });
 
-    // Enter key untuk refresh
-    $('#filterValue').on('keydown', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            $('#btnRefresh').click();
-        }
-    });
-
-    function showAlert(type, msg) {
-        $('#alertContainer').removeClass('d-none alert-success alert-danger alert-warning alert-info')
-            .addClass('alert-' + type).show();
-        $('#alertMessage').text(msg);
+    function escapeHtmlAttr(value) {
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
     }
 
-    console.log('✅ Update Pendukung - Halaman siap');
+    function showAlert(type, msg) {
+        $('#alertContainer')
+            .removeClass('d-none alert-success alert-danger alert-warning alert-info')
+            .addClass('alert-' + type)
+            .show();
+        $('#alertMessage').text(msg);
+    }
 });
 </script>
 {% endblock %}
