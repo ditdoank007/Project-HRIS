@@ -1,4 +1,3 @@
-<!-- pages/dashboard_1/Kepegawaian Mutasi Penempatan Pegawai.html -->
 {% extends "layout/baseHRIS.html" %}
 
 {% block title %}- Pegawai Mutasi{% endblock %}
@@ -8,17 +7,49 @@
 {% block styles %}
 <script src="{{ url_for('static', filename='static_dashboard_1/assets/vendors/js/vendors.min.js') }}"></script>
 <style>
-    .d-none { display:none !important; }
-    .alert-success { color:var(--ui-success); background:var(--ui-success-bg); }
-    .alert-danger { color:var(--ui-danger); background:var(--ui-danger-bg); }
-    .alert-warning { color:var(--ui-warning); background:var(--ui-warning-bg); }
-    .alert-info { color:var(--ui-info); background:var(--ui-info-bg); }
-    .hris-alert { padding:11px 14px; border-radius:var(--ui-radius-sm); margin-bottom:16px; }
-    .hris-alert-success { color:var(--ui-success); background:var(--ui-success-bg); }
-    .hris-alert-danger { color:var(--ui-danger); background:var(--ui-danger-bg); }
-    .hris-alert-warning { color:var(--ui-warning); background:var(--ui-warning-bg); }
-    .pegawai-item { cursor:pointer; }
-    #pegawaiDropdown { width:100%; max-height:220px; overflow-y:auto; z-index:1000; }
+    .pegawai-item {
+        display:block;
+        padding:9px 12px;
+        text-decoration:none;
+        cursor:pointer;
+        border-bottom:1px solid var(--ui-border);
+    }
+    .pegawai-item:hover { background:var(--ui-surface-soft); }
+    #pegawaiDropdown {
+        width:100%;
+        max-height:240px;
+        overflow-y:auto;
+        z-index:1100;
+        position:absolute;
+        left:0;
+        top:44px;
+    }
+    .hris-search-card { margin-top:16px; }
+    .hris-search-scroll { overflow:auto; }
+    .hris-search-table { width:100%; border-collapse:collapse; }
+    .hris-search-table th,
+    .hris-search-table td {
+        padding:10px 12px;
+        border-bottom:1px solid var(--ui-border);
+        text-align:left;
+        white-space:nowrap;
+    }
+    .hris-search-table th {
+        font-size:12px;
+        color:var(--ui-muted);
+        font-weight:700;
+        text-transform:uppercase;
+    }
+    .hris-search-table tbody tr { cursor:pointer; }
+    .hris-search-table tbody tr:hover { background:var(--ui-surface-soft); }
+    .hris-chip {
+        display:inline-flex;
+        align-items:center;
+        padding:4px 8px;
+        border-radius:999px;
+        background:var(--ui-surface-soft);
+        font-size:12px;
+    }
 </style>
 {% endblock %}
 
@@ -27,18 +58,19 @@
     <div class="hris-page-header">
         <div>
             <h2 class="hris-page-title"><i class="feather-repeat"></i> Pegawai Mutasi</h2>
-            <p class="hris-page-subtitle">Pengelolaan mutasi dan penempatan pegawai.</p>
+            <p class="hris-page-subtitle">Mutasi penempatan pegawai berdasarkan No. SK dan daftar peserta.</p>
         </div>
+        <button type="button" id="btnCariData" class="hris-btn hris-btn-secondary">
+            <i class="feather-search"></i> Cari Data
+        </button>
     </div>
 
     <div id="alertContainer" class="hris-alert d-none" role="alert">
         <span id="alertMessage"></span>
     </div>
 
-    <form id="formMutasi">
-        <input type="hidden" id="isEdit" value="false">
-
-        <section class="hris-card" style="margin-bottom:16px;">
+    <form id="formMutasi" autocomplete="off">
+        <section class="hris-card">
             <div class="hris-card-header">
                 <h3 class="hris-card-title"><i class="feather-file-text"></i> Header Mutasi</h3>
             </div>
@@ -48,19 +80,24 @@
                         <label class="hris-label" for="noSK">No. SK <span class="text-danger">*</span></label>
                         <div style="display:flex;gap:8px;">
                             <input type="text" id="noSK" class="hris-input" placeholder="Nomor Surat Keputusan">
-                            <button class="hris-btn hris-btn-secondary" type="button" id="btnLoadSK" title="Cari No SK"><i class="feather-search"></i></button>
+                            <button type="button" id="btnLoadSK" class="hris-btn hris-btn-secondary" title="Muat transaksi berdasarkan No. SK">
+                                <i class="feather-search"></i>
+                            </button>
                         </div>
                     </div>
+
                     <div class="hris-field">
                         <label class="hris-label" for="tglMutasi">Tanggal Mutasi <span class="text-danger">*</span></label>
                         <input type="date" id="tglMutasi" class="hris-input">
                     </div>
+
                     <div class="hris-field">
                         <label class="hris-label" for="unitKerja">Unit Kerja Tujuan <span class="text-danger">*</span></label>
                         <select id="unitKerja" class="hris-select">
                             <option value="">- Pilih Unit Kerja -</option>
                         </select>
                     </div>
+
                     <div class="hris-field">
                         <label class="hris-label" for="keterangan">Keterangan</label>
                         <input type="text" id="keterangan" class="hris-input" placeholder="Keterangan">
@@ -69,22 +106,23 @@
             </div>
         </section>
 
-        <section class="hris-card" style="margin-bottom:16px;">
+        <section class="hris-card" style="margin-top:16px;">
             <div class="hris-card-header">
                 <h3 class="hris-card-title"><i class="feather-user-plus"></i> Tambah Peserta</h3>
             </div>
             <div class="hris-card-body">
                 <div class="hris-form-grid">
-                    <div class="hris-field">
-                        <label class="hris-label" for="searchPegawai">Pegawai</label>
+                    <div class="hris-field" style="grid-column:1 / -1;">
+                        <label class="hris-label" for="searchPegawai">Cari Pegawai</label>
                         <div style="position:relative;">
-                            <input type="text" id="searchPegawai" class="hris-input" placeholder="Ketik nama pegawai..." autocomplete="off">
-                            <div id="pegawaiDropdown" class="hris-card" style="display:none;position:absolute;left:0;right:0;top:44px;"></div>
+                            <input type="text" id="searchPegawai" class="hris-input"
+                                   placeholder="Ketik nama pegawai..." autocomplete="off">
+                            <div id="pegawaiDropdown" class="hris-card" style="display:none;"></div>
                         </div>
                         <input type="hidden" id="selectedNIP">
                     </div>
                     <div class="hris-field" style="display:flex;align-items:flex-end;">
-                        <button class="hris-btn hris-btn-primary" id="btnInsertPeserta" type="button">
+                        <button type="button" id="btnInsertPeserta" class="hris-btn hris-btn-primary">
                             <i class="feather-plus-circle"></i> Tambah Peserta
                         </button>
                     </div>
@@ -92,7 +130,7 @@
             </div>
         </section>
 
-        <section class="hris-card" style="margin-bottom:16px;">
+        <section class="hris-card" style="margin-top:16px;">
             <div class="hris-card-header">
                 <h3 class="hris-card-title"><i class="feather-users"></i> Daftar Peserta</h3>
             </div>
@@ -100,294 +138,508 @@
                 <div class="hris-table-wrap">
                     <table class="hris-table-modern">
                         <thead>
-                            <tr><th>No</th><th>NIP</th><th>Nama</th><th>Aksi</th></tr>
+                            <tr>
+                                <th style="width:70px;">No</th>
+                                <th>NIP</th>
+                                <th>Nama</th>
+                                <th style="width:100px;">Aksi</th>
+                            </tr>
                         </thead>
                         <tbody id="tableBody">
-                            <tr><td colspan="4" class="hris-empty">Belum ada peserta</td></tr>
+                            <tr><td colspan="4" class="hris-empty">Belum ada peserta.</td></tr>
                         </tbody>
                     </table>
                 </div>
             </div>
         </section>
 
-        <div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;">
-            <button type="button" id="btnSave" class="hris-btn hris-btn-primary"><i class="feather-save"></i> Simpan</button>
-            <button type="button" id="btnDelete" class="hris-btn hris-btn-danger" style="display:none;"><i class="feather-trash-2"></i> Hapus</button>
-            <button type="button" id="btnNew" class="hris-btn hris-btn-secondary"><i class="feather-file-plus"></i> Baru</button>
+        <div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:16px;">
+            <button type="button" id="btnSave" class="hris-btn hris-btn-primary">
+                <i class="feather-save"></i> Simpan
+            </button>
+            <button type="button" id="btnDelete" class="hris-btn hris-btn-danger" style="display:none;">
+                <i class="feather-trash-2"></i> Hapus
+            </button>
+            <button type="button" id="btnNew" class="hris-btn hris-btn-secondary">
+                <i class="feather-file-plus"></i> Baru
+            </button>
         </div>
     </form>
+
+    <section id="searchMutasiCard" class="hris-card hris-search-card" style="display:none;">
+        <div class="hris-card-header">
+            <h3 class="hris-card-title"><i class="feather-search"></i> Cari Transaksi Mutasi</h3>
+            <button type="button" id="btnTutupCari" class="hris-btn hris-btn-secondary">
+                <i class="feather-x"></i> Tutup
+            </button>
+        </div>
+        <div class="hris-card-body">
+            <div class="hris-form-grid">
+                <div class="hris-field">
+                    <label class="hris-label">Filter 1</label>
+                    <select id="filterField1" class="hris-select">
+                        <option value="">- Pilih Field -</option>
+                        <option value="NoSK">No. SK</option>
+                        <option value="NIP">NIP</option>
+                        <option value="Nama">Nama Pegawai</option>
+                        <option value="UnitKerja">Unit Kerja</option>
+                        <option value="Keterangan">Keterangan</option>
+                    </select>
+                </div>
+                <div class="hris-field">
+                    <label class="hris-label">Nilai Filter 1</label>
+                    <input id="filterValue1" class="hris-input" placeholder="Ketik nilai pencarian...">
+                </div>
+                <div class="hris-field">
+                    <label class="hris-label">Filter 2</label>
+                    <select id="filterField2" class="hris-select">
+                        <option value="">- Pilih Field -</option>
+                        <option value="NoSK">No. SK</option>
+                        <option value="NIP">NIP</option>
+                        <option value="Nama">Nama Pegawai</option>
+                        <option value="UnitKerja">Unit Kerja</option>
+                        <option value="Keterangan">Keterangan</option>
+                    </select>
+                </div>
+                <div class="hris-field">
+                    <label class="hris-label">Nilai Filter 2</label>
+                    <input id="filterValue2" class="hris-input" placeholder="Ketik nilai pencarian...">
+                </div>
+            </div>
+
+            <div class="hris-divider"></div>
+
+            <div style="display:flex;justify-content:flex-end;">
+                <button type="button" id="btnRefreshCari" class="hris-btn hris-btn-primary">
+                    <i class="feather-refresh-cw"></i> Cari
+                </button>
+            </div>
+
+            <div class="hris-search-scroll" style="margin-top:14px;">
+                <table class="hris-search-table">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>No. SK</th>
+                            <th>NIP</th>
+                            <th>Nama</th>
+                            <th>Tanggal</th>
+                            <th>Unit Kerja</th>
+                            <th>Keterangan</th>
+                            <th>Update</th>
+                        </tr>
+                    </thead>
+                    <tbody id="searchMutasiBody">
+                        <tr><td colspan="8" class="hris-empty">Belum ada pencarian.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
 </div>
 {% endblock %}
 
 {% block script %}
-<script>
-$(document).ready(function() {
+$(function() {
     let pesertaList = [];
     let isEdit = false;
+    let searchTimeout = null;
 
-    // ============================================
-    // ✅ NONAKTIFKAN PLUGIN YANG MENGGANGGU INPUT DATE
-    // ============================================
-    try {
-        if ($.fn.select2 && $('#formMutasi select').hasClass('select2-hidden-accessible')) {
-            $('#formMutasi select').select2('destroy');
-        }
-    } catch(e) {}
+    function escapeHtml(value) {
+        return $('<div>').text(value == null ? '' : value).html();
+    }
 
-    try {
-        if ($.fn.daterangepicker) {
-            $('#formMutasi input[type="date"]').each(function() {
-                if ($(this).data('daterangepicker')) {
-                    $(this).daterangepicker('destroy');
-                }
+    function showAlert(type, message) {
+        $('#alertContainer')
+            .removeClass('d-none alert-success alert-danger alert-warning alert-info')
+            .addClass('alert-' + type)
+            .show();
+        $('#alertMessage').text(message);
+    }
+
+    function hideAlert() {
+        $('#alertContainer').addClass('d-none').hide();
+    }
+
+    function loadUnitKerja(selectedValue) {
+        $.get('/api/mutasi/unit-kerja', function(r) {
+            const $select = $('#unitKerja')
+                .empty()
+                .append('<option value="">- Pilih Unit Kerja -</option>');
+
+            if (!r.success) {
+                showAlert('danger', r.error || 'Gagal memuat Unit Kerja.');
+                return;
+            }
+
+            (r.data || []).forEach(function(unit) {
+                const option = $('<option>', {
+                    value: unit.unit_kerja_id,
+                    text: unit.unit_kerja_id + ' - ' + unit.nama_unit_kerja
+                });
+                $select.append(option);
             });
-        }
-    } catch(e) {}
 
-    // ✅ Cegah event propagation yang mengganggu date picker
-    $('#formMutasi').on('click', function(e) {
-        if (!$(e.target).is('input[type="date"]')) {
-            e.stopPropagation();
-        }
-    });
+            if (selectedValue) {
+                $select.val(String(selectedValue));
+            }
+        }).fail(function(xhr) {
+            console.error(xhr.responseText);
+            showAlert('danger', 'Gagal memuat master Unit Kerja.');
+        });
+    }
 
-    // ✅ Pastikan date input berfungsi normal
-    $('#tglMutasi').on('click', function(e) {
-        e.stopPropagation();
-        try { this.showPicker(); } catch(err) {}
-    });
+    loadUnitKerja();
 
-    // ✅ Cegah double-click issue pada date input
-    $('#tglMutasi').on('mousedown', function(e) {
-        e.stopPropagation();
-    });
-
-    // Load unit kerja - SESUAIKAN DENGAN FORMAT RESPONSE API
-    $.get('/api/unit-kerja/list', function(r) {
-        if (r.data && r.data.length) {
-            r.data.forEach(function(u) {
-                // Gunakan nama field sesuai response API (huruf besar)
-                const id = u.UNIT_KERJA_ID || u.unit_kerja_id || u.id;
-                const nama = u.NAMA_UNIT_KERJA || u.nama_unit_kerja || u.nama;
-                $('#unitKerja').append(`<option value="${id}">${nama}</option>`);
-            });
-        }
-    });
-
-    // ============================================
-    // SEARCH PEGAWAI
-    // ============================================
-    let searchTimeout;
+    // ========================================================
+    // AUTOCOMPLETE PEGAWAI
+    // Mengikuti RadAutoCompleteBox + SqlDataSource HRIS 2013,
+    // tetapi dibatasi Global Rule Pegawai Operasional HRIS Reborn.
+    // ========================================================
     $('#searchPegawai').on('input', function() {
-        clearTimeout(searchTimeout);
         const keyword = $(this).val().trim();
-        if (keyword.length < 1) { $('#pegawaiDropdown').hide(); return; }
+        clearTimeout(searchTimeout);
+
+        $('#selectedNIP').val('');
+
+        if (!keyword) {
+            $('#pegawaiDropdown').hide().empty();
+            return;
+        }
 
         searchTimeout = setTimeout(function() {
-            $.get('/api/dinas-luar/search-pegawai', { keyword: keyword }, function(r) {
+            $.get('/api/dinas-luar/search-pegawai', {keyword: keyword}, function(r) {
                 const $dd = $('#pegawaiDropdown').empty();
+
                 if (r.data && r.data.length) {
                     r.data.forEach(function(p) {
-                        $dd.append(`<a class="dropdown-item pegawai-item" href="#" data-nip="${p.nip}" data-nama="${p.nama}">
-                            <strong>${p.nama}</strong> <small class="text-muted">(${p.nip})</small></a>`);
+                        const $item = $('<a>', {
+                            href: '#',
+                            class: 'pegawai-item'
+                        })
+                        .attr('data-nip', p.nip)
+                        .attr('data-nama', p.nama)
+                        .append($('<strong>').text(p.nama))
+                        .append(' ')
+                        .append($('<small>').text('(' + p.nip + ')'));
+
+                        $dd.append($item);
                     });
-                    $dd.show();
                 } else {
-                    $dd.html('<span class="dropdown-item text-muted">Tidak ditemukan</span>').show();
+                    $dd.html('<div class="hris-empty">Pegawai tidak ditemukan.</div>');
                 }
-            }).fail(function() {
-                $('#pegawaiDropdown').html('<span class="dropdown-item text-danger">Gagal mencari</span>').show();
+
+                $dd.show();
+            }).fail(function(xhr) {
+                console.error(xhr.responseText);
+                $('#pegawaiDropdown')
+                    .html('<div class="hris-empty">Gagal mencari pegawai.</div>')
+                    .show();
             });
-        }, 300);
+        }, 250);
     });
 
     $('#pegawaiDropdown').on('click', '.pegawai-item', function(e) {
         e.preventDefault();
-        const nip = $(this).data('nip');
-        const nama = $(this).data('nama');
-        $('#searchPegawai').val(nama + ' (' + nip + ')');
+
+        const nip = String($(this).attr('data-nip') || '');
+        const nama = String($(this).attr('data-nama') || '');
+
         $('#selectedNIP').val(nip);
+        $('#searchPegawai').val(nama);
         $('#pegawaiDropdown').hide();
-        console.log('✅ Selected:', nip, nama);
     });
 
     $(document).on('click', function(e) {
-        if (!$(e.target).closest('#searchPegawai, #pegawaiDropdown').length) {
+        if (!$(e.target).closest('#searchPegawai,#pegawaiDropdown').length) {
             $('#pegawaiDropdown').hide();
         }
     });
 
-    // ============================================
-    // INSERT PESERTA
-    // ============================================
+    // ========================================================
+    // PESERTA
+    // ========================================================
     $('#btnInsertPeserta').click(function() {
-        const nip = $('#selectedNIP').val();
-        const nama = $('#searchPegawai').val();
-        
-        if (!nip) { showAlert('warning', 'Pilih pegawai terlebih dahulu!'); return; }
-        if (pesertaList.find(p => p.nip === nip)) { showAlert('warning', 'Pegawai sudah ada di daftar!'); return; }
+        const nip = $('#selectedNIP').val().trim();
+        const nama = $('#searchPegawai').val().trim();
 
-        pesertaList.push({ nip: nip, nama: nama });
-        console.log('✅ Peserta ditambahkan:', nip);
-        renderTable();
-        $('#searchPegawai, #selectedNIP').val('');
-    });
-
-    // ============================================
-    // RENDER TABLE
-    // ============================================
-    function renderTable() {
-        const $tbody = $('#tableBody').empty();
-        if (!pesertaList.length) {
-            $tbody.html('<tr><td colspan="4" class="text-center py-3 text-muted">Belum ada peserta</td></tr>');
+        if (!nip) {
+            showAlert('warning', 'Pilih pegawai dari autocomplete terlebih dahulu.');
             return;
         }
-        pesertaList.forEach(function(p, i) {
-            const nipMatch = p.nama.match(/\(([^)]+)\)/);
-            const nipDisplay = nipMatch ? nipMatch[1] : p.nip;
-            $tbody.append(`<tr>
-                <td>${i+1}</td>
-                <td>${nipDisplay}</td>
-                <td class="text-start">${p.nama}</td>
-                <td><button class="btn btn-sm btn-outline-danger btn-del" data-idx="${i}" type="button"><i class="bi bi-x-circle"></i></button></td>
-            </tr>`);
-        });
-        $('.btn-del').click(function() {
-            pesertaList.splice($(this).data('idx'), 1);
-            renderTable();
+
+        if (pesertaList.some(function(p) { return p.nip === nip; })) {
+            showAlert('warning', 'Pegawai sudah ada di daftar peserta.');
+            return;
+        }
+
+        pesertaList.push({nip: nip, nama: nama});
+        renderPeserta();
+
+        $('#selectedNIP').val('');
+        $('#searchPegawai').val('').focus();
+    });
+
+    function renderPeserta() {
+        const $tbody = $('#tableBody').empty();
+
+        if (!pesertaList.length) {
+            $tbody.html('<tr><td colspan="4" class="hris-empty">Belum ada peserta.</td></tr>');
+            return;
+        }
+
+        pesertaList.forEach(function(p, index) {
+            const $row = $('<tr>');
+            $row.append($('<td>').text(index + 1));
+            $row.append($('<td>').text(p.nip));
+            $row.append($('<td>').text(p.nama));
+            const $delete = $('<button>', {
+                type: 'button',
+                class: 'hris-btn hris-btn-danger',
+                title: 'Hapus peserta'
+            }).css({padding:'5px 9px'})
+              .append($('<i>', {class:'feather-x'}))
+              .attr('data-index', index);
+
+            $delete.on('click', function() {
+                pesertaList.splice(Number($(this).attr('data-index')), 1);
+                renderPeserta();
+            });
+
+            $row.append($('<td>').append($delete));
+            $tbody.append($row);
         });
     }
 
-    // ============================================
-    // SAVE
-    // ============================================
+    // ========================================================
+    // SIMPAN — mengikuti LBSave_Click PegMutasi.aspx
+    // ========================================================
     $('#btnSave').click(function() {
         const noSK = $('#noSK').val().trim();
-        const tgl = $('#tglMutasi').val();
-        const unit = $('#unitKerja').val();
-        const ket = $('#keterangan').val().trim();
+        const tglMutasi = $('#tglMutasi').val();
+        const unitKerja = $('#unitKerja').val();
+        const keterangan = $('#keterangan').val().trim();
 
-        if (!noSK) { showAlert('warning', 'No. SK harus diisi!'); $('#noSK').focus(); return; }
-        if (!tgl) { showAlert('warning', 'Tanggal Mutasi harus diisi!'); return; }
-        if (!unit) { showAlert('warning', 'Unit Kerja tujuan harus dipilih!'); return; }
-        if (!pesertaList.length) { showAlert('warning', 'Minimal 1 peserta harus ditambahkan!'); return; }
+        if (!noSK) {
+            showAlert('warning', 'No. SK harus diisi.');
+            $('#noSK').focus();
+            return;
+        }
 
-        const data = {
-            no_sk: noSK,
-            tgl_mutasi: tgl,
-            unit_kerja_id: unit,
-            keterangan: ket,
-            peserta: pesertaList,
-            is_edit: isEdit
-        };
+        if (!tglMutasi) {
+            showAlert('warning', 'Tanggal Mutasi harus diisi.');
+            return;
+        }
 
-        console.log('📤 Sending:', data);
+        if (!unitKerja) {
+            showAlert('warning', 'Unit Kerja tujuan harus dipilih.');
+            return;
+        }
 
-        const $btn = $(this).prop('disabled', true).html('<i class="bi bi-hourglass-split me-1"></i>Menyimpan...');
+        if (!pesertaList.length) {
+            showAlert('warning', 'Pegawai kosong. Tambahkan minimal 1 peserta.');
+            return;
+        }
+
+        const $btn = $(this)
+            .prop('disabled', true)
+            .html('<i class="feather-loader"></i> Menyimpan...');
 
         $.ajax({
             url: '/api/mutasi/save',
             method: 'POST',
             contentType: 'application/json',
-            data: JSON.stringify(data),
-            success: function(r) {
-                console.log('✅ Response:', r);
-                if (r.success) {
-                    isEdit = true;
-                    $('#isEdit').val('true');
-                    $('#btnDelete').show();
-                    showAlert('success', r.message);
-                } else {
-                    showAlert('danger', r.error || 'Gagal menyimpan');
-                }
-            },
-            error: function(xhr) {
-                console.error('❌ Error:', xhr.responseText);
-                showAlert('danger', 'Gagal menyimpan data!');
-            },
-            complete: function() {
-                $btn.prop('disabled', false).html('<i class="bi bi-save me-1"></i>SAVE');
-            }
-        });
-    });
-
-    // ============================================
-    // LOAD BY NO SK
-    // ============================================
-    $('#btnLoadSK').click(function() {
-        const noSK = $('#noSK').val().trim();
-        if (!noSK) { showAlert('warning', 'Masukkan No. SK terlebih dahulu!'); $('#noSK').focus(); return; }
-
-        const $btn = $(this).prop('disabled', true).html('<i class="bi bi-hourglass-split me-1"></i>');
-
-        $.get('/api/mutasi/get', { no_sk: noSK }, function(r) {
-            console.log('🔍 Load response:', r);
+            data: JSON.stringify({
+                no_sk: noSK,
+                tgl_mutasi: tglMutasi,
+                unit_kerja_id: unitKerja,
+                keterangan: keterangan,
+                peserta: pesertaList,
+                is_edit: isEdit
+            })
+        }).done(function(r) {
             if (r.success) {
-                const d = r.data;
-                $('#tglMutasi').val(d.header.tgl_mutasi);
-                $('#unitKerja').val(d.header.unit_kerja_id);
-                $('#keterangan').val(d.header.keterangan);
-                
-                pesertaList = d.peserta.map(function(p) {
-                    return { nip: p.nip, nama: p.nama + ' (' + p.nip + ')' };
-                });
-                
                 isEdit = true;
-                $('#isEdit').val('true');
                 $('#btnDelete').show();
-                renderTable();
-                showAlert('success', 'Data ditemukan (' + pesertaList.length + ' peserta)');
+                showAlert('success', r.message);
             } else {
-                showAlert('warning', r.error || 'Data tidak ditemukan');
+                showAlert('danger', r.error || 'Gagal menyimpan data Mutasi.');
             }
         }).fail(function(xhr) {
-            console.error('❌ Load error:', xhr.responseText);
-            showAlert('danger', 'Gagal memuat data');
+            console.error(xhr.responseText);
+            showAlert('danger', 'Gagal menyimpan data Mutasi.');
         }).always(function() {
-            $btn.prop('disabled', false).html('<i class="bi bi-search"></i>');
+            $btn.prop('disabled', false)
+                .html('<i class="feather-save"></i> Simpan');
         });
     });
 
-    // ============================================
-    // DELETE
-    // ============================================
+    // ========================================================
+    // LOAD BY NO SK — mengikuti FillData()
+    // ========================================================
+    $('#btnLoadSK').click(function() {
+        const noSK = $('#noSK').val().trim();
+
+        if (!noSK) {
+            showAlert('warning', 'Masukkan No. SK terlebih dahulu.');
+            $('#noSK').focus();
+            return;
+        }
+
+        loadMutasiByNoSK(noSK);
+    });
+
+    function loadMutasiByNoSK(noSK) {
+        $.get('/api/mutasi/get', {no_sk: noSK}, function(r) {
+            if (!r.success) {
+                showAlert('warning', r.error || 'Data Mutasi tidak ditemukan.');
+                return;
+            }
+
+            const d = r.data;
+            $('#noSK').val(d.header.no_sk || noSK);
+            $('#tglMutasi').val(d.header.tgl_mutasi || '');
+            loadUnitKerja(d.header.unit_kerja_id || '');
+            $('#keterangan').val(d.header.keterangan || '');
+
+            pesertaList = (d.peserta || []).map(function(p) {
+                return {nip: p.nip, nama: p.nama};
+            });
+
+            isEdit = true;
+            $('#btnDelete').show();
+            renderPeserta();
+            showAlert('success', 'Data Mutasi ditemukan: ' + pesertaList.length + ' peserta.');
+            window.scrollTo({top:0, behavior:'smooth'});
+        }).fail(function(xhr) {
+            console.error(xhr.responseText);
+            showAlert('danger', 'Gagal memuat data Mutasi.');
+        });
+    }
+
+    // ========================================================
+    // CARI TRANSAKSI — mengikuti PageFind / GridDinasLuar
+    // ========================================================
+    $('#btnCariData').click(function() {
+        $('#searchMutasiCard').slideToggle(120, function() {
+            if ($('#searchMutasiCard').is(':visible')) {
+                loadCariMutasi();
+            }
+        });
+    });
+
+    $('#btnTutupCari').click(function() {
+        $('#searchMutasiCard').hide();
+    });
+
+    $('#btnRefreshCari').click(loadCariMutasi);
+
+    function loadCariMutasi() {
+        const params = {
+            filter_field1: $('#filterField1').val(),
+            filter_value1: $('#filterValue1').val().trim(),
+            filter_field2: $('#filterField2').val(),
+            filter_value2: $('#filterValue2').val().trim()
+        };
+
+        $('#searchMutasiBody').html(
+            '<tr><td colspan="8" class="hris-loading">Memuat data...</td></tr>'
+        );
+
+        $.get('/api/mutasi/cari', params, function(r) {
+            if (!r.success) {
+                $('#searchMutasiBody').html(
+                    '<tr><td colspan="8" class="hris-empty">' +
+                    escapeHtml(r.error || 'Gagal mencari data.') +
+                    '</td></tr>'
+                );
+                return;
+            }
+
+            const rows = r.data || [];
+            if (!rows.length) {
+                $('#searchMutasiBody').html(
+                    '<tr><td colspan="8" class="hris-empty">Data Mutasi tidak ditemukan.</td></tr>'
+                );
+                return;
+            }
+
+            $('#searchMutasiBody').empty();
+
+            rows.forEach(function(row) {
+                const $tr = $('<tr>').attr('data-no-sk', row.no_sk);
+                $tr.append($('<td>').text(row.no));
+                $tr.append($('<td>').text(row.no_sk));
+                $tr.append($('<td>').text(row.nip));
+                $tr.append($('<td>').text(row.nama));
+                $tr.append($('<td>').text(row.tgl_sk));
+                $tr.append($('<td>').text(row.unit_kerja));
+                $tr.append($('<td>').text(row.keterangan));
+                $tr.append($('<td>').text(row.update_by + (row.update_date ? ' - ' + row.update_date : '')));
+
+                $tr.on('click', function() {
+                    loadMutasiByNoSK($(this).attr('data-no-sk'));
+                    $('#searchMutasiCard').hide();
+                });
+
+                $('#searchMutasiBody').append($tr);
+            });
+        }).fail(function(xhr) {
+            console.error(xhr.responseText);
+            $('#searchMutasiBody').html(
+                '<tr><td colspan="8" class="hris-empty">Gagal memuat pencarian Mutasi.</td></tr>'
+            );
+        });
+    }
+
+    // ========================================================
+    // HAPUS
+    // ========================================================
     $('#btnDelete').click(function() {
         const noSK = $('#noSK').val().trim();
-        if (!noSK) { showAlert('warning', 'Tidak ada No SK untuk dihapus'); return; }
-        if (!confirm('Hapus semua data dengan No SK: ' + noSK + '?')) return;
 
-        const $btn = $(this).prop('disabled', true).html('<i class="bi bi-hourglass-split me-1"></i>Menghapus...');
+        if (!noSK) {
+            showAlert('warning', 'Tidak ada No. SK untuk dihapus.');
+            return;
+        }
+
+        if (!confirm('Yakin hapus data Mutasi dengan No. SK ' + noSK + '?')) {
+            return;
+        }
+
+        const $btn = $(this)
+            .prop('disabled', true)
+            .html('<i class="feather-loader"></i> Menghapus...');
 
         $.ajax({
             url: '/api/mutasi/delete',
             method: 'POST',
             contentType: 'application/json',
-            data: JSON.stringify({ no_sk: noSK }),
-            success: function(r) {
-                console.log('🗑️ Delete response:', r);
-                if (r.success) {
-                    resetForm();
-                    showAlert('success', r.message);
-                } else {
-                    showAlert('danger', r.error || 'Gagal menghapus');
-                }
-            },
-            error: function(xhr) {
-                console.error('❌ Delete error:', xhr.responseText);
-                showAlert('danger', 'Gagal menghapus data!');
-            },
-            complete: function() {
-                $btn.prop('disabled', false).html('<i class="bi bi-trash me-1"></i>DELETE');
+            data: JSON.stringify({no_sk: noSK})
+        }).done(function(r) {
+            if (r.success) {
+                resetForm();
+                showAlert('success', r.message);
+            } else {
+                showAlert('danger', r.error || 'Gagal menghapus data Mutasi.');
             }
+        }).fail(function(xhr) {
+            console.error(xhr.responseText);
+            showAlert('danger', 'Gagal menghapus data Mutasi.');
+        }).always(function() {
+            $btn.prop('disabled', false)
+                .html('<i class="feather-trash-2"></i> Hapus');
         });
     });
 
-    // ============================================
-    // NEW / RESET
-    // ============================================
+    // ========================================================
+    // BARU
+    // ========================================================
     $('#btnNew').click(function() {
-        if (pesertaList.length > 0 || $('#noSK').val()) {
-            if (!confirm('Data yang belum disimpan akan hilang. Lanjutkan?')) return;
+        if (pesertaList.length || $('#noSK').val().trim()) {
+            if (!confirm('Data pada form akan dibersihkan. Lanjutkan?')) {
+                return;
+            }
         }
         resetForm();
     });
@@ -397,29 +649,19 @@ $(document).ready(function() {
         $('#tglMutasi').val('');
         $('#unitKerja').val('');
         $('#keterangan').val('');
-        $('#isEdit').val('false');
-        isEdit = false;
+        $('#selectedNIP').val('');
+        $('#searchPegawai').val('');
+        $('#pegawaiDropdown').hide().empty();
+
         pesertaList = [];
+        isEdit = false;
         $('#btnDelete').hide();
-        renderTable();
+
+        renderPeserta();
         hideAlert();
-        $('#searchPegawai, #selectedNIP').val('');
-        console.log('🔄 Form direset');
+        window.scrollTo({top:0, behavior:'smooth'});
     }
 
-    // ============================================
-    // Alert Helper
-    // ============================================
-    function showAlert(type, msg) {
-        $('#alertContainer').removeClass('d-none alert-success alert-danger alert-warning alert-info')
-            .addClass('alert-' + type).show();
-        $('#alertMessage').text(msg);
-    }
-    function hideAlert() {
-        $('#alertContainer').addClass('d-none').hide();
-    }
-
-    console.log('✅ Mutasi Penempatan - Halaman siap');
+    renderPeserta();
 });
-</script>
 {% endblock %}
