@@ -1972,6 +1972,13 @@ def api_dinas_luar_save(type_sprin=None):
 def api_dinas_luar_get(type_sprin=None):
     """Ambil SPRIN Dinas Luar berdasarkan No. Surat."""
     try:
+        def _date_text(value):
+            if not value:
+                return ''
+            if hasattr(value, 'strftime'):
+                return value.strftime('%Y-%m-%d')
+            return str(value)[:10]
+
         type_sprin = str(request.args.get('type_sprin') or type_sprin or 'DL').strip().upper()
         jenis = {'DL':'DL','OPR':'OP','OP':'OP','POT':'PL','PL':'PL'}.get(type_sprin)
         if not jenis:
@@ -2007,8 +2014,8 @@ def api_dinas_luar_get(type_sprin=None):
                     'guid_sprin': first.GUID_SPRIN,
                     'tipe': str(first.TIPE if first.TIPE is not None else 0),
                     'no_surat': first.NO_SURAT,
-                    'tgl_awal_surat': first.TGL_AWAL_SURAT.strftime('%Y-%m-%d') if first.TGL_AWAL_SURAT else '',
-                    'tgl_akhir_surat': first.TGL_AKHIR_SURAT.strftime('%Y-%m-%d') if first.TGL_AKHIR_SURAT else '',
+                    'tgl_awal_surat': _date_text(first.TGL_AWAL_SURAT),
+                    'tgl_akhir_surat': _date_text(first.TGL_AKHIR_SURAT),
                     'keterangan': first.KETERANGAN_DINAS_LUAR or '',
                     'penempatan': first.PENEMPATAN_DINAS_LUAR or '',
                     'nama_file': first.NAMA_FILE or '',
@@ -2019,8 +2026,8 @@ def api_dinas_luar_get(type_sprin=None):
                         'transaksi_id': dl.TRANSAKSI_ID,
                         'nip': peg.NIP if peg else '',
                         'nama': peg.NAMA if peg else '-',
-                        'tgl_awal': dl.TGL_AWAL_DINAS_LUAR.strftime('%Y-%m-%d') if dl.TGL_AWAL_DINAS_LUAR else '',
-                        'tgl_akhir': dl.TGL_AKHIR_DINAS_LUAR.strftime('%Y-%m-%d') if dl.TGL_AKHIR_DINAS_LUAR else '',
+                        'tgl_awal': _date_text(dl.TGL_AWAL_DINAS_LUAR),
+                        'tgl_akhir': _date_text(dl.TGL_AKHIR_DINAS_LUAR),
                         'status_um': str(dl.STATUS_UM if dl.STATUS_UM is not None else 0),
                         'tipe': str(dl.TIPE if dl.TIPE is not None else 0),
                     }
