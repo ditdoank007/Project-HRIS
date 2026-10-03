@@ -1747,6 +1747,7 @@ def api_normalisasi_process():
                 employee_filter_clauses.append(
                     f"{employee_column} LIKE :{param_name}"
                 )
+                filter_params[param_name] = f'%{value}%'
 
         employee_finger_ids = None
         if employee_filter_clauses:
