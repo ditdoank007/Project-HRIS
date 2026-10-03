@@ -3509,14 +3509,34 @@ def api_normalisasi_export():
 
             tanggal_out = tgl_kerja_str
 
-            tgl_jam_in = datetime.strptime(
-                f"{tanggal_in} {jam_in}",
-                '%Y-%m-%d %H:%M:%S'
+            def _parse_export_datetime(date_text, time_text):
+                time_value = str(time_text or '').strip()
+
+                if not time_value:
+                    return None
+
+                for time_format in ('%H:%M:%S', '%H:%M'):
+                    try:
+                        return datetime.strptime(
+                            f"{date_text} {time_value}",
+                            f'%Y-%m-%d {time_format}'
+                        )
+                    except ValueError:
+                        continue
+
+                raise ValueError(
+                    f"time data '{date_text} {time_value}' "
+                    "does not match format '%Y-%m-%d %H:%M[:%S]'"
+                )
+
+            tgl_jam_in = _parse_export_datetime(
+                tanggal_in,
+                jam_in,
             )
 
-            tgl_jam_out = datetime.strptime(
-                f"{tanggal_out} {jam_out}",
-                '%Y-%m-%d %H:%M:%S'
+            tgl_jam_out = _parse_export_datetime(
+                tanggal_out,
+                jam_out,
             )
 
             # --------------------------------------------------------
