@@ -2600,7 +2600,17 @@ def api_normalisasi_process():
             # - SPRIN menjadi layer di atas Siaga/reguler
             # - recap menggunakan kode DL/OP/SD
             # ========================================================
-            if status_um_dl == 0:
+            # StatusUM=0 hanya berarti fingerprint wajib untuk
+            # Dinas Luar. Cuti/Sakit/Ijin/Alpa/WFH adalah transaksi
+            # khusus yang tetap membentuk ABSENSI final per tanggal.
+            transaksi_key_dl = str(
+                dl.TRANSAKSI or ''
+            ).strip().lower()
+
+            if (
+                status_um_dl == 0
+                and transaksi_key_dl == 'dinasluar'
+            ):
 
                 for row in result:
                     row_finger = str(row.get('finger_id') or '').strip()
