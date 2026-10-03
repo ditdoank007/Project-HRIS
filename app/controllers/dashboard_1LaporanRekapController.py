@@ -1799,11 +1799,13 @@ def export_rekap_clock_exception_pdf():
                 or str(cal.IS_LIBUR or 'N').upper() == 'Y'
                 or cal.TGL_KERJA.strftime('%m-%d') in ('01-01', '08-17', '12-25')
             )
-            cell_color = (
-                '#b91c1c'
-                if is_holiday
-                else color_map.get(cell.get('warna'), '#172033')
-            )
+            # Hari libur tidak boleh menimpa warna Siaga/DL.
+            # Jika cell sudah punya warna business-rule, gunakan itu.
+            # Merah hanya menjadi fallback untuk hari libur tanpa status
+            # berwarna khusus.
+            cell_color = color_map.get(cell.get('warna'))
+            if not cell_color:
+                cell_color = '#b91c1c' if is_holiday else '#172033'
 
             def colored_paragraph(text_value):
                 safe = xml_escape(text_value or '')
@@ -1861,14 +1863,13 @@ def export_rekap_clock_exception_pdf():
         for col_index, cal in enumerate(tanggal_rows, start=2):
             key = cal.TGL_KERJA.strftime('%Y-%m-%d')
             cell = matrix.get(peg.NIP, {}).get(key, {})
-            if (
+            color = color_map.get(cell.get('warna'))
+            if not color and (
                 cal.TGL_KERJA.weekday() in (5, 6)
                 or str(cal.IS_LIBUR or 'N').upper() == 'Y'
                 or cal.TGL_KERJA.strftime('%m-%d') in ('01-01', '08-17', '12-25')
             ):
                 color = colors.HexColor('#b91c1c')
-            else:
-                color = color_map.get(cell.get('warna'))
             if color:
                 # Preview HRIS Reborn tidak memberi background khusus
                 # pada cell weekend/libur; hanya warna teks yang berubah.
