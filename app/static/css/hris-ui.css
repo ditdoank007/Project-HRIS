@@ -3417,12 +3417,12 @@ body.hris-sidebar-mini .hris-submenu {
 }
 
 .hris-report-table tbody tr.report-row-zebra td {
-  background: #f8fafc;
+  background: #eef2f7;
 }
 
 .hris-report-table tbody tr.report-row-zebra .report-col-no,
 .hris-report-table tbody tr.report-row-zebra .report-col-name {
-  background: #f8fafc;
+  background: #eef2f7;
 }
 
 .hris-report-table tbody tr.report-row-zebra:hover td,
