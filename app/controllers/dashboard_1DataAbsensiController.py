@@ -1690,7 +1690,7 @@ def api_normalisasi_process():
         # RAW adalah sumber permanen hasil import file .DAT.
         # ============================================================
 
-        from sqlalchemy import text
+        from sqlalchemy import text, bindparam
 
         # ============================================================
         # FILTER DARI TAB FROM DATABASE
@@ -1717,6 +1717,63 @@ def api_normalisasi_process():
         source_filter_clauses = []
         filter_params = {}
 
+        # Resolve the selected employee(s) first. This avoids forcing MySQL
+        # to scan the whole TIME_RECORDER/FINGER_HARVEST_RAW period and then
+        # discover that only one employee (e.g. Nama=Nanang Sigit) is needed.
+        employee_filter_clauses = []
+        for idx, (field, value) in enumerate(
+            (
+                (filter_field1, filter_value1),
+                (filter_field2, filter_value2),
+            ),
+            start=1
+        ):
+            if not value:
+                continue
+            employee_column = {
+                'NIP': 'p0.NIP',
+                'Nama': 'p0.Nama',
+                'NAMA': 'p0.Nama',
+                'FingerID': 'p0.FingerID',
+                'UnitKerja': 'p0.UnitKerja',
+                'Unit': 'p0.UnitKerja',
+                'Unit Kerja': 'p0.UnitKerja',
+                'Jabatan': 'p0.Jabatan',
+                'Gol': 'p0.Gol',
+                'Gol-Pangkat': 'p0.Gol',
+            }.get(field)
+            if employee_column:
+                param_name = f'filter_value{idx}'
+                employee_filter_clauses.append(
+                    f"{employee_column} LIKE :{param_name}"
+                )
+
+        employee_finger_ids = None
+        if employee_filter_clauses:
+            employee_sql = text(f"""
+                SELECT DISTINCT p0.FingerID
+                FROM PEGAWAI p0
+                WHERE {' AND '.join(employee_filter_clauses)}
+                  AND p0.FingerID IS NOT NULL
+            """)
+            employee_rows = db.session.execute(
+                employee_sql,
+                filter_params
+            ).scalars().all()
+            employee_finger_ids = [
+                str(value) for value in employee_rows if value is not None
+            ]
+
+            # The selected employee filter matches nobody: there is no reason
+            # to execute the expensive attendance query.
+            if not employee_finger_ids:
+                return jsonify({
+                    'success': True,
+                    'data': [],
+                    'total': 0,
+                    'message': 'Data Log Finger Print Kosong'
+                })
+
         source_filter_map = {
             'NIP': 'p0.NIP',
             'Nama': 'p0.Nama',
@@ -1729,6 +1786,19 @@ def api_normalisasi_process():
             'Gol': 'p0.Gol',
             'Gol-Pangkat': 'p0.Gol',
         }
+
+        # When an employee filter is present, use the resolved FingerID list
+        # directly in both source branches. This is much cheaper than joining
+        # every attendance row to PEGAWAI and applying LIKE afterwards.
+        if employee_finger_ids is not None:
+            source_filter_clauses = [
+                "CAST(tr.FingerID AS CHAR) IN :employee_finger_ids"
+            ]
+            raw_source_filter_clauses = [
+                "CAST(r.USER_ID AS CHAR) IN :employee_finger_ids"
+            ]
+        else:
+            raw_source_filter_clauses = []
 
         for idx, (field, value) in enumerate(
             (
@@ -1747,7 +1817,7 @@ def api_normalisasi_process():
                 )
                 filter_params[param_name] = f'%{value}%'
 
-            if source_column and value:
+            if source_column and value and employee_finger_ids is None:
                 param_name = f'filter_value{idx}'
                 source_filter_clauses.append(
                     f"AND {source_column} LIKE :{param_name}"
@@ -1760,9 +1830,14 @@ def api_normalisasi_process():
             )
 
         source_filter_sql = ''
+        raw_source_filter_sql = ''
         if source_filter_clauses:
             source_filter_sql = '\n                  ' + '\n                  '.join(
                 source_filter_clauses
+            )
+        if raw_source_filter_clauses:
+            raw_source_filter_sql = '\n                  ' + '\n                  '.join(
+                raw_source_filter_clauses
             )
 
         raw_sql = text(f"""
@@ -1796,13 +1871,10 @@ def api_normalisasi_process():
                     END AS PUNCH,
                     tr.Mesin AS DEVICE_IP
                 FROM TIME_RECORDER tr
-                INNER JOIN PEGAWAI p0
-                    ON CAST(p0.FingerID AS CHAR) = CAST(tr.FingerID AS CHAR)
                 WHERE tr.Waktu >= :tgl_awal_raw
                   AND tr.Waktu < :tgl_akhir_raw
                   {source_filter_sql}
 
-                UNION ALL
 
                 /* File .DAT / RAW yang belum masuk TIME_RECORDER.
                    Jika event sudah ada di TIME_RECORDER, jangan
@@ -1815,11 +1887,9 @@ def api_normalisasi_process():
                     r.PUNCH,
                     r.DEVICE_IP
                 FROM FINGER_HARVEST_RAW r
-                INNER JOIN PEGAWAI p0
-                    ON CAST(p0.FingerID AS CHAR) = CAST(r.USER_ID AS CHAR)
                 WHERE r.WAKTU >= :tgl_awal_raw
                   AND r.WAKTU < :tgl_akhir_raw
-                  {source_filter_sql}
+                  {raw_source_filter_sql}
                   AND NOT EXISTS (
                       SELECT 1
                       FROM TIME_RECORDER tr2
@@ -1849,6 +1919,12 @@ def api_normalisasi_process():
             'tgl_akhir_raw': tgl_akhir + timedelta(days=1),
             **filter_params,
         }
+
+        if employee_finger_ids is not None:
+            raw_sql = raw_sql.bindparams(
+                bindparam('employee_finger_ids', expanding=True)
+            )
+            query_params['employee_finger_ids'] = employee_finger_ids
 
         raw_rows = db.session.execute(
             raw_sql,
