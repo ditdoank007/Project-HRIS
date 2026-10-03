@@ -45,11 +45,19 @@
                     <div class="hris-form-inline hris-filter-pair">
                         <select id="filterField1" class="hris-select">
                             <option value="">- Pilih Field -</option>
+                            <option value="Nama">Nama</option>
+                            <option value="NIP">NIP</option>
+                            <option value="UnitKerja">Unit</option>
+                            <option value="Jabatan">Jabatan</option>
                         </select>
                         <input type="text" id="filterValue1" class="hris-input" placeholder="Nilai filter...">
                         <span class="hris-form-separator">Dan</span>
                         <select id="filterField2" class="hris-select">
                             <option value="">- Pilih Field -</option>
+                            <option value="Nama">Nama</option>
+                            <option value="NIP">NIP</option>
+                            <option value="UnitKerja">Unit</option>
+                            <option value="Jabatan">Jabatan</option>
                         </select>
                         <input type="text" id="filterValue2" class="hris-input" placeholder="Nilai filter...">
                     </div>
@@ -324,13 +332,11 @@ document.addEventListener('DOMContentLoaded', function () {
         tbody.innerHTML = `<tr><td colspan="${colspan}" style="padding:25px;" class="text-start text-muted ps-3">${msg}</td></tr>`;
     }
 
-    // ---------- global field filter ----------
-    // Standar field filter berasal dari HRIS Global UI.
-    // Tidak ada lagi daftar field lokal di halaman ini.
-    if (window.HRISGlobal) {
-        HRISGlobal.initFilterFields('.hris-filter-field');
-    }
-
+    // ---------- field filter ----------
+    // Pilihan filter mengikuti workflow AbsensiFP legacy:
+    // Nama, NIP, Unit, Jabatan.
+    // Nilai select dikirim langsung ke API melalui getFilterParams().
+    
     // ================= IMPORT FILE FINGER (.DAT) =================
     // Fungsi ini TERPISAH dari btnImpor existing.
     // btnImpor = import database HRIS.
