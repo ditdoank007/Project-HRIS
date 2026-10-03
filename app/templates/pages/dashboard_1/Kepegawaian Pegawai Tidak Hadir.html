@@ -1,147 +1,69 @@
-<!-- pages/dashboard_1/Kepegawaian Pegawai Tidak Hadir.html -->
-{% extends "layout/baseDashboard1.html" %}
+<!-- Kepegawaian Pegawai Tidak Hadir.html -->
+{% extends "layout/baseHRIS.html" %}
 
-{% block title %}- Kepegawaian Pegawai Tidak Hadir{% endblock %}
+{% block title %}- Pegawai Ijin{% endblock %}
+{% block header_kicker %}KEPEGAWAIAN{% endblock %}
+{% block header_title %}Pegawai Ijin{% endblock %}
 
 {% block content %}
-<div class="nxl-content">
-    <div class="page-header">
-        <div class="page-header-left d-flex align-items-center">
-            <div class="page-header-title">
-                <h5 class="m-b-10">Kepegawaian</h5>
-            </div>
-            <ul class="breadcrumb">
-                <li class="breadcrumb-item"><a href="Kepegawaian Pegawai Tidak Hadir.html">Pegawai Tidak Hadir</a>
-                </li>
-                <li class="breadcrumb-item">Edit</li>
-            </ul>
+<div class="hris-page">
+    <div class="hris-page-header">
+        <div>
+            <h2 class="hris-page-title"><i class="feather-user-minus"></i> Pegawai Ijin</h2>
+            <p class="hris-page-subtitle">Pengelolaan data pegawai ijin.</p>
         </div>
+        <button type="button" class="hris-btn hris-btn-secondary" title="Cari Data">
+            <i class="feather-search"></i> Cari Data
+        </button>
     </div>
 
-    <div class="main-content master-siaga">
-        <div class="container-fluid">
+    <section class="hris-card">
+        <div class="hris-card-header">
+            <h3 class="hris-card-title"><i class="feather-user-minus"></i> Form Pegawai Ijin</h3>
+        </div>
+        <div class="hris-card-body">
+            <div class="hris-form-grid">
+                <div class="hris-field">
+                    <label class="hris-label">Pegawai</label>
+                    <input type="text" class="hris-input" placeholder="Ketik nama pegawai...">
+                </div>
 
-            <!-- Custom Style Khusus Halaman Ini -->
-            <style>
-                .sub-panel-card {
-                    border: 1px solid #dee2e6;
-                    border-radius: 8px;
-                    overflow: hidden;
-                    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-                    background: #fff;
-                }
-
-                .sub-panel-header {
-                    background-color: #e65c00;
-                    color: #fff;
-                    font-weight: 600;
-                    font-size: 0.9rem;
-                    padding: 8px 15px;
-                    width: 100%;
-                }
-
-                .input-custom-style {
-                    border: 1px solid #ccc;
-                    border-radius: 3px;
-                    padding: 3px 8px;
-                    font-size: 0.85rem;
-                    width: 100%;
-                    background-color: #fff;
-                }
-
-                .input-custom-style:focus {
-                    border-color: #e65c00;
-                    outline: none;
-                }
-
-                .form-label-custom {
-                    font-size: 0.85rem;
-                    color: #333;
-                    font-weight: 600;
-                    margin-bottom: 0;
-                }
-            </style>
-
-            <!-- CARD UTAMA: Dinas Luar Umum -->
-            <div class="card mb-4 filter-card shadow-sm border-0" style="border-radius: 10px;">
-                <!-- Header Card -->
-                <div class="card-header-custom d-flex justify-content-between align-items-center p-3 border-bottom"
-                    style="border-radius: 10px 10px 0 0;">
-                    <h6 class="mb-0 fw-bold d-flex align-items-center gap-2 text-dark">
-                        <i class="feather-user-minus"></i> Pegawai Tidak Hadir
-                    </h6>
-
-                    <div class="header-actions">
-                        <button class="btn p-0 border-0 bg-transparent shadow-none d-md-none" type="button"
-                            data-bs-toggle="collapse" data-bs-target="#headerIconsCollapse">
-                            <i class="bi bi-three-dots-vertical" style="font-size: 1.5rem; color: #333;"></i>
-                        </button>
-
-                        <div class="collapse d-md-flex align-items-center" id="headerIconsCollapse">
-                            <div class="header-icons-wrapper d-flex gap-2 align-items-center">
-                                <a href=""
-                                    class="btn p-0 border-0 bg-transparent shadow-none text-decoration-none">
-                                    <i class="bi bi-search" style="color: #333; font-size: 1.1rem;"></i>
-                                </a>
-                            </div>
+                <div class="hris-field">
+                    <label class="hris-label">Tanggal</label>
+                    <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:end;gap:10px;">
+                        <div>
+                            <label class="hris-label">Awal</label>
+                            <input type="date" class="hris-input">
+                        </div>
+                        <span class="hris-label" style="margin-bottom:10px;">s/d</span>
+                        <div>
+                            <label class="hris-label">Akhir</label>
+                            <input type="date" class="hris-input">
                         </div>
                     </div>
                 </div>
 
-                <!-- Body Card Utama -->
-                <div class="p-4">
-                    <!-- Pegawai -->
-                    <div class="row mb-3 align-items-center">
-                        <label class="col-md-2 form-label-custom">Pegawai</label>
-                        <div class="col-md-8">
-                            <input type="text" class="input-custom-style">
-                        </div>
-                    </div>
+                <div class="hris-field">
+                    <label class="hris-label">Ijin</label>
+                    <input type="text" class="hris-input" placeholder="Jenis / keterangan ijin">
+                </div>
 
-                    <!-- Tanggal s/d -->
-                    <div class="row mb-4 align-items-center">
-                        <label class="col-md-2 form-label-custom">Tanggal</label>
-                        <div class="col-md-8 d-flex align-items-center gap-2">
-                            <div class="input-group input-group-sm">
-                                <input type="date" class="form-control input-custom-style">
-                            </div>
-                            <span class="fw-bold px-1 small">s/d</span>
-                            <div class="input-group input-group-sm">
-                                <input type="date" class="form-control input-custom-style">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Izin -->
-                    <div class="row mb-3 align-items-center">
-                        <label class="col-md-2 form-label-custom">Izin</label>
-                        <div class="col-md-8">
-                            <input type="text" class="input-custom-style">
-                        </div>
-                    </div>
-
-                    <!-- Keterangan -->
-                    <div class="row mb-3 align-items-center">
-                        <label class="col-md-2 form-label-custom">Keterangan</label>
-                        <div class="col-md-8">
-                            <input type="text" class="input-custom-style">
-                        </div>
-                    </div>
-
-                    <!-- Tombol Insert Pegawai to table -->
-                    <div class="text-center">
-                        <button type="button" class="btn btn-primary btn-sm px-3 rounded-pill"
-                            style="font-size: 0.75rem; background-color: #0000ff; border: none;">
-                            Save
-                        </button>
-                    </div>
+                <div class="hris-field">
+                    <label class="hris-label">Keterangan</label>
+                    <textarea class="hris-textarea" rows="2" placeholder="Keterangan..."></textarea>
                 </div>
             </div>
+
+            <div class="hris-divider"></div>
+            <div style="display:flex;justify-content:flex-end;gap:8px;">
+                <button type="button" class="hris-btn hris-btn-primary">
+                    <i class="feather-save"></i> Simpan
+                </button>
+            </div>
         </div>
-    </div>
+    </section>
 </div>
 {% endblock %}
 
-{% block scripts %}
-    
+{% block script %}
 {% endblock %}
