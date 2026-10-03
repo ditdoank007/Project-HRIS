@@ -1761,8 +1761,8 @@ def export_rekap_clock_exception_pdf():
     color_map = {
         'holiday': colors.HexColor('#b91c1c'),
         'siaga': colors.HexColor('#15803d'),
-        'blue': colors.HexColor('#173a67'),
-        'dark-blue': colors.HexColor('#173a67'),
+        'blue': colors.HexColor('#2563eb'),
+        'dark-blue': colors.HexColor('#2563eb'),
         'orange': colors.HexColor('#b45309'),
         'wfh': colors.HexColor('#475569'),
         'normal': colors.HexColor('#172033'),
