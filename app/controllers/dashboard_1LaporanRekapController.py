@@ -48,7 +48,10 @@ from app.models.lemburModel import Lembur
 from app.models.logActivityModel import LogActivity
 from app.utils.pegawaiHelper import is_pegawai_aktif_periode
 from app.utils.rekapAbsensiHelper import generate_rekap_absensi_all_data
-from app.utils.rekapAbsensiMatrixHelper import generate_rekap_absensi_matrix
+from app.utils.rekapAbsensiMatrixHelper import (
+    generate_rekap_absensi_matrix,
+    format_jam_absensi,
+)
 
 from app.utils.rekapAbsensiReportHelper import (
     generate_rekap_absensi_report
