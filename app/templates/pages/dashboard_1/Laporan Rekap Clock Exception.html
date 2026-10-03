@@ -55,35 +55,39 @@
                 </div>
 
                 <div class="hris-field">
-                    <label class="hris-label" for="unitKerjaTrigger">Unit Kerja</label>
-                    <div class="hris-multi-select" id="unitKerjaPicker">
-                        <button type="button"
-                                class="hris-multi-select-trigger"
-                                id="unitKerjaTrigger"
-                                aria-haspopup="listbox"
-                                aria-expanded="false"
-                                onclick="(function(btn, ev){ ev.stopPropagation(); var p=btn.closest('.hris-multi-select'); var open=p.classList.toggle('is-open'); btn.setAttribute('aria-expanded', open ? 'true' : 'false'); if(open){ var q=p.querySelector('.hris-multi-select-search'); if(q) q.focus(); } })(this, event);">
-                            <span class="hris-multi-select-summary" id="unitKerjaSummary">
-                                Pilih unit kerja
-                            </span>
-                            <i class="feather-chevron-down hris-multi-select-arrow"></i>
-                        </button>
-
-                        <div class="hris-multi-select-menu" id="unitKerjaMenu">
-                            <input type="search"
-                                   class="hris-multi-select-search"
-                                   id="unitKerjaSearch"
-                                   placeholder="Cari unit kerja..."
-                                   autocomplete="off">
-
-                            <div class="hris-multi-select-toolbar">
-                                <span id="unitKerjaCount">0 unit dipilih</span>
-                                <button type="button"
-                                        class="hris-multi-select-action"
-                                        id="unitKerjaSelectAll">
-                                    Pilih semua
-                                </button>
+                    <label class="hris-label">Unit Kerja</label>
+                    <div class="hris-unit-selector" id="unitKerjaPicker">
+                        <div class="hris-unit-selector-toolbar">
+                            <label class="hris-unit-select-all">
+                                <input type="checkbox" id="unitKerjaSelectAll">
+                                <span>Semua Unit Kerja</span>
+                            </label>
+                            <span class="hris-unit-selected-count" id="unitKerjaCount">Belum ada unit dipilih</span>
+                        </div>
+                        <div class="hris-unit-search-row">
+                            <i class="feather-search"></i>
+                            <input type="search" class="hris-unit-search" id="unitKerjaSearch"
+                                   placeholder="Cari nama atau kode unit kerja..." autocomplete="off">
+                        </div>
+                        <div class="hris-unit-options" id="unitKerjaOptions">
+                            {% for unit in unit_kerja_list %}
+                            <label class="hris-unit-option"
+                                   data-search="{{ unit.UNIT_KERJA_ID }} {{ unit.NAMA_UNIT_KERJA }}">
+                                <input type="checkbox" class="unit-kerja-check"
+                                       value="{{ unit.UNIT_KERJA_ID }}">
+                                <span class="hris-unit-option-code">{{ unit.UNIT_KERJA_ID }}</span>
+                                <span class="hris-unit-option-name">{{ unit.NAMA_UNIT_KERJA }}</span>
+                            </label>
+                            {% endfor %}
+                            <div class="hris-unit-empty" id="unitKerjaEmpty" style="display:none;">
+                                Unit kerja tidak ditemukan.
                             </div>
+                        </div>
+                    </div>
+                    <div class="hris-field-help">
+                        Centang satu atau beberapa unit kerja untuk dimasukkan ke laporan.
+                    </div>
+                </div>
 
                             <div class="hris-multi-select-options" id="unitKerjaOptions" role="listbox">
                                 {% for unit in unit_kerja_list %}
@@ -288,14 +292,68 @@ document.addEventListener('DOMContentLoaded', function () {
     const resultInfo = document.getElementById('resultInfo');
 
     const picker = document.getElementById('unitKerjaPicker');
-    const trigger = document.getElementById('unitKerjaTrigger');
-    const menu = document.getElementById('unitKerjaMenu');
-    const summary = document.getElementById('unitKerjaSummary');
-    const search = document.getElementById('unitKerjaSearch');
     const selectAll = document.getElementById('unitKerjaSelectAll');
+    const search = document.getElementById('unitKerjaSearch');
     const countLabel = document.getElementById('unitKerjaCount');
     const emptyLabel = document.getElementById('unitKerjaEmpty');
     const checks = Array.from(document.querySelectorAll('.unit-kerja-check'));
+
+    function getSelectedUnits() {
+        return checks.filter(function (check) {
+            return check.checked;
+        });
+    }
+
+    function updateUnitPicker() {
+        const selected = getSelectedUnits();
+        const total = checks.length;
+
+        countLabel.textContent =
+            selected.length === 0
+                ? 'Belum ada unit dipilih'
+                : selected.length + ' dari ' + total + ' unit dipilih';
+
+        selectAll.checked = total > 0 && selected.length === total;
+        selectAll.indeterminate =
+            selected.length > 0 && selected.length < total;
+    }
+
+    function filterUnitOptions() {
+        const keyword = (search.value || '').trim().toLowerCase();
+        let visible = 0;
+
+        checks.forEach(function (check) {
+            const item = check.closest('.hris-unit-option');
+            const text = (item?.dataset.search || '').toLowerCase();
+            const match = !keyword || text.includes(keyword);
+
+            item?.classList.toggle('is-hidden', !match);
+            if (match) visible++;
+        });
+
+        emptyLabel.style.display = visible ? 'none' : 'block';
+    }
+
+    selectAll.addEventListener('change', function () {
+        const visibleChecks = checks.filter(function (check) {
+            const item = check.closest('.hris-unit-option');
+            return item && !item.classList.contains('is-hidden');
+        });
+
+        visibleChecks.forEach(function (check) {
+            check.checked = selectAll.checked;
+        });
+
+        updateUnitPicker();
+    });
+
+    search.addEventListener('input', filterUnitOptions);
+
+    checks.forEach(function (check) {
+        check.addEventListener('change', updateUnitPicker);
+    });
+
+    updateUnitPicker();
 
     function showAlert(type, message) {
         if (!alertBox) return;
@@ -449,8 +507,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (!unitChecked.length) {
             showAlert('warning', 'Silakan pilih minimal satu Unit Kerja.');
-            picker.classList.add('is-open');
-            trigger.setAttribute('aria-expanded', 'true');
             search.focus();
             return;
         }
