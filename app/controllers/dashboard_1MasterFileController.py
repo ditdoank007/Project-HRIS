@@ -2072,7 +2072,16 @@ def get_potongan_list():
     field2 = request.args.get('field2')
     keyword2 = request.args.get('keyword2', '').strip()
 
-    query = MfPot.query
+    # HRIS 2013 menampilkan nama pegawai dari UpdateBy (NIP)
+    # melalui LEFT JOIN ke PEGAWAI. Jika NIP tidak ditemukan,
+    # tampilkan nilai UpdateBy sebagai fallback.
+    query = (
+        db.session.query(
+            MfPot,
+            Pegawai.NAMA.label('NAMA_UPDATED'),
+        )
+        .outerjoin(Pegawai, MfPot.UPDATE_BY == Pegawai.NIP)
+    )
 
     # --- Filter Periode: cocokkan TGL_MULAI pada tanggal yang dipilih ---
     if periode_raw:
@@ -2117,8 +2126,9 @@ def get_potongan_list():
         akhir = row.RANGE_AKHIR if row.RANGE_AKHIR is not None else '-'
         return f'{awal} s/d {akhir}'
 
-    data = [
-        {
+    data = []
+    for idx, (row, nama_updated) in enumerate(pot_list):
+        data.append({
             'no': idx + 1,
             'potongan_id': row.POTONGAN_ID,
             'kategori': row.KATEGORI or '-',
@@ -2128,9 +2138,8 @@ def get_potongan_list():
             'range': format_range(row),
             'tgl_mulai': row.TGL_MULAI.strftime('%d-%m-%Y') if row.TGL_MULAI else '-',
             'updated': _format_jam_finger_updated(row.UPDATE_DATE),
-        }
-        for idx, row in enumerate(pot_list)
-    ]
+            'updated_by': nama_updated or row.UPDATE_BY or '-',
+        })
 
     return jsonify({'status': 'success', 'data': data})
 
