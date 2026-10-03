@@ -3448,8 +3448,9 @@ body.hris-sidebar-mini .hris-submenu {
   color: var(--ui-success);
   font-weight: 700;
 }
-.hris-report-table .report-cell.blue {
-  color: var(--ui-info);
+.hris-report-table .report-cell.blue,
+.hris-report-table .report-cell.dark-blue {
+  color: #173a67;
   font-weight: 700;
 }
 .hris-report-table .report-cell.orange {
