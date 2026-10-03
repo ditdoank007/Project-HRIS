@@ -27,6 +27,7 @@ def format_jam_absensi(value):
 
 def format_status_absensi(status):
     mapping = {
+        "DINASLUAR": "DL",
         "DINAS_LUAR": "DL",
         "CUTI": "CT",
         "SAKIT": "S",
@@ -37,7 +38,49 @@ def format_status_absensi(status):
     }
     if not status:
         return ""
-    return mapping.get(str(status).upper(), str(status))
+    return mapping.get(str(status).strip().upper(), str(status))
+
+
+def _sprin_code_from_absensi(absensi):
+    """Ambil kode DL/OP/SD yang sudah dibawa oleh hasil export."""
+    transaction = str(absensi.TRANSAKSI_IN or '').strip().upper()
+    if transaction != 'DINASLUAR':
+        return ''
+
+    supporting = str(absensi.PENDUKUNG_IN or '').strip().upper()
+    if supporting in ('DL', 'OP', 'SD'):
+        return supporting
+
+    return 'DL'
+
+
+def _is_shift2_absensi(absensi):
+    """Deteksi Shift 2 dari jam baku IN final ABSENSI."""
+    value = absensi.TGL_JAM_BAKU_IN
+    return bool(value and getattr(value, 'hour', 0) >= 18)
+
+
+def _warna_absensi(absensi):
+    """Warna presentation Rekap berdasarkan hasil final ABSENSI."""
+    transaction = str(absensi.TRANSAKSI_IN or '').strip().upper()
+
+    if transaction == 'DINASLUAR':
+        return (
+            'orange'
+            if int(absensi.STATUS_UM or 0) == 1
+            else 'dark-blue'
+        )
+
+    if transaction == 'WFH':
+        return 'wfh'
+
+    if _is_shift2_absensi(absensi):
+        return 'siaga'
+
+    if transaction in ('CUTI', 'SAKIT', 'ALPA', 'IJIN', 'IZIN'):
+        return 'orange'
+
+    return 'normal'
 
 
 def _calendar_rows(tgl_awal, tgl_akhir):
@@ -203,7 +246,9 @@ def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
                     transaksi_in
                 )
 
-                if status in (
+                if transaksi_in == 'DINASLUAR':
+                    status = _sprin_code_from_absensi(absensi)
+                elif status in (
                     '',
                     'LOGFP',
                     'MANUAL',
@@ -211,21 +256,7 @@ def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
                 ):
                     status = 'HADIR'
 
-                if transaksi_in == 'WFH' or transaksi_out == 'WFH':
-                    status = 'HADIR'
-                    color = 'wfh'
-                elif transaksi_in in (
-                    'CUTI',
-                    'SAKIT',
-                    'ALPA',
-                    'IJIN',
-                    'IZIN',
-                ):
-                    color = 'orange'
-                elif transaksi_in == 'DINASLUAR':
-                    color = 'blue'
-                else:
-                    color = 'normal'
+                color = _warna_absensi(absensi)
 
                 cell.update({
                     'status': status,
