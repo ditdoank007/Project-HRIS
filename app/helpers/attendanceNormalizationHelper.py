@@ -483,6 +483,40 @@ class AttendanceNormalizationEngine:
             ):
                 recovery_out.append(raw)
 
+        # ------------------------------------------------------------
+        # FALLBACK IN SHIFT 2
+        #
+        # Jika MF_LOAD_FINGER tidak menangkap event karena konfigurasi
+        # window lama/tidak lengkap, gunakan FINGERPRINT AKTUAL PUNCH=0
+        # pada ActivityDate setelah 18:00.
+        #
+        # PENTING:
+        # - Tidak pernah mengambil TGL_JAM_OUT hari sebelumnya.
+        # - Tidak membuat jam IN sintetis.
+        # - Yang dipilih tetap event fingerprint nyata dari mesin.
+        # ------------------------------------------------------------
+        if not shift2_in:
+            fallback_in = []
+
+            for raw in raw_person:
+                waktu = self._parse_waktu(raw)
+                punch = self.punch_status(raw)
+
+                if (
+                    punch == 'IN'
+                    and waktu
+                    and waktu.date() == activity_date
+                    and waktu.time() >= time(18, 0)
+                ):
+                    fallback_in.append(raw)
+
+            fallback_in.sort(
+                key=lambda r: self._parse_waktu(r) or datetime.min
+            )
+
+            if fallback_in:
+                shift2_in.append(fallback_in[0])
+
         shift2_in.sort(
             key=lambda r: self._parse_waktu(r) or datetime.min
         )
