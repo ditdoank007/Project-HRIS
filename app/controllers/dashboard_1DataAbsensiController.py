@@ -1443,15 +1443,12 @@ def api_normalisasi_import_finger():
     """
     TAB 1 - VIEW DATA.
 
-    Sumber data:
-        FINGER_HARVEST_RAW
+    Sumber data mengikuti HRIS 2013:
+        TIME_RECORDER
 
-    Data ini dapat berasal dari:
-        1. HRIS Finger Collector / mesin finger
-        2. Import file .DAT
-
-    VIEW DATA hanya membaca RAW.
-    Tidak melakukan normalisasi dan tidak mengubah ABSENSI.
+    VIEW DATA hanya membaca log fingerprint yang sudah tersimpan
+    di TIME_RECORDER. Tidak melakukan normalisasi dan tidak
+    mengubah ABSENSI.
     """
     try:
         tgl_awal_str = request.args.get('tgl_awal', '')
@@ -1462,199 +1459,101 @@ def api_normalisasi_import_finger():
         filter_value2 = request.args.get('filter_value2', '')
 
         if not tgl_awal_str or not tgl_akhir_str:
-            return jsonify({
-                'error': 'Tanggal periode kosong',
-                'data': []
-            })
+            return jsonify({'error': 'Tanggal periode kosong', 'data': []})
 
-        tgl_awal = datetime.strptime(
-            tgl_awal_str,
-            '%Y-%m-%d'
-        )
+        tgl_awal = datetime.strptime(tgl_awal_str, '%Y-%m-%d')
+        tgl_akhir = datetime.strptime(tgl_akhir_str, '%Y-%m-%d') + timedelta(days=1)
 
-        tgl_akhir = (
-            datetime.strptime(
-                tgl_akhir_str,
-                '%Y-%m-%d'
-            )
-            + timedelta(days=1)
-        )
+        params = {'tgl_awal': tgl_awal, 'tgl_akhir': tgl_akhir}
+        field_mapping = {
+            'NIP': 'p.NIP', 'Nama': 'p.Nama', 'NAMA': 'p.Nama',
+            'FingerID': 'tr.FingerID', 'UnitKerja': 'p.UnitKerja',
+            'Unit': 'p.UnitKerja', 'UnitKerjaName': 'uk.UnitKerjaName',
+            'Jabatan': 'p.Jabatan', 'Gol': 'p.Gol', 'Gol-Pangkat': 'p.Gol',
+            'Status': 'tr.Status', 'Transaksi': 'tr.Transaksi',
+        }
+        conditions = []
+        for idx, (field_name, field_value) in enumerate((
+            (filter_field1, filter_value1),
+            (filter_field2, filter_value2),
+        ), start=1):
+            if not field_name or not field_value:
+                continue
+            field = field_mapping.get(field_name)
+            if not field:
+                continue
+            param_name = f'filter_value{idx}'
+            conditions.append(f"{field} LIKE :{param_name}")
+            params[param_name] = f"%{field_value}%"
 
-        sql = text("""
+        filter_sql = ''
+        if conditions:
+            filter_sql = ' AND ' + ' AND '.join(conditions)
+
+        sql = text(f"""
             SELECT
-                r.ID,
-                r.FINGER_ID,
-                r.USER_ID,
-                r.WAKTU,
-                r.STATUS,
-                r.PUNCH,
-                r.DEVICE_IP,
+                tr.FingerID AS FINGER_ID,
+                tr.Waktu,
+                tr.Status,
+                tr.Transaksi,
                 p.NIP,
                 p.Nama AS NAMA,
                 p.Gol AS GOL,
-                p.UnitKerja AS UNIT_KERJA
-            FROM FINGER_HARVEST_RAW r
-            INNER JOIN PEGAWAI p
-                ON CAST(r.USER_ID AS CHAR)
-                 = CAST(p.FingerID AS CHAR)
-            WHERE r.WAKTU >= :tgl_awal
-              AND r.WAKTU < :tgl_akhir
+                g.Pangkat AS PANGKAT,
+                p.UnitKerja AS UNIT_KERJA,
+                uk.UnitKerjaName AS UNIT_KERJA_NAME
+            FROM TIME_RECORDER tr
+            LEFT JOIN PEGAWAI p
+                ON CAST(p.FingerID AS CHAR) = CAST(tr.FingerID AS CHAR)
+            LEFT JOIN MFGol g
+                ON g.Gol = p.Gol
+            LEFT JOIN MFUnitKerja uk
+                ON uk.IDUnitKerja = p.UnitKerja
+            WHERE tr.Waktu >= :tgl_awal
+              AND tr.Waktu < :tgl_akhir
+              {filter_sql}
+            ORDER BY tr.FingerID, tr.Waktu
         """)
 
-        params = {
-            'tgl_awal': tgl_awal,
-            'tgl_akhir': tgl_akhir,
-        }
-
-        conditions = []
-
-        field_mapping = {
-            'NIP': 'p.NIP',
-            'Nama': 'p.Nama',
-            'FingerID': 'p.FingerID',
-            'UnitKerja': 'p.UnitKerja',
-            'Unit': 'p.UnitKerja',
-            'UnitKerjaName': 'p.UnitKerja',
-            'Jabatan': 'p.Jabatan',
-        }
-
-        if filter_field1 and filter_value1:
-            field = field_mapping.get(filter_field1)
-            if field:
-                conditions.append(
-                    f"{field} LIKE :filter_value1"
-                )
-                params['filter_value1'] = (
-                    f"%{filter_value1}%"
-                )
-
-        if filter_field2 and filter_value2:
-            field = field_mapping.get(filter_field2)
-            if field:
-                conditions.append(
-                    f"{field} LIKE :filter_value2"
-                )
-                params['filter_value2'] = (
-                    f"%{filter_value2}%"
-                )
-
-        if conditions:
-            sql = text("""
-                SELECT
-                    r.ID,
-                    r.FINGER_ID,
-                    r.USER_ID,
-                    r.WAKTU,
-                    r.STATUS,
-                    r.PUNCH,
-                    r.DEVICE_IP,
-                    p.NIP,
-                    p.Nama AS NAMA,
-                    p.Gol AS GOL,
-                    p.UnitKerja AS UNIT_KERJA
-                FROM FINGER_HARVEST_RAW r
-                INNER JOIN PEGAWAI p
-                    ON CAST(r.USER_ID AS CHAR)
-                     = CAST(p.FingerID AS CHAR)
-                WHERE r.WAKTU >= :tgl_awal
-                  AND r.WAKTU < :tgl_akhir
-                  AND """ + " AND ".join(conditions) + """
-                ORDER BY CAST(p.UnitKerja AS UNSIGNED), r.FINGER_ID, r.WAKTU
-            """)
-        else:
-            sql = text("""
-                SELECT
-                    r.ID,
-                    r.FINGER_ID,
-                    r.USER_ID,
-                    r.WAKTU,
-                    r.STATUS,
-                    r.PUNCH,
-                    r.DEVICE_IP,
-                    p.NIP,
-                    p.Nama AS NAMA,
-                    p.Gol AS GOL,
-                    p.UnitKerja AS UNIT_KERJA
-                FROM FINGER_HARVEST_RAW r
-                INNER JOIN PEGAWAI p
-                    ON CAST(r.USER_ID AS CHAR)
-                     = CAST(p.FingerID AS CHAR)
-                WHERE r.WAKTU >= :tgl_awal
-                  AND r.WAKTU < :tgl_akhir
-                ORDER BY CAST(p.UnitKerja AS UNSIGNED), r.FINGER_ID, r.WAKTU
-            """)
-
-        rows = db.session.execute(
-            sql,
-            params
-        ).mappings().all()
-
+        rows = db.session.execute(sql, params).mappings().all()
         data = []
         cache_rows = []
 
         for i, r in enumerate(rows, 1):
-            status = str(
-                r['STATUS'] or ''
-            ).strip().upper()
-
-            if status not in ('IN', 'OUT'):
-                if r['PUNCH'] == 0:
-                    status = 'IN'
-                elif r['PUNCH'] == 1:
-                    status = 'OUT'
-
+            status = str(r['Status'] or '').strip().upper()
             row = {
                 'no': i,
-                'finger_id': str(
-                    r['FINGER_ID'] or ''
-                ),
+                'finger_id': str(r['FINGER_ID'] or ''),
                 'nip': r['NIP'] or '',
                 'nama': r['NAMA'] or '',
-                'gol': r['GOL'] or '',
-                'unit_kerja': r['UNIT_KERJA'] or '',
-                'waktu': (
-                    r['WAKTU'].strftime(
-                        '%Y-%m-%d %H:%M:%S'
-                    )
-                    if r['WAKTU']
-                    else ''
+                'gol': (
+                    f"{r['GOL']} - {r['PANGKAT']}"
+                    if r['GOL'] and r['PANGKAT']
+                    else (r['GOL'] or '')
                 ),
+                'unit_kerja': (
+                    f"{r['UNIT_KERJA']} - {r['UNIT_KERJA_NAME']}"
+                    if r['UNIT_KERJA'] and r['UNIT_KERJA_NAME']
+                    else (r['UNIT_KERJA'] or '')
+                ),
+                'waktu': r['Waktu'].strftime('%Y-%m-%d %H:%M:%S') if r['Waktu'] else '',
                 'status': status,
-                'punch': r['PUNCH'],
-                'device_ip': r['DEVICE_IP'] or '',
-                'transaksi': (
-                    r['STATUS'] or status
-                ),
+                'punch': None,
+                'device_ip': '',
+                'transaksi': r['Transaksi'] or '',
             }
-
             data.append(row)
             cache_rows.append(row)
 
         _NORMALISASI_CACHE['import'] = cache_rows
-
         if not data:
-            return jsonify({
-                'success': True,
-                'data': [],
-                'total': 0,
-                'message': 'Data Log Finger Print Kosong'
-            })
-
-        return jsonify({
-            'success': True,
-            'data': data,
-            'total': len(data)
-        })
+            return jsonify({'success': True, 'data': [], 'total': 0, 'message': 'Data Log Finger Print Kosong'})
+        return jsonify({'success': True, 'data': data, 'total': len(data)})
 
     except Exception as e:
         import traceback
         traceback.print_exc()
-
-        return jsonify({
-            'error': str(e),
-            'data': []
-        })
-
+        return jsonify({'error': str(e), 'data': []})
 
 def api_normalisasi_process():
     """
