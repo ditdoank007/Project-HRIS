@@ -8,6 +8,11 @@
 {% block styles %}
 <script src="{{ url_for('static', filename='static_dashboard_1/assets/vendors/js/vendors.min.js') }}"></script>
 <style>
+    .d-none { display:none !important; }
+    .alert-success { color:var(--ui-success); background:var(--ui-success-bg); }
+    .alert-danger { color:var(--ui-danger); background:var(--ui-danger-bg); }
+    .alert-warning { color:var(--ui-warning); background:var(--ui-warning-bg); }
+    .alert-info { color:var(--ui-info); background:var(--ui-info-bg); }
     .hris-alert { padding: 11px 14px; border-radius: var(--ui-radius-sm); margin-bottom: 16px; }
     .hris-alert-success { color: var(--ui-success); background: var(--ui-success-bg); }
     .hris-alert-danger { color: var(--ui-danger); background: var(--ui-danger-bg); }
