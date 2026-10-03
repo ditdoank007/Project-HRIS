@@ -195,7 +195,7 @@
             return;
         }
 
-        var html = '<table class="hris-report-table"><thead><tr>';
+        var html = '<table class="hris-report-table"><thead><tr>;
         html += '<th class="report-col-no">No</th>';
         html += '<th class="report-col-name">Nama</th>';
 
@@ -210,39 +210,45 @@
         html += '</tr></thead><tbody>';
 
         hasil.pegawai.forEach(function (peg, index) {
-            html += '<tr>';
-            html += '<td class="report-col-no">' + (index + 1) + '</td>';
-            html += '<td class="report-col-name">' + escapeHtml(peg.nama) + '</td>';
+            html += '<tr class="report-employee-row">';
+            html += '<td class="report-col-no report-employee-span" rowspan="2">' +
+                (index + 1) + '</td>';
+            html += '<td class="report-col-name report-employee-span" rowspan="2">' +
+                escapeHtml(peg.nama) + '</td>';
 
             hasil.tanggal.forEach(function (t) {
-                var row = hasil.matrix[peg.nip]
-                    ? hasil.matrix[peg.nip][t.tgl]
-                    : null;
-
+                var row = hasil.matrix[peg.nip] ? hasil.matrix[peg.nip][t.tgl] : null;
                 var holiday = t.is_libur === true;
-                var cls = 'report-cell';
-
+                var cls = 'report-cell report-cell-in';
                 if (holiday) cls += ' holiday';
                 else if (row && row.warna) cls += ' ' + row.warna;
 
-                var cell = '';
-
+                var cellIn = '';
                 if (row) {
-                    if (row.status &&
-                        row.status !== 'LIBUR' &&
-                        row.status !== 'HADIR') {
-                        cell = escapeHtml(row.status);
+                    if (row.status && row.status !== 'LIBUR' && row.status !== 'HADIR') {
+                        cellIn = escapeHtml(row.status);
                     } else if (row.status === 'HADIR') {
-                        var jamIn = formatJamPreview(row.jam_in);
-                        var jamOut = formatJamPreview(row.jam_out);
-
-                        cell = jamIn && jamOut
-                            ? escapeHtml(jamIn) + '<br>' + escapeHtml(jamOut)
-                            : escapeHtml(jamIn || jamOut);
+                        cellIn = escapeHtml(formatJamPreview(row.jam_in));
                     }
                 }
+                html += '<td class="' + cls + '">' + cellIn + '</td>';
+            });
 
-                html += '<td class="' + cls + '">' + cell + '</td>';
+            html += '</tr>';
+            html += '<tr class="report-employee-row report-employee-row-out">';
+
+            hasil.tanggal.forEach(function (t) {
+                var row = hasil.matrix[peg.nip] ? hasil.matrix[peg.nip][t.tgl] : null;
+                var holiday = t.is_libur === true;
+                var cls = 'report-cell report-cell-out';
+                if (holiday) cls += ' holiday';
+                else if (row && row.warna) cls += ' ' + row.warna;
+
+                var cellOut = '';
+                if (row && row.status === 'HADIR') {
+                    cellOut = escapeHtml(formatJamPreview(row.jam_out));
+                }
+                html += '<td class="' + cls + '">' + cellOut + '</td>';
             });
 
             html += '</tr>';
@@ -250,7 +256,6 @@
 
         html += '</tbody></table>';
         container.innerHTML = html;
-
         if (exportButton) exportButton.style.display = 'inline-flex';
     }
 
