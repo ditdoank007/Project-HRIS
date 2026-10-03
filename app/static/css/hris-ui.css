@@ -2804,3 +2804,132 @@ body.hris-sidebar-mini .hris-submenu {
 @media (max-width: 720px) {
   .hris-filter-item { grid-template-columns: 1fr; }
 }
+
+
+/* ============================================================
+   HRIS DATA ABSENSI / TAB WORKFLOW
+   Reusable components for multi-step data workflows.
+   ============================================================ */
+.hris-tabbar-wrap {
+  margin-top: 20px;
+}
+
+.hris-tabbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+  padding: 5px;
+  background: var(--ui-primary, #f1662a);
+  border-radius: 10px 10px 0 0;
+  scrollbar-width: none;
+}
+
+.hris-tabbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hris-tab {
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  padding: 9px 14px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s ease, color .15s ease;
+}
+
+.hris-tab:hover {
+  background: rgba(255,255,255,.12);
+}
+
+.hris-tab.active {
+  background: rgba(255,255,255,.24);
+}
+
+.hris-tab-content {
+  border: 1px solid var(--ui-border);
+  border-top: 0;
+  border-radius: 0 0 10px 10px;
+  background: #fff;
+  padding: 12px;
+}
+
+.hris-actionbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 4px 0 12px;
+}
+
+.hris-helper-text {
+  color: var(--ui-muted);
+  font-size: 12px;
+}
+
+.hris-action-label {
+  color: var(--ui-text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.hris-input-sm {
+  min-height: 34px;
+  padding: 7px 10px;
+}
+
+.hris-input-number {
+  width: 82px;
+  text-align: center;
+}
+
+.hris-form-separator {
+  flex: 0 0 auto;
+  color: var(--ui-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.hris-table-wide {
+  min-width: 0;
+}
+
+.hris-closing-card {
+  max-width: 520px;
+  padding: 18px;
+  border: 1px solid var(--ui-border);
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.hris-mt-12 {
+  margin-top: 12px;
+}
+
+@media (max-width: 720px) {
+  .hris-tabbar {
+    border-radius: 8px 8px 0 0;
+  }
+
+  .hris-tab {
+    padding: 8px 11px;
+  }
+
+  .hris-form-inline.hris-filter-pair {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .hris-filter-pair .hris-form-separator {
+    text-align: center;
+  }
+
+  .hris-closing-card {
+    max-width: 100%;
+  }
+}
