@@ -1960,6 +1960,12 @@ def api_normalisasi_process():
             MfPot.KATEGORI.in_(['TLM', 'PSW']),
             MfPot.TGL_MULAI <= tgl_akhir
         ).all()
+        special_potongan_list = MfPot.query.filter(
+            MfPot.KATEGORI.in_(['ijin', 'sakit', 'cuti']),
+            MfPot.TGL_MULAI <= tgl_akhir
+        ).all()
+
+
 
         # ============================================================
         # ATTENDANCE NORMALIZATION ENGINE
@@ -2627,6 +2633,48 @@ def api_normalisasi_process():
                 transaksi_special = str(
                     dl.TRANSAKSI or ''
                 ).strip()
+                transaksi_key = transaksi_special.lower()
+
+                special_percent = 0
+                special_tingkat = ''
+
+                if transaksi_key == 'alpa':
+                    kandidat = [
+                        pot for pot in special_potongan_list
+                        if str(pot.KATEGORI or '').strip().lower() == 'ijin'
+                        and (
+                            not pot.TGL_MULAI
+                            or pot.TGL_MULAI.date() <= current_date
+                        )
+                    ]
+                    kandidat.sort(
+                        key=lambda pot: pot.TGL_MULAI or datetime.min,
+                        reverse=True,
+                    )
+                    if kandidat:
+                        special_percent = kandidat[0].PERSEN_POT or 0
+                    special_tingkat = 'I'
+
+                elif transaksi_key in ('sakit', 'cuti'):
+                    target_tingkat = str(
+                        dl.PENEMPATAN_DINAS_LUAR or ''
+                    ).strip()
+                    kandidat = [
+                        pot for pot in special_potongan_list
+                        if str(pot.KATEGORI or '').strip().lower() == transaksi_key
+                        and str(pot.TINGKAT or '').strip() == target_tingkat
+                        and (
+                            not pot.TGL_MULAI
+                            or pot.TGL_MULAI.date() <= current_date
+                        )
+                    ]
+                    kandidat.sort(
+                        key=lambda pot: pot.TGL_MULAI or datetime.min,
+                        reverse=True,
+                    )
+                    if kandidat:
+                        special_percent = kandidat[0].PERSEN_POT or 0
+                    special_tingkat = target_tingkat
 
                 row_dl['jam_baku_in'] = (
                     baku_special_in.strftime('%H:%M')
@@ -2641,18 +2689,16 @@ def api_normalisasi_process():
 
                 row_dl['tingkat_tlm'] = (
                     'DL'
-                    if transaksi_special.lower() == 'dinasluar'
-                    else (
-                        'I'
-                        if transaksi_special.lower() in ('alpa', 'ijin')
-                        else ''
-                    )
+                    if transaksi_key == 'dinasluar'
+                    else special_tingkat
                 )
                 row_dl['tingkat_psw'] = (
                     'DL'
-                    if transaksi_special.lower() == 'dinasluar'
-                    else ''
+                    if transaksi_key == 'dinasluar'
+                    else special_tingkat
                 )
+                row_dl['persen_pot_tlm'] = special_percent
+                row_dl['persen_pot_psw'] = 0
                 row_dl['is_valid_in'] = True
                 row_dl['is_valid_out'] = True
                 row_dl['transaksi_in'] = transaksi_special
