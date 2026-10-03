@@ -92,6 +92,7 @@ from app.controllers.dashboard_1LaporanRekapController import (
     export_rekap_absensi_individu,
     export_rekap_absensi_log_finger,
     export_rekap_clock_exception,
+    export_rekap_clock_exception_pdf,
     preview_rekap_clock_exception,
     export_rekap_daftar_lembur_umum,
     export_rekap_ketidakhadiran_pegawai,
@@ -1298,6 +1299,11 @@ def preview_laporan_rekap_clock_exception():
 @form_access_required('RDailyabsensi.aspx')
 def export_laporan_rekap_clock_exception():
     return export_rekap_clock_exception()
+
+@main.route('/laporan/rekap-clock-exception/export-pdf', methods=['POST'])
+@form_access_required('RDailyabsensi.aspx')
+def export_laporan_rekap_clock_exception_pdf():
+    return export_rekap_clock_exception_pdf()
 
 @main.route('/laporan/rekap-ketidakhadiran-pegawai')
 @form_access_required('Rekapsprint.aspx')
