@@ -1513,7 +1513,9 @@ def api_normalisasi_import_finger():
             'Nama': 'p.Nama',
             'FingerID': 'p.FingerID',
             'UnitKerja': 'p.UnitKerja',
+            'Unit': 'p.UnitKerja',
             'UnitKerjaName': 'p.UnitKerja',
+            'Jabatan': 'p.Jabatan',
         }
 
         if filter_field1 and filter_value1:
@@ -1707,7 +1709,9 @@ def api_normalisasi_process():
             'NAMA': 'p.Nama',
             'FingerID': 'p.FingerID',
             'UnitKerja': 'p.UnitKerja',
+            'Unit': 'p.UnitKerja',
             'Unit Kerja': 'p.UnitKerja',
+            'Jabatan': 'p.Jabatan',
             'Gol': 'p.Gol',
             'Gol-Pangkat': 'p.Gol',
         }
@@ -3164,7 +3168,9 @@ def api_normalisasi_absensi_view():
             'Nama': Pegawai.NAMA,
             'NAMA': Pegawai.NAMA,
             'UnitKerja': MfUnitKerja.NAMA_UNIT_KERJA,
+            'Unit': MfUnitKerja.NAMA_UNIT_KERJA,
             'Unit Kerja': MfUnitKerja.NAMA_UNIT_KERJA,
+            'Jabatan': Pegawai.JABATAN,
             'FingerID': Absensi.FINGER_ID,
             'Finger ID': Absensi.FINGER_ID,
             'Fingerid': Absensi.FINGER_ID,
