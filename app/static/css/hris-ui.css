@@ -3195,3 +3195,11 @@ body.hris-sidebar-mini .hris-submenu {
     max-width: 210px;
   }
 }
+
+.hris-empty-state {
+  padding: 28px 18px;
+  text-align: center;
+  color: var(--ui-muted);
+  font-size: 13px;
+  background: var(--ui-surface);
+}
