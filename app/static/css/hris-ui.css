@@ -3087,3 +3087,111 @@ body.hris-sidebar-mini .hris-submenu {
     padding-right: 16px;
   }
 }
+
+
+/* ============================================================
+   HRIS REBORN — REKAP ABSENSI BULANAN
+   Shared preview/export styling.
+   ============================================================ */
+.hris-report-preview {
+  width: 100%;
+  overflow: auto;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-sm);
+  background: var(--ui-surface);
+}
+.hris-report-table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 11px;
+}
+.hris-report-table th,
+.hris-report-table td {
+  border-right: 1px solid var(--ui-border);
+  border-bottom: 1px solid var(--ui-border);
+  padding: 5px 6px;
+  text-align: center;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.hris-report-table thead th {
+  background: var(--ui-ink);
+  color: #fff;
+  font-weight: 750;
+}
+.hris-report-table .report-col-no {
+  width: 46px;
+  min-width: 46px;
+  position: sticky;
+  left: 0;
+  z-index: 4;
+  background: var(--ui-ink);
+}
+.hris-report-table .report-col-name {
+  width: 260px;
+  min-width: 260px;
+  max-width: 260px;
+  text-align: left;
+  position: sticky;
+  left: 46px;
+  z-index: 4;
+  background: var(--ui-ink);
+}
+.hris-report-table tbody .report-col-no,
+.hris-report-table tbody .report-col-name {
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  z-index: 2;
+}
+.hris-report-table tbody tr:hover .report-col-no,
+.hris-report-table tbody tr:hover .report-col-name {
+  background: #fff7ed;
+}
+.hris-report-table .report-day {
+  width: 58px;
+  min-width: 58px;
+}
+.hris-report-table .report-day.holiday {
+  color: var(--ui-danger);
+}
+.hris-report-table .report-cell {
+  height: 48px;
+  line-height: 18px;
+}
+.hris-report-table .report-cell.holiday {
+  color: var(--ui-danger);
+}
+.hris-report-table .report-cell.siaga {
+  color: var(--ui-success);
+  font-weight: 700;
+}
+.hris-report-table .report-cell.blue {
+  color: var(--ui-info);
+  font-weight: 700;
+}
+.hris-report-table .report-cell.orange {
+  color: var(--ui-warning);
+  font-weight: 700;
+}
+.hris-report-table .report-cell.wfh {
+  color: var(--ui-text);
+  font-weight: 650;
+}
+.hris-report-table .report-cell.normal {
+  color: var(--ui-ink);
+}
+.hris-report-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 0 0 12px;
+}
+@media (max-width: 900px) {
+  .hris-report-table .report-col-name {
+    width: 210px;
+    min-width: 210px;
+    max-width: 210px;
+  }
+}
