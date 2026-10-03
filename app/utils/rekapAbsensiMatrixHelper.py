@@ -16,10 +16,11 @@ Layer:
 
 from app import db
 from datetime import timedelta, datetime
-from sqlalchemy import bindparam, text
+from sqlalchemy import bindparam, text, cast, String, or_
 
 from app.models.pegawaiModel import Pegawai
 from app.models.absensiModel import Absensi
+from app.models.timeRecorderModel import TimeRecorder
 from app.models.dinasLuarModel import DinasLuar
 from app.models.kalenderModel import MfKalender
 from app.models.jabatanModel import MfJabatan
@@ -167,6 +168,32 @@ def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
         .all()
     )
 
+    # TIME_RECORDER menjadi fallback bila ABSENSI belum memuat hasil
+    # normalisasi/manual finger. Ini penting untuk:
+    # - manual finger (MESIN=999, TRANSAKSI=MANUAL)
+    # - fingerprint mentah yang belum terbentuk menjadi ABSENSI
+    # - pasangan Shift 2: IN H-1 dan OUT H untuk laporan tanggal H.
+    time_recorder_rows = (
+        db.session.query(TimeRecorder, Pegawai)
+        .join(
+            Pegawai,
+            or_(
+                TimeRecorder.KET_INJECT == Pegawai.NIP,
+                cast(TimeRecorder.FINGER_ID, String) == cast(Pegawai.FINGER_ID, String),
+            ),
+        )
+        .filter(Pegawai.UNIT_KERJA_ID.in_(unit_ids))
+        .filter(TimeRecorder.STATUS.in_(["IN", "OUT"]))
+        .filter(
+            TimeRecorder.WAKTU >= (tgl_awal - timedelta(days=1))
+        )
+        .filter(
+            TimeRecorder.WAKTU < (tgl_akhir + timedelta(days=2))
+        )
+        .order_by(TimeRecorder.WAKTU.asc())
+        .all()
+    )
+
     # Siaga dibaca dengan SQL langsung karena tabel hasil migrasi
     # menggunakan nama kolom fisik legacy-mapped (GUIDLog, ActivityDate,
     # StatusID, IDUnitKerja, dll), bukan nama atribut ORM lama.
@@ -202,6 +229,23 @@ def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
         if not absensi.TGL_KERJA:
             continue
         absensi_index[(pegawai.NIP, absensi.TGL_KERJA.date())] = absensi
+
+    # Index TIME_RECORDER per pegawai/tanggal/status.
+    # Manual record diberi prioritas jika ada lebih dari satu sumber.
+    time_recorder_index = {}
+    for recorder, pegawai in time_recorder_rows:
+        if not recorder.WAKTU or not pegawai.NIP:
+            continue
+
+        key = (pegawai.NIP, recorder.WAKTU.date(), str(recorder.STATUS or "").upper())
+        is_manual = (
+            str(recorder.MESIN or "") == "999"
+            and str(recorder.TRANSAKSI or "").upper() == "MANUAL"
+        )
+        current = time_recorder_index.get(key)
+
+        if current is None or (is_manual and not current[1]):
+            time_recorder_index[key] = (recorder.WAKTU, is_manual)
 
     dl_index = {}
     for dl, pegawai in dinas_luar_rows:
@@ -275,6 +319,22 @@ def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
             dl = dl_index.get(key)
             siaga_shift = siaga_index.get(key)
 
+            # TIME_RECORDER fallback.
+            # Normal/Shift 1: IN dan OUT pada tanggal laporan.
+            # Shift 2: IN tercatat H-1, OUT tercatat H, tetapi keduanya
+            # ditampilkan sebagai satu pasangan pada tanggal laporan H.
+            recorder_in_date = (
+                tanggal_obj.date() - timedelta(days=1)
+                if siaga_shift == "2"
+                else tanggal_obj.date()
+            )
+            recorder_in = time_recorder_index.get(
+                (pegawai.NIP, recorder_in_date, "IN")
+            )
+            recorder_out = time_recorder_index.get(
+                (pegawai.NIP, tanggal_obj.date(), "OUT")
+            )
+
             # ---------------------------------------------------------
             # BASE ABSENSI
             # ---------------------------------------------------------
@@ -320,6 +380,56 @@ def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
                     "warna": color,
                     "layer": "ABSENSI",
                 })
+
+            # Jika ABSENSI belum memiliki salah satu sisi jam,
+            # gunakan TIME_RECORDER. Jangan menimpa jam yang sudah
+            # dinormalisasi karena ABSENSI tetap menjadi sumber utama.
+            cell = matrix[pegawai.NIP][tanggal]
+            if finger is not None:
+                fallback_in_value = recorder_in[0] if recorder_in else None
+                fallback_out_value = recorder_out[0] if recorder_out else None
+
+                if not cell.get("jam_in") and fallback_in_value:
+                    cell["jam_in"] = fallback_in_value
+                if not cell.get("jam_out") and fallback_out_value:
+                    cell["jam_out"] = fallback_out_value
+
+                if cell.get("jam_in") or cell.get("jam_out"):
+                    cell["status"] = "HADIR"
+                    if cell.get("sumber_absensi") == "":
+                        cell["sumber_absensi"] = "TIME_RECORDER"
+
+                # Apply the legacy VIP correction to fallback values when
+                # ABSENSI supplies the official standard schedule.
+                if finger is not None:
+                    if not cell.get("jam_in") and recorder_in:
+                        cell["jam_in"] = _legacy_vip_jam(
+                            recorder_in[0],
+                            finger.TGL_JAM_BAKU_IN,
+                            _is_vip(pegawai),
+                            "IN",
+                        )
+                    if not cell.get("jam_out") and recorder_out:
+                        cell["jam_out"] = _legacy_vip_jam(
+                            recorder_out[0],
+                            finger.TGL_JAM_BAKU_OUT,
+                            _is_vip(pegawai),
+                            "OUT",
+                        )
+            else:
+                # Tidak ada row ABSENSI sama sekali. Bangun kehadiran dari
+                # TIME_RECORDER agar manual finger/raw finger tetap muncul.
+                if recorder_in or recorder_out:
+                    raw_in = recorder_in[0] if recorder_in else None
+                    raw_out = recorder_out[0] if recorder_out else None
+                    cell.update({
+                        "status": "HADIR",
+                        "jam_in": raw_in,
+                        "jam_out": raw_out,
+                        "sumber_absensi": "TIME_RECORDER",
+                        "warna": "normal",
+                        "layer": "TIME_RECORDER",
+                    })
 
             # ---------------------------------------------------------
             # SIAGA
