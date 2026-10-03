@@ -2348,55 +2348,97 @@ def api_mutasi_delete():
 
 
 def api_mutasi_cari():
-    """Pencarian Mutasi mengikuti Grid Find PegMutasi.aspx HRIS 2013."""
+    """Pencarian Mutasi mengikuti Grid Find PegMutasi.aspx HRIS 2013.
+
+    Histori Mutasi adalah data legacy. Karena itu pencarian membaca
+    kolom fisik PEG_MUTASI_UNIT secara langsung, dengan LEFT JOIN
+    ke PEGAWAI dan MF_UNIT_KERJA seperti pola legacy. Ini mencegah
+    hasil histori bergantung pada representasi ORM/primary key model.
+    """
     try:
         filter_field1 = str(request.args.get('filter_field1') or '').strip()
         filter_value1 = str(request.args.get('filter_value1') or '').strip()
         filter_field2 = str(request.args.get('filter_field2') or '').strip()
         filter_value2 = str(request.args.get('filter_value2') or '').strip()
 
-        query = (
-            db.session.query(PegMutasiUnit, Pegawai, MfUnitKerja)
-            .outerjoin(Pegawai, PegMutasiUnit.NIP == Pegawai.NIP)
-            .outerjoin(MfUnitKerja, PegMutasiUnit.UNIT_KERJA == MfUnitKerja.UNIT_KERJA_ID)
-            .filter(PegMutasiUnit.NO_SK.isnot(None))
-        )
+        sql = """
+            SELECT
+                m.IDTransaksi,
+                m.NoSK,
+                m.NIP,
+                p.Nama AS NamaPegawai,
+                m.TglMutasi,
+                m.UnitKerja,
+                u.UnitKerjaName,
+                m.Keterangan,
+                m.UpdateBy,
+                m.UpdateDate
+            FROM PEG_MUTASI_UNIT m
+            LEFT JOIN PEGAWAI p
+                ON m.NIP = p.NIP
+            LEFT JOIN MF_UNIT_KERJA u
+                ON m.UnitKerja = u.IDUnitKerja
+            WHERE m.NoSK IS NOT NULL
+        """
 
-        field_map = {
-            'NIP': Pegawai.NIP,
-            'Nama': Pegawai.NAMA,
-            'NoSK': PegMutasiUnit.NO_SK,
-            'UnitKerja': MfUnitKerja.NAMA_UNIT_KERJA,
-            'Keterangan': PegMutasiUnit.KETERANGAN,
+        params = {}
+
+        field_sql = {
+            'NIP': "m.NIP",
+            'Nama': "p.Nama",
+            'NoSK': "m.NoSK",
+            'UnitKerja': "COALESCE(u.UnitKerjaName, m.UnitKerja)",
+            'Keterangan': "m.Keterangan",
         }
 
+        filter_index = 0
         for field_name, value in (
             (filter_field1, filter_value1),
             (filter_field2, filter_value2),
         ):
-            column = field_map.get(field_name)
-            if column is not None and value:
-                query = query.filter(column.ilike(f'%{value}%'))
+            column_sql = field_sql.get(field_name)
+            if column_sql and value:
+                filter_index += 1
+                param_name = f"mutasi_filter_{filter_index}"
+                sql += f" AND LOWER(COALESCE({column_sql}, '')) LIKE LOWER(:{param_name})"
+                params[param_name] = f"%{value}%"
 
-        rows = (
-            query
-            .order_by(PegMutasiUnit.NO_SK.asc(), Pegawai.NAMA.asc())
-            .limit(500)
-            .all()
-        )
+        sql += """
+            ORDER BY
+                m.NoSK ASC,
+                p.Nama ASC,
+                m.IDTransaksi ASC
+            LIMIT 500
+        """
+
+        rows = db.session.execute(
+            db.text(sql),
+            params,
+        ).mappings().all()
 
         data = []
-        for i, (mutasi, peg, unit) in enumerate(rows, 1):
+        for i, row in enumerate(rows, 1):
+            tgl_mutasi = row.get('TglMutasi')
+            update_date = row.get('UpdateDate')
+
             data.append({
                 'no': i,
-                'no_sk': mutasi.NO_SK or '',
-                'nip': mutasi.NIP or '',
-                'nama': peg.NAMA if peg else '-',
-                'tgl_sk': mutasi.TGL_MUTASI.strftime('%d-%b-%Y') if mutasi.TGL_MUTASI else '',
-                'unit_kerja': unit.NAMA_UNIT_KERJA if unit else (mutasi.UNIT_KERJA or '-'),
-                'keterangan': mutasi.KETERANGAN or '',
-                'update_by': mutasi.UPDATE_BY or '',
-                'update_date': mutasi.UPDATE_DATE.strftime('%d-%b-%Y %H:%M') if mutasi.UPDATE_DATE else '',
+                'no_sk': row.get('NoSK') or '',
+                'nip': row.get('NIP') or '',
+                'nama': row.get('NamaPegawai') or '-',
+                'tgl_sk': (
+                    tgl_mutasi.strftime('%d-%b-%Y')
+                    if hasattr(tgl_mutasi, 'strftime')
+                    else (str(tgl_mutasi) if tgl_mutasi else '')
+                ),
+                'unit_kerja': row.get('UnitKerjaName') or row.get('UnitKerja') or '-',
+                'keterangan': row.get('Keterangan') or '',
+                'update_by': row.get('UpdateBy') or '',
+                'update_date': (
+                    update_date.strftime('%d-%b-%Y %H:%M')
+                    if hasattr(update_date, 'strftime')
+                    else (str(update_date) if update_date else '')
+                ),
             })
 
         return jsonify({
@@ -2409,6 +2451,8 @@ def api_mutasi_cari():
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e), 'data': []}), 500
+
+
 
 
 def api_mutasi_get_filter_fields():
