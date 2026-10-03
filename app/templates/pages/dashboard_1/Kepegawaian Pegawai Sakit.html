@@ -206,7 +206,7 @@ $(function() {
                 $dd.show();
             }).fail(function(xhr) {
                 console.error(xhr.responseText);
-                $dd = $('#pegawaiSakitDropdown').html('<div class="hris-empty">Gagal mencari pegawai.</div>').show();
+                $('#pegawaiSakitDropdown').html('<div class="hris-empty">Gagal mencari pegawai.</div>').show();
             });
         }, 250);
     });
