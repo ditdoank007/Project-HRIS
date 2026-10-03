@@ -8,8 +8,15 @@ class LogActivity(db.Model):
     """
     __tablename__ = 'LOG_ACTIVITIY'
 
-    ID = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    GUID_LOG = db.Column(db.String(50), nullable=False, unique=True)
+    # Tabel legacy LOG_ACTIVITIY tidak memiliki kolom ID.
+    # GUID_LOG adalah identifier unik yang tersedia dan menjadi
+    # primary key ORM agar SQLAlchemy tidak meminta kolom ID.
+    GUID_LOG = db.Column(
+        db.String(50),
+        primary_key=True,
+        nullable=False,
+        unique=True,
+    )
 
     # ✅ TANPA FOREIGN KEY - semua kolom biasa
     TRAKSAKSI_ID = db.Column(db.Integer, nullable=False)
