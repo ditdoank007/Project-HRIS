@@ -1659,7 +1659,7 @@ def preview_rekap_clock_exception():
         }, 500
 
 def export_rekap_clock_exception_pdf():
-    """Export Rekap Absensi Bulanan ke PDF berdasarkan matrix yang sama dengan preview."""
+    """Export Rekap Absensi Bulanan ke PDF dengan format dua baris per pegawai."""
     unit_list = request.form.getlist('unit_kerja[]')
     tgl_awal_str = request.form.get('tgl_awal')
     tgl_akhir_str = request.form.get('tgl_akhir')
