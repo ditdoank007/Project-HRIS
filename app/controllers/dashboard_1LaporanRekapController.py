@@ -1633,7 +1633,17 @@ def preview_rekap_clock_exception():
                 }
                 for p in data["pegawai"]
             ],
-            "matrix": data["matrix"]
+            "matrix": {
+                nip: {
+                    tanggal: {
+                        **cell,
+                        "jam_in": format_jam_absensi(cell.get("jam_in")),
+                        "jam_out": format_jam_absensi(cell.get("jam_out")),
+                    }
+                    for tanggal, cell in dates.items()
+                }
+                for nip, dates in data["matrix"].items()
+            }
         }
 
     except ValueError as exc:
