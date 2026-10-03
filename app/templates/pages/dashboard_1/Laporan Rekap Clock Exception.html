@@ -227,8 +227,11 @@
                 var row = hasil.matrix[peg.nip] ? hasil.matrix[peg.nip][t.tgl] : null;
                 var holiday = t.is_libur === true;
                 var cls = 'report-cell report-cell-in';
-                if (holiday) cls += ' holiday';
-                else if (row && row.warna) cls += ' ' + row.warna;
+
+                // Status absensi khusus (terutama Siaga) harus menang
+                // atas warna kalender hari libur.
+                if (row && row.warna) cls += ' ' + row.warna;
+                else if (holiday) cls += ' holiday';
 
                 var cellIn = '';
                 if (row) {
@@ -248,8 +251,11 @@
                 var row = hasil.matrix[peg.nip] ? hasil.matrix[peg.nip][t.tgl] : null;
                 var holiday = t.is_libur === true;
                 var cls = 'report-cell report-cell-out';
-                if (holiday) cls += ' holiday';
-                else if (row && row.warna) cls += ' ' + row.warna;
+
+                // Status absensi khusus (terutama Siaga) harus menang
+                // atas warna kalender hari libur.
+                if (row && row.warna) cls += ' ' + row.warna;
+                else if (holiday) cls += ' holiday';
 
                 var cellOut = '';
                 if (row && row.status === 'HADIR') {
