@@ -386,8 +386,26 @@ def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
             # dinormalisasi karena ABSENSI tetap menjadi sumber utama.
             cell = matrix[pegawai.NIP][tanggal]
             if finger is not None:
-                fallback_in_value = recorder_in[0] if recorder_in else None
-                fallback_out_value = recorder_out[0] if recorder_out else None
+                fallback_in_value = (
+                    _legacy_vip_jam(
+                        recorder_in[0],
+                        finger.TGL_JAM_BAKU_IN,
+                        _is_vip(pegawai),
+                        "IN",
+                    )
+                    if recorder_in
+                    else None
+                )
+                fallback_out_value = (
+                    _legacy_vip_jam(
+                        recorder_out[0],
+                        finger.TGL_JAM_BAKU_OUT,
+                        _is_vip(pegawai),
+                        "OUT",
+                    )
+                    if recorder_out
+                    else None
+                )
 
                 if not cell.get("jam_in") and fallback_in_value:
                     cell["jam_in"] = fallback_in_value
@@ -398,24 +416,6 @@ def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
                     cell["status"] = "HADIR"
                     if cell.get("sumber_absensi") == "":
                         cell["sumber_absensi"] = "TIME_RECORDER"
-
-                # Apply the legacy VIP correction to fallback values when
-                # ABSENSI supplies the official standard schedule.
-                if finger is not None:
-                    if not cell.get("jam_in") and recorder_in:
-                        cell["jam_in"] = _legacy_vip_jam(
-                            recorder_in[0],
-                            finger.TGL_JAM_BAKU_IN,
-                            _is_vip(pegawai),
-                            "IN",
-                        )
-                    if not cell.get("jam_out") and recorder_out:
-                        cell["jam_out"] = _legacy_vip_jam(
-                            recorder_out[0],
-                            finger.TGL_JAM_BAKU_OUT,
-                            _is_vip(pegawai),
-                            "OUT",
-                        )
             else:
                 # Tidak ada row ABSENSI sama sekali. Bangun kehadiran dari
                 # TIME_RECORDER agar manual finger/raw finger tetap muncul.
