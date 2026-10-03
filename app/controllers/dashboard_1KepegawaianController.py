@@ -2742,7 +2742,7 @@ def api_cuti_cari():
                 MfPot,
                 db.and_(
                     DinasLuar.PENEMPATAN_DINAS_LUAR == MfPot.TINGKAT,
-                    MfPot.KATEGORI == 'CUTI'
+                    db.func.lower(MfPot.KATEGORI) == 'cuti'
                 )
             )
             .filter(
