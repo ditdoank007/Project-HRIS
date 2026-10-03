@@ -1486,72 +1486,43 @@ def api_normalisasi_import_finger():
             conditions.append(f"{field} LIKE :{param_name}")
             params[param_name] = f"%{field_value}%"
 
-        # Push employee/unit filters into each source branch so a request
-        # such as "Nama=dityo" does not materialize the entire month first.
-        # Keep Status/Transaksi as outer filters because RAW has synthetic
-        # transaction/status values.
+        # VIEW DATA mengikuti HRIS 2013.
+        # TAB 1 hanya membaca TIME_RECORDER. RAW tidak digabung di sini.
+        # FINGER_HARVEST_RAW tetap menjadi sumber tambahan untuk TAB 2
+        # NORMALISASI agar View Data tetap ringan untuk periode bulanan.
         source_field_map = {
-            'NIP': 'p0.NIP', 'Nama': 'p0.Nama', 'NAMA': 'p0.Nama',
-            'UnitKerja': 'p0.UnitKerja', 'Unit': 'p0.UnitKerja',
-            'UnitKerjaName': 'uk0.UnitKerjaName',
-            'Jabatan': 'p0.Jabatan', 'Gol': 'p0.Gol', 'Gol-Pangkat': 'p0.Gol',
-        }
-        time_filter_map = {
-            **source_field_map,
+            'NIP': 'p.NIP', 'Nama': 'p.Nama', 'NAMA': 'p.Nama',
+            'UnitKerja': 'p.UnitKerja', 'Unit': 'p.UnitKerja',
+            'UnitKerjaName': 'uk.UnitKerjaName',
+            'Jabatan': 'p.Jabatan', 'Gol': 'p.Gol', 'Gol-Pangkat': 'p.Gol',
             'FingerID': 'tr.FingerID',
-        }
-        raw_filter_map = {
-            **source_field_map,
-            'FingerID': 'r.FINGER_ID',
+            'Status': 'tr.Status', 'Transaksi': 'tr.Transaksi',
         }
 
-        time_conditions = []
-        raw_conditions = []
+        conditions = []
         for idx, (field_name, field_value) in enumerate((
             (filter_field1, filter_value1),
             (filter_field2, filter_value2),
         ), start=1):
             if not field_name or not field_value:
                 continue
-
-            time_field = time_filter_map.get(field_name)
-            raw_field = raw_filter_map.get(field_name)
-            if time_field:
-                time_conditions.append(f"{time_field} LIKE :filter_value{idx}")
-            if raw_field:
-                raw_conditions.append(f"{raw_field} LIKE :filter_value{idx}")
-
-        time_filter_sql = ''
-        raw_filter_sql = ''
-        if time_conditions:
-            time_filter_sql = ' AND ' + ' AND '.join(time_conditions)
-        if raw_conditions:
-            raw_filter_sql = ' AND ' + ' AND '.join(raw_conditions)
-
-        # Only Status/Transaksi remain as outer filters. Employee/unit filters
-        # have already been pushed into the individual source branches above.
-        outer_conditions = []
-        for idx, (field_name, field_value) in enumerate((
-            (filter_field1, filter_value1),
-            (filter_field2, filter_value2),
-        ), start=1):
-            if field_name in ('Status', 'Transaksi') and field_value:
-                outer_field = {
-                    'Status': 'src.STATUS',
-                    'Transaksi': 'src.TRANSAKSI',
-                }[field_name]
-                outer_conditions.append(f"{outer_field} LIKE :filter_value{idx}")
+            field = source_field_map.get(field_name)
+            if not field:
+                continue
+            param_name = f'filter_value{idx}'
+            conditions.append(f"{field} LIKE :{param_name}")
+            params[param_name] = f"%{field_value}%"
 
         filter_sql = ''
-        if outer_conditions:
-            filter_sql = ' AND ' + ' AND '.join(outer_conditions)
+        if conditions:
+            filter_sql = ' AND ' + ' AND '.join(conditions)
 
         sql = text(f"""
             SELECT
-                src.FINGER_ID,
-                src.WAKTU,
-                src.STATUS,
-                src.TRANSAKSI,
+                tr.FingerID AS FINGER_ID,
+                tr.Waktu AS WAKTU,
+                tr.Status AS STATUS,
+                tr.Transaksi AS TRANSAKSI,
                 p.NIP,
                 p.Nama AS NAMA,
                 p.Gol AS GOL,
@@ -1559,58 +1530,17 @@ def api_normalisasi_import_finger():
                 p.UnitKerja AS UNIT_KERJA,
                 uk.UnitKerjaName AS UNIT_KERJA_NAME,
                 p.IsVIP AS IS_VIP
-            FROM (
-                SELECT
-                    tr.FingerID AS FINGER_ID,
-                    tr.Waktu AS WAKTU,
-                    tr.Status AS STATUS,
-                    tr.Transaksi AS TRANSAKSI
-                FROM TIME_RECORDER tr
-                LEFT JOIN PEGAWAI p0
-                    ON CAST(p0.FingerID AS CHAR) = CAST(tr.FingerID AS CHAR)
-                LEFT JOIN MF_UNIT_KERJA uk0
-                    ON CAST(uk0.IDUnitKerja AS CHAR) = CAST(p0.UnitKerja AS CHAR)
-                WHERE tr.Waktu >= :tgl_awal
-                  AND tr.Waktu < :tgl_akhir
-                  {time_filter_sql}
-
-                UNION ALL
-
-                SELECT
-                    r.FINGER_ID,
-                    r.WAKTU,
-                    r.STATUS,
-                    'RAW' AS TRANSAKSI
-                FROM FINGER_HARVEST_RAW r
-                LEFT JOIN PEGAWAI p0
-                    ON CAST(p0.FingerID AS CHAR) = CAST(r.FINGER_ID AS CHAR)
-                LEFT JOIN MF_UNIT_KERJA uk0
-                    ON CAST(uk0.IDUnitKerja AS CHAR) = CAST(p0.UnitKerja AS CHAR)
-                LEFT JOIN TIME_RECORDER tr2
-                    ON CAST(tr2.FingerID AS CHAR) = CAST(r.FINGER_ID AS CHAR)
-                   AND tr2.Waktu = r.WAKTU
-                   AND UPPER(TRIM(tr2.Status)) =
-                       UPPER(TRIM(
-                           CASE
-                               WHEN r.PUNCH = 0 THEN 'IN'
-                               WHEN r.PUNCH = 1 THEN 'OUT'
-                               ELSE r.STATUS
-                           END
-                       ))
-                WHERE r.WAKTU >= :tgl_awal
-                  AND r.WAKTU < :tgl_akhir
-                  AND tr2.FingerID IS NULL
-                  {raw_filter_sql}
-            ) src
+            FROM TIME_RECORDER tr
             LEFT JOIN PEGAWAI p
-                ON CAST(p.FingerID AS CHAR) = CAST(src.FINGER_ID AS CHAR)
+                ON p.FingerID = tr.FingerID
             LEFT JOIN MF_GOL g
                 ON g.Gol = p.Gol
             LEFT JOIN MF_UNIT_KERJA uk
-                ON CAST(uk.IDUnitKerja AS CHAR) = CAST(p.UnitKerja AS CHAR)
-            WHERE 1=1
+                ON uk.IDUnitKerja = p.UnitKerja
+            WHERE tr.Waktu >= :tgl_awal
+              AND tr.Waktu < :tgl_akhir
               {filter_sql}
-            ORDER BY src.FINGER_ID, src.WAKTU
+            ORDER BY tr.FingerID, tr.Waktu
         """)
 
         rows = db.session.execute(sql, params).mappings().all()
