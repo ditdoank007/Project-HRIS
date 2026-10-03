@@ -320,26 +320,30 @@ document.addEventListener('DOMContentLoaded', function() {
         emptyLabel.style.display = visible ? 'none' : 'block';
     }
 
-    selectAll.addEventListener('change', function() {
-        getVisibleChecks().forEach(function(check) {
-            check.checked = selectAll.checked;
+    function setAllUnits(checked) {
+        checks.forEach(function(check) {
+            check.checked = checked;
         });
+
         updateUnitPicker();
+    }
+
+    selectAll.addEventListener('change', function(event) {
+        event.stopPropagation();
+        setAllUnits(selectAll.checked);
     });
 
-    toggleAll.addEventListener('click', function() {
-        const visibleChecks = getVisibleChecks();
-        const allVisibleSelected =
-            visibleChecks.length > 0 &&
-            visibleChecks.every(function(check) {
+    toggleAll.addEventListener('click', function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const allSelected =
+            checks.length > 0 &&
+            checks.every(function(check) {
                 return check.checked;
             });
 
-        visibleChecks.forEach(function(check) {
-            check.checked = !allVisibleSelected;
-        });
-
-        updateUnitPicker();
+        setAllUnits(!allSelected);
     });
 
     search.addEventListener('input', filterUnitOptions);
