@@ -1225,8 +1225,13 @@ def api_dinas_luar_operasi_save():
             if not nip or not tgl_awal or not tgl_akhir:
                 continue
             
-            # Generate TransaksiID (format: DLO_NIP_TglAwal_TglAkhir)
-            transaksi_id = f"DLO_{nip}_{tgl_awal}_{tgl_akhir}"
+            pegawai = Pegawai.query.filter(Pegawai.NIP == nip).first()
+            if not pegawai:
+                continue
+            finger_id = str(pegawai.FINGER_ID).strip()
+
+            # DINAS_LUAR legacy menyimpan identitas pegawai dengan FingerID.
+            transaksi_id = f"DLO_{finger_id}_{tgl_awal}_{tgl_akhir}"
             
             # Cek existing
             existing_dl = DinasLuar.query.filter(
@@ -1238,6 +1243,8 @@ def api_dinas_luar_operasi_save():
             
             if existing_dl:
                 # Update
+                existing_dl.FINGER_ID = finger_id
+
                 existing_dl.TGL_AWAL_DINAS_LUAR = tgl_awal_date
                 existing_dl.TGL_AKHIR_DINAS_LUAR = tgl_akhir_date
                 existing_dl.KETERANGAN_DINAS_LUAR = keterangan
@@ -1254,7 +1261,7 @@ def api_dinas_luar_operasi_save():
                 new_dl = DinasLuar(
                     TRANSAKSI_ID=transaksi_id,
                     GUID_SPRIN=guid_sprin,
-                    NIP=nip,  # ✅ NIP asli pegawai
+                    FINGER_ID=finger_id,  # ✅ NIP asli pegawai
                     TGL_AWAL_DINAS_LUAR=tgl_awal_date,
                     TGL_AKHIR_DINAS_LUAR=tgl_akhir_date,
                     KETERANGAN_DINAS_LUAR=keterangan,
@@ -1326,8 +1333,13 @@ def api_dinas_luar_operasi_save_peserta():
             if not nip or not tgl_awal or not tgl_akhir:
                 continue
             
-            # Generate TransaksiID (format: DLO_NIP_TglAwal_TglAkhir)
-            transaksi_id = f"DLO_{nip}_{tgl_awal}_{tgl_akhir}"
+            pegawai = Pegawai.query.filter(Pegawai.NIP == nip).first()
+            if not pegawai:
+                continue
+            finger_id = str(pegawai.FINGER_ID).strip()
+
+            # DINAS_LUAR legacy menyimpan identitas pegawai dengan FingerID.
+            transaksi_id = f"DLO_{finger_id}_{tgl_awal}_{tgl_akhir}"
             
             existing = DinasLuar.query.filter(
                 DinasLuar.TRANSAKSI_ID == transaksi_id
@@ -1352,7 +1364,7 @@ def api_dinas_luar_operasi_save_peserta():
                 new_dl = DinasLuar(
                     TRANSAKSI_ID=transaksi_id,
                     GUID_SPRIN=guid_sprin,
-                    NIP=nip,  # NIP asli pegawai
+                    FINGER_ID=finger_id,
                     TGL_AWAL_DINAS_LUAR=tgl_awal_date,
                     TGL_AKHIR_DINAS_LUAR=tgl_akhir_date,
                     KETERANGAN_DINAS_LUAR=header.PERIHAL_SPRIN or '',
@@ -1401,7 +1413,7 @@ def api_dinas_luar_operasi_get():
         dinas_list = db.session.query(
             DinasLuar, Pegawai
         ).outerjoin(
-            Pegawai, DinasLuar.NIP == Pegawai.NIP
+            Pegawai, DinasLuar.FINGER_ID == Pegawai.FINGER_ID
         ).filter(
             DinasLuar.NO_SURAT == no_surat,
             DinasLuar.TRANSAKSI == 'DinasLuar',
@@ -1420,7 +1432,7 @@ def api_dinas_luar_operasi_get():
             'keterangan': first.KETERANGAN_DINAS_LUAR or '',
             'penempatan': first.PENEMPATAN_DINAS_LUAR or '',
             'status_um': str(first.STATUS_UM) if first.STATUS_UM is not None else '1',
-            'tipe': first.TIPE or '1',
+            'tipe': str(first.TIPE) if first.TIPE is not None else '0',
             'nama_file': first.NAMA_FILE or '-'
         }
         
@@ -1639,7 +1651,7 @@ def api_dinas_luar_pelatihan_get():
         dinas_list = db.session.query(
             DinasLuar, Pegawai
         ).outerjoin(
-            Pegawai, DinasLuar.NIP == Pegawai.NIP
+            Pegawai, DinasLuar.FINGER_ID == Pegawai.FINGER_ID
         ).filter(
             DinasLuar.NO_SURAT == no_surat,
             DinasLuar.TRANSAKSI == 'DinasLuar',
@@ -2043,7 +2055,7 @@ def api_dinas_luar_pdf():
             Pegawai,
             or_(
                 DinasLuar.FINGER_ID == Pegawai.FINGER_ID,
-                DinasLuar.NIP == Pegawai.NIP,
+                DinasLuar.FINGER_ID == Pegawai.FINGER_ID,
             )
         )
         .filter(
