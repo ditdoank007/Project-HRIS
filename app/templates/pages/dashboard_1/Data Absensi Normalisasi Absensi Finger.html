@@ -83,6 +83,13 @@
 
             <div class="tab-content hris-tab-content" id="absensiTabContent">
                 <div class="tab-pane fade show active" id="database-pane" role="tabpanel">
+                    <div class="hris-actionbar">
+                        <button class="hris-btn hris-btn-primary" id="btnViewDatabase" type="button">
+                            <i class="feather-eye"></i>
+                            <span>View Data</span>
+                        </button>
+                        <span class="hris-helper-text">Ambil log finger langsung dari database.</span>
+                    </div>
                     <div class="hris-table-wrap">
                         <table class="hris-table-modern">
                             <thead>
@@ -114,8 +121,15 @@
                         <span id="datFileSummary" class="hris-helper-text">Belum ada file .DAT dipilih</span>
                     </div>
                     <div id="datFileList" class="hris-helper-text" style="display:none;"></div>
+                    <div class="hris-actionbar hris-mt-12">
+                        <button class="hris-btn hris-btn-secondary" id="btnViewFileData" type="button" disabled>
+                            <i class="feather-eye"></i>
+                            <span>View Data File</span>
+                        </button>
+                        <span class="hris-helper-text">Setelah upload selesai, tampilkan log dari RAW untuk periode yang dipilih.</span>
+                    </div>
 
-                    <div class="hris-table-wrap hris-mt-12">
+                    <div class="hris-table-wrap">
                         <table class="hris-table-modern">
                             <thead>
                                 <tr>
@@ -140,7 +154,7 @@
                     <div class="hris-actionbar">
                         <label class="hris-action-label" for="inputDefaultTLM">Default Nilai TLM/PSW tdk Check In/Out</label>
                         <input type="text" id="inputDefaultTLM" class="hris-input hris-input-sm hris-input-number" value="180">
-                        <button class="hris-btn hris-btn-primary" id="btnNormalisasi" type="button">
+                        <button class="hris-btn hris-btn-primary" id="btnNormalisasi" type="button" disabled>
                             <i class="feather-refresh-cw"></i>
                             <span>Normalisasi</span>
                         </button>
@@ -207,7 +221,6 @@
 {% endblock %}
 
 {% block script %}
-<script>
 document.addEventListener('DOMContentLoaded', function () {
     const tglAwal = document.getElementById('tglActivityAwal');
     const tglAkhir = document.getElementById('tglActivityAkhir');
@@ -407,6 +420,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 `${result.inserted} record masuk RAW `
                 + `(${result.duplicate} duplicate, `
                 + `${result.invalid} invalid)`;
+            btnViewFileData.disabled = false;
 
             const preview = result.preview || [];
 
@@ -526,6 +540,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const fingerTab =
         document.getElementById('database-tab');
 
+    const btnViewDatabase =
+        document.getElementById('btnViewDatabase');
+
+    const btnViewFileData =
+        document.getElementById('btnViewFileData');
+
     const btnNormalisasi =
         document.getElementById('btnNormalisasi');
 
@@ -543,7 +563,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // EXPORT akan menggunakan data ini, bukan cache RAM Gunicorn.
     let normalisasiRows = [];
 
-    function loadViewData() {
+    function loadViewData(source) {
 
         const params = getFilterParams();
 
@@ -556,8 +576,12 @@ document.addEventListener('DOMContentLoaded', function () {
         btnNormalisasi.disabled = true;
         btnExportNormalisasi.disabled = true;
 
+        const targetTbody = source === 'file'
+            ? document.querySelector('#file-pane tbody')
+            : tbodyFinger;
+
         renderEmptyRow(
-            tbodyFinger,
+            targetTbody,
             8,
             'Memuat data...'
         );
@@ -572,7 +596,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (res.error) {
                     alert(res.error);
                     renderEmptyRow(
-                        tbodyFinger,
+                        targetTbody,
                         8,
                         res.error
                     );
@@ -581,7 +605,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 if (!res.data || res.data.length === 0) {
                     renderEmptyRow(
-                        tbodyFinger,
+                        targetTbody,
                         8,
                         res.message
                         || 'Data Log Finger Print Kosong.'
@@ -589,7 +613,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     return;
                 }
 
-                tbodyFinger.innerHTML =
+                targetTbody.innerHTML =
                     res.data.map(r => `
                     <tr>
                         <td>${r.no}</td>
@@ -614,6 +638,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 viewDataLoaded = true;
                 btnNormalisasi.disabled = false;
 
+                if (source === 'file') {
+                    activateAbsensiTab(
+                        document.getElementById('normalisasi-tab')
+                    );
+                }
+
                 console.log(
                     'VIEW DATA loaded:',
                     res.total
@@ -622,7 +652,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .catch(err => {
 
                 renderEmptyRow(
-                    tbodyFinger,
+                    targetTbody,
                     8,
                     'Gagal memuat data.'
                 );
@@ -634,10 +664,21 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     }
 
-    // Klik VIEW DATA = ambil data.
-    fingerTab.addEventListener(
+    // Sumber DATABASE: hanya tombol View Data yang mengambil data.
+    btnViewDatabase.addEventListener(
         'click',
-        loadViewData
+        function () {
+            loadViewData('database');
+        }
+    );
+
+    // Sumber FILE: setelah upload selesai, tombol View Data File
+    // menggunakan pipeline RAW yang sama untuk menampilkan hasilnya.
+    btnViewFileData.addEventListener(
+        'click',
+        function () {
+            loadViewData('file');
+        }
     );
 
     // ================= TAB 2: Normalisasi =================
@@ -1010,5 +1051,4 @@ document.addEventListener('DOMContentLoaded', function () {
             .catch(err => alert('Gagal simpan: ' + err));
     });
 });
-</script>
 {% endblock %}
