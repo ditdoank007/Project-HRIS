@@ -1758,10 +1758,11 @@ def export_rekap_clock_exception_pdf():
     }
 
     for index, peg in enumerate(pegawai_rows, start=1):
-        row = [
+        row_in = [
             Paragraph(str(index), cell_style),
             Paragraph(xml_escape(str(peg.NAMA or '')), name_style),
         ]
+        row_out = ['', '']
 
         for cal in tanggal_rows:
             key = cal.TGL_KERJA.strftime('%Y-%m-%d')
@@ -1770,18 +1771,21 @@ def export_rekap_clock_exception_pdf():
             jam_in = format_jam_absensi(cell.get('jam_in'))
             jam_out = format_jam_absensi(cell.get('jam_out'))
 
-            if status in ('LIBUR',):
-                text = ''
+            if status == 'LIBUR':
+                in_text = ''
+                out_text = ''
             elif status and status != 'HADIR':
-                text = status
-            elif jam_in or jam_out:
-                text = f'{jam_in}<br/>{jam_out}' if jam_in and jam_out else (jam_in or jam_out)
+                in_text = status
+                out_text = ''
             else:
-                text = ''
+                in_text = jam_in
+                out_text = jam_out
 
-            row.append(Paragraph(xml_escape(text), cell_style))
+            row_in.append(Paragraph(xml_escape(in_text), cell_style))
+            row_out.append(Paragraph(xml_escape(out_text), cell_style))
 
-        table_data.append(row)
+        table_data.append(row_in)
+        table_data.append(row_out)
 
     available_width = landscape(A4)[0] - 36
     date_width = max(16, min(24, (available_width - 150) / max(len(tanggal_rows), 1)))
@@ -1818,8 +1822,11 @@ def export_rekap_clock_exception_pdf():
                 ('TEXTCOLOR', (idx, 0), (idx, 0), colors.HexColor('#b91c1c'))
             )
 
-    # Warna cell mengikuti hasil matrix yang sama dengan preview.
-    for row_index, peg in enumerate(pegawai_rows, start=1):
+    # Nama dan nomor di-merge vertikal; warna mengikuti matrix.
+    for employee_index, peg in enumerate(pegawai_rows, start=1):
+        row_index = 1 + (employee_index - 1) * 2
+        style_commands.append(('SPAN', (0, row_index), (0, row_index + 1)))
+        style_commands.append(('SPAN', (1, row_index), (1, row_index + 1)))
         for col_index, cal in enumerate(tanggal_rows, start=2):
             key = cal.TGL_KERJA.strftime('%Y-%m-%d')
             cell = matrix.get(peg.NIP, {}).get(key, {})
@@ -1833,7 +1840,13 @@ def export_rekap_clock_exception_pdf():
                 color = color_map.get(cell.get('warna'))
             if color:
                 style_commands.append(
-                    ('TEXTCOLOR', (col_index, row_index), (col_index, row_index), color)
+                    ('BACKGROUND', (col_index, row_index), (col_index, row_index + 1),
+                     colors.HexColor('#fee2e2') if cal.TGL_KERJA.weekday() in (5, 6)
+                     or str(cal.IS_LIBUR or 'N').upper() == 'Y'
+                     else colors.white)
+                )
+                style_commands.append(
+                    ('TEXTCOLOR', (col_index, row_index), (col_index, row_index + 1), color)
                 )
 
     table.setStyle(TableStyle(style_commands))
