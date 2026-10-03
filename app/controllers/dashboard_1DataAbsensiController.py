@@ -2313,26 +2313,81 @@ def api_normalisasi_process():
 
             return True
 
-        def _dl_mark_existing_row(row, dl):
+        def _sprin_code(dl):
+            """
+            Kode attendance dari Jenis SPRIN.
+
+            Dinas Luar Umum  -> DL
+            Dinas Luar Operasi -> OP
+            Dinas Luar Sumda -> SD
+
+            Nilai yang sudah berupa kode legacy juga diterima.
+            Nilai yang tidak dikenali TIDAK ditebak.
+            """
+            jenis = str(getattr(dl, 'JENIS', '') or '').strip()
+            key = jenis.lower().replace('_', ' ').replace('-', ' ')
+
+            code_map = {
+                'dl': 'DL',
+                'dinas luar': 'DL',
+                'dinas luar umum': 'DL',
+                'umum': 'DL',
+                'op': 'OP',
+                'operasi': 'OP',
+                'dinas luar operasi': 'OP',
+                'sd': 'SD',
+                'sumda': 'SD',
+                'dinas luar sumda': 'SD',
+            }
+            return code_map.get(key, jenis.upper())
+
+        def _sprin_mark_row(row, dl, *, display_color, fingerprint_required):
+            code = _sprin_code(dl)
+            status_um = int(dl.STATUS_UM if dl.STATUS_UM is not None else 0)
+
             row['transaksi_in'] = 'DinasLuar'
             row['transaksi_out'] = 'DinasLuar'
-            row['status_um'] = int(
-                dl.STATUS_UM
-                if dl.STATUS_UM is not None
-                else 0
-            )
+            row['status_um'] = status_um
             row['dinas_luar'] = True
-            row['dinas_luar_transaksi_id'] = (
-                str(dl.TRANSAKSI_ID or '').strip()
-            )
-            row['dinas_luar_jenis'] = (
-                str(dl.JENIS or '').strip()
-            )
-            row['dinas_luar_keterangan'] = (
-                str(
-                    dl.KETERANGAN_DINAS_LUAR
-                    or ''
-                ).strip()
+            row['sprin'] = True
+            row['sprin_code'] = code
+            row['attendance_code'] = code
+            row['attendance_layer'] = 'SPRIN'
+            row['sprin_display_color'] = display_color
+            row['sprin_fingerprint_required'] = fingerprint_required
+            row['sprin_tlm_psw_enabled'] = fingerprint_required
+            row['dinas_luar_transaksi_id'] = str(dl.TRANSAKSI_ID or '').strip()
+            row['dinas_luar_jenis'] = str(dl.JENIS or '').strip()
+            row['dinas_luar_keterangan'] = str(dl.KETERANGAN_DINAS_LUAR or '').strip()
+            row['dinas_luar_pendukung'] = str(dl.PENDUKUNG or '').strip()
+
+            # StatusUM 0 = fingerprint wajib.
+            # StatusUM 1/2 = fingerprint tidak diperlukan dan
+            # final attendance memakai jam baku tanpa TLM/PSW.
+            if not fingerprint_required:
+                row['jam_in'] = row.get('jam_baku_in') or ''
+                row['jam_out'] = row.get('jam_baku_out') or ''
+                row['awal_tlm'] = 0
+                row['total_tlm'] = 0
+                row['total_psw'] = 0
+                row['tingkat_tlm'] = code
+                row['tingkat_psw'] = code
+                row['persen_pot_tlm'] = 0
+                row['persen_pot_psw'] = 0
+                row['is_valid_in'] = True
+                row['is_valid_out'] = True
+
+            return row
+
+        def _dl_mark_existing_row(row, dl):
+            # StatusUM=0: wajib fingerprint.
+            # Fingerprint tetap menjadi sumber jam aktual/TLM/PSW,
+            # tetapi SPRIN menjadi layer transaksi paling atas.
+            return _sprin_mark_row(
+                row,
+                dl,
+                display_color='dark-blue',
+                fingerprint_required=True,
             )
 
         for dl, pegawai_dl in dinas_luar_rows:
@@ -2363,40 +2418,25 @@ def api_normalisasi_process():
             # ========================================================
             # STATUSUM 0
             #
-            # Wajib mencari fingerprint.
-            #
-            # Jika hasil fingerprint sudah ada di result,
-            # cukup tandai sebagai Dinas Luar.
-            #
-            # Jika fingerprint tidak ada, JANGAN membuat
-            # fingerprint palsu.
+            # "tidak memotong uang makan"
+            # - fingerprint WAJIB
+            # - actual IN/OUT dipertahankan
+            # - TLM/PSW tetap berlaku
+            # - SPRIN menjadi layer di atas Siaga/reguler
+            # - recap menggunakan kode DL/OP/SD
             # ========================================================
             if status_um_dl == 0:
 
                 for row in result:
-                    row_finger = str(
-                        row.get('finger_id') or ''
-                    ).strip()
-
-                    row_date = str(
-                        row.get('tgl_kerja') or ''
-                    ).strip()
+                    row_finger = str(row.get('finger_id') or '').strip()
+                    row_date = str(row.get('tgl_kerja') or '').strip()
 
                     if (
                         row_finger == finger_id_dl
-                        and row_date >= (
-                            dl.TGL_AWAL_DINAS_LUAR
-                            .strftime('%Y-%m-%d')
-                        )
-                        and row_date <= (
-                            dl.TGL_AKHIR_DINAS_LUAR
-                            .strftime('%Y-%m-%d')
-                        )
+                        and row_date >= dl.TGL_AWAL_DINAS_LUAR.strftime('%Y-%m-%d')
+                        and row_date <= dl.TGL_AKHIR_DINAS_LUAR.strftime('%Y-%m-%d')
                     ):
-                        _dl_mark_existing_row(
-                            row,
-                            dl
-                        )
+                        _dl_mark_existing_row(row, dl)
 
                 continue
 
@@ -2514,6 +2554,20 @@ def api_normalisasi_process():
                 }
 
                 # ------------------------------------------------
+                # SPRIN StatusUM 1 / 2 tidak membutuhkan fingerprint.
+                # StatusUM=1 = memotong uang makan -> ORANGE.
+                # StatusUM=2 = tidak memotong uang makan penempatan
+                #                -> DARK BLUE.
+                # Keduanya memakai jam baku dan tidak menghasilkan
+                # TLM/PSW.
+                # ------------------------------------------------
+                display_color = (
+                    'orange'
+                    if status_um_dl == 1
+                    else 'dark-blue'
+                )
+
+                # ------------------------------------------------
                 # Bentuk hasil transaksi khusus mengikuti ABSENSI
                 # legacy: jam baku sebagai TglJamIn/TglJamOut,
                 # tidak dihitung sebagai TLM/PSW.
@@ -2586,13 +2640,20 @@ def api_normalisasi_process():
                 row_dl['jam_in'] = row_dl['jam_baku_in']
                 row_dl['jam_out'] = row_dl['jam_baku_out']
 
+                _sprin_mark_row(
+                    row_dl,
+                    dl,
+                    display_color=display_color,
+                    fingerprint_required=False,
+                )
+
                 row_dl['tingkat_tlm'] = (
-                    'DL'
+                    _sprin_code(dl)
                     if transaksi_key == 'dinasluar'
                     else special_tingkat
                 )
                 row_dl['tingkat_psw'] = (
-                    'DL'
+                    _sprin_code(dl)
                     if transaksi_key == 'dinasluar'
                     else special_tingkat
                 )
@@ -2602,6 +2663,19 @@ def api_normalisasi_process():
                 row_dl['is_valid_out'] = True
                 row_dl['transaksi_in'] = transaksi_special
                 row_dl['transaksi_out'] = transaksi_special
+                row_dl['sprin'] = True
+                row_dl['sprin_code'] = _sprin_code(dl)
+                row_dl['attendance_code'] = _sprin_code(dl)
+                row_dl['attendance_layer'] = 'SPRIN'
+                row_dl['sprin_display_color'] = display_color
+                row_dl['sprin_fingerprint_required'] = False
+                row_dl['sprin_tlm_psw_enabled'] = False
+                row_dl['status_um'] = status_um_dl
+                row_dl['awal_tlm'] = 0
+                row_dl['total_tlm'] = 0
+                row_dl['total_psw'] = 0
+                row_dl['persen_pot_tlm'] = 0
+                row_dl['persen_pot_psw'] = 0
 
                 result.append(row_dl)
 
