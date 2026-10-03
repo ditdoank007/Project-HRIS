@@ -454,7 +454,7 @@ $(function() {
                 tgl_mutasi: tglMutasi,
                 unit_kerja_id: unitKerja,
                 keterangan: keterangan,
-                pegawai: pegawaiList,
+                peserta: pegawaiList,
                 is_edit: isEdit
             })
         }).done(function(r) {
@@ -502,7 +502,7 @@ $(function() {
             loadUnitKerja(d.header.unit_kerja_id || '');
             $('#keterangan').val(d.header.keterangan || '');
 
-            pegawaiList = (d.pegawai || []).map(function(p) {
+            pegawaiList = (d.peserta || []).map(function(p) {
                 return {nip: p.nip, nama: p.nama};
             });
 
