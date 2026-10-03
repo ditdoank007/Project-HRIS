@@ -72,19 +72,19 @@
                             </div>
                         </div>
 
-                        <!-- Jenis Operasi/Non Operasi -->
-                        <div class="row g-3 mt-2 align-items-center">
-                            <div class="col-md-4">
+                        <!-- Jenis Operasi / Non Operasi — mengikuti TIPE HRIS 2013 -->
+                        <div class="row g-3 mt-3 align-items-end">
+                            <div class="col-md-5">
                                 <label class="form-label-custom d-block">Jenis Dinas Luar Operasi <span class="text-danger">*</span></label>
-                                <div class="d-flex gap-4 align-items-center">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="jenis_operasi" id="jenisOperasi" value="1" checked>
-                                        <label class="form-check-label fw-bold" for="jenisOperasi">OPS</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="jenis_operasi" id="jenisNonOperasi" value="0">
-                                        <label class="form-check-label fw-bold" for="jenisNonOperasi">NON OPS</label>
-                                    </div>
+                                <div class="sprin-type-choice" role="radiogroup" aria-label="Jenis Dinas Luar Operasi">
+                                    <label class="sprin-choice" for="jenisOperasi">
+                                        <input type="radio" name="jenis_operasi" id="jenisOperasi" value="1" checked>
+                                        <span class="sprin-choice-box"><strong>OPS</strong><small>Operasi</small></span>
+                                    </label>
+                                    <label class="sprin-choice" for="jenisNonOperasi">
+                                        <input type="radio" name="jenis_operasi" id="jenisNonOperasi" value="0">
+                                        <span class="sprin-choice-box"><strong>NON OPS</strong><small>Non Operasi</small></span>
+                                    </label>
                                 </div>
                             </div>
                             <!-- Upload File -->
@@ -201,6 +201,14 @@
     .btn-orange-figma:hover { background-color: #cc5a20; color: #fff; }
     .pegawai-item { cursor: pointer; padding: 6px 12px; }
     .pegawai-item:hover { background-color: #f0f0f0; }
+    .sprin-type-choice { display:flex; gap:10px; align-items:stretch; }
+    .sprin-choice { position:relative; margin:0; cursor:pointer; }
+    .sprin-choice input { position:absolute; opacity:0; pointer-events:none; }
+    .sprin-choice-box { min-width:118px; height:48px; padding:6px 14px; border:1px solid #d5d9df; border-radius:7px; background:#fff; display:flex; flex-direction:column; justify-content:center; line-height:1.05; color:#475569; transition:.15s ease; }
+    .sprin-choice-box strong { font-size:.82rem; }
+    .sprin-choice-box small { font-size:.68rem; margin-top:4px; color:#94a3b8; }
+    .sprin-choice input:checked + .sprin-choice-box { border-color:#e65c00; background:#fff7ed; color:#c2410c; box-shadow:0 0 0 2px rgba(230,92,0,.10); }
+    .sprin-choice input:checked + .sprin-choice-box small { color:#ea580c; }
     #pegawaiDropdown { position: absolute !important; z-index: 9999 !important; background: #fff; border: 1px solid #dee2e6; box-shadow: 0 4px 12px rgba(0,0,0,0.15); max-height: 200px; overflow-y: auto; }
     .position-relative { position: relative; z-index: auto; }
 </style>
