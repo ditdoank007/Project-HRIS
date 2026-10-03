@@ -1467,10 +1467,10 @@ def api_normalisasi_import_finger():
         params = {'tgl_awal': tgl_awal, 'tgl_akhir': tgl_akhir}
         field_mapping = {
             'NIP': 'p.NIP', 'Nama': 'p.Nama', 'NAMA': 'p.Nama',
-            'FingerID': 'tr.FingerID', 'UnitKerja': 'p.UnitKerja',
+            'FingerID': 'src.FINGER_ID', 'UnitKerja': 'p.UnitKerja',
             'Unit': 'p.UnitKerja', 'UnitKerjaName': 'uk.UnitKerjaName',
             'Jabatan': 'p.Jabatan', 'Gol': 'p.Gol', 'Gol-Pangkat': 'p.Gol',
-            'Status': 'tr.Status', 'Transaksi': 'tr.Transaksi',
+            'Status': 'src.STATUS', 'Transaksi': 'src.TRANSAKSI',
         }
         conditions = []
         for idx, (field_name, field_value) in enumerate((
@@ -1492,27 +1492,61 @@ def api_normalisasi_import_finger():
 
         sql = text(f"""
             SELECT
-                tr.FingerID AS FINGER_ID,
-                tr.Waktu,
-                tr.Status,
-                tr.Transaksi,
+                src.FINGER_ID,
+                src.WAKTU,
+                src.STATUS,
+                src.TRANSAKSI,
                 p.NIP,
                 p.Nama AS NAMA,
                 p.Gol AS GOL,
                 g.Pangkat AS PANGKAT,
                 p.UnitKerja AS UNIT_KERJA,
-                uk.UnitKerjaName AS UNIT_KERJA_NAME
-            FROM TIME_RECORDER tr
+                uk.UnitKerjaName AS UNIT_KERJA_NAME,
+                p.IsVIP AS IS_VIP
+            FROM (
+                SELECT
+                    tr.FingerID AS FINGER_ID,
+                    tr.Waktu AS WAKTU,
+                    tr.Status AS STATUS,
+                    tr.Transaksi AS TRANSAKSI
+                FROM TIME_RECORDER tr
+                WHERE tr.Waktu >= :tgl_awal
+                  AND tr.Waktu < :tgl_akhir
+
+                UNION ALL
+
+                SELECT
+                    r.FINGER_ID,
+                    r.WAKTU,
+                    r.STATUS,
+                    'RAW' AS TRANSAKSI
+                FROM FINGER_HARVEST_RAW r
+                WHERE r.WAKTU >= :tgl_awal
+                  AND r.WAKTU < :tgl_akhir
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM TIME_RECORDER tr2
+                      WHERE CAST(tr2.FingerID AS CHAR) = CAST(r.FINGER_ID AS CHAR)
+                        AND tr2.Waktu = r.WAKTU
+                        AND UPPER(TRIM(tr2.Status)) =
+                            UPPER(TRIM(
+                                CASE
+                                    WHEN r.PUNCH = 0 THEN 'IN'
+                                    WHEN r.PUNCH = 1 THEN 'OUT'
+                                    ELSE r.STATUS
+                                END
+                            ))
+                  )
+            ) src
             LEFT JOIN PEGAWAI p
-                ON CAST(p.FingerID AS CHAR) = CAST(tr.FingerID AS CHAR)
+                ON CAST(p.FingerID AS CHAR) = CAST(src.FINGER_ID AS CHAR)
             LEFT JOIN MF_GOL g
                 ON g.Gol = p.Gol
             LEFT JOIN MF_UNIT_KERJA uk
                 ON CAST(uk.IDUnitKerja AS CHAR) = CAST(p.UnitKerja AS CHAR)
-            WHERE tr.Waktu >= :tgl_awal
-              AND tr.Waktu < :tgl_akhir
+            WHERE 1=1
               {filter_sql}
-            ORDER BY tr.FingerID, tr.Waktu
+            ORDER BY src.FINGER_ID, src.WAKTU
         """)
 
         rows = db.session.execute(sql, params).mappings().all()
@@ -1536,11 +1570,11 @@ def api_normalisasi_import_finger():
                     if r['UNIT_KERJA'] and r['UNIT_KERJA_NAME']
                     else (r['UNIT_KERJA'] or '')
                 ),
-                'waktu': r['Waktu'].strftime('%Y-%m-%d %H:%M:%S') if r['Waktu'] else '',
+                'waktu': r['WAKTU'].strftime('%Y-%m-%d %H:%M:%S') if r['WAKTU'] else '',
                 'status': status,
                 'punch': None,
                 'device_ip': '',
-                'transaksi': r['Transaksi'] or '',
+                'transaksi': r['TRANSAKSI'] or '',
             }
             data.append(row)
             cache_rows.append(row)
