@@ -14,20 +14,10 @@
             </p>
         </div>
 
-        <div class="d-flex gap-2">
-            <button type="button" class="hris-btn hris-btn-secondary" id="btnResetClockException">
-                <i class="feather-rotate-ccw"></i>
-                <span>Reset</span>
-            </button>
-            <button type="button" class="hris-btn hris-btn-primary" id="btnRunClockException">
-                <i class="feather-play"></i>
-                <span>Run</span>
-            </button>
-            <button type="button" class="hris-btn hris-btn-secondary" id="btnExportClockExceptionPdf" style="display:none;">
-                <i class="feather-file-text"></i>
-                <span>Ekspor PDF</span>
-            </button>
-        </div>
+        <button type="button" class="hris-btn hris-btn-secondary" id="btnResetClockException">
+            <i class="feather-rotate-ccw"></i>
+            <span>Reset</span>
+        </button>
     </div>
 
     <div id="clockExceptionAlert" class="alert d-none mb-3" role="alert"></div>
@@ -43,7 +33,7 @@
         </div>
 
         <div class="hris-card-body">
-            <div class="hris-form-grid" style="grid-template-columns:repeat(3,minmax(0,1fr));">
+            <div class="hris-form-grid hris-rekap-period-grid">
                 <div class="hris-field">
                     <label class="hris-label" for="tglAwal">Periode Awal</label>
                     <input type="date" id="tglAwal" class="hris-input">
@@ -53,63 +43,76 @@
                     <label class="hris-label" for="tglAkhir">Periode Akhir</label>
                     <input type="date" id="tglAkhir" class="hris-input">
                 </div>
+            </div>
 
-                <div class="hris-field">
-                    <label class="hris-label">Unit Kerja</label>
-                    <div class="hris-unit-selector" id="unitKerjaPicker">
-                        <div class="hris-unit-selector-toolbar">
-                            <label class="hris-unit-select-all">
-                                <input type="checkbox" id="unitKerjaSelectAll">
-                                <span>Semua Unit Kerja</span>
-                            </label>
-                            <span class="hris-unit-selected-count" id="unitKerjaCount">Belum ada unit dipilih</span>
-                        </div>
-                        <div class="hris-unit-search-row">
-                            <i class="feather-search"></i>
-                            <input type="search" class="hris-unit-search" id="unitKerjaSearch"
-                                   placeholder="Cari nama atau kode unit kerja..." autocomplete="off">
-                        </div>
-                        <div class="hris-unit-options" id="unitKerjaOptions">
-                            {% for unit in unit_kerja_list %}
-                            <label class="hris-unit-option"
-                                   data-search="{{ unit.UNIT_KERJA_ID }} {{ unit.NAMA_UNIT_KERJA }}">
-                                <input type="checkbox" class="unit-kerja-check"
-                                       value="{{ unit.UNIT_KERJA_ID }}">
-                                <span class="hris-unit-option-code">{{ unit.UNIT_KERJA_ID }}</span>
-                                <span class="hris-unit-option-name">{{ unit.NAMA_UNIT_KERJA }}</span>
-                            </label>
-                            {% endfor %}
-                            <div class="hris-unit-empty" id="unitKerjaEmpty" style="display:none;">
-                                Unit kerja tidak ditemukan.
-                            </div>
+            <div class="hris-field hris-rekap-unit-field">
+                <div class="hris-rekap-unit-heading">
+                    <div>
+                        <label class="hris-label mb-0">Unit Kerja</label>
+                        <div class="hris-field-help">
+                            Pilih satu, beberapa, atau seluruh unit kerja.
                         </div>
                     </div>
-                    <div class="hris-field-help">
-                        Centang satu atau beberapa unit kerja untuk dimasukkan ke laporan.
-                    </div>
+
+                    <span class="hris-unit-selected-count" id="unitKerjaCount">
+                        Belum ada unit dipilih
+                    </span>
                 </div>
 
-                            <div class="hris-multi-select-options" id="unitKerjaOptions" role="listbox">
-                                {% for unit in unit_kerja_list %}
-                                <label class="hris-multi-select-option"
-                                       data-search="{{ unit.UNIT_KERJA_ID }} {{ unit.NAMA_UNIT_KERJA }}">
-                                    <input type="checkbox"
-                                           class="unit-kerja-check"
-                                           value="{{ unit.UNIT_KERJA_ID }}">
-                                    <span>{{ unit.UNIT_KERJA_ID }} - {{ unit.NAMA_UNIT_KERJA }}</span>
-                                </label>
-                                {% endfor %}
-                                <div class="hris-multi-select-empty" id="unitKerjaEmpty" style="display:none;">
-                                    Unit kerja tidak ditemukan.
-                                </div>
-                            </div>
+                <div class="hris-unit-selector hris-unit-selector--report" id="unitKerjaPicker">
+                    <div class="hris-unit-selector-toolbar">
+                        <label class="hris-unit-select-all">
+                            <input type="checkbox" id="unitKerjaSelectAll">
+                            <span>Semua Unit Kerja</span>
+                        </label>
 
-                            <div class="hris-multi-select-footer">
-                                Centang unit kerja yang ingin dimasukkan ke laporan.
-                            </div>
+                        <button type="button"
+                                class="hris-unit-select-action"
+                                id="unitKerjaToggleAll">
+                            Pilih Semua
+                        </button>
+                    </div>
+
+                    <div class="hris-unit-search-row">
+                        <i class="feather-search"></i>
+                        <input type="search"
+                               class="hris-unit-search"
+                               id="unitKerjaSearch"
+                               placeholder="Cari nama atau kode unit kerja..."
+                               autocomplete="off">
+                    </div>
+
+                    <div class="hris-unit-options" id="unitKerjaOptions">
+                        {% for unit in unit_kerja_list %}
+                        <label class="hris-unit-option"
+                               data-search="{{ unit.UNIT_KERJA_ID }} {{ unit.NAMA_UNIT_KERJA }}">
+                            <input type="checkbox"
+                                   class="unit-kerja-check"
+                                   value="{{ unit.UNIT_KERJA_ID }}">
+                            <span class="hris-unit-option-code">{{ unit.UNIT_KERJA_ID }}</span>
+                            <span class="hris-unit-option-name">{{ unit.NAMA_UNIT_KERJA }}</span>
+                        </label>
+                        {% endfor %}
+
+                        <div class="hris-unit-empty" id="unitKerjaEmpty" style="display:none;">
+                            Unit kerja tidak ditemukan.
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <div class="hris-rekap-runbar">
+                <div class="hris-rekap-runbar-info">
+                    <i class="feather-info"></i>
+                    <span>Preview akan dibuat berdasarkan data absensi nyata sesuai periode dan unit yang dipilih.</span>
+                </div>
+
+                <button type="button"
+                        class="hris-btn hris-btn-primary"
+                        id="btnRunClockException">
+                    <i class="feather-play"></i>
+                    <span>Run</span>
+                </button>
             </div>
         </div>
     </div>
@@ -122,6 +125,14 @@
                     Silakan tentukan filter lalu klik Run.
                 </p>
             </div>
+
+            <button type="button"
+                    class="hris-btn hris-btn-secondary"
+                    id="btnExportClockExceptionPdf"
+                    style="display:none;">
+                <i class="feather-file-text"></i>
+                <span>Ekspor PDF</span>
+            </button>
         </div>
 
         <div class="hris-card-body">
@@ -137,68 +148,32 @@
 
 {% block script %}
 <script>
-
-function formatJamPreview(value){
-
-    if (!value){
-        return '';
-    }
-
-    /*
-     * ABSENSI menyimpan datetime sebagai waktu lokal WIB.
-     * Jangan biarkan JavaScript melakukan konversi timezone.
-     *
-     * Contoh:
-     *   2026-07-01 07:27:00
-     * harus tetap tampil:
-     *   07.27
-     *
-     * bukan:
-     *   14.27
-     */
+function formatJamPreview(value) {
+    if (!value) return '';
 
     const text = String(value);
-
     const match = text.match(
         /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?/
     );
 
-    if (match){
-
-        return match[4]
-            + '.'
-            + match[5];
-    }
+    if (match) return match[4] + '.' + match[5];
 
     const d = new Date(value);
+    if (isNaN(d)) return '';
 
-    if (isNaN(d)){
-        return '';
-    }
-
-    return String(d.getHours()).padStart(2,'0')
-        + '.'
-        + String(d.getMinutes()).padStart(2,'0');
+    return String(d.getHours()).padStart(2, '0') +
+        '.' +
+        String(d.getMinutes()).padStart(2, '0');
 }
 
-
-
-
-function formatHariIndonesia(value){
-
+function formatHariIndonesia(value) {
     const map = {
-        "Sun": "MIN",
-        "Mon": "SEN",
-        "Tue": "SEL",
-        "Wed": "RAB",
-        "Thu": "KAM",
-        "Fri": "JUM",
-        "Sat": "SAB"
+        Sun: 'MIN', Mon: 'SEN', Tue: 'SEL', Wed: 'RAB',
+        Thu: 'KAM', Fri: 'JUM', Sat: 'SAB'
     };
 
     return map[value] || value || '';
 }
-
 
 function escapeHtml(value) {
     return String(value ?? '')
@@ -209,8 +184,7 @@ function escapeHtml(value) {
         .replace(/'/g, '&#039;');
 }
 
-function renderPreviewClockException(hasil){
-
+function renderPreviewClockException(hasil) {
     const container = document.getElementById('previewClockExceptionContainer');
     const exportButton = document.getElementById('btnExportClockExceptionPdf');
 
@@ -223,15 +197,14 @@ function renderPreviewClockException(hasil){
         return;
     }
 
-    let html = '<table class="hris-report-table">';
-    html += '<thead><tr>';
+    let html = '<table class="hris-report-table"><thead><tr>';
     html += '<th class="report-col-no">No</th>';
     html += '<th class="report-col-name">Nama</th>';
 
     hasil.tanggal.forEach(function(t) {
         const holiday = t.is_libur === true ? ' holiday' : '';
         html += '<th class="report-day' + holiday + '">' +
-            escapeHtml(t.tgl.substring(8,10)) + '<br>' +
+            escapeHtml(t.tgl.substring(8, 10)) + '<br>' +
             escapeHtml(formatHariIndonesia(t.hari)) +
             '</th>';
     });
@@ -250,26 +223,26 @@ function renderPreviewClockException(hasil){
 
             const holiday = t.is_libur === true;
             let cls = 'report-cell';
+
             if (holiday) cls += ' holiday';
             else if (row && row.warna) cls += ' ' + row.warna;
 
-            let content = '';
+            let cell = '';
 
             if (row) {
                 if (row.status && row.status !== 'LIBUR' && row.status !== 'HADIR') {
-                    content = escapeHtml(row.status);
+                    cell = escapeHtml(row.status);
                 } else if (row.status === 'HADIR') {
                     const jamIn = formatJamPreview(row.jam_in);
                     const jamOut = formatJamPreview(row.jam_out);
-                    if (jamIn && jamOut) {
-                        content = escapeHtml(jamIn) + '<br>' + escapeHtml(jamOut);
-                    } else {
-                        content = escapeHtml(jamIn || jamOut);
-                    }
+
+                    cell = jamIn && jamOut
+                        ? escapeHtml(jamIn) + '<br>' + escapeHtml(jamOut)
+                        : escapeHtml(jamIn || jamOut);
                 }
             }
 
-            html += '<td class="' + cls + '">' + content + '</td>';
+            html += '<td class="' + cls + '">' + cell + '</td>';
         });
 
         html += '</tr>';
@@ -278,29 +251,33 @@ function renderPreviewClockException(hasil){
     html += '</tbody></table>';
     container.innerHTML = html;
 
-    if (exportButton) {
-        exportButton.style.display = 'inline-flex';
-    }
+    if (exportButton) exportButton.style.display = 'inline-flex';
 }
 
-document.addEventListener('DOMContentLoaded', function () {
-
+document.addEventListener('DOMContentLoaded', function() {
     const btn = document.getElementById('btnRunClockException');
     const exportPdfButton = document.getElementById('btnExportClockExceptionPdf');
     const resetButton = document.getElementById('btnResetClockException');
     const alertBox = document.getElementById('clockExceptionAlert');
     const resultInfo = document.getElementById('resultInfo');
 
-    const picker = document.getElementById('unitKerjaPicker');
     const selectAll = document.getElementById('unitKerjaSelectAll');
+    const toggleAll = document.getElementById('unitKerjaToggleAll');
     const search = document.getElementById('unitKerjaSearch');
     const countLabel = document.getElementById('unitKerjaCount');
     const emptyLabel = document.getElementById('unitKerjaEmpty');
     const checks = Array.from(document.querySelectorAll('.unit-kerja-check'));
 
     function getSelectedUnits() {
-        return checks.filter(function (check) {
+        return checks.filter(function(check) {
             return check.checked;
+        });
+    }
+
+    function getVisibleChecks() {
+        return checks.filter(function(check) {
+            const item = check.closest('.hris-unit-option');
+            return item && !item.classList.contains('is-hidden');
         });
     }
 
@@ -308,21 +285,30 @@ document.addEventListener('DOMContentLoaded', function () {
         const selected = getSelectedUnits();
         const total = checks.length;
 
-        countLabel.textContent =
-            selected.length === 0
-                ? 'Belum ada unit dipilih'
-                : selected.length + ' dari ' + total + ' unit dipilih';
+        if (!selected.length) {
+            countLabel.textContent = 'Belum ada unit dipilih';
+        } else if (selected.length === total) {
+            countLabel.textContent = 'Semua unit kerja (' + total + ')';
+        } else {
+            countLabel.textContent =
+                selected.length + ' dari ' + total + ' unit dipilih';
+        }
 
         selectAll.checked = total > 0 && selected.length === total;
         selectAll.indeterminate =
             selected.length > 0 && selected.length < total;
+
+        toggleAll.textContent =
+            selected.length === total && total > 0
+                ? 'Batalkan Semua'
+                : 'Pilih Semua';
     }
 
     function filterUnitOptions() {
         const keyword = (search.value || '').trim().toLowerCase();
         let visible = 0;
 
-        checks.forEach(function (check) {
+        checks.forEach(function(check) {
             const item = check.closest('.hris-unit-option');
             const text = (item?.dataset.search || '').toLowerCase();
             const match = !keyword || text.includes(keyword);
@@ -334,14 +320,23 @@ document.addEventListener('DOMContentLoaded', function () {
         emptyLabel.style.display = visible ? 'none' : 'block';
     }
 
-    selectAll.addEventListener('change', function () {
-        const visibleChecks = checks.filter(function (check) {
-            const item = check.closest('.hris-unit-option');
-            return item && !item.classList.contains('is-hidden');
-        });
-
-        visibleChecks.forEach(function (check) {
+    selectAll.addEventListener('change', function() {
+        getVisibleChecks().forEach(function(check) {
             check.checked = selectAll.checked;
+        });
+        updateUnitPicker();
+    });
+
+    toggleAll.addEventListener('click', function() {
+        const visibleChecks = getVisibleChecks();
+        const allVisibleSelected =
+            visibleChecks.length > 0 &&
+            visibleChecks.every(function(check) {
+                return check.checked;
+            });
+
+        visibleChecks.forEach(function(check) {
+            check.checked = !allVisibleSelected;
         });
 
         updateUnitPicker();
@@ -349,11 +344,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     search.addEventListener('input', filterUnitOptions);
 
-    checks.forEach(function (check) {
+    checks.forEach(function(check) {
         check.addEventListener('change', updateUnitPicker);
     });
-
-    updateUnitPicker();
 
     function showAlert(type, message) {
         if (!alertBox) return;
@@ -362,98 +355,16 @@ document.addEventListener('DOMContentLoaded', function () {
         alertBox.textContent = message;
         alertBox.classList.remove('d-none');
 
-        window.setTimeout(function () {
+        window.setTimeout(function() {
             alertBox.classList.add('d-none');
         }, 4000);
     }
-
-    function getSelectedUnits() {
-        return checks.filter(function (check) {
-            return check.checked;
-        });
-    }
-
-    function updateUnitPicker() {
-        const selected = getSelectedUnits();
-        const total = checks.length;
-
-        countLabel.textContent =
-            selected.length + ' dari ' + total + ' unit dipilih';
-
-        if (!selected.length) {
-            summary.textContent = 'Pilih unit kerja';
-        } else if (selected.length === total) {
-            summary.textContent = 'Semua unit kerja (' + total + ')';
-        } else if (selected.length <= 2) {
-            summary.textContent = selected.map(function (check) {
-                return check.parentElement.querySelector('span').textContent.trim();
-            }).join(', ');
-        } else {
-            summary.textContent =
-                selected.length + ' unit kerja dipilih';
-        }
-
-        selectAll.textContent =
-            selected.length === total && total > 0
-                ? 'Batalkan semua'
-                : 'Pilih semua';
-    }
-
-    function filterUnitOptions() {
-        const keyword = (search.value || '').trim().toLowerCase();
-        let visible = 0;
-
-        checks.forEach(function (check) {
-            const item = check.closest('.hris-multi-select-option');
-            const text = item?.dataset.search?.toLowerCase() || '';
-
-            const match = !keyword || text.includes(keyword);
-            item?.classList.toggle('is-hidden', !match);
-
-            if (match) visible += 1;
-        });
-
-        emptyLabel.style.display = visible ? 'none' : 'block';
-    }
-
-    document.addEventListener('click', function (event) {
-        if (!picker.contains(event.target)) {
-            picker.classList.remove('is-open');
-            trigger.setAttribute('aria-expanded', 'false');
-        }
-    });
-
-    search.addEventListener('input', filterUnitOptions);
-
-    selectAll.addEventListener('click', function () {
-        const visibleChecks = checks.filter(function (check) {
-            const item = check.closest('.hris-multi-select-option');
-            return item && !item.classList.contains('is-hidden');
-        });
-
-        const allVisibleSelected = visibleChecks.length > 0 &&
-            visibleChecks.every(function (check) {
-                return check.checked;
-            });
-
-        visibleChecks.forEach(function (check) {
-            check.checked = !allVisibleSelected;
-        });
-
-        updateUnitPicker();
-    });
-
-    checks.forEach(function (check) {
-        check.addEventListener('change', updateUnitPicker);
-    });
-
-    updateUnitPicker();
 
     function resetReport() {
         document.getElementById('tglAwal').value = '';
         document.getElementById('tglAkhir').value = '';
 
-        checks.forEach(function (check) {
+        checks.forEach(function(check) {
             check.checked = false;
         });
 
@@ -475,25 +386,14 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    if (resetButton) {
-        resetButton.addEventListener('click', resetReport);
-    }
+    resetButton?.addEventListener('click', resetReport);
 
-    if (!btn) {
-        console.error('Tombol Run Rekap Absensi Bulanan tidak ditemukan.');
-        return;
-    }
-
-    btn.addEventListener('click', async function (event) {
+    btn?.addEventListener('click', async function(event) {
         event.preventDefault();
 
         const unitChecked = getSelectedUnits();
-
-        const tglAwal =
-            document.getElementById('tglAwal')?.value || '';
-
-        const tglAkhir =
-            document.getElementById('tglAkhir')?.value || '';
+        const tglAwal = document.getElementById('tglAwal')?.value || '';
+        const tglAkhir = document.getElementById('tglAkhir')?.value || '';
 
         if (!tglAwal || !tglAkhir) {
             showAlert('warning', 'Silakan isi tanggal awal dan tanggal akhir.');
@@ -513,7 +413,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const formData = new FormData();
 
-        unitChecked.forEach(function (check) {
+        unitChecked.forEach(function(check) {
             formData.append('unit_kerja[]', check.value);
         });
 
@@ -573,11 +473,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 (hasil.tanggal?.length || 0) +
                 ' hari.';
 
-            showAlert(
-                'success',
-                'Rekap Absensi Bulanan berhasil dibuat.'
-            );
-
+            showAlert('success', 'Rekap Absensi Bulanan berhasil dibuat.');
         } catch (error) {
             console.error('Rekap Absensi Bulanan:', error);
 
@@ -586,7 +482,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 'Gagal menjalankan Rekap Absensi Bulanan: ' +
                 error.message
             );
-
         } finally {
             btn.disabled = false;
             btn.innerHTML =
@@ -594,98 +489,93 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    if (exportPdfButton) {
-        exportPdfButton.addEventListener('click', async function () {
-            const unitChecked = getSelectedUnits();
-            const tglAwal = document.getElementById('tglAwal')?.value || '';
-            const tglAkhir = document.getElementById('tglAkhir')?.value || '';
+    exportPdfButton?.addEventListener('click', async function() {
+        const unitChecked = getSelectedUnits();
+        const tglAwal = document.getElementById('tglAwal')?.value || '';
+        const tglAkhir = document.getElementById('tglAkhir')?.value || '';
 
-            if (!tglAwal || !tglAkhir || !unitChecked.length) {
-                showAlert(
-                    'warning',
-                    'Jalankan laporan terlebih dahulu.'
-                );
-                return;
-            }
+        if (!tglAwal || !tglAkhir || !unitChecked.length) {
+            showAlert('warning', 'Jalankan laporan terlebih dahulu.');
+            return;
+        }
 
-            const formData = new FormData();
+        const formData = new FormData();
 
-            unitChecked.forEach(function (check) {
-                formData.append('unit_kerja[]', check.value);
-            });
+        unitChecked.forEach(function(check) {
+            formData.append('unit_kerja[]', check.value);
+        });
 
-            formData.append('tgl_awal', tglAwal);
-            formData.append('tgl_akhir', tglAkhir);
+        formData.append('tgl_awal', tglAwal);
+        formData.append('tgl_akhir', tglAkhir);
 
-            exportPdfButton.disabled = true;
-            exportPdfButton.innerHTML =
-                '<i class="feather-loader"></i><span>Menyiapkan PDF...</span>';
+        exportPdfButton.disabled = true;
+        exportPdfButton.innerHTML =
+            '<i class="feather-loader"></i><span>Menyiapkan PDF...</span>';
 
-            try {
-                const response = await fetch(
-                    "{{ url_for('main.export_laporan_rekap_clock_exception_pdf') }}",
-                    {
-                        method: 'POST',
-                        body: formData,
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
+        try {
+            const response = await fetch(
+                "{{ url_for('main.export_laporan_rekap_clock_exception_pdf') }}",
+                {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
                     }
-                );
+                }
+            );
 
-                if (!response.ok) {
-                    const contentType =
-                        response.headers.get('content-type') || '';
+            if (!response.ok) {
+                const contentType =
+                    response.headers.get('content-type') || '';
 
-                    let message = 'Gagal membuat PDF.';
+                let message = 'Gagal membuat PDF.';
 
-                    if (contentType.includes('application/json')) {
-                        const errorJson = await response.json();
-                        message =
-                            errorJson.error ||
-                            errorJson.message ||
-                            message;
-                    } else {
-                        const text = await response.text();
-                        message = text.substring(0, 1000) || message;
-                    }
-
-                    throw new Error(message);
+                if (contentType.includes('application/json')) {
+                    const errorJson = await response.json();
+                    message =
+                        errorJson.error ||
+                        errorJson.message ||
+                        message;
+                } else {
+                    const text = await response.text();
+                    message = text.substring(0, 1000) || message;
                 }
 
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const anchor = document.createElement('a');
-
-                anchor.href = url;
-                anchor.download =
-                    'Rekap_Absensi_Bulanan_' +
-                    tglAwal.replaceAll('-', '') +
-                    '_' +
-                    tglAkhir.replaceAll('-', '') +
-                    '.pdf';
-
-                document.body.appendChild(anchor);
-                anchor.click();
-                anchor.remove();
-                window.URL.revokeObjectURL(url);
-
-            } catch (error) {
-                console.error('Export PDF:', error);
-
-                showAlert(
-                    'danger',
-                    'Gagal membuat PDF: ' + error.message
-                );
-
-            } finally {
-                exportPdfButton.disabled = false;
-                exportPdfButton.innerHTML =
-                    '<i class="feather-file-text"></i><span>Ekspor PDF</span>';
+                throw new Error(message);
             }
-        });
-    }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+
+            anchor.href = url;
+            anchor.download =
+                'Rekap_Absensi_Bulanan_' +
+                tglAwal.replaceAll('-', '') +
+                '_' +
+                tglAkhir.replaceAll('-', '') +
+                '.pdf';
+
+            document.body.appendChild(anchor);
+            anchor.click();
+            anchor.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Export PDF:', error);
+
+            showAlert(
+                'danger',
+                'Gagal membuat PDF: ' + error.message
+            );
+        } finally {
+            exportPdfButton.disabled = false;
+            exportPdfButton.innerHTML =
+                '<i class="feather-file-text"></i><span>Ekspor PDF</span>';
+        }
+    });
+
+    filterUnitOptions();
+    updateUnitPicker();
 });
 </script>
 {% endblock %}
-
