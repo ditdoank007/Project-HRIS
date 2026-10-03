@@ -1,277 +1,96 @@
-<!-- pages/dashboard_1/Laporan Rekap Clock Exception.html -->
-{% extends "layout/baseDashboard1.html" %}
+{% extends "layout/baseHRIS.html" %}
 
 {% block title %}- Rekap Absensi Bulanan{% endblock %}
+{% block header_kicker %}LAPORAN{% endblock %}
+{% block header_title %}Rekap Absensi Bulanan{% endblock %}
 
 {% block content %}
-<div class="nxl-content">
-    <!-- Page Header -->
-    <div class="page-header">
-        <div class="page-header-left d-flex align-items-center">
-            <div class="page-header-title">
-                <h5 class="m-b-10">Laporan</h5>
-            </div>
-            <ul class="breadcrumb">
-                <li class="breadcrumb-item"><a href="#">Rekap</a></li>
-                <li class="breadcrumb-item">Rekap Absensi Bulanan</li>
-            </ul>
+<div class="hris-page">
+    <div class="hris-page-header">
+        <div>
+            <h2 class="hris-page-title">Rekap Absensi Bulanan</h2>
+            <p class="hris-page-subtitle">
+                Rekapitulasi hasil normalisasi absensi berdasarkan periode dan unit kerja.
+            </p>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="button" class="hris-btn hris-btn-secondary" id="btnResetClockException">
+                <i class="feather-rotate-ccw"></i>
+                <span>Reset</span>
+            </button>
+            <button type="button" class="hris-btn hris-btn-primary" id="btnRunClockException">
+                <i class="feather-play"></i>
+                <span>Run</span>
+            </button>
+            <button type="button" class="hris-btn hris-btn-secondary" id="btnExportClockExceptionPdf" style="display:none;">
+                <i class="feather-file-text"></i>
+                <span>Ekspor PDF</span>
+            </button>
         </div>
     </div>
 
-    <!-- Main Content Container -->
-    <div class="main-content master-siaga">
-        <div class="container-fluid">
-            <div class="card mb-4 filter-card">
+    <div id="clockExceptionAlert" class="alert d-none mb-3" role="alert"></div>
 
-                <!-- Header Utama Halaman -->
-                <div class="card-header-custom d-flex justify-content-between align-items-center"
-                    style="border-radius: 10px;">
-                    <h6 class="mb-0">
-                        <i class="ti ti-checkbox me-2"></i> Rekap Absensi Bulanan
-                    </h6>
-                </div>
-
-                <!-- Custom CSS Style (Warna netral/putih untuk dropdown multi-select) -->
-                <style>
-                    .orange-section-header {
-                        background-color: #e66b30 !important;
-                        color: #ffffff !important;
-                        padding: 8px 15px;
-                        font-size: 0.9rem;
-                        font-weight: 500;
-                        border-radius: 6px 6px 0 0;
-                    }
-
-                    .inner-report-card {
-                        border: 1px solid #e0e0e0;
-                        border-radius: 6px;
-                        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
-                    }
-
-                    .form-label-custom {
-                        font-size: 0.85rem;
-                        font-weight: 500;
-                        color: #333;
-                        min-width: 100px;
-                    }
-
-                    .btn-pill-run {
-                        background-color: #0000ff;
-                        color: white !important;
-                        border-radius: 50px;
-                        padding: 5px 30px;
-                        font-size: 0.8rem;
-                        border: none;
-                        font-weight: 600;
-                        letter-spacing: 0.5px;
-                        transition: all 0.2s ease;
-                    }
-
-                    .btn-pill-run:hover {
-                        background-color: #0000cc;
-                    }
-
-                    .custom-input-field {
-                        height: 31px;
-                        outline: none;
-                        border: 1px solid #dee2e6;
-                        border-radius: 4px;
-                        font-size: 0.85rem;
-                    }
-
-                    /* Dropdown Custom Multi-select Putih Netral */
-                    .dropdown-toggle-custom {
-                        background: #ffffff !important;
-                        background-color: #ffffff !important;
-                        color: #333333 !important;
-                        border: 1px solid #dee2e6 !important;
-                        height: 31px !important;
-                        font-size: 0.85rem !important;
-                        padding: 0 10px !important;
-                        border-radius: 4px !important;
-                        overflow: hidden !important;
-                        text-overflow: ellipsis !important;
-                        white-space: nowrap !important;
-                        box-shadow: none !important;
-                    }
-
-                    .dropdown-toggle-custom:focus,
-                    .dropdown-toggle-custom[aria-expanded="true"] {
-                        border-color: #a8a8a8 !important;
-                    }
-
-                    .dropdown-toggle-custom::after {
-                        display: none;
-                    }
-
-                    .custom-dropdown-scroll {
-                        max-height: 200px;
-                        overflow-y: auto;
-                        border: 1px solid #ccc;
-                        border-radius: 4px;
-                    }
-
-                    .custom-dropdown-scroll::-webkit-scrollbar {
-                        width: 14px;
-                    }
-
-                    .custom-dropdown-scroll::-webkit-scrollbar-track {
-                        background: #f1f1f1;
-                    }
-
-                    .custom-dropdown-scroll::-webkit-scrollbar-thumb {
-                        background: #888;
-                        border-radius: 10px;
-                        border: 2px solid #f1f1f1;
-                    }
-
-                    .dropdown-item-custom {
-                        padding: 6px 15px;
-                        list-style: none;
-                    }
-
-                    .dropdown-item-custom:hover {
-                        background-color: #e8f5e9;
-                    }
-
-                    .dropdown-item-custom .form-check-input {
-                        width: 14px;
-                        height: 14px;
-                        cursor: pointer;
-                    }
-
-                    .dropdown-item-custom .form-check-label {
-                        cursor: pointer;
-                        text-transform: uppercase;
-                    }
-                </style>
-
-                <!-- Body Utama Content -->
-                <div class="card-body p-4">
-                    <div class="row">
-
-                        <!-- SECTION: Filter Data -->
-                        <div class="col-12">
-                            <div class="inner-report-card bg-white">
-                                <div class="orange-section-header">Filter Data</div>
-                                <div class="p-4">
-
-                                    <!-- Input Periode -->
-                                    <div class="row align-items-center mb-3">
-                                        <label class="col-md-2 form-label-custom mb-1 mb-md-0">Periode</label>
-                                        <div class="col-md-9 d-flex align-items-center gap-2 flex-wrap flex-md-nowrap">
-                                            <div class="input-group input-group-sm" style="max-width: 200px;">
-                                                <input type="date" id="tglAwal" class="form-control-sm border w-100 px-2" style="outline: none;">
-                                            </div>
-                                            <span class="mx-2 fw-bold text-muted small">s/d</span>
-                                            <div class="input-group input-group-sm" style="max-width: 200px;">
-                                                <input type="date" id="tglAkhir" class="form-control-sm border w-100 px-2" style="outline: none;">
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Input Unit Kerja (Multi-select Checkbox Putih) -->
-                                    <div class="row align-items-center mb-4">
-                                        <label class="col-md-2 form-label-custom mb-1 mb-md-0">Unit
-                                            Kerja</label>
-                                        <div class="col-md-6">
-                                            <div class="dropdown custom-multi-select">
-                                                <button
-                                                    class="btn btn-sm w-100 text-start d-flex justify-content-between align-items-center dropdown-toggle-custom"
-                                                    type="button" id="dropdownUnitKerja" data-bs-toggle="dropdown"
-                                                    data-bs-auto-close="outside" aria-expanded="false">
-                                                    <span id="dropdownLabelUnit">Pilih Unit Kerja</span>
-                                                    <i class="bi bi-caret-down-fill small text-muted"></i>
-                                                </button>
-
-                                                <!-- Ganti dropdown jadi dinamis -->
-                                                <ul class="dropdown-menu w-100 py-1 shadow-sm custom-dropdown-scroll"
-                                                    aria-labelledby="dropdownUnitKerja">
-                                                    <li class="dropdown-item-custom bg-light border-bottom">
-                                                        <div class="form-check m-0 d-flex align-items-center gap-2">
-                                                            <input class="form-check-input" type="checkbox" id="checkAllUnit">
-                                                            <label class="form-check-label small fw-bold text-secondary w-100" for="checkAllUnit">Check All</label>
-                                                        </div>
-                                                    </li>
-                                                    {% for unit in unit_kerja_list %}
-                                                    <li class="dropdown-item-custom">
-                                                        <div class="form-check m-0 d-flex align-items-center gap-2">
-                                                            <input class="form-check-input check-unit-item" type="checkbox" 
-                                                                value="{{ unit.UNIT_KERJA_ID }}" id="unit{{ unit.UNIT_KERJA_ID }}">
-                                                            <label class="form-check-label small w-100" for="unit{{ unit.UNIT_KERJA_ID }}">
-                                                                {{ unit.NAMA_UNIT_KERJA }}
-                                                            </label>
-                                                        </div>
-                                                    </li>
-                                                    {% endfor %}
-                                                </ul>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Tombol RUN -->
-                                    <div class="row">
-                                        <div class="col-12 d-flex justify-content-center mt-2">
-                                            <button
-    type="button"
-    id="btnRunClockException"
-    class="hris-btn hris-btn-primary shadow-sm">
-    RUN
-</button>
-                                        </div>
-                                    </div>
-
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-
+    <div class="hris-card mb-3">
+        <div class="hris-card-header">
+            <div>
+                <h3 class="hris-card-title">Filter Data</h3>
+                <p class="hris-section-subtitle">
+                    Tentukan periode laporan dan unit kerja yang akan ditampilkan.
+                </p>
             </div>
+        </div>
 
-
-            <!-- HASIL PREVIEW REKAP ABSENSI BULANAN -->
-
-            <div class="card mt-4">
-
-                <div class="card-header-custom d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0">
-                        <i class="ti ti-table"></i>
-                        Preview Rekap Absensi Bulanan
-                    </h6>
-                    <div class="hris-report-actions mb-0">
-                        <button type="button"
-                                id="btnExportClockExceptionPdf"
-                                class="hris-btn hris-btn-primary"
-                                style="display:none;">
-                            <i class="ti ti-file-type-pdf me-1"></i>
-                            Ekspor PDF
-                        </button>
-                    </div>
+        <div class="hris-card-body">
+            <div class="hris-form-grid" style="grid-template-columns:repeat(3,minmax(0,1fr));">
+                <div class="hris-field">
+                    <label class="hris-label" for="tglAwal">Periode Awal</label>
+                    <input type="date" id="tglAwal" class="hris-input">
                 </div>
 
-
-                <div class="card-body">
-
-                    <div
-                        class="hris-report-preview"
-                        id="previewClockExceptionContainer">
-
-                        <!-- tabel dibuat oleh Javascript -->
-
-                    </div>
-
+                <div class="hris-field">
+                    <label class="hris-label" for="tglAkhir">Periode Akhir</label>
+                    <input type="date" id="tglAkhir" class="hris-input">
                 </div>
 
+                <div class="hris-field">
+                    <label class="hris-label" for="unitKerja">Unit Kerja</label>
+                    <select id="unitKerja" class="hris-select" multiple size="4">
+                        {% for unit in unit_kerja_list %}
+                        <option value="{{ unit.UNIT_KERJA_ID }}">
+                            {{ unit.UNIT_KERJA_ID }} - {{ unit.NAMA_UNIT_KERJA }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <div class="hris-field-help">
+                        Tahan Ctrl/Command untuk memilih lebih dari satu unit kerja.
+                    </div>
+                </div>
             </div>
+        </div>
+    </div>
 
+    <div class="hris-card">
+        <div class="hris-card-header">
+            <div>
+                <h3 class="hris-card-title">Preview Rekap Absensi Bulanan</h3>
+                <p class="hris-section-subtitle" id="resultInfo">
+                    Silakan tentukan filter lalu klik Run.
+                </p>
+            </div>
+        </div>
 
+        <div class="hris-card-body">
+            <div class="hris-report-preview" id="previewClockExceptionContainer">
+                <div class="hris-empty">
+                    Preview akan tampil setelah laporan dijalankan.
+                </div>
+            </div>
         </div>
     </div>
 </div>
 {% endblock %}
-
 
 {% block script %}
 <script>
