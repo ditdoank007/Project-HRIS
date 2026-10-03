@@ -2599,6 +2599,11 @@ def api_normalisasi_process():
                 fingerprint_required=True,
             )
 
+        # Transaksi khusus dipilih sekali per pegawai/tanggal.
+        # Urutan sudah ditentukan oleh MFPriorityTransaksi ASC,
+        # lalu UpdateDate DESC.
+        special_claimed = set()
+
         for dl, pegawai_dl in dinas_luar_rows:
 
             if not _dl_filter_match(pegawai_dl):
@@ -2650,12 +2655,21 @@ def api_normalisasi_process():
                     row_finger = str(row.get('finger_id') or '').strip()
                     row_date = str(row.get('tgl_kerja') or '').strip()
 
+                    claim_key = (
+                        nip_dl,
+                        row_date,
+                    )
+
+                    if claim_key in special_claimed:
+                        continue
+
                     if (
                         row_finger == finger_id_dl
                         and row_date >= dl.TGL_AWAL_DINAS_LUAR.strftime('%Y-%m-%d')
                         and row_date <= dl.TGL_AKHIR_DINAS_LUAR.strftime('%Y-%m-%d')
                     ):
                         _dl_mark_existing_row(row, dl)
+                        special_claimed.add(claim_key)
 
                 continue
 
@@ -2691,6 +2705,17 @@ def api_normalisasi_process():
                 tgl_str_dl = current_date.strftime(
                     '%Y-%m-%d'
                 )
+
+                claim_key = (
+                    nip_dl,
+                    tgl_str_dl,
+                )
+
+                # PriorityTransaksi: transaksi yang lebih tinggi
+                # sudah memiliki hak atas tanggal ini.
+                if claim_key in special_claimed:
+                    current_date += timedelta(days=1)
+                    continue
 
                 # Hapus hasil fingerprint reguler
                 # pada tanggal yang sedang ditangani.
@@ -2897,6 +2922,7 @@ def api_normalisasi_process():
                 row_dl['persen_pot_psw'] = 0
 
                 result.append(row_dl)
+                special_claimed.add(claim_key)
 
                 current_date += timedelta(days=1)
 
