@@ -79,7 +79,13 @@ def _warna_absensi(absensi):
     if transaction == 'WFH':
         return 'wfh'
 
-    if _is_shift2_absensi(absensi):
+    # Export menandai hasil Shift 2 Siaga secara eksplisit.
+    # Fallback _is_shift2_absensi dipertahankan untuk data lama.
+    rekap_code = str(
+        absensi.HISTORY_TRANSAKSI_IN or ''
+    ).strip().upper()
+
+    if rekap_code == 'SIAGA' or _is_shift2_absensi(absensi):
         return 'siaga'
 
     return 'normal'
