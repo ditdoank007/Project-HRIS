@@ -286,9 +286,22 @@ def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
                     'status_um': absensi.STATUS_UM,
                 })
 
-            # Hari libur adalah presentasi terakhir.
-            # Nilai jam/status final ABSENSI tetap tidak diubah.
-            if _is_holiday(kalender):
+            # Layer presentasi:
+            #   1. DINAS LUAR / SPRIN
+            #   2. SIAGA
+            #   3. HARI LIBUR
+            #
+            # Jadi absensi Siaga pada hari libur tetap hijau,
+            # dan SPRIN tetap berada di atas Siaga.
+            if (
+                _is_holiday(kalender)
+                and cell.get('warna') not in (
+                    'siaga',
+                    'blue',
+                    'dark-blue',
+                    'orange',
+                )
+            ):
                 cell['warna'] = 'holiday'
 
             matrix[nip][tanggal] = cell
