@@ -2803,14 +2803,23 @@ def kepegawaian_cari_pegawai_cuti():
 
 
 def api_cuti_get_jenis():
-    """API: Get list Jenis Cuti dari MfPot"""
+    """API: Get list Jenis Cuti mengikuti MfPot HRIS 2013."""
     try:
-        potongan_list = MfPot.query.filter(
-            MfPot.KATEGORI == 'CUTI'
-        ).order_by(MfPot.TINGKAT).all()
-        
-        data = [{'tingkat': p.TINGKAT, 'nama': p.NAMA_POT, 'persen': p.PERSEN_POT} for p in potongan_list]
-        
+        from sqlalchemy import func
+        potongan_list = (
+            MfPot.query
+            .filter(func.lower(MfPot.KATEGORI) == 'cuti')
+            .order_by(MfPot.TINGKAT.asc())
+            .all()
+        )
+        seen = set()
+        data = []
+        for p in potongan_list:
+            key = (str(p.TINGKAT or '').strip(), str(p.NAMA_POT or '').strip())
+            if key in seen:
+                continue
+            seen.add(key)
+            data.append({'tingkat': key[0], 'nama': key[1], 'persen': p.PERSEN_POT})
         return jsonify({'success': True, 'data': data})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e), 'data': []})
@@ -2830,11 +2839,122 @@ def api_cuti_get_filter_fields():
         return jsonify({'error': str(e), 'data': []})
 
 
+def api_sakit_get_jenis():
+    """API: Get Jenis Sakit dari MfPot, mengikuti CmbMFPot HRIS 2013."""
+    try:
+        from sqlalchemy import func
+        potongan_list = (
+            MfPot.query
+            .filter(func.lower(MfPot.KATEGORI) == 'sakit')
+            .order_by(MfPot.TINGKAT.asc())
+            .all()
+        )
+        seen = set()
+        data = []
+        for p in potongan_list:
+            key = (str(p.TINGKAT or '').strip(), str(p.NAMA_POT or '').strip())
+            if key in seen:
+                continue
+            seen.add(key)
+            data.append({'tingkat': key[0], 'nama': key[1], 'persen': p.PERSEN_POT})
+        return jsonify({'success': True, 'data': data})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e), 'data': []})
+
+
+def api_sakit_cari():
+    """API pencarian transaksi Sakit mengikuti PageFind HRIS 2013."""
+    try:
+        filter_field1 = request.args.get('filter_field1', '').strip()
+        filter_value1 = request.args.get('filter_value1', '').strip()
+        filter_field2 = request.args.get('filter_field2', '').strip()
+        filter_value2 = request.args.get('filter_value2', '').strip()
+        field_mapping = {
+            'NIP': Pegawai.NIP,
+            'Nama': Pegawai.NAMA,
+            'Keterangan': DinasLuar.KETERANGAN_DINAS_LUAR,
+            'JenisSakit': DinasLuar.PENEMPATAN_DINAS_LUAR,
+            'Pendukung': DinasLuar.PENDUKUNG,
+        }
+        query = (
+            db.session.query(DinasLuar, Pegawai)
+            .join(Pegawai, DinasLuar.FINGER_ID == Pegawai.FINGER_ID)
+            .filter(DinasLuar.TRANSAKSI == 'Sakit', DinasLuar.TRANSAKSI_ID.isnot(None))
+        )
+        for field_name, value in ((filter_field1, filter_value1), (filter_field2, filter_value2)):
+            if field_name and value and field_name in field_mapping:
+                query = query.filter(field_mapping[field_name].ilike(f'%{value}%'))
+        rows = query.order_by(DinasLuar.TGL_AWAL_DINAS_LUAR.desc()).limit(500).all()
+        data = []
+        for i, (dl, peg) in enumerate(rows, 1):
+            data.append({
+                'no': i,
+                'transaksi_id': dl.TRANSAKSI_ID,
+                'nip': peg.NIP if peg else '',
+                'nama': peg.NAMA if peg else '-',
+                'tgl_awal': dl.TGL_AWAL_DINAS_LUAR.strftime('%Y-%m-%d') if dl.TGL_AWAL_DINAS_LUAR else '',
+                'tgl_akhir': dl.TGL_AKHIR_DINAS_LUAR.strftime('%Y-%m-%d') if dl.TGL_AKHIR_DINAS_LUAR else '',
+                'jenis_sakit': dl.PENEMPATAN_DINAS_LUAR or '',
+                'pendukung': dl.PENDUKUNG or '',
+                'keterangan': dl.KETERANGAN_DINAS_LUAR or '',
+                'update_by': dl.UPDATE_BY or '',
+                'update_date': dl.UPDATE_DATE.strftime('%d-%m-%Y %H:%M') if dl.UPDATE_DATE else '',
+            })
+        return jsonify({'success': True, 'data': data, 'total': len(data)})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e), 'data': []}), 500
+
+
 def kepegawaian_pegawai_sakit():
     """
     Render halaman Kepegawaian Pegawai Sakit.
     """
     return render_template('pages/dashboard_1/Kepegawaian Pegawai Sakit.html')
+
+
+def api_ijin_cari():
+    """API pencarian transaksi Ijin mengikuti Ijin.aspx HRIS 2013."""
+    try:
+        filter_field1 = request.args.get('filter_field1', '').strip()
+        filter_value1 = request.args.get('filter_value1', '').strip()
+        filter_field2 = request.args.get('filter_field2', '').strip()
+        filter_value2 = request.args.get('filter_value2', '').strip()
+        field_mapping = {
+            'NIP': Pegawai.NIP,
+            'Nama': Pegawai.NAMA,
+            'Keterangan': DinasLuar.KETERANGAN_DINAS_LUAR,
+            'Ijin': DinasLuar.PENDUKUNG,
+        }
+        query = (
+            db.session.query(DinasLuar, Pegawai)
+            .join(Pegawai, DinasLuar.FINGER_ID == Pegawai.FINGER_ID)
+            .filter(DinasLuar.TRANSAKSI == 'Alpa', DinasLuar.TRANSAKSI_ID.isnot(None))
+        )
+        for field_name, value in ((filter_field1, filter_value1), (filter_field2, filter_value2)):
+            if field_name and value and field_name in field_mapping:
+                query = query.filter(field_mapping[field_name].ilike(f'%{value}%'))
+        rows = query.order_by(DinasLuar.TGL_AWAL_DINAS_LUAR.desc()).limit(500).all()
+        data = []
+        for i, (dl, peg) in enumerate(rows, 1):
+            data.append({
+                'no': i,
+                'transaksi_id': dl.TRANSAKSI_ID,
+                'nip': peg.NIP if peg else '',
+                'nama': peg.NAMA if peg else '-',
+                'tgl_awal': dl.TGL_AWAL_DINAS_LUAR.strftime('%Y-%m-%d') if dl.TGL_AWAL_DINAS_LUAR else '',
+                'tgl_akhir': dl.TGL_AKHIR_DINAS_LUAR.strftime('%Y-%m-%d') if dl.TGL_AKHIR_DINAS_LUAR else '',
+                'ijin': dl.PENDUKUNG or 'N',
+                'keterangan': dl.KETERANGAN_DINAS_LUAR or '',
+                'update_by': dl.UPDATE_BY or '',
+                'update_date': dl.UPDATE_DATE.strftime('%d-%m-%Y %H:%M') if dl.UPDATE_DATE else '',
+            })
+        return jsonify({'success': True, 'data': data, 'total': len(data)})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e), 'data': []}), 500
 
 
 def kepegawaian_pegawai_tidak_hadir():
