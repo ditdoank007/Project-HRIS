@@ -2372,12 +2372,15 @@ def api_mutasi_cari():
                 u.UnitKerjaName,
                 m.Keterangan,
                 m.UpdateBy,
+                updater.Nama AS NamaUpdater,
                 m.UpdateDate
             FROM PEG_MUTASI_UNIT m
             LEFT JOIN PEGAWAI p
                 ON m.NIP = p.NIP
             LEFT JOIN MF_UNIT_KERJA u
                 ON m.UnitKerja = u.IDUnitKerja
+            LEFT JOIN PEGAWAI updater
+                ON m.UpdateBy = updater.NIP
             WHERE m.NoSK IS NOT NULL
         """
 
@@ -2405,9 +2408,8 @@ def api_mutasi_cari():
 
         sql += """
             ORDER BY
-                m.NoSK ASC,
-                p.Nama ASC,
-                m.IDTransaksi ASC
+                m.UpdateDate DESC,
+                m.IDTransaksi DESC
             LIMIT 500
         """
 
@@ -2433,7 +2435,7 @@ def api_mutasi_cari():
                 ),
                 'unit_kerja': row.get('UnitKerjaName') or row.get('UnitKerja') or '-',
                 'keterangan': row.get('Keterangan') or '',
-                'update_by': row.get('UpdateBy') or '',
+                'update_by': row.get('NamaUpdater') or '-',
                 'update_date': (
                     update_date.strftime('%d-%b-%Y %H:%M')
                     if hasattr(update_date, 'strftime')
