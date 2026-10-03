@@ -672,6 +672,8 @@ def api_dinas_luar_cari():
                 ),
                 'guid_sprin': row.GUID_SPRIN,
                 'jenis': type_sprin,
+                'tipe': int(row.TIPE) if row.TIPE is not None else 0,
+                'tipe_text': 'OPS' if str(row.TIPE or '0') == '1' else 'NON OPS',
             })
 
         return jsonify({
