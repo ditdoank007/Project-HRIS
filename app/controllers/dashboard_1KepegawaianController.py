@@ -3453,17 +3453,71 @@ def api_update_pendukung_save():
         }), 500
 
 
+def api_update_pendukung_autocomplete():
+    """API autocomplete Nama Pegawai untuk Update Pendukung."""
+    try:
+        keyword = str(request.args.get('q') or '').strip()
+        if len(keyword) < 2:
+            return jsonify({'success': True, 'data': []})
+
+        rows = (
+            db.session.query(
+                Pegawai.NIP.label('NIP'),
+                Pegawai.NAMA.label('Nama'),
+                Pegawai.FINGER_ID.label('FingerID'),
+            )
+            .filter(Pegawai.NAMA.ilike(f'%{keyword}%'))
+            .order_by(Pegawai.NAMA.asc())
+            .limit(20)
+            .all()
+        )
+
+        data = [
+            {
+                'nip': row.NIP or '',
+                'nama': row.Nama or '',
+                'finger_id': row.FingerID or '',
+                'label': (
+                    f"{row.Nama or ''} — {row.NIP or ''}"
+                    if row.NIP else (row.Nama or '')
+                ),
+            }
+            for row in rows
+        ]
+
+        return jsonify({'success': True, 'data': data})
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'data': [],
+        }), 500
+
+
 def api_update_pendukung_get_tingkatan():
-    """API: Get list Tingkatan dari MfPot."""
+    """API: Get Tingkatan TLM/PSW seperti daMFTingkatPot HRIS 2013."""
     try:
         tingkatan_list = (
             db.session.query(MfPot.TINGKAT)
+            .filter(MfPot.KATEGORI.in_(['TLM', 'PSW']))
             .filter(MfPot.TINGKAT.isnot(None))
             .distinct()
-            .order_by(MfPot.TINGKAT)
             .all()
         )
-        data = [t[0] for t in tingkatan_list if t[0]]
+
+        def level_key(value):
+            text = str(value or '').upper()
+            prefix = 0 if text.startswith('TLM-') else 1
+            try:
+                number = int(text.split('-', 1)[1])
+            except (ValueError, IndexError):
+                number = 999
+            return (prefix, number, text)
+
+        data = sorted(
+            [row[0] for row in tingkatan_list if row[0]],
+            key=level_key,
+        )
         return jsonify({'success': True, 'data': data})
     except Exception as e:
         return jsonify({
@@ -3474,22 +3528,14 @@ def api_update_pendukung_get_tingkatan():
 
 
 def api_update_pendukung_get_filter_fields():
-    """
-    API: Field filter pegawai.
+    """API kompatibilitas; UI baru memakai Nama Pegawai + autocomplete."""
+    return jsonify({
+        'success': True,
+        'data': [
+            {'field_id': 'Nama', 'field_name': 'Nama Pegawai'},
+        ],
+    })
 
-    HRIS 2013 mengambil field dari MFFieldCari("Entrypeg").
-    Reborn memakai allowlist field PEGAWAI yang aman dan ekuivalen.
-    """
-    fields = [
-        {'field_id': 'NIP', 'field_name': 'NIP'},
-        {'field_id': 'Nama', 'field_name': 'Nama Pegawai'},
-        {'field_id': 'FingerID', 'field_name': 'FingerID'},
-        {'field_id': 'UnitKerja', 'field_name': 'Unit Kerja'},
-        {'field_id': 'Gol', 'field_name': 'Golongan'},
-        {'field_id': 'Jabatan', 'field_name': 'Jabatan'},
-        {'field_id': 'Pangkat', 'field_name': 'Pangkat'},
-    ]
-    return jsonify({'success': True, 'data': fields})
 def api_update_pendukung_get_tingkatan():
     """API: Get list Tingkatan dari MfPot"""
     try:
