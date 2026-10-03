@@ -483,10 +483,11 @@ $(document).ready(function() {
                 $('#penempatan').val(d.header.penempatan);
                 $('#namaFile').val(d.header.nama_file);
 
-                if (d.header.tipe === '1') { 
-                    $('#jenisOperasi').prop('checked', true); 
-                } else { 
-                    $('#jenisNonOperasi').prop('checked', true); 
+                const tipeSprin = String(d.header.tipe ?? '0');
+                if (tipeSprin === '1') {
+                    $('#jenisOperasi').prop('checked', true);
+                } else {
+                    $('#jenisNonOperasi').prop('checked', true);
                 }
 
                 pesertaList = d.peserta.map(function(p) {
