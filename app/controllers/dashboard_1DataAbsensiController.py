@@ -2038,6 +2038,56 @@ def api_normalisasi_process():
                 'unit_kerja_id': sr['IDUnitKerja'],
             }
 
+        # ============================================================
+        # SIAGA SHIFT 1
+        #
+        # Shift 1 tetap memakai hasil pairing reguler, tetapi status
+        # presentation harus dipertahankan sebagai SIAGA di ABSENSI.
+        # Sumber penandanya adalah LOG_ACTIVITIY Piket Siaga.
+        # ============================================================
+
+        shift1_sql = text("""
+            SELECT
+                NIP,
+                ActivityDate,
+                StatusID,
+                shift1,
+                Shift,
+                StatusTrx
+            FROM LOG_ACTIVITIY
+            WHERE Activity = 'Piket Siaga'
+              AND Shift = '1'
+              AND ActivityDate >= :activity_awal
+              AND ActivityDate <= :activity_akhir
+              AND StatusTrx = '-'
+        """)
+
+        shift1_rows = db.session.execute(
+            shift1_sql,
+            {
+                'activity_awal': tgl_awal.date(),
+                'activity_akhir': tgl_akhir.date(),
+            }
+        ).mappings().all()
+
+        shift1_map = {}
+
+        for sr in shift1_rows:
+            nip_siaga = str(sr['NIP'] or '').strip()
+
+            if not nip_siaga or not sr['ActivityDate']:
+                continue
+
+            activity_date = sr['ActivityDate']
+
+            if hasattr(activity_date, 'date'):
+                activity_date = activity_date.date()
+
+            # Legacy Shift 1 siaga tampil pada tanggal yang sama.
+            shift1_map[
+                (nip_siaga, activity_date.strftime('%Y-%m-%d'))
+            ] = True
+
         # Index RAW berdasarkan NIP.
         #
         # Kita sengaja tidak memakai tanggal sebagai satu-satunya
@@ -2308,6 +2358,8 @@ def api_normalisasi_process():
             row['no'] = no
             row['shift'] = '2'
             row['shift2_siaga'] = True
+            row['siaga_shift'] = 2
+            row['siaga'] = True
             row['activity_date_siaga'] = (
                 activity_date.strftime('%Y-%m-%d')
                 if hasattr(activity_date, 'strftime')
@@ -2401,6 +2453,16 @@ def api_normalisasi_process():
             row['no'] = no
             row['shift'] = '1'
             row['shift2_siaga'] = False
+
+            # Pertahankan penanda Siaga Shift 1 sampai tahap EXPORT,
+            # sehingga Rekap tetap READ-ONLY dari ABSENSI final.
+            is_siaga_shift1 = bool(
+                shift1_map.get(
+                    (nip_reguler, tgl_str)
+                )
+            )
+            row['siaga_shift'] = 1 if is_siaga_shift1 else None
+            row['siaga'] = is_siaga_shift1
 
             result.append(row)
 
@@ -3630,7 +3692,10 @@ def api_normalisasi_export():
             # Reborn tidak perlu membaca DINAS_LUAR lagi saat Rekap.
             # HISTORY_TRANSAKSI_IN/OUT dipakai sebagai carrier metadata
             # display final yang sebelumnya hilang saat EXPORT.
-            if bool(r.get('shift2_siaga')):
+            if (
+                bool(r.get('shift2_siaga'))
+                or bool(r.get('siaga'))
+            ):
                 rekap_display_code = 'SIAGA'
             elif transaksi_in.upper() == 'DINASLUAR':
                 rekap_display_code = str(
