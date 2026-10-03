@@ -447,28 +447,33 @@ def api_dinas_luar_cari():
         # JENIS-nya benar tidak boleh hilang hanya karena nilai Transaksi
         # berbeda/NULL.
         # ========================================================
-        # POPULASI OPERASIONAL HRIS
+        # POPULASI OPERASIONAL HRIS — LEVEL SPRIN
         #
-        # SPRIN Dinas Luar hanya boleh muncul jika record peserta
-        # terhubung ke pegawai yang:
+        # Jangan melakukan join/filter operasional sebelum grouping.
+        # Jika itu dilakukan, peserta non-operasional dibuang lebih
+        # dahulu dan SPRIN masih bisa lolos hanya karena kebetulan
+        # ada satu peserta lain yang masih operasional.
         #
-        #   Pegawai.IS_KELUAR = 'N'
-        #   AND
-        #   MfUnitKerja.IS_USE = 'Y'
+        # Rule yang benar untuk daftar SPRIN:
         #
-        # Ini penting untuk mencegah pegawai dari Unit Kerja yang
-        # sudah dinonaktifkan (mis. Banyuwangi/Jember) tetap muncul
-        # pada pencarian Dinas Luar.
+        #   SATU SPRIN tampil
+        #   jika SEMUA pesertanya masih operasional.
+        #
+        # Peserta yang:
+        #   Pegawai.IS_KELUAR bukan N/0
+        #   ATAU MfUnitKerja.IS_USE bukan Y/1
+        #
+        # membuat seluruh SPRIN tidak masuk daftar operasional.
+        #
+        # Ini bukan pengecualian Banyuwangi/Jember. Ini evaluasi
+        # terhadap seluruh peserta berdasarkan Global Operational Rule.
         # ========================================================
-        query = join_operational_pegawai(
-            DinasLuar.query.filter(
-                DinasLuar.JENIS.in_(jenis_values),
-                or_(
-                    DinasLuar.TRANSAKSI == 'DinasLuar',
-                    DinasLuar.TRANSAKSI.is_(None),
-                ),
+        query = DinasLuar.query.filter(
+            DinasLuar.JENIS.in_(jenis_values),
+            or_(
+                DinasLuar.TRANSAKSI == 'DinasLuar',
+                DinasLuar.TRANSAKSI.is_(None),
             ),
-            DinasLuar.FINGER_ID
         )
 
         # Periode menggunakan tanggal SPRIN/header.
@@ -520,11 +525,12 @@ def api_dinas_luar_cari():
                     }), 400
 
         # Filter satu field.
+        # Filter Nama ditangani setelah grouping kandidat supaya
+        # keberadaan peserta lain dalam SPRIN tetap ikut divalidasi.
+        name_filter = None
         if filter_field and filter_value:
             if filter_field == 'Nama':
-                query = query.filter(
-                    Pegawai.NAMA.ilike(f'%{filter_value}%')
-                )
+                name_filter = filter_value
             else:
                 field_mapping = {
                     'KeteranganDinasLuar': DinasLuar.KETERANGAN_DINAS_LUAR,
@@ -536,17 +542,60 @@ def api_dinas_luar_cari():
                 if field is not None:
                     query = query.filter(field.ilike(f'%{filter_value}%'))
 
+        # Ambil seluruh peserta kandidat terlebih dahulu. Jangan limit
+        # sebelum validasi grup, karena satu SPRIN bisa memiliki banyak
+        # peserta dan peserta non-operasional dapat berada di baris lain.
         rows = query.order_by(
             DinasLuar.TGL_AWAL_SURAT.desc(),
             DinasLuar.TRANSAKSI_ID.desc()
-        ).limit(1000).all()
+        ).limit(5000).all()
 
-        # Satu SPRIN hanya tampil satu kali.
-        grouped = {}
+        # Satu SPRIN = satu grup peserta.
+        grouped_rows = {}
         for row in rows:
             key = row.GUID_SPRIN or row.NO_SURAT or row.TRANSAKSI_ID
-            if key not in grouped:
-                grouped[key] = row
+            grouped_rows.setdefault(key, []).append(row)
+
+        # Global Operational Rule diterapkan pada SELURUH peserta
+        # dalam satu SPRIN, bukan hanya peserta yang kebetulan lolos
+        # filter query awal.
+        operational_finger_ids = {
+            str(row.FINGER_ID).strip()
+            for row in get_operational_pegawai_query()
+            .with_entities(Pegawai.FINGER_ID)
+            .all()
+            if row.FINGER_ID is not None
+        }
+
+        grouped = {}
+        for key, participant_rows in grouped_rows.items():
+            all_participants_operational = all(
+                str(row.FINGER_ID or '').strip() in operational_finger_ids
+                for row in participant_rows
+            )
+
+            if not all_participants_operational:
+                continue
+
+            # Jika pencarian berdasarkan Nama, SPRIN hanya masuk jika
+            # ada minimal satu peserta dengan nama yang dicari.
+            if name_filter:
+                matching = (
+                    Pegawai.query
+                    .join(
+                        DinasLuar,
+                        DinasLuar.FINGER_ID == Pegawai.FINGER_ID
+                    )
+                    .filter(
+                        DinasLuar.GUID_SPRIN == key,
+                        Pegawai.NAMA.ilike(f'%{name_filter}%')
+                    )
+                    .first()
+                )
+                if not matching:
+                    continue
+
+            grouped[key] = participant_rows[0]
 
         results = list(grouped.values())[:500]
 
