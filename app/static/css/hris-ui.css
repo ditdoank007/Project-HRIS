@@ -2806,6 +2806,27 @@ body.hris-sidebar-mini .hris-submenu {
 }
 
 
+/* Keep HRIS tabs independent from Bootstrap JS/CSS. */
+.hris-tab-content > .tab-pane {
+  display: none;
+}
+
+.hris-tab-content > .tab-pane.active {
+  display: block;
+}
+
+.hris-tab-content > .tab-pane.fade {
+  transition: opacity .12s ease;
+}
+
+.hris-tab-content > .tab-pane.fade:not(.show) {
+  opacity: 0;
+}
+
+.hris-tab-content > .tab-pane.fade.show {
+  opacity: 1;
+}
+
 /* ============================================================
    HRIS DATA ABSENSI / TAB WORKFLOW
    Reusable components for multi-step data workflows.
