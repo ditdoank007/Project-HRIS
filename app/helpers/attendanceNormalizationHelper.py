@@ -445,7 +445,7 @@ class AttendanceNormalizationEngine:
 
             # IN Shift 2 mengikuti window MF_LOAD_FINGER.
             if (
-                punch == 0
+                punch == 'IN'
                 and start_in
                 and end_in
                 and start_in <= waktu <= end_in
@@ -455,7 +455,7 @@ class AttendanceNormalizationEngine:
 
             # OUT normal mengikuti window MF_LOAD_FINGER pada H+1.
             if (
-                punch == 1
+                punch == 'OUT'
                 and start_out
                 and end_out
                 and start_out <= waktu <= end_out
@@ -466,7 +466,7 @@ class AttendanceNormalizationEngine:
             # Rule legacy/Reborn yang sudah dikunci:
             # actual OUT Shift 2 boleh dicari sampai sebelum 12:00.
             if (
-                punch == 1
+                punch == 'OUT'
                 and waktu.date() == target_date
                 and waktu.time() < time(12, 0)
             ):
@@ -477,7 +477,7 @@ class AttendanceNormalizationEngine:
             # jika nanti tidak ada PUNCH=1, PUNCH=0 H+1
             # sebelum 12:00 dapat dipakai sebagai OUT Shift 2.
             if (
-                punch == 0
+                punch == 'IN'
                 and waktu.date() == target_date
                 and waktu.time() < time(12, 0)
             ):
