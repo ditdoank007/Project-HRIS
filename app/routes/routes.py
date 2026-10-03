@@ -62,6 +62,9 @@ from app.controllers.dashboard_1KepegawaianController import (
     api_dinas_luar_save_peserta as master_api_dinas_luar_save_peserta,
     api_dinas_luar_cari as master_api_dinas_luar_cari,
     api_dinas_luar_get_filter_fields as master_api_dinas_luar_get_filter_fields,
+    api_sakit_get_jenis as master_api_sakit_get_jenis,
+    api_sakit_cari as master_api_sakit_cari,
+    api_ijin_cari as master_api_ijin_cari,
 )
 from app.controllers.backupRestoreController import (
     backup_restore_home,
@@ -658,10 +661,30 @@ def api_cuti_get_filter_fields():
 def view_kepegawaian_pegawai_sakit():
     return kepegawaian_pegawai_sakit()
 
+
+@main.route('/api/sakit/jenis')
+@login_required
+def api_sakit_get_jenis():
+    return master_api_sakit_get_jenis()
+
+
+@main.route('/api/sakit/cari')
+@login_required
+def api_sakit_cari():
+    return master_api_sakit_cari()
+
+
 @main.route('/kepegawaian/pegawai-tidak-hadir')
 @login_required
 def view_kepegawaian_pegawai_tidak_hadir():
     return kepegawaian_pegawai_tidak_hadir()
+
+
+@main.route('/api/ijin/cari')
+@login_required
+def api_ijin_cari():
+    return master_api_ijin_cari()
+
 
 @main.route('/kepegawaian/mutasi-penempatan')
 @login_required
