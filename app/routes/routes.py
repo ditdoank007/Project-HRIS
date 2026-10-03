@@ -691,6 +691,13 @@ def api_ijin_cari():
 def view_kepegawaian_mutasi_penempatan_pegawai():
     return kepegawaian_mutasi_penempatan_pegawai()
 
+@main.route('/api/mutasi/unit-kerja')
+@login_required
+def api_mutasi_unit_kerja():
+    from app.controllers.dashboard_1KepegawaianController import api_mutasi_unit_kerja
+    return api_mutasi_unit_kerja()
+
+
 @main.route('/api/mutasi/save', methods=['POST'])
 @login_required
 def api_mutasi_save():
