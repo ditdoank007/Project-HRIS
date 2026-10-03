@@ -1586,7 +1586,7 @@ def api_normalisasi_process():
 
         # ============================================================
         # SUMBER NORMALISASI:
-        # FINGER_HARVEST_RAW
+        # TIME_RECORDER + FINGER_HARVEST_RAW
         #
         # Jangan lagi bergantung pada _NORMALISASI_CACHE['import'].
         # RAW adalah sumber permanen hasil import file .DAT.
@@ -1652,7 +1652,8 @@ def api_normalisasi_process():
                 p.NIP,
                 p.Nama AS NAMA,
                 p.Gol AS GOL,
-                p.UnitKerja AS UNIT_KERJA
+                p.UnitKerja AS UNIT_KERJA,
+                p.IsVIP AS IS_VIP
             FROM (
                 /* TIME_RECORDER adalah event log aktif:
                    termasuk fingerprint mesin, manual finger,
@@ -1774,6 +1775,7 @@ def api_normalisasi_process():
                 'nama': r['NAMA'] or '',
                 'gol': r['GOL'] or '',
                 'unit_kerja': r['UNIT_KERJA'] or '',
+                'is_vip': str(r['IS_VIP'] or '').strip().upper() in ('Y', '1', 'YES', 'TRUE'),
                 'waktu': waktu.strftime('%Y-%m-%d %H:%M:%S'),
                 'status': status,
                 'punch': r['PUNCH'],
@@ -2243,8 +2245,133 @@ def api_normalisasi_process():
             result.append(row)
 
         # ============================================================
-        # 1. SHIFT 2 SIAGA
+        # VIP CORRECTION
+        #
+        # Pegawai.IsVIP adalah rule legacy.
+        # VIP tidak membuat row baru bila IN dan OUT sama-sama kosong.
+        # Jika salah satu sisi tersedia, sisi yang hilang / tidak sesuai
+        # dikoreksi dengan rule VIP legacy.
         # ============================================================
+
+        vip_sequence = 0
+
+        for row in result:
+            if str(row.get('transaksi_in') or '').strip().upper() not in ('', 'LOGFP', 'MANUAL'):
+                continue
+
+            nip_row = str(row.get('nip') or '').strip()
+            if not nip_row:
+                continue
+
+            is_vip_row = False
+
+            # Utamakan identitas dari RAW/TIME_RECORDER.
+            for raw in raw_rows:
+                if str(raw.get('NIP') or '').strip() == nip_row:
+                    is_vip_row = (
+                        str(raw.get('IS_VIP') or '').strip().upper()
+                        in ('Y', '1', 'YES', 'TRUE')
+                    )
+                    if is_vip_row:
+                        break
+
+            if not is_vip_row:
+                peg_vip = (
+                    Pegawai.query
+                    .filter(Pegawai.NIP == nip_row)
+                    .first()
+                )
+                is_vip_row = bool(
+                    peg_vip
+                    and str(peg_vip.IS_VIP or '').strip().upper()
+                    in ('Y', '1', 'YES', 'TRUE')
+                )
+
+            if not is_vip_row:
+                continue
+
+            jam_in_value = str(row.get('jam_in') or '').strip()
+            jam_out_value = str(row.get('jam_out') or '').strip()
+
+            # 00:00:00 adalah sentinel "tidak ada fingerprint".
+            has_in = bool(jam_in_value and jam_in_value != '00:00:00')
+            has_out = bool(jam_out_value and jam_out_value != '00:00:00')
+
+            if not has_in and not has_out:
+                continue
+
+            activity_date_vip = str(
+                row.get('activity_date_siaga') or ''
+            ).strip()
+
+            tgl_kerja_vip = datetime.strptime(
+                str(row.get('tgl_kerja')),
+                '%Y-%m-%d'
+            ).date()
+
+            if activity_date_vip:
+                tgl_baku_in_vip = datetime.strptime(
+                    f'{activity_date_vip} {row.get("jam_baku_in")}',
+                    '%Y-%m-%d %H:%M'
+                ) if row.get('jam_baku_in') else None
+                tgl_baku_out_vip = datetime.strptime(
+                    f'{row.get("tgl_kerja")} {row.get("jam_baku_out")}',
+                    '%Y-%m-%d %H:%M'
+                ) if row.get('jam_baku_out') else None
+                tgl_actual_in_vip = datetime.strptime(
+                    f'{activity_date_vip} {jam_in_value}',
+                    '%Y-%m-%d %H:%M:%S'
+                ) if has_in else None
+                tgl_actual_out_vip = datetime.strptime(
+                    f'{row.get("tgl_kerja")} {jam_out_value}',
+                    '%Y-%m-%d %H:%M:%S'
+                ) if has_out else None
+            else:
+                tgl_baku_in_vip = datetime.strptime(
+                    f'{row.get("tgl_kerja")} {row.get("jam_baku_in")}',
+                    '%Y-%m-%d %H:%M'
+                ) if row.get('jam_baku_in') else None
+                tgl_baku_out_vip = datetime.strptime(
+                    f'{row.get("tgl_kerja")} {row.get("jam_baku_out")}',
+                    '%Y-%m-%d %H:%M'
+                ) if row.get('jam_baku_out') else None
+                tgl_actual_in_vip = datetime.strptime(
+                    f'{row.get("tgl_kerja")} {jam_in_value}',
+                    '%Y-%m-%d %H:%M:%S'
+                ) if has_in else None
+                tgl_actual_out_vip = datetime.strptime(
+                    f'{row.get("tgl_kerja")} {jam_out_value}',
+                    '%Y-%m-%d %H:%M:%S'
+                ) if has_out else None
+
+            vip_sequence += 1
+
+            new_in, new_out, changed = (
+                normalization_engine.apply_vip_correction(
+                    is_vip=True,
+                    sequence_no=vip_sequence,
+                    nama=row.get('nama') or '',
+                    tgl_kerja=tgl_kerja_vip,
+                    baku_in=tgl_baku_in_vip,
+                    baku_out=tgl_baku_out_vip,
+                    jam_in=tgl_actual_in_vip,
+                    jam_out=tgl_actual_out_vip,
+                )
+            )
+
+            if changed:
+                row['jam_in'] = (
+                    new_in.strftime('%H:%M:%S')
+                    if new_in else '00:00:00'
+                )
+                row['jam_out'] = (
+                    new_out.strftime('%H:%M:%S')
+                    if new_out else '00:00:00'
+                )
+                row['is_valid_in'] = bool(new_in)
+                row['is_valid_out'] = bool(new_out)
+                row['vip'] = True
+                row['vip_correction'] = True
 
         # ============================================================
         # DINAS LUAR
