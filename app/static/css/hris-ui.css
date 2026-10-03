@@ -3423,8 +3423,23 @@ body.hris-sidebar-mini .hris-submenu {
   color: var(--ui-danger);
 }
 .hris-report-table .report-cell {
-  height: 48px;
+  height: 24px;
+  min-height: 24px;
   line-height: 18px;
+  padding: 2px 4px;
+}
+.hris-report-table .report-employee-span {
+  height: 48px;
+  vertical-align: middle;
+}
+.hris-report-table .report-cell-in {
+  border-bottom-color: var(--ui-border);
+}
+.hris-report-table .report-cell-out {
+  border-top: 0;
+}
+.hris-report-table .report-employee-row-out .report-cell {
+  border-bottom: 1px solid var(--ui-border);
 }
 .hris-report-table .report-cell.holiday {
   color: var(--ui-danger);
