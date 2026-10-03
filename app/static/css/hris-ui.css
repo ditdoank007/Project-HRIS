@@ -3415,6 +3415,22 @@ body.hris-sidebar-mini .hris-submenu {
 .hris-report-table tbody tr:hover .report-col-name {
   background: #fff7ed;
 }
+
+.hris-report-table tbody tr.report-row-zebra td {
+  background: #f8fafc;
+}
+
+.hris-report-table tbody tr.report-row-zebra .report-col-no,
+.hris-report-table tbody tr.report-row-zebra .report-col-name {
+  background: #f8fafc;
+}
+
+.hris-report-table tbody tr.report-row-zebra:hover td,
+.hris-report-table tbody tr.report-row-zebra:hover .report-col-no,
+.hris-report-table tbody tr.report-row-zebra:hover .report-col-name {
+  background: #fff7ed;
+}
+
 .hris-report-table .report-day {
   width: 58px;
   min-width: 58px;
