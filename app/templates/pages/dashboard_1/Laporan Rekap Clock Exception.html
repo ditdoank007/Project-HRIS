@@ -217,7 +217,8 @@
         html += '</tr></thead><tbody>';
 
         hasil.pegawai.forEach(function (peg, index) {
-            html += '<tr class="report-employee-row">';
+            var zebraClass = index % 2 === 1 ? ' report-row-zebra' : '';
+            html += '<tr class="report-employee-row' + zebraClass + '">';
             html += '<td class="report-col-no report-employee-span" rowspan="2">' +
                 (index + 1) + '</td>';
             html += '<td class="report-col-name report-employee-span" rowspan="2">' +
@@ -245,7 +246,7 @@
             });
 
             html += '</tr>';
-            html += '<tr class="report-employee-row report-employee-row-out">';
+            html += '<tr class="report-employee-row report-employee-row-out' + zebraClass + '">';
 
             hasil.tanggal.forEach(function (t) {
                 var row = hasil.matrix[peg.nip] ? hasil.matrix[peg.nip][t.tgl] : null;
