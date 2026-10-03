@@ -5,6 +5,22 @@
 {% block header_kicker %}KEPEGAWAIAN{% endblock %}
 {% block header_title %}Pegawai Ijin{% endblock %}
 
+{% block styles %}
+<script src="{{ url_for('static', filename='static_dashboard_1/assets/vendors/js/vendors.min.js') }}"></script>
+<style>
+    .pegawai-item { cursor:pointer; display:block; padding:9px 12px; text-decoration:none; }
+    .pegawai-item:hover { background:var(--ui-surface-soft); }
+    #pegawaiIjinDropdown { width:100%; max-height:220px; overflow-y:auto; z-index:1000; }
+    .hris-search-card { margin-top:16px; }
+    .hris-search-table { width:100%; border-collapse:collapse; }
+    .hris-search-table th,.hris-search-table td { padding:10px 12px; border-bottom:1px solid var(--ui-border); text-align:left; white-space:nowrap; }
+    .hris-search-table th { font-size:12px; color:var(--ui-muted); font-weight:700; text-transform:uppercase; }
+    .hris-search-table tbody tr { cursor:pointer; }
+    .hris-search-table tbody tr:hover { background:var(--ui-surface-soft); }
+    .hris-search-scroll { overflow:auto; }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="hris-page">
     <div class="hris-page-header">
@@ -12,7 +28,7 @@
             <h2 class="hris-page-title"><i class="feather-user-minus"></i> Pegawai Ijin</h2>
             <p class="hris-page-subtitle">Pengelolaan data pegawai ijin.</p>
         </div>
-        <button type="button" class="hris-btn hris-btn-secondary" title="Cari Data">
+        <button type="button" id="btnCariIjin" class="hris-btn hris-btn-secondary" title="Cari Data">
             <i class="feather-search"></i> Cari Data
         </button>
     </div>
@@ -23,9 +39,13 @@
         </div>
         <div class="hris-card-body">
             <div class="hris-form-grid">
-                <div class="hris-field">
+                <div class="hris-field" style="grid-column:1 / -1;">
                     <label class="hris-label">Pegawai</label>
-                    <input type="text" class="hris-input" placeholder="Ketik nama pegawai...">
+                    <div style="position:relative;">
+                        <input id="searchPegawaiIjin" type="text" class="hris-input" placeholder="Ketik nama pegawai..." autocomplete="off">
+                        <div id="pegawaiIjinDropdown" class="hris-card" style="display:none;position:absolute;left:0;right:0;top:44px;"></div>
+                    </div>
+                    <input id="selectedNIPIjin" type="hidden">
                 </div>
 
                 <div class="hris-field">
@@ -33,24 +53,27 @@
                     <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:end;gap:10px;">
                         <div>
                             <label class="hris-label">Awal</label>
-                            <input type="date" class="hris-input">
+                            <input id="tglAwalIjin" type="date" class="hris-input">
                         </div>
                         <span class="hris-label" style="margin-bottom:10px;">s/d</span>
                         <div>
                             <label class="hris-label">Akhir</label>
-                            <input type="date" class="hris-input">
+                            <input id="tglAkhirIjin" type="date" class="hris-input">
                         </div>
                     </div>
                 </div>
 
                 <div class="hris-field">
-                    <label class="hris-label">Ijin</label>
-                    <input type="text" class="hris-input" placeholder="Jenis / keterangan ijin">
+                    <label class="hris-label">Jenis Ijin <span class="text-danger">*</span></label>
+                    <select id="jenisIjin" class="hris-select">
+                        <option value="N">Tanpa Ijin</option>
+                        <option value="Y">Ada Ijin</option>
+                    </select>
                 </div>
 
                 <div class="hris-field">
                     <label class="hris-label">Keterangan</label>
-                    <textarea class="hris-textarea" rows="2" placeholder="Keterangan..."></textarea>
+                    <textarea id="keteranganIjin" class="hris-textarea" rows="2" placeholder="Keterangan ijin..."></textarea>
                 </div>
             </div>
 
@@ -62,8 +85,166 @@
             </div>
         </div>
     </section>
+
+    <section id="searchIjinCard" class="hris-card hris-search-card" style="display:none;">
+        <div class="hris-card-header">
+            <h3 class="hris-card-title"><i class="feather-search"></i> Cari Data Ijin</h3>
+            <button type="button" id="btnTutupCariIjin" class="hris-btn hris-btn-secondary">
+                <i class="feather-x"></i> Tutup
+            </button>
+        </div>
+        <div class="hris-card-body">
+            <div class="hris-form-grid">
+                <div class="hris-field">
+                    <label class="hris-label">Filter 1</label>
+                    <select id="ijinFilterField1" class="hris-select">
+                        <option value="">- Pilih Field -</option>
+                        <option value="NIP">NIP</option>
+                        <option value="Nama">Nama Pegawai</option>
+                        <option value="Keterangan">Keterangan</option>
+                        <option value="Ijin">Ijin</option>
+                    </select>
+                </div>
+                <div class="hris-field">
+                    <label class="hris-label">Nilai Filter 1</label>
+                    <input id="ijinFilterValue1" class="hris-input" placeholder="Ketik nilai pencarian...">
+                </div>
+                <div class="hris-field">
+                    <label class="hris-label">Filter 2</label>
+                    <select id="ijinFilterField2" class="hris-select">
+                        <option value="">- Pilih Field -</option>
+                        <option value="NIP">NIP</option>
+                        <option value="Nama">Nama Pegawai</option>
+                        <option value="Keterangan">Keterangan</option>
+                        <option value="Ijin">Ijin</option>
+                    </select>
+                </div>
+                <div class="hris-field">
+                    <label class="hris-label">Nilai Filter 2</label>
+                    <input id="ijinFilterValue2" class="hris-input" placeholder="Ketik nilai pencarian...">
+                </div>
+            </div>
+            <div class="hris-divider"></div>
+            <div style="display:flex;justify-content:flex-end;">
+                <button type="button" id="btnRefreshIjin" class="hris-btn hris-btn-primary">
+                    <i class="feather-refresh-cw"></i> Cari
+                </button>
+            </div>
+            <div class="hris-search-scroll" style="margin-top:14px;">
+                <table class="hris-search-table">
+                    <thead>
+                        <tr><th>No</th><th>NIP</th><th>Nama</th><th>Tanggal</th><th>Jenis Ijin</th><th>Keterangan</th><th>Update</th></tr>
+                    </thead>
+                    <tbody id="ijinSearchBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
 </div>
 {% endblock %}
 
 {% block script %}
+<script>
+$(function() {
+    function escapeHtml(value) {
+        return $('<div>').text(value == null ? '' : value).html();
+    }
+
+    let timer;
+    $('#searchPegawaiIjin').on('input', function() {
+        const keyword = $(this).val().trim();
+        clearTimeout(timer);
+        if (!keyword) {
+            $('#pegawaiIjinDropdown').hide();
+            return;
+        }
+        timer = setTimeout(function() {
+            $.get('/api/dinas-luar/search-pegawai', {keyword: keyword}, function(r) {
+                const $dd = $('#pegawaiIjinDropdown').empty();
+                (r.data || []).forEach(function(p) {
+                    $dd.append(
+                        $('<a>', {href:'#', class:'pegawai-item'})
+                            .attr('data-nip', p.nip)
+                            .attr('data-nama', p.nama)
+                            .html('<strong>' + escapeHtml(p.nama) + '</strong> <small class="text-muted">(' + escapeHtml(p.nip) + ')</small>')
+                    );
+                });
+                if (!$dd.children().length) $dd.html('<div class="hris-empty">Pegawai tidak ditemukan.</div>');
+                $dd.show();
+            }).fail(function(xhr) {
+                console.error(xhr.responseText);
+                $('#pegawaiIjinDropdown').html('<div class="hris-empty">Gagal mencari pegawai.</div>').show();
+            });
+        }, 250);
+    });
+
+    $('#pegawaiIjinDropdown').on('click', '.pegawai-item', function(e) {
+        e.preventDefault();
+        $('#selectedNIPIjin').val($(this).data('nip'));
+        $('#searchPegawaiIjin').val($(this).data('nama'));
+        $('#pegawaiIjinDropdown').hide();
+    });
+
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('#searchPegawaiIjin,#pegawaiIjinDropdown').length) {
+            $('#pegawaiIjinDropdown').hide();
+        }
+    });
+
+    $('#btnCariIjin').click(function() {
+        $('#searchIjinCard').slideToggle(120, function() {
+            if ($('#searchIjinCard').is(':visible')) loadCariIjin();
+        });
+    });
+
+    $('#btnTutupCariIjin').click(function() {
+        $('#searchIjinCard').hide();
+    });
+
+    $('#btnRefreshIjin').click(loadCariIjin);
+
+    function loadCariIjin() {
+        const params = {
+            filter_field1: $('#ijinFilterField1').val(),
+            filter_value1: $('#ijinFilterValue1').val().trim(),
+            filter_field2: $('#ijinFilterField2').val(),
+            filter_value2: $('#ijinFilterValue2').val().trim()
+        };
+        $('#ijinSearchBody').html('<tr><td colspan="7" class="hris-loading">Memuat data...</td></tr>');
+        $.get('/api/ijin/cari', params, function(r) {
+            if (!r.success) {
+                $('#ijinSearchBody').html('<tr><td colspan="7" class="hris-empty">' + escapeHtml(r.error || 'Gagal mencari data.') + '</td></tr>');
+                return;
+            }
+            const rows = r.data || [];
+            if (!rows.length) {
+                $('#ijinSearchBody').html('<tr><td colspan="7" class="hris-empty">Data ijin tidak ditemukan.</td></tr>');
+                return;
+            }
+            $('#ijinSearchBody').html(rows.map(function(row) {
+                return '<tr data-row="' + encodeURIComponent(JSON.stringify(row)) + '">' +
+                    '<td>' + escapeHtml(row.no) + '</td><td>' + escapeHtml(row.nip) + '</td>' +
+                    '<td>' + escapeHtml(row.nama) + '</td>' +
+                    '<td>' + escapeHtml(row.tgl_awal) + ' s/d ' + escapeHtml(row.tgl_akhir) + '</td>' +
+                    '<td>' + (row.ijin === 'Y' ? 'Ada Ijin' : 'Tanpa Ijin') + '</td>' +
+                    '<td>' + escapeHtml(row.keterangan) + '</td><td>' + escapeHtml(row.update_by) + '</td></tr>';
+            }).join(''));
+            $('#ijinSearchBody tr[data-row]').on('click', function() {
+                const row = JSON.parse(decodeURIComponent($(this).attr('data-row')));
+                $('#selectedNIPIjin').val(row.nip || '');
+                $('#searchPegawaiIjin').val(row.nama || '');
+                $('#tglAwalIjin').val(row.tgl_awal || '');
+                $('#tglAkhirIjin').val(row.tgl_akhir || '');
+                $('#jenisIjin').val(row.ijin || 'N');
+                $('#keteranganIjin').val(row.keterangan || '');
+                $('#searchIjinCard').hide();
+                window.scrollTo({top:0, behavior:'smooth'});
+            });
+        }).fail(function(xhr) {
+            console.error(xhr.responseText);
+            $('#ijinSearchBody').html('<tr><td colspan="7" class="hris-empty">Gagal memuat data ijin.</td></tr>');
+        });
+    }
+});
+</script>
 {% endblock %}
