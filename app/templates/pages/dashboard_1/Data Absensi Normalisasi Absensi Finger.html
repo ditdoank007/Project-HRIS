@@ -610,10 +610,23 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (!res.data || res.data.length === 0) {
                     renderEmptyRow(
                         targetTbody,
-                        8,
+                        7,
                         res.message
-                        || 'Data Log Finger Print Kosong.'
+                        || 'Tidak ada event finger pada periode ini. Data transaksi khusus tetap dapat dinormalisasi.'
                     );
+
+                    // Normalisasi tidak boleh bergantung hanya pada
+                    // adanya fingerprint. Cuti/Sakit/Ijin/Alpa/WFH/
+                    // Dinas Luar dapat membentuk ABSENSI final
+                    // walaupun tidak ada log finger.
+                    viewDataLoaded = true;
+                    btnNormalisasi.disabled = false;
+
+                    if (source === 'file') {
+                        activateAbsensiTab(
+                            document.getElementById('normalisasi-tab')
+                        );
+                    }
                     return;
                 }
 
