@@ -109,11 +109,10 @@
                                     <th>Unit Kerja</th>
                                     <th>Waktu</th>
                                     <th>Status</th>
-                                    <th>Transaksi</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr><td colspan="8" class="hris-empty">Silakan pilih rentang tanggal lalu klik View Data atau Impor file .dat</td></tr>
+                                <tr><td colspan="7" class="hris-empty">Silakan pilih rentang tanggal lalu klik View Data atau Impor file .dat</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -148,11 +147,10 @@
                                     <th>Unit Kerja</th>
                                     <th>Waktu</th>
                                     <th>Status</th>
-                                    <th>Transaksi</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr><td colspan="8" class="hris-empty">Silakan impor file .dat lalu klik View Data.</td></tr>
+                                <tr><td colspan="7" class="hris-empty">Silakan impor file .dat lalu klik View Data.</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -588,7 +586,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         renderEmptyRow(
             targetTbody,
-            8,
+            7,
             'Memuat data...'
         );
 
@@ -629,15 +627,10 @@ document.addEventListener('DOMContentLoaded', function () {
                         <td>${r.unit_kerja || '-'}</td>
                         <td>${formatDateTimeID(r.waktu)}</td>
                         <td>
-                            <span class="badge ${
-                                r.status === 'IN'
-                                    ? 'bg-success'
-                                    : 'bg-warning text-dark'
-                            }">
-                                ${r.status || '-'}
+                            <span class="badge bg-warning text-dark">
+                                -
                             </span>
                         </td>
-                        <td>${r.transaksi || '-'}</td>
                     </tr>
                 `).join('');
 
