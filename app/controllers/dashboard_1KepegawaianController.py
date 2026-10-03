@@ -2124,237 +2124,309 @@ def kepegawaian_mutasi_penempatan_pegawai():
     """
     return render_template('pages/dashboard_1/Kepegawaian Mutasi Penempatan Pegawai.html')
 
-def api_mutasi_save():
-    """
-    API: Simpan Data Mutasi Penempatan Pegawai
+def api_mutasi_unit_kerja():
+    """Master Unit Kerja untuk Pegawai Mutasi.
+
+    PegMutasi.aspx HRIS 2013 menggunakan MFUnitKerja sebagai
+    sumber penempatan. HRIS Reborn hanya menampilkan unit yang
+    masih aktif digunakan.
     """
     try:
-        data = request.get_json()
-        print("📥 Data Mutasi:", data)
-        
-        no_sk = data.get('no_sk', '').strip()
-        tgl_mutasi = data.get('tgl_mutasi', '')
-        unit_kerja_id = data.get('unit_kerja_id', '')
-        keterangan = data.get('keterangan', '')
-        peserta_list = data.get('peserta', [])
-        is_edit = data.get('is_edit', False)
-        
+        rows = get_active_unit_rows()
+        return jsonify({
+            'success': True,
+            'data': [
+                {
+                    'unit_kerja_id': str(row.UNIT_KERJA_ID or ''),
+                    'nama_unit_kerja': row.NAMA_UNIT_KERJA or '',
+                }
+                for row in rows
+                if row.UNIT_KERJA_ID
+            ]
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e), 'data': []}), 500
+
+
+def _mutasi_payload_peserta(peserta_list):
+    """Validasi peserta mengikuti populasi Pegawai Operasional."""
+    normalized = []
+    seen = set()
+
+    for peserta in peserta_list or []:
+        nip = str((peserta or {}).get('nip') or '').strip()
+        if not nip or nip in seen:
+            continue
+
+        pegawai = (
+            get_operational_pegawai_query()
+            .filter(Pegawai.NIP == nip)
+            .first()
+        )
+        if not pegawai:
+            continue
+
+        seen.add(nip)
+        normalized.append({
+            'nip': pegawai.NIP,
+            'nama': pegawai.NAMA or '',
+        })
+
+    return normalized
+
+
+def _mutasi_update_by():
+    """NIP user HRIS yang melakukan perubahan, sesuai HRIS 2013."""
+    return str(session.get('nip') or session.get('username') or 'SYSTEM').strip()
+
+
+def api_mutasi_save():
+    """Simpan Mutasi Penempatan mengikuti PegMutasi.aspx HRIS 2013."""
+    try:
+        data = request.get_json() or {}
+
+        no_sk = str(data.get('no_sk') or '').strip()
+        tgl_mutasi = str(data.get('tgl_mutasi') or '').strip()
+        unit_kerja_id = str(data.get('unit_kerja_id') or '').strip()
+        keterangan = str(data.get('keterangan') or '').strip()
+        peserta_list = _mutasi_payload_peserta(data.get('peserta') or [])
+        is_edit = bool(data.get('is_edit'))
+
         if not no_sk:
             return jsonify({'success': False, 'error': 'No. SK tidak boleh kosong'})
         if not tgl_mutasi:
             return jsonify({'success': False, 'error': 'Tanggal Mutasi tidak boleh kosong'})
-        if not unit_kerja_id:
-            return jsonify({'success': False, 'error': 'Unit Kerja tujuan tidak boleh kosong'})
+
+        try:
+            tgl_mutasi_date = datetime.strptime(tgl_mutasi, '%Y-%m-%d').date()
+        except ValueError:
+            return jsonify({'success': False, 'error': 'Format tanggal mutasi tidak valid'})
+
+        unit = (
+            MfUnitKerja.query
+            .filter(
+                MfUnitKerja.UNIT_KERJA_ID == unit_kerja_id,
+                MfUnitKerja.IS_USE.in_(['Y', '1']),
+            )
+            .first()
+        )
+        if not unit:
+            return jsonify({'success': False, 'error': 'Unit Kerja tujuan tidak ditemukan atau sudah tidak aktif'})
+
         if not peserta_list:
-            return jsonify({'success': False, 'error': 'Peserta tidak boleh kosong'})
-        
-        # Cek duplikasi No SK (hanya untuk insert baru)
-        if not is_edit:
-            existing = PegMutasiUnit.query.filter(
-                PegMutasiUnit.NO_SK == no_sk
-            ).first()
-            if existing:
-                return jsonify({
-                    'success': False, 
-                    'error': 'No SK sudah ter-record di database'
-                })
-        
-        # Hapus data existing by No SK
-        PegMutasiUnit.query.filter(
+            return jsonify({
+                'success': False,
+                'error': 'Peserta tidak boleh kosong dan harus merupakan Pegawai Operasional'
+            })
+
+        existing = PegMutasiUnit.query.filter(
             PegMutasiUnit.NO_SK == no_sk
-        ).delete()
-        db.session.flush()
-        
-        tgl_mutasi_date = datetime.strptime(tgl_mutasi, '%Y-%m-%d')
-        
-        # ✅ Cari TRAKSAKSI_ID terakhir dan tambahkan 1
+        ).first()
+
+        if existing and not is_edit:
+            return jsonify({
+                'success': False,
+                'error': 'No SK sudah ter-record di database'
+            })
+
+        # HRIS 2013: saat menyimpan ulang transaksi, seluruh detail
+        # NoSK lama dihapus lalu detail peserta ditulis kembali.
+        if existing or is_edit:
+            PegMutasiUnit.query.filter(
+                PegMutasiUnit.NO_SK == no_sk
+            ).delete(synchronize_session=False)
+            db.session.flush()
+
         last_trx = db.session.query(
             db.func.max(PegMutasiUnit.TRAKSAKSI_ID)
         ).scalar() or 0
-        
+
+        update_by = _mutasi_update_by()
         saved_count = 0
+
         for peserta in peserta_list:
-            nip = peserta.get('nip', '')
-            if not nip:
-                continue
-            
             last_trx += 1
-            
-            new_mutasi = PegMutasiUnit(
-                TRAKSAKSI_ID=last_trx,  # ✅ Set manual karena composite key
-                NIP=nip,
+            db.session.add(PegMutasiUnit(
+                TRAKSAKSI_ID=last_trx,
+                NIP=peserta['nip'],
                 TGL_MUTASI=tgl_mutasi_date,
-                UNIT_KERJA=str(unit_kerja_id),
+                UNIT_KERJA=unit_kerja_id,
+                UPDATE_BY=update_by,
+                UPDATE_DATE=datetime.now(),
                 NO_SK=no_sk,
                 KETERANGAN=keterangan,
-                UPDATE_BY='admin',
-                UPDATE_DATE=datetime.now()
-            )
-            db.session.add(new_mutasi)
+            ))
             saved_count += 1
-        
+
         db.session.commit()
-        
+
         return jsonify({
             'success': True,
-            'message': f'{saved_count} pegawai berhasil dimutasi',
-            'no_sk': no_sk
+            'message': f'Simpan Data Mutasi Pegawai Sukses ({saved_count} peserta)',
+            'no_sk': no_sk,
         })
-        
+
     except Exception as e:
         db.session.rollback()
         import traceback
-        print("❌ ERROR in api_mutasi_save:")
         traceback.print_exc()
-        return jsonify({'success': False, 'error': str(e)})
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 
 def api_mutasi_get():
-    """API: Get data Mutasi by No SK"""
+    """Ambil satu transaksi Mutasi berdasarkan No SK."""
     try:
-        no_sk = request.args.get('no_sk', '')
+        no_sk = str(request.args.get('no_sk') or '').strip()
         if not no_sk:
             return jsonify({'success': False, 'error': 'No SK tidak boleh kosong'})
-        
-        mutasi_list = db.session.query(
-            PegMutasiUnit, Pegawai
-        ).join(
-            Pegawai, PegMutasiUnit.NIP == Pegawai.NIP
-        ).filter(
-            PegMutasiUnit.NO_SK == no_sk
-        ).order_by(Pegawai.NAMA).all()
-        
-        if not mutasi_list:
+
+        rows = (
+            db.session.query(PegMutasiUnit, Pegawai)
+            .outerjoin(Pegawai, PegMutasiUnit.NIP == Pegawai.NIP)
+            .filter(PegMutasiUnit.NO_SK == no_sk)
+            .order_by(PegMutasiUnit.TRAKSAKSI_ID.asc())
+            .all()
+        )
+
+        if not rows:
             return jsonify({'success': False, 'error': 'Data tidak ditemukan'})
-        
-        first = mutasi_list[0]
-        
-        header = {
-            'no_sk': first[0].NO_SK,
-            'tgl_mutasi': first[0].TGL_MUTASI.strftime('%Y-%m-%d') if first[0].TGL_MUTASI else '',
-            'unit_kerja_id': first[0].UNIT_KERJA or '',
-            'keterangan': first[0].KETERANGAN or '',
-        }
-        
-        peserta = []
-        for mutasi, peg in mutasi_list:
-            peserta.append({
+
+        first = rows[0][0]
+        unit = (
+            MfUnitKerja.query
+            .filter(MfUnitKerja.UNIT_KERJA_ID == first.UNIT_KERJA)
+            .first()
+        )
+
+        peserta = [
+            {
                 'nip': mutasi.NIP,
                 'nama': peg.NAMA if peg else '-',
-            })
-        
+            }
+            for mutasi, peg in rows
+        ]
+
         return jsonify({
             'success': True,
             'data': {
-                'header': header,
-                'peserta': peserta
+                'header': {
+                    'no_sk': first.NO_SK,
+                    'tgl_mutasi': first.TGL_MUTASI.strftime('%Y-%m-%d') if first.TGL_MUTASI else '',
+                    'unit_kerja_id': first.UNIT_KERJA or '',
+                    'unit_kerja_name': unit.NAMA_UNIT_KERJA if unit else '',
+                    'keterangan': first.KETERANGAN or '',
+                },
+                'peserta': peserta,
             }
         })
-        
+
     except Exception as e:
         import traceback
-        print("❌ ERROR in api_mutasi_get:")
         traceback.print_exc()
-        return jsonify({'success': False, 'error': str(e)})
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 def api_mutasi_delete():
-    """API: Delete data Mutasi by No SK"""
+    """Hapus seluruh detail Mutasi berdasarkan No SK."""
     try:
-        data = request.get_json()
-        no_sk = data.get('no_sk', '')
-        
+        data = request.get_json() or {}
+        no_sk = str(data.get('no_sk') or '').strip()
+
         if not no_sk:
             return jsonify({'success': False, 'error': 'No SK tidak boleh kosong'})
-        
+
         deleted = PegMutasiUnit.query.filter(
             PegMutasiUnit.NO_SK == no_sk
-        ).delete()
-        
+        ).delete(synchronize_session=False)
+
         db.session.commit()
-        
+
         return jsonify({
             'success': True,
-            'message': f'{deleted} data mutasi berhasil dihapus'
+            'message': f'Delete Data Mutasi Sukses ({deleted} detail)',
         })
-        
+
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'error': str(e)})
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 def api_mutasi_cari():
-    """API: Cari data Mutasi"""
+    """Pencarian Mutasi mengikuti Grid Find PegMutasi.aspx HRIS 2013."""
     try:
-        filter_field1 = request.args.get('filter_field1', '')
-        filter_value1 = request.args.get('filter_value1', '')
-        filter_field2 = request.args.get('filter_field2', '')
-        filter_value2 = request.args.get('filter_value2', '')
-        
-        query = db.session.query(
-            PegMutasiUnit, Pegawai
-        ).join(
-            Pegawai, PegMutasiUnit.NIP == Pegawai.NIP
+        filter_field1 = str(request.args.get('filter_field1') or '').strip()
+        filter_value1 = str(request.args.get('filter_value1') or '').strip()
+        filter_field2 = str(request.args.get('filter_field2') or '').strip()
+        filter_value2 = str(request.args.get('filter_value2') or '').strip()
+
+        query = (
+            db.session.query(PegMutasiUnit, Pegawai, MfUnitKerja)
+            .outerjoin(Pegawai, PegMutasiUnit.NIP == Pegawai.NIP)
+            .outerjoin(MfUnitKerja, PegMutasiUnit.UNIT_KERJA == MfUnitKerja.UNIT_KERJA_ID)
+            .filter(PegMutasiUnit.NO_SK.isnot(None))
         )
-        
-        if filter_field1 and filter_value1:
-            if filter_field1 == 'NIP':
-                query = query.filter(Pegawai.NIP.ilike(f'%{filter_value1}%'))
-            elif filter_field1 == 'Nama':
-                query = query.filter(Pegawai.NAMA.ilike(f'%{filter_value1}%'))
-            elif filter_field1 == 'NoSK':
-                query = query.filter(PegMutasiUnit.NO_SK.ilike(f'%{filter_value1}%'))
-        
-        if filter_field2 and filter_value2:
-            if filter_field2 == 'NIP':
-                query = query.filter(Pegawai.NIP.ilike(f'%{filter_value2}%'))
-            elif filter_field2 == 'Nama':
-                query = query.filter(Pegawai.NAMA.ilike(f'%{filter_value2}%'))
-            elif filter_field2 == 'NoSK':
-                query = query.filter(PegMutasiUnit.NO_SK.ilike(f'%{filter_value2}%'))
-        
-        results = query.order_by(
-            PegMutasiUnit.NO_SK,
-            Pegawai.NAMA
-        ).limit(500).all()
-        
+
+        field_map = {
+            'NIP': Pegawai.NIP,
+            'Nama': Pegawai.NAMA,
+            'NoSK': PegMutasiUnit.NO_SK,
+            'UnitKerja': MfUnitKerja.NAMA_UNIT_KERJA,
+            'Keterangan': PegMutasiUnit.KETERANGAN,
+        }
+
+        for field_name, value in (
+            (filter_field1, filter_value1),
+            (filter_field2, filter_value2),
+        ):
+            column = field_map.get(field_name)
+            if column is not None and value:
+                query = query.filter(column.ilike(f'%{value}%'))
+
+        rows = (
+            query
+            .order_by(PegMutasiUnit.NO_SK.asc(), Pegawai.NAMA.asc())
+            .limit(500)
+            .all()
+        )
+
         data = []
-        for i, (mutasi, peg) in enumerate(results, 1):
+        for i, (mutasi, peg, unit) in enumerate(rows, 1):
             data.append({
                 'no': i,
-                'no_sk': mutasi.NO_SK,
-                'nip': mutasi.NIP,
+                'no_sk': mutasi.NO_SK or '',
+                'nip': mutasi.NIP or '',
                 'nama': peg.NAMA if peg else '-',
-                'tgl_sk': mutasi.TGL_MUTASI.strftime('%d-%b-%Y') if mutasi.TGL_MUTASI else '-',
-                'unit_kerja': mutasi.UNIT_KERJA or '-',
-                'keterangan': mutasi.KETERANGAN or '-',
-                'update_by': mutasi.UPDATE_BY or 'admin',
-                'update_date': mutasi.UPDATE_DATE.strftime('%d-%b-%Y') if mutasi.UPDATE_DATE else '-'
+                'tgl_sk': mutasi.TGL_MUTASI.strftime('%d-%b-%Y') if mutasi.TGL_MUTASI else '',
+                'unit_kerja': unit.NAMA_UNIT_KERJA if unit else (mutasi.UNIT_KERJA or '-'),
+                'keterangan': mutasi.KETERANGAN or '',
+                'update_by': mutasi.UPDATE_BY or '',
+                'update_date': mutasi.UPDATE_DATE.strftime('%d-%b-%Y %H:%M') if mutasi.UPDATE_DATE else '',
             })
-        
+
         return jsonify({
             'success': True,
             'data': data,
-            'total': len(data)
+            'total': len(data),
         })
-        
+
     except Exception as e:
         import traceback
-        print("❌ ERROR in api_mutasi_cari:")
         traceback.print_exc()
-        return jsonify({'success': False, 'error': str(e), 'data': []})
+        return jsonify({'success': False, 'error': str(e), 'data': []}), 500
 
 
 def api_mutasi_get_filter_fields():
-    """API: Get list field untuk filter dropdown Mutasi"""
-    try:
-        fields = [
+    """Field pencarian yang merepresentasikan Find PegMutasi.aspx."""
+    return jsonify({
+        'success': True,
+        'data': [
+            {'field_id': 'NoSK', 'field_name': 'No. SK'},
             {'field_id': 'NIP', 'field_name': 'NIP'},
             {'field_id': 'Nama', 'field_name': 'Nama Pegawai'},
-            {'field_id': 'NoSK', 'field_name': 'No. SK'},
+            {'field_id': 'UnitKerja', 'field_name': 'Unit Kerja'},
+            {'field_id': 'Keterangan', 'field_name': 'Keterangan'},
         ]
-        return jsonify({'success': True, 'data': fields})
-    except Exception as e:
-        return jsonify({'error': str(e), 'data': []})
+    })
 
 
 def kepegawaian_pegawai_cuti():
