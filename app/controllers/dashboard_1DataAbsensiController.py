@@ -1642,24 +1642,72 @@ def api_normalisasi_process():
 
         raw_sql = text(f"""
             SELECT
-                r.FINGER_ID,
+                src.FINGER_ID,
                 p.FingerID AS PEGAWAI_FINGER_ID,
-                r.USER_ID,
-                r.WAKTU,
-                r.STATUS,
-                r.PUNCH,
-                r.DEVICE_IP,
+                src.USER_ID,
+                src.WAKTU,
+                src.STATUS,
+                src.PUNCH,
+                src.DEVICE_IP,
                 p.NIP,
                 p.Nama AS NAMA,
                 p.Gol AS GOL,
                 p.UnitKerja AS UNIT_KERJA
-            FROM FINGER_HARVEST_RAW r
+            FROM (
+                /* TIME_RECORDER adalah event log aktif:
+                   termasuk fingerprint mesin, manual finger,
+                   dan event sintetis VIP yang legacy simpan
+                   sebagai MESIN=999 / TRANSAKSI=MANUAL. */
+                SELECT
+                    tr.FingerID AS FINGER_ID,
+                    tr.FingerID AS USER_ID,
+                    tr.Waktu AS WAKTU,
+                    tr.Status AS STATUS,
+                    CASE
+                        WHEN UPPER(TRIM(tr.Status)) = 'IN' THEN 0
+                        WHEN UPPER(TRIM(tr.Status)) = 'OUT' THEN 1
+                        ELSE NULL
+                    END AS PUNCH,
+                    tr.Mesin AS DEVICE_IP
+                FROM TIME_RECORDER tr
+                WHERE tr.Waktu >= :tgl_awal_raw
+                  AND tr.Waktu < :tgl_akhir_raw
+
+                UNION ALL
+
+                /* File .DAT / RAW yang belum masuk TIME_RECORDER.
+                   Jika event sudah ada di TIME_RECORDER, jangan
+                   menggandakan record. */
+                SELECT
+                    r.FINGER_ID,
+                    r.USER_ID,
+                    r.WAKTU,
+                    r.STATUS,
+                    r.PUNCH,
+                    r.DEVICE_IP
+                FROM FINGER_HARVEST_RAW r
+                WHERE r.WAKTU >= :tgl_awal_raw
+                  AND r.WAKTU < :tgl_akhir_raw
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM TIME_RECORDER tr2
+                      WHERE CAST(tr2.FingerID AS CHAR) = CAST(r.FINGER_ID AS CHAR)
+                        AND tr2.Waktu = r.WAKTU
+                        AND UPPER(TRIM(tr2.Status)) =
+                            UPPER(TRIM(
+                                CASE
+                                    WHEN r.PUNCH = 0 THEN 'IN'
+                                    WHEN r.PUNCH = 1 THEN 'OUT'
+                                    ELSE r.STATUS
+                                END
+                            ))
+                  )
+            ) src
             INNER JOIN PEGAWAI p
-                ON CAST(r.USER_ID AS CHAR) = CAST(p.FingerID AS CHAR)
-            WHERE r.WAKTU >= :tgl_awal_raw
-              AND r.WAKTU < :tgl_akhir_raw
+                ON CAST(src.USER_ID AS CHAR) = CAST(p.FingerID AS CHAR)
+            WHERE 1=1
               {filter_sql}
-            ORDER BY CAST(p.UnitKerja AS UNSIGNED), r.FINGER_ID, r.WAKTU
+            ORDER BY CAST(p.UnitKerja AS UNSIGNED), src.FINGER_ID, src.WAKTU
         """)
 
         query_params = {
