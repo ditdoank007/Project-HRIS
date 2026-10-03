@@ -30,6 +30,10 @@ from app.utils.pegawaiHelper import (
     search_operational_pegawai,
     is_operational_pegawai,
 )
+from app.controllers.hrisOperationalController import (
+    join_operational_pegawai,
+    resolve_operational_employee_name,
+)
 from app.utils.pegawaiSortHelper import sort_pegawai_rows
 from app.utils.pegawaiLegacyHelper import derive_employee_metrics
 from app.services.dinas_luar_storage import save_dinas_luar_pdf, dinas_luar_absolute_path_by_filename, dinas_luar_relative_path
@@ -456,25 +460,15 @@ def api_dinas_luar_cari():
         # sudah dinonaktifkan (mis. Banyuwangi/Jember) tetap muncul
         # pada pencarian Dinas Luar.
         # ========================================================
-        query = (
-            DinasLuar.query
-            .join(
-                Pegawai,
-                Pegawai.FINGER_ID == DinasLuar.FINGER_ID
-            )
-            .join(
-                MfUnitKerja,
-                Pegawai.UNIT_KERJA_ID == MfUnitKerja.UNIT_KERJA_ID
-            )
-            .filter(
+        query = join_operational_pegawai(
+            DinasLuar.query.filter(
                 DinasLuar.JENIS.in_(jenis_values),
                 or_(
                     DinasLuar.TRANSAKSI == 'DinasLuar',
                     DinasLuar.TRANSAKSI.is_(None),
                 ),
-                Pegawai.IS_KELUAR == 'N',
-                MfUnitKerja.IS_USE == 'Y',
-            )
+            ),
+            DinasLuar.FINGER_ID
         )
 
         # Periode menggunakan tanggal SPRIN/header.
@@ -558,12 +552,12 @@ def api_dinas_luar_cari():
 
         data = []
         for i, row in enumerate(results, 1):
-            update_by_name = ''
-            if row.UPDATE_BY:
-                peg = Pegawai.query.filter(
-                    Pegawai.NIP == row.UPDATE_BY
-                ).first()
-                update_by_name = peg.NAMA if peg else row.UPDATE_BY
+            # UPDATE_BY adalah audit field.
+            # Nama hanya ditampilkan jika pemilik NIP masih termasuk
+            # populasi operasional HRIS. Data transaksi historis tetap ada.
+            update_by_name = resolve_operational_employee_name(
+                row.UPDATE_BY
+            )
 
             tgl_awal = (
                 row.TGL_AWAL_SURAT.strftime('%d-%m-%Y')
