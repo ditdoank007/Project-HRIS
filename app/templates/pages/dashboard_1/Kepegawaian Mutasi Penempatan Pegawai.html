@@ -1,149 +1,117 @@
 <!-- pages/dashboard_1/Kepegawaian Mutasi Penempatan Pegawai.html -->
-{% extends "layout/baseDashboard1.html" %}
+{% extends "layout/baseHRIS.html" %}
 
-{% block title %}- Mutasi Penempatan Pegawai{% endblock %}
+{% block title %}- Pegawai Mutasi{% endblock %}
+{% block header_kicker %}KEPEGAWAIAN{% endblock %}
+{% block header_title %}Pegawai Mutasi{% endblock %}
+
+{% block styles %}
+<script src="{{ url_for('static', filename='static_dashboard_1/assets/vendors/js/vendors.min.js') }}"></script>
+<style>
+    .hris-alert { padding:11px 14px; border-radius:var(--ui-radius-sm); margin-bottom:16px; }
+    .hris-alert-success { color:var(--ui-success); background:var(--ui-success-bg); }
+    .hris-alert-danger { color:var(--ui-danger); background:var(--ui-danger-bg); }
+    .hris-alert-warning { color:var(--ui-warning); background:var(--ui-warning-bg); }
+    .pegawai-item { cursor:pointer; }
+    #pegawaiDropdown { width:100%; max-height:220px; overflow-y:auto; z-index:1000; }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="nxl-content">
-    <div class="page-header">
-        <div class="page-header-left d-flex align-items-center">
-            <div class="page-header-title">
-                <h5 class="m-b-10">Kepegawaian</h5>
-            </div>
-            <ul class="breadcrumb">
-                <li class="breadcrumb-item"><a href="/">Home</a></li>
-                <li class="breadcrumb-item"><a href="{{ url_for('main.view_kepegawaian_mutasi_penempatan_pegawai') }}">Mutasi Penempatan Pegawai</a></li>
-            </ul>
+<div class="hris-page">
+    <div class="hris-page-header">
+        <div>
+            <h2 class="hris-page-title"><i class="feather-repeat"></i> Pegawai Mutasi</h2>
+            <p class="hris-page-subtitle">Pengelolaan mutasi dan penempatan pegawai.</p>
         </div>
     </div>
 
-    <div class="main-content master-siaga">
-        <div class="container-fluid">
-            <div id="alertContainer" class="alert alert-dismissable d-none mb-3">
-                <span id="alertMessage"></span>
-            </div>
-
-            <div class="card-header-custom d-flex justify-content-between align-items-center mb-3" style="border-radius: 10px;">
-                <h6 class="mb-0"><i class="feather-repeat me-2"></i>Mutasi Penempatan Pegawai</h6>
-            </div>
-
-            <form id="formMutasi">
-                <input type="hidden" id="isEdit" value="false">
-
-                <!-- Card Header -->
-                <div class="sub-panel-card mb-3">
-                    <div class="sub-panel-header">Header Mutasi</div>
-                    <div class="p-3">
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <label class="form-label-custom">No. SK <span class="text-danger">*</span></label>
-                                <div class="input-group input-group-sm">
-                                    <input type="text" id="noSK" class="form-control input-custom-style" placeholder="No. SK">
-                                    <button class="btn btn-outline-secondary" type="button" id="btnLoadSK" title="Cari No SK">
-                                        <i class="bi bi-search"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label-custom">Tgl Mutasi <span class="text-danger">*</span></label>
-                                <div class="input-group input-group-sm">
-                                    <span class="input-group-text" style="background-color: #e65c00; color: #fff; font-size: 0.78rem;">
-                                        <i class="bi bi-calendar"></i>
-                                    </span>
-                                    <input type="date" id="tglMutasi" class="form-control form-control-sm input-custom-style" 
-                                           style="position: relative; z-index: 1;">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row g-3 mt-2">
-                            <div class="col-md-6">
-                                <label class="form-label-custom">Unit Kerja Tujuan <span class="text-danger">*</span></label>
-                                <select id="unitKerja" class="form-select form-select-sm input-custom-style">
-                                    <option value="">- Pilih Unit Kerja -</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label-custom">Keterangan</label>
-                                <input type="text" id="keterangan" class="form-control form-control-sm input-custom-style" placeholder="Keterangan">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Card Add Peserta -->
-                <div class="sub-panel-card mb-3">
-                    <div class="sub-panel-header">Add Peserta</div>
-                    <div class="p-3">
-                        <div class="row g-3 align-items-end">
-                            <div class="col-md-6">
-                                <label class="form-label-custom">Pegawai</label>
-                                <div class="position-relative">
-                                    <input type="text" id="searchPegawai" class="form-control form-control-sm input-custom-style"
-                                           placeholder="Ketik nama pegawai..." autocomplete="off">
-                                    <div id="pegawaiDropdown" class="dropdown-menu w-100 shadow"
-                                         style="display:none; max-height:200px;overflow-y:auto;position:absolute;z-index:1000;"></div>
-                                </div>
-                                <input type="hidden" id="selectedNIP">
-                            </div>
-                            <div class="col-md-3">
-                                <button class="btn btn-primary btn-sm w-100" id="btnInsertPeserta" type="button">
-                                    <i class="bi bi-plus-circle me-1"></i>Insert
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Card Tabel Peserta -->
-                <div class="sub-panel-card mb-3">
-                    <div class="sub-panel-header">Daftar Peserta</div>
-                    <div class="p-3">
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-sm">
-                                <thead class="table-light">
-                                    <tr><th>No</th><th>NIP</th><th>Nama</th><th>Aksi</th></tr>
-                                </thead>
-                                <tbody id="tableBody">
-                                    <tr><td colspan="4" class="text-center py-3 text-muted">Belum ada peserta</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tombol Aksi -->
-                <div class="d-flex justify-content-center gap-3 mt-3">
-                    <button type="button" id="btnSave" class="btn btn-primary btn-sm px-4 rounded-pill fw-bold text-white"
-                        style="background-color: #0000ff; border: none; font-size: 0.8rem;">
-                        <i class="bi bi-save me-1"></i>SAVE
-                    </button>
-                    <button type="button" id="btnDelete" class="btn btn-outline-danger btn-sm px-4 rounded-pill fw-bold"
-                        style="font-size: 0.8rem; display:none;">
-                        <i class="bi bi-trash me-1"></i>DELETE
-                    </button>
-                    <button type="button" id="btnNew" class="btn btn-outline-secondary btn-sm px-4 rounded-pill fw-bold"
-                        style="font-size: 0.8rem;">
-                        <i class="bi bi-file-earmark-plus me-1"></i>NEW
-                    </button>
-                </div>
-            </form>
-        </div>
+    <div id="alertContainer" class="hris-alert d-none" role="alert">
+        <span id="alertMessage"></span>
     </div>
+
+    <form id="formMutasi">
+        <input type="hidden" id="isEdit" value="false">
+
+        <section class="hris-card" style="margin-bottom:16px;">
+            <div class="hris-card-header">
+                <h3 class="hris-card-title"><i class="feather-file-text"></i> Header Mutasi</h3>
+            </div>
+            <div class="hris-card-body">
+                <div class="hris-form-grid">
+                    <div class="hris-field">
+                        <label class="hris-label" for="noSK">No. SK <span class="text-danger">*</span></label>
+                        <div style="display:flex;gap:8px;">
+                            <input type="text" id="noSK" class="hris-input" placeholder="Nomor Surat Keputusan">
+                            <button class="hris-btn hris-btn-secondary" type="button" id="btnLoadSK" title="Cari No SK"><i class="feather-search"></i></button>
+                        </div>
+                    </div>
+                    <div class="hris-field">
+                        <label class="hris-label" for="tglMutasi">Tanggal Mutasi <span class="text-danger">*</span></label>
+                        <input type="date" id="tglMutasi" class="hris-input">
+                    </div>
+                    <div class="hris-field">
+                        <label class="hris-label" for="unitKerja">Unit Kerja Tujuan <span class="text-danger">*</span></label>
+                        <select id="unitKerja" class="hris-select">
+                            <option value="">- Pilih Unit Kerja -</option>
+                        </select>
+                    </div>
+                    <div class="hris-field">
+                        <label class="hris-label" for="keterangan">Keterangan</label>
+                        <input type="text" id="keterangan" class="hris-input" placeholder="Keterangan">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="hris-card" style="margin-bottom:16px;">
+            <div class="hris-card-header">
+                <h3 class="hris-card-title"><i class="feather-user-plus"></i> Tambah Peserta</h3>
+            </div>
+            <div class="hris-card-body">
+                <div class="hris-form-grid">
+                    <div class="hris-field">
+                        <label class="hris-label" for="searchPegawai">Pegawai</label>
+                        <div style="position:relative;">
+                            <input type="text" id="searchPegawai" class="hris-input" placeholder="Ketik nama pegawai..." autocomplete="off">
+                            <div id="pegawaiDropdown" class="hris-card" style="display:none;position:absolute;left:0;right:0;top:44px;"></div>
+                        </div>
+                        <input type="hidden" id="selectedNIP">
+                    </div>
+                    <div class="hris-field" style="display:flex;align-items:flex-end;">
+                        <button class="hris-btn hris-btn-primary" id="btnInsertPeserta" type="button">
+                            <i class="feather-plus-circle"></i> Tambah Peserta
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="hris-card" style="margin-bottom:16px;">
+            <div class="hris-card-header">
+                <h3 class="hris-card-title"><i class="feather-users"></i> Daftar Peserta</h3>
+            </div>
+            <div class="hris-card-body">
+                <div class="hris-table-wrap">
+                    <table class="hris-table-modern">
+                        <thead>
+                            <tr><th>No</th><th>NIP</th><th>Nama</th><th>Aksi</th></tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <tr><td colspan="4" class="hris-empty">Belum ada peserta</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;">
+            <button type="button" id="btnSave" class="hris-btn hris-btn-primary"><i class="feather-save"></i> Simpan</button>
+            <button type="button" id="btnDelete" class="hris-btn hris-btn-danger" style="display:none;"><i class="feather-trash-2"></i> Hapus</button>
+            <button type="button" id="btnNew" class="hris-btn hris-btn-secondary"><i class="feather-file-plus"></i> Baru</button>
+        </div>
+    </form>
 </div>
-
-<style>
-    *, *::before, *::after { box-sizing: border-box; }
-    .sub-panel-card { border: 1px solid #dee2e6; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); background: #fff; }
-    .sub-panel-header { background-color: #e65c00; color: #fff; font-weight: 600; font-size: 0.9rem; padding: 8px 15px; width: 100%; border-radius: 8px 8px 0 0; }
-    .input-custom-style { border: 1px solid #ccc; border-radius: 3px; padding: 3px 8px; font-size: 0.85rem; width: 100%; max-width: 100%; background-color: #fff; position: relative; z-index: 1; }
-    input[type="date"].input-custom-style { cursor: pointer; min-height: 31px; }
-    .input-custom-style:focus { border-color: #e65c00; outline: none; z-index: 2; }
-    .form-label-custom { font-size: 0.85rem; color: #333; font-weight: 600; margin-bottom: 4px; }
-    .pegawai-item { cursor: pointer; padding: 6px 12px; }
-    .pegawai-item:hover { background-color: #f0f0f0; }
-    #pegawaiDropdown { position: absolute !important; z-index: 9999 !important; background: #fff; border: 1px solid #dee2e6; box-shadow: 0 4px 12px rgba(0,0,0,0.15); max-height: 200px; overflow-y: auto; }
-    .position-relative { position: relative; z-index: auto; }
-</style>
 {% endblock %}
 
 {% block script %}
