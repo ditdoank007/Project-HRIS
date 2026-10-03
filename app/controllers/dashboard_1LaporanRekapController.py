@@ -5,6 +5,7 @@ from sqlalchemy import func
 from datetime import datetime, timedelta
 import pandas as pd
 from collections import defaultdict
+from xml.sax.saxutils import escape as xml_escape
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Side, Font, PatternFill
 from openpyxl.drawing.image import Image as XLImage
@@ -1726,7 +1727,7 @@ def export_rekap_clock_exception_pdf():
     story = [
         Paragraph('REKAP ABSENSI BULANAN', title_style),
         Paragraph(f'Periode {tgl_awal:%d.%m.%Y} s/d {tgl_akhir:%d.%m.%Y}', subtitle_style),
-        Paragraph(f'Unit : {unit_names}', subtitle_style),
+        Paragraph(f'Unit : {xml_escape(unit_names)}', subtitle_style),
         Spacer(1, 5),
     ]
 
@@ -1739,7 +1740,7 @@ def export_rekap_clock_exception_pdf():
         day = cal.TGL_KERJA.day
         short_day = cal.TGL_KERJA.strftime('%a').upper()
         header.append(
-            Paragraph(f'<b>{day}<br/>{short_day}</b>', cell_style)
+            Paragraph(f'<b>{day}<br/>{xml_escape(short_day)}</b>', cell_style)
         )
 
     table_data = [header]
@@ -1756,7 +1757,7 @@ def export_rekap_clock_exception_pdf():
     for index, peg in enumerate(pegawai_rows, start=1):
         row = [
             Paragraph(str(index), cell_style),
-            Paragraph(str(peg.NAMA or ''), name_style),
+            Paragraph(xml_escape(str(peg.NAMA or '')), name_style),
         ]
 
         for cal in tanggal_rows:
@@ -1775,7 +1776,7 @@ def export_rekap_clock_exception_pdf():
             else:
                 text = ''
 
-            row.append(Paragraph(text, cell_style))
+            row.append(Paragraph(xml_escape(text), cell_style))
 
         table_data.append(row)
 
