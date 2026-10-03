@@ -1567,99 +1567,92 @@ def laporan_rekap_clock_exception():
 
 
 def preview_rekap_clock_exception():
+    """
+    Preview Rekap Absensi Bulanan.
 
-    unit_list = request.form.getlist(
-        'unit_kerja[]'
-    )
+    Endpoint harus selalu mengembalikan JSON untuk AJAX.
+    Exception dari matrix generator dicatat ke log Gunicorn
+    agar error tidak berubah menjadi HTML 500 yang sulit
+    didiagnosis dari browser.
+    """
 
-    tgl_awal_str = request.form.get(
-        'tgl_awal'
-    )
-
-    tgl_akhir_str = request.form.get(
-        'tgl_akhir'
-    )
-
+    unit_list = request.form.getlist('unit_kerja[]')
+    tgl_awal_str = request.form.get('tgl_awal')
+    tgl_akhir_str = request.form.get('tgl_akhir')
 
     if not unit_list or not tgl_awal_str or not tgl_akhir_str:
-
         return {
             "error": "Unit atau periode kosong"
-        },400
+        }, 400
 
+    try:
+        unit_ids = [int(x) for x in unit_list]
 
-    unit_ids = [
-        int(x)
-        for x in unit_list
-    ]
+        tgl_awal = datetime.strptime(
+            tgl_awal_str,
+            '%Y-%m-%d'
+        )
 
+        tgl_akhir = datetime.strptime(
+            tgl_akhir_str,
+            '%Y-%m-%d'
+        )
 
-    tgl_awal = datetime.strptime(
-        tgl_awal_str,
-        '%Y-%m-%d'
-    )
+        if tgl_awal > tgl_akhir:
+            return {
+                "error": "Tanggal awal tidak boleh lebih besar dari tanggal akhir"
+            }, 400
 
-    tgl_akhir = datetime.strptime(
-        tgl_akhir_str,
-        '%Y-%m-%d'
-    )
+        data = generate_rekap_absensi_matrix(
+            unit_ids,
+            tgl_awal,
+            tgl_akhir
+        )
 
+        return {
+            "success": True,
+            "tanggal": [
+                {
+                    "tgl": x.TGL_KERJA.strftime("%Y-%m-%d"),
+                    "hari": x.TGL_KERJA.strftime("%a"),
+                    "is_libur": (
+                        (x.IS_LIBUR or "N").upper() == "Y"
+                    ),
+                    "keterangan": x.KET or ""
+                }
+                for x in data["kalender"]
+            ],
+            "pegawai": [
+                {
+                    "nip": p.NIP,
+                    "nama": p.NAMA
+                }
+                for p in data["pegawai"]
+            ],
+            "matrix": data["matrix"]
+        }
 
-    data = generate_rekap_absensi_matrix(
-        unit_ids,
-        tgl_awal,
-        tgl_akhir
-    )
+    except ValueError as exc:
+        current_app.logger.exception(
+            "Rekap Absensi Bulanan: parameter tidak valid"
+        )
+        return {
+            "error": "Parameter Rekap Absensi Bulanan tidak valid: " + str(exc)
+        }, 400
 
-
-    return {
-
-        "success": True,
-
-
-        "tanggal": [
-
-            {
-                "tgl": x.TGL_KERJA.strftime(
-                    "%Y-%m-%d"
-                ),
-
-                "hari": x.TGL_KERJA.strftime(
-                    "%a"
-                ),
-
-                "is_libur": (
-                    (x.IS_LIBUR or "N").upper() == "Y"
-                ),
-
-                "keterangan": x.KET or ""
-
-            }
-
-            for x in data["kalender"]
-
-        ],
-
-
-        "pegawai": [
-
-            {
-                "nip": p.NIP,
-                "nama": p.NAMA
-            }
-
-            for p in data["pegawai"]
-
-        ],
-
-
-        "matrix": data["matrix"]
-
-    }
-
-
-
-
+    except Exception as exc:
+        current_app.logger.exception(
+            "Rekap Absensi Bulanan preview gagal. unit=%s awal=%s akhir=%s",
+            unit_list,
+            tgl_awal_str,
+            tgl_akhir_str
+        )
+        return {
+            "error": (
+                "Gagal membuat Preview Rekap Absensi Bulanan: "
+                + str(exc)
+            )
+        }, 500
 
 def export_rekap_clock_exception_pdf():
     """Export Rekap Absensi Bulanan ke PDF berdasarkan matrix yang sama dengan preview."""
