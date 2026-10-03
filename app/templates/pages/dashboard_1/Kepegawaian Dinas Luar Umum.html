@@ -435,7 +435,7 @@
         button.innerHTML = '<i class="feather-loader"></i><span>Memuat...</span>';
 
         try {
-            const response = await fetch('{{ api_get }}?no_surat=' + encodeURIComponent(value), {credentials:'same-origin'});
+            const response = await fetch('{{ api_get }}?type_sprin={{ dinas_type }}&no_surat=' + encodeURIComponent(value), {credentials:'same-origin'});
             const payload = await response.json();
             if (!response.ok || !payload.success) throw new Error(payload.error || 'Data tidak ditemukan.');
 
@@ -456,7 +456,7 @@
                 tgl_akhir:item.tgl_akhir,
                 status_um:item.status_um,
                 tipe:String(item.tipe ?? header.tipe ?? '1'),
-                status_um_text: item.status_um === '1' ? 'Terpotong' : item.status_um === '2' ? 'Tdk Terpotong Penempatan' : 'Tdk Terpotong'
+                status_um_text: String(item.status_um) === '1' ? 'Terpotong' : String(item.status_um) === '2' ? 'Tdk Terpotong Penempatan' : 'Tdk Terpotong'
             }));
 
             currentFile.textContent = header.nama_file ? 'File tersimpan: ' + header.nama_file : '';
