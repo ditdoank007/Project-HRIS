@@ -2608,6 +2608,56 @@ def api_normalisasi_process():
                     ).strip(),
                 }
 
+                # ------------------------------------------------
+                # Bentuk hasil transaksi khusus mengikuti ABSENSI
+                # legacy: jam baku sebagai TglJamIn/TglJamOut,
+                # tidak dihitung sebagai TLM/PSW.
+                # ------------------------------------------------
+                jk_special = normalization_engine.resolve_jam_kerja(
+                    current_date,
+                    '1',
+                )
+                baku_special_in, baku_special_out = (
+                    normalization_engine.resolve_jam_baku(
+                        current_date,
+                        jk_special,
+                    )
+                )
+
+                transaksi_special = str(
+                    dl.TRANSAKSI or ''
+                ).strip()
+
+                row_dl['jam_baku_in'] = (
+                    baku_special_in.strftime('%H:%M')
+                    if baku_special_in else ''
+                )
+                row_dl['jam_baku_out'] = (
+                    baku_special_out.strftime('%H:%M')
+                    if baku_special_out else ''
+                )
+                row_dl['jam_in'] = row_dl['jam_baku_in']
+                row_dl['jam_out'] = row_dl['jam_baku_out']
+
+                row_dl['tingkat_tlm'] = (
+                    'DL'
+                    if transaksi_special.lower() == 'dinasluar'
+                    else (
+                        'I'
+                        if transaksi_special.lower() in ('alpa', 'ijin')
+                        else ''
+                    )
+                )
+                row_dl['tingkat_psw'] = (
+                    'DL'
+                    if transaksi_special.lower() == 'dinasluar'
+                    else ''
+                )
+                row_dl['is_valid_in'] = True
+                row_dl['is_valid_out'] = True
+                row_dl['transaksi_in'] = transaksi_special
+                row_dl['transaksi_out'] = transaksi_special
+
                 result.append(row_dl)
 
                 current_date += timedelta(days=1)
