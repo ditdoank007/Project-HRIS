@@ -2024,9 +2024,11 @@ def api_normalisasi_process():
             # atau
             # SHIFT_2 = 1
             #
+            # HRIS 2013: status 3 adalah tanda KEHADIRAN
+            # Piket Siaga yang sudah diabsen/ditandai Kagahar.
+            # SHIFT_2 hanya menunjukkan jenis shift, bukan status hadir.
             hadir_shift2 = (
                 int(sr['StatusID'] or 0) == 3
-                or int(sr['shift2'] or 0) == 1
             )
 
             shift2_map[
@@ -2061,7 +2063,7 @@ def api_normalisasi_process():
               AND ActivityDate >= :activity_awal
               AND ActivityDate <= :activity_akhir
               AND StatusTrx = '-'
-              AND (StatusID = 3 OR shift1 = 1)
+              AND StatusID = 3
         """)
 
         shift1_rows = db.session.execute(
