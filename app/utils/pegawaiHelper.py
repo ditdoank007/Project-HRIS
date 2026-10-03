@@ -60,6 +60,12 @@ Unit Kerja agar histori laporan tetap aman.
 from app.models.pegawaiModel import Pegawai
 from app.models.unitKerjaModel import MfUnitKerja
 from app.utils.pegawaiSortHelper import sort_pegawai_rows
+from app.controllers.hrisOperationalController import (
+    ACTIVE_EMPLOYEE_VALUES,
+    ACTIVE_UNIT_VALUES,
+    operational_pegawai_query,
+    is_operational_pegawai,
+)
 
 
 # ============================================================
@@ -103,9 +109,7 @@ def is_pegawai_aktif(pegawai):
     if pegawai is None:
         return False
 
-    return normalize_status_keluar(
-        pegawai.IS_KELUAR
-    ) == 'ACTIVE'
+    return str(pegawai.IS_KELUAR or '').strip().upper() in ACTIVE_EMPLOYEE_VALUES
 
 
 def is_pegawai_keluar(pegawai):
@@ -119,9 +123,7 @@ def is_pegawai_keluar(pegawai):
     if pegawai is None:
         return False
 
-    return normalize_status_keluar(
-        pegawai.IS_KELUAR
-    ) == 'INACTIVE'
+    return str(pegawai.IS_KELUAR or '').strip().upper() in ('Y', '1')
 
 
 # ============================================================
@@ -230,12 +232,7 @@ def is_unit_pegawai_aktif(pegawai):
         False -> Unit tidak ditemukan / IS_USE != Y
     """
 
-    unit = get_pegawai_unit(pegawai)
-
-    if unit is None:
-        return False
-
-    return unit.IS_USE == 'Y'
+    return is_operational_pegawai(pegawai)
 
 
 # ============================================================
@@ -286,18 +283,7 @@ def get_operational_pegawai_query():
         )
     """
 
-    return (
-        Pegawai.query
-        .join(
-            MfUnitKerja,
-            Pegawai.UNIT_KERJA_ID
-            == MfUnitKerja.UNIT_KERJA_ID
-        )
-        .filter(
-            Pegawai.IS_KELUAR == 'N',
-            MfUnitKerja.IS_USE == 'Y'
-        )
-    )
+    return operational_pegawai_query()
 
 
 def get_operational_pegawai_rows():
@@ -449,15 +435,8 @@ def search_operational_pegawai(keyword, limit=15):
     # ========================================================
 
     pegawai_rows = (
-        Pegawai.query
-        .join(
-            MfUnitKerja,
-            Pegawai.UNIT_KERJA_ID
-            == MfUnitKerja.UNIT_KERJA_ID
-        )
+        operational_pegawai_query()
         .filter(
-            Pegawai.IS_KELUAR == 'N',
-            MfUnitKerja.IS_USE == 'Y',
             Pegawai.NAMA.ilike(f'%{keyword}%')
         )
         .all()
