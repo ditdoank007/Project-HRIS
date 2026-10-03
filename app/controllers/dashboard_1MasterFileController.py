@@ -1827,6 +1827,25 @@ def toggle_pegawai_vip():
 
 
 
+def _normalize_potongan_kategori(value):
+    """Normalisasi label kategori agar tetap kompatibel dengan rule legacy."""
+    raw = str(value or '').strip()
+    aliases = {
+        'cuti': 'CUTI',
+        'sakit': 'SAKIT',
+        'ijin': 'IJIN',
+        'izin': 'IJIN',
+        'dinas luar': 'DINASLUAR',
+        'dinasluar': 'DINASLUAR',
+        'hukuman': 'HUKUMAN',
+        'tidak absen': 'TA',
+        'ta': 'TA',
+        'tlm': 'TLM',
+        'psw': 'PSW',
+    }
+    return aliases.get(raw.lower(), raw)
+
+
 def master_potongan():
     """Render halaman Master File Master Potongan."""
     return render_template('pages/dashboard_1/Master File Master Potongan.html')
@@ -1848,7 +1867,7 @@ def save_potongan():
     """
     payload = request.get_json(silent=True) or {}
 
-    kategori = payload.get('kategori', '').strip()
+    kategori = _normalize_potongan_kategori(payload.get('kategori'))
     tingkat = payload.get('tingkat', '').strip()
     diskripsi = payload.get('diskripsi', '').strip()
     persen_pot_raw = payload.get('persen_pot')
@@ -1903,7 +1922,12 @@ def save_potongan():
     # --- Konversi Bukti Pendukung: Ada -> 'Y', Tidak Ada -> 'N' ---
     is_pendukung = 'Y' if is_pendukung_raw else 'N'
 
+    # MF_POT legacy tidak menggunakan AUTO_INCREMENT pada IDPot.
+    # Ambil ID berikutnya agar INSERT tidak gagal pada primary key NOT NULL.
+    next_id = (db.session.query(db.func.max(MfPot.POTONGAN_ID)).scalar() or 0) + 1
+
     potongan = MfPot(
+        POTONGAN_ID=next_id,
         KATEGORI=kategori,
         TINGKAT=tingkat or None,
         NAMA_POT=diskripsi,
@@ -1953,7 +1977,7 @@ def update_potongan(potongan_id):
 
     payload = request.get_json(silent=True) or {}
 
-    kategori = str(payload.get('kategori') or '').strip()
+    kategori = _normalize_potongan_kategori(payload.get('kategori'))
     tingkat = str(payload.get('tingkat') or '').strip()
     diskripsi = str(payload.get('diskripsi') or '').strip()
     persen_pot_raw = payload.get('persen_pot')
