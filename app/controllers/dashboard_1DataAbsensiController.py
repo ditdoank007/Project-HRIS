@@ -1749,6 +1749,10 @@ def api_normalisasi_process():
                 )
                 filter_params[param_name] = f'%{value}%'
 
+        # Resolve the employee universe ONCE for both attendance sources.
+        # This is the bulk-processing pattern: the normalization request
+        # works for all selected employees in one pass, while TIME_RECORDER
+        # can use its PRIMARY (FingerID, Waktu, Status, Mesin) index.
         employee_finger_ids = None
         if employee_filter_clauses:
             employee_sql = text(f"""
@@ -1761,19 +1765,27 @@ def api_normalisasi_process():
                 employee_sql,
                 filter_params
             ).scalars().all()
-            employee_finger_ids = [
-                str(value) for value in employee_rows if value is not None
-            ]
+        else:
+            employee_sql = text("""
+                SELECT DISTINCT p0.FingerID
+                FROM PEGAWAI p0
+                WHERE p0.FingerID IS NOT NULL
+            """)
+            employee_rows = db.session.execute(
+                employee_sql
+            ).scalars().all()
 
-            # The selected employee filter matches nobody: there is no reason
-            # to execute the expensive attendance query.
-            if not employee_finger_ids:
-                return jsonify({
-                    'success': True,
-                    'data': [],
-                    'total': 0,
-                    'message': 'Data Log Finger Print Kosong'
-                })
+        employee_finger_ids = [
+            str(value) for value in employee_rows if value is not None
+        ]
+
+        if not employee_finger_ids:
+            return jsonify({
+                'success': True,
+                'data': [],
+                'total': 0,
+                'message': 'Data Log Finger Print Kosong'
+            })
 
         source_filter_map = {
             'NIP': 'p0.NIP',
@@ -1793,10 +1805,10 @@ def api_normalisasi_process():
         # every attendance row to PEGAWAI and applying LIKE afterwards.
         if employee_finger_ids is not None:
             source_filter_clauses = [
-                "CAST(tr.FingerID AS CHAR) IN :employee_finger_ids"
+                "tr.FingerID IN :employee_finger_ids"
             ]
             raw_source_filter_clauses = [
-                "CAST(r.USER_ID AS CHAR) IN :employee_finger_ids"
+                "r.USER_ID IN :employee_finger_ids"
             ]
         else:
             raw_source_filter_clauses = []
@@ -1895,20 +1907,28 @@ def api_normalisasi_process():
                   AND NOT EXISTS (
                       SELECT 1
                       FROM TIME_RECORDER tr2
-                      WHERE CAST(tr2.FingerID AS CHAR) = CAST(r.FINGER_ID AS CHAR)
+                      WHERE tr2.FingerID = r.USER_ID
                         AND tr2.Waktu = r.WAKTU
-                        AND UPPER(TRIM(tr2.Status)) =
-                            UPPER(TRIM(
-                                CASE
-                                    WHEN r.PUNCH = 0 THEN 'IN'
-                                    WHEN r.PUNCH = 1 THEN 'OUT'
-                                    ELSE r.STATUS
-                                END
-                            ))
+                        AND tr2.Status = CASE
+                            WHEN r.PUNCH = 0 THEN 'IN'
+                            WHEN r.PUNCH = 1 THEN 'OUT'
+                            ELSE r.STATUS
+                        END
+                  )
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM TIME_RECORDER tr3
+                      WHERE tr3.FingerID = CAST(r.FINGER_ID AS CHAR)
+                        AND tr3.Waktu = r.WAKTU
+                        AND tr3.Status = CASE
+                            WHEN r.PUNCH = 0 THEN 'IN'
+                            WHEN r.PUNCH = 1 THEN 'OUT'
+                            ELSE r.STATUS
+                        END
                   )
             ) src
             INNER JOIN PEGAWAI p
-                ON CAST(src.USER_ID AS CHAR) = CAST(p.FingerID AS CHAR)
+                ON src.USER_ID = p.FingerID
             WHERE 1=1
               {filter_sql}
             ORDER BY CAST(p.UnitKerja AS UNSIGNED), src.FINGER_ID, src.WAKTU
@@ -2385,6 +2405,7 @@ def api_normalisasi_process():
                 for raw in logs
                 if _raw_consumed_key(raw)
                 not in shift2_consumed
+                and str(raw.get('device_ip') or '').strip().upper() != 'WEB'
             ]
 
             if not filtered_logs:
@@ -2645,10 +2666,165 @@ def api_normalisasi_process():
                 fingerprint_required=True,
             )
 
+        # ============================================================
+        # WFH ONLINE — HRIS REBORN ADDITION
+        #
+        # HRIS 2013 has WFH as a special transaction, but it does not
+        # have the WEB attendance punch introduced by HRIS Reborn.
+        #
+        # WEB IN/OUT is an actual attendance source. It must:
+        #   - not be paired as ordinary fingerprint,
+        #   - retain the actual clock-in/clock-out,
+        #   - become TRANSAKSI_IN/OUT = WFH,
+        #   - not generate TLM/PSW,
+        #   - win over the generic DinasLuar WFH row for the same
+        #     employee/date.
+        # ============================================================
+
+        wfh_online_grouped = defaultdict(list)
+
+        for raw in raw_rows:
+            if str(raw.get('DEVICE_IP') or '').strip().upper() != 'WEB':
+                continue
+
+            waktu = raw.get('WAKTU')
+            if not waktu:
+                continue
+
+            work_date = waktu.date()
+            if work_date < tgl_awal.date() or work_date > tgl_akhir.date():
+                continue
+
+            finger_key = str(
+                raw.get('PEGAWAI_FINGER_ID')
+                or raw.get('FINGER_ID')
+                or ''
+            ).strip()
+
+            if not finger_key:
+                continue
+
+            status = str(raw.get('STATUS') or '').strip().upper()
+            punch = raw.get('PUNCH')
+
+            if punch == 0:
+                status = 'IN'
+            elif punch == 1:
+                status = 'OUT'
+
+            if status not in ('IN', 'OUT'):
+                continue
+
+            wfh_online_grouped[
+                (finger_key, work_date.strftime('%Y-%m-%d'))
+            ].append(raw)
+
         # Transaksi khusus dipilih sekali per pegawai/tanggal.
         # Urutan sudah ditentukan oleh MFPriorityTransaksi ASC,
         # lalu UpdateDate DESC.
         special_claimed = set()
+
+        for (wfh_finger, wfh_date_str), web_logs in wfh_online_grouped.items():
+            web_logs.sort(
+                key=lambda item: item.get('WAKTU') or datetime.min
+            )
+
+            in_logs = [
+                item for item in web_logs
+                if (
+                    (
+                        item.get('PUNCH') == 0
+                    )
+                    or str(item.get('STATUS') or '').strip().upper() == 'IN'
+                )
+            ]
+            out_logs = [
+                item for item in web_logs
+                if (
+                    (
+                        item.get('PUNCH') == 1
+                    )
+                    or str(item.get('STATUS') or '').strip().upper() == 'OUT'
+                )
+            ]
+
+            jam_wfh_in = in_logs[0]['WAKTU'] if in_logs else None
+            jam_wfh_out = out_logs[-1]['WAKTU'] if out_logs else None
+
+            meta = web_logs[0]
+            nip_wfh = str(meta.get('NIP') or '').strip()
+
+            if not nip_wfh:
+                continue
+
+            tgl_wfh = datetime.strptime(
+                wfh_date_str,
+                '%Y-%m-%d'
+            ).date()
+
+            # WEB WFH is always regular workday attendance in the online
+            # attendance flow. Calendar still determines the displayed
+            # holiday flag, but it does not create TLM/PSW for WFH.
+            is_libur_wfh = (
+                kalender_map.get(
+                    wfh_date_str,
+                    'N'
+                ) == 'Y'
+            )
+
+            row_wfh = normalization_engine.normalize_row(
+                nip=nip_wfh,
+                finger_id=wfh_finger,
+                nama=meta.get('NAMA') or '',
+                gol=meta.get('GOL') or '',
+                unit_kerja=meta.get('UNIT_KERJA') or '',
+                tgl_kerja=tgl_wfh,
+                jam_in=jam_wfh_in,
+                jam_out=jam_wfh_out,
+                shift_kerja='1',
+                is_libur=is_libur_wfh,
+            )
+
+            if not row_wfh:
+                continue
+
+            # Actual WEB attendance is final for this date.
+            result[:] = [
+                row
+                for row in result
+                if not (
+                    str(row.get('finger_id') or '').strip() == wfh_finger
+                    and str(row.get('tgl_kerja') or '').strip() == wfh_date_str
+                )
+            ]
+
+            row_wfh['no'] = 0
+            row_wfh['shift'] = '1'
+            row_wfh['shift2_siaga'] = False
+            row_wfh['transaksi_in'] = 'WFH'
+            row_wfh['transaksi_out'] = 'WFH'
+            row_wfh['wfh_online'] = True
+            row_wfh['attendance_code'] = 'WFH'
+            row_wfh['attendance_layer'] = 'WFH_ONLINE'
+            row_wfh['status_um'] = None
+            row_wfh['dinas_luar_transaksi_id'] = ''
+            row_wfh['dinas_luar_jenis'] = 'WFH'
+            row_wfh['dinas_luar_keterangan'] = 'ABSEN ONLINE WFH'
+            row_wfh['dinas_luar_pendukung'] = '998'
+
+            # WFH Online must not produce TLM/PSW deductions.
+            row_wfh['awal_tlm'] = 0
+            row_wfh['total_tlm'] = 0
+            row_wfh['persen_pot_tlm'] = 0
+            row_wfh['tingkat_tlm'] = ''
+            row_wfh['total_psw'] = 0
+            row_wfh['persen_pot_psw'] = 0
+            row_wfh['tingkat_psw'] = ''
+            row_wfh['is_valid_in'] = bool(jam_wfh_in)
+            row_wfh['is_valid_out'] = bool(jam_wfh_out)
+
+            result.append(row_wfh)
+            special_claimed.add((nip_wfh, wfh_date_str))
 
         for dl, pegawai_dl in dinas_luar_rows:
 
@@ -3480,10 +3656,12 @@ def api_normalisasi_export():
                 transaksi_in.upper()
                 in special_transactions
             )
+            wfh_online = bool(r.get('wfh_online'))
 
-            if is_special:
-                # Untuk transaksi khusus, legacy menyimpan jam baku
-                # sebagai TglJamIn/TglJamOut.
+            if is_special and not wfh_online:
+                # Untuk transaksi khusus legacy, simpan jam baku.
+                # Pengecualian: WFH Online HRIS Reborn harus mempertahankan
+                # jam aktual dari WEB IN/OUT.
                 tgl_jam_in = tgl_jam_baku_in
                 tgl_jam_out = tgl_jam_baku_out
 
