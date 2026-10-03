@@ -158,15 +158,16 @@ $(document).ready(function() {
                         <tr>
                             <td>${d.no}</td>
                             <td>${d.tgl_kerja}</td>
-                            <td><input type="checkbox" class="cb-pendukung" ${checked}></td>
+                            <td class="text-center"><input type="checkbox" class="cb-pendukung" ${checked}></td>
                             <td>${d.tingkat}</td>
                             <td>${d.nip}</td>
                             <td class="text-start">${d.nama}</td>
                             <td><input type="text" class="form-control form-control-sm txt-ket" value="${d.keterangan || ''}" style="width:100%;"></td>
                         </tr>
                     `);
-                    // Simpan data tersembunyi
+                    // FingerID adalah key fisik ABSENSI dan tidak ditampilkan.
                     $tbody.find('tr:last').append(`
+                        <input type="hidden" class="hd-finger-id" value="${d.finger_id || ''}">
                         <input type="hidden" class="hd-transaksi" value="${d.transaksi}">
                         <input type="hidden" class="hd-transac" value="${d.transac}">
                         <input type="hidden" class="hd-transaksi-id" value="${d.transaksi_id_from}">
@@ -191,13 +192,15 @@ $(document).ready(function() {
             const $row = $(this);
             const tgl = $row.find('td:eq(1)').text().trim();
             const nip = $row.find('td:eq(4)').text().trim();
+            const fingerId = $row.find('.hd-finger-id').val() || '';
             
-            if (!tgl || !nip) return;
+            if (!tgl || (!nip && !fingerId)) return;
             if (tgl.includes('Silakan') || tgl.includes('Tidak ada')) return;
             
             items.push({
                 tgl_kerja: tgl,
                 nip: nip,
+                finger_id: fingerId,
                 pendukung: $row.find('.cb-pendukung').is(':checked'),
                 keterangan: $row.find('.txt-ket').val() || '',
                 transaksi: $row.find('.hd-transaksi').val() || '',
