@@ -21,6 +21,13 @@
     #pegawaiDropdown { width: 100%; max-height: 220px; overflow-y: auto; z-index: 1000; }
     .hris-date-range { display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); align-items:end; gap:10px; }
     .hris-field-inline { min-width:0; }
+    .hris-search-card { margin-top:16px; }
+    .hris-search-table { width:100%; border-collapse:collapse; }
+    .hris-search-table th, .hris-search-table td { padding:10px 12px; border-bottom:1px solid var(--ui-border); text-align:left; white-space:nowrap; }
+    .hris-search-table th { font-size:12px; color:var(--ui-muted); font-weight:700; text-transform:uppercase; }
+    .hris-search-table tbody tr { cursor:pointer; transition:background .15s ease; }
+    .hris-search-table tbody tr:hover { background:var(--ui-surface-soft); }
+    .hris-search-scroll { overflow:auto; }
     @media (max-width:720px){ .hris-date-range{grid-template-columns:1fr;} .hris-date-range > span{text-align:center;} }
 </style>
 {% endblock %}
@@ -113,6 +120,70 @@
             </div>
         </section>
     </form>
+
+    <section id="searchCutiCard" class="hris-card hris-search-card" style="display:none;">
+        <div class="hris-card-header">
+            <h3 class="hris-card-title"><i class="feather-search"></i> Cari Data Cuti</h3>
+            <button type="button" id="btnTutupCari" class="hris-btn hris-btn-secondary">
+                <i class="feather-x"></i> Tutup
+            </button>
+        </div>
+        <div class="hris-card-body">
+            <div class="hris-form-grid">
+                <div class="hris-field">
+                    <label class="hris-label">Filter 1</label>
+                    <select id="cutiFilterField1" class="hris-select">
+                        <option value="">- Pilih Field -</option>
+                        <option value="NIP">NIP</option>
+                        <option value="Nama">Nama Pegawai</option>
+                        <option value="KeteranganCuti">Keterangan</option>
+                        <option value="JenisCuti">Jenis Cuti</option>
+                    </select>
+                </div>
+                <div class="hris-field">
+                    <label class="hris-label">Nilai Filter 1</label>
+                    <input id="cutiFilterValue1" class="hris-input" type="text" placeholder="Ketik nilai pencarian...">
+                </div>
+                <div class="hris-field">
+                    <label class="hris-label">Filter 2</label>
+                    <select id="cutiFilterField2" class="hris-select">
+                        <option value="">- Pilih Field -</option>
+                        <option value="NIP">NIP</option>
+                        <option value="Nama">Nama Pegawai</option>
+                        <option value="KeteranganCuti">Keterangan</option>
+                        <option value="JenisCuti">Jenis Cuti</option>
+                    </select>
+                </div>
+                <div class="hris-field">
+                    <label class="hris-label">Nilai Filter 2</label>
+                    <input id="cutiFilterValue2" class="hris-input" type="text" placeholder="Ketik nilai pencarian...">
+                </div>
+            </div>
+            <div class="hris-divider"></div>
+            <div style="display:flex;justify-content:flex-end;gap:8px;">
+                <button type="button" id="btnRefreshCuti" class="hris-btn hris-btn-primary">
+                    <i class="feather-refresh-cw"></i> Cari
+                </button>
+            </div>
+            <div id="cutiSearchMessage" class="hris-empty" style="display:none;margin-top:14px;"></div>
+            <div class="hris-search-scroll" style="margin-top:14px;">
+                <table class="hris-search-table">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>NIP</th>
+                            <th>Nama</th>
+                            <th>Tanggal</th>
+                            <th>Jenis Cuti</th>
+                            <th>Keterangan</th>
+                            <th>Update</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cutiSearchBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
 </div>
 {% endblock %}
 
@@ -139,16 +210,130 @@ $(document).ready(function() {
     } catch(e) {}
 
     // ============================================
+    // CARI DATA — mengikuti PageFind HRIS 2013
+    // ============================================
+    $('#btnCariPage').click(function() {
+        $('#searchCutiCard').slideToggle(120, function() {
+            if ($('#searchCutiCard').is(':visible')) {
+                loadCariCuti();
+            }
+        });
+    });
+
+    $('#btnTutupCari').click(function() {
+        $('#searchCutiCard').hide();
+    });
+
+    $('#btnRefreshCuti').click(function() {
+        loadCariCuti();
+    });
+
+    function loadCariCuti() {
+        const params = {
+            filter_field1: $('#cutiFilterField1').val(),
+            filter_value1: $('#cutiFilterValue1').val().trim(),
+            filter_field2: $('#cutiFilterField2').val(),
+            filter_value2: $('#cutiFilterValue2').val().trim()
+        };
+
+        $('#cutiSearchMessage').hide().text('');
+        $('#cutiSearchBody').html(
+            '<tr><td colspan="7" class="hris-loading">Memuat data...</td></tr>'
+        );
+
+        $.get('/api/cuti/cari', params, function(r) {
+            if (!r.success) {
+                $('#cutiSearchBody').empty();
+                $('#cutiSearchMessage').text(r.error || 'Gagal mencari data.').show();
+                return;
+            }
+
+            const rows = r.data || [];
+            if (!rows.length) {
+                $('#cutiSearchBody').html(
+                    '<tr><td colspan="7" class="hris-empty">Data cuti tidak ditemukan.</td></tr>'
+                );
+                return;
+            }
+
+            $('#cutiSearchBody').html(rows.map(function(row) {
+                return '<tr data-transaksi-id="' + escapeHtml(row.transaksi_id) + '">' +
+                    '<td>' + escapeHtml(row.no) + '</td>' +
+                    '<td>' + escapeHtml(row.nip) + '</td>' +
+                    '<td>' + escapeHtml(row.nama) + '</td>' +
+                    '<td>' + escapeHtml(row.tgl_awal) + ' s/d ' + escapeHtml(row.tgl_akhir) + '</td>' +
+                    '<td>' + escapeHtml(row.jenis_cuti || '') + '</td>' +
+                    '<td>' + escapeHtml(row.keterangan || '') + '</td>' +
+                    '<td>' + escapeHtml(row.update_by || '') + '</td>' +
+                    '</tr>';
+            }).join(''));
+
+            $('#cutiSearchBody tr[data-transaksi-id]').on('click', function() {
+                loadCutiById($(this).data('transaksi-id'));
+            });
+        }).fail(function(xhr) {
+            console.error(xhr.responseText);
+            $('#cutiSearchBody').html(
+                '<tr><td colspan="7" class="hris-empty">Gagal memuat data cuti.</td></tr>'
+            );
+        });
+    }
+
+    function loadCutiById(id) {
+        if (!id) return;
+        $.get('/api/cuti/get', { transaksi_id: id }, function(r) {
+            if (!r.success) {
+                showAlert('danger', r.error || 'Data cuti tidak ditemukan.');
+                return;
+            }
+            const d = r.data;
+            transaksiId = d.transaksi_id || id;
+            isEdit = true;
+            $('#transaksiId').val(transaksiId);
+            $('#isEdit').val('true');
+            $('#selectedNIP').val(d.nip || '');
+            $('#pegawaiTerpilih').val((d.nama || '') + ' (' + (d.nip || '') + ')');
+            $('#searchPegawai').hide();
+            $('#rowPegawaiTerpilih').show();
+            $('#tglAwal').val(d.tgl_awal || '');
+            $('#tglAkhir').val(d.tgl_akhir || '');
+            $('#jenisCuti').val(d.jenis_cuti || '');
+            $('#keterangan').val(d.keterangan || '');
+            $('#btnDelete').show();
+            $('#searchCutiCard').hide();
+            window.scrollTo({top:0, behavior:'smooth'});
+            showAlert('success', 'Data Cuti berhasil dimuat.');
+        }).fail(function(xhr) {
+            console.error(xhr.responseText);
+            showAlert('danger', 'Gagal memuat data Cuti.');
+        });
+    }
+
+    function escapeHtml(value) {
+        return $('<div>').text(value == null ? '' : value).html();
+    }
+
+    // ============================================
     // LOAD JENIS CUTI
     // ============================================
     function loadJenisCuti() {
         $.get('/api/cuti/jenis', function(r) {
             const $select = $('#jenisCuti').empty().append('<option value="">- Pilih Jenis Cuti -</option>');
-            if (r.success && r.data.length) {
-                r.data.forEach(function(j) {
-                    $select.append(`<option value="${j.tingkat}">${j.tingkat} - ${j.nama}</option>`);
-                });
+            if (!r.success) {
+                showAlert('danger', r.error || 'Jenis Cuti gagal dimuat.');
+                return;
             }
+            (r.data || []).forEach(function(j) {
+                $select.append(
+                    $('<option>', {
+                        value: j.tingkat,
+                        text: j.tingkat + ' - ' + j.nama
+                    })
+                );
+            });
+        }).fail(function(xhr) {
+            console.error(xhr.responseText);
+            showAlert('danger', 'Jenis Cuti gagal dimuat dari master MfPot.');
         });
     }
     loadJenisCuti();
