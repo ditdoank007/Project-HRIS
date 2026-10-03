@@ -1646,24 +1646,31 @@ def get_pegawai_vip_list():
             for j in jabatan_rows
         }
 
+    unit_ids = {
+        p.UNIT_KERJA_ID
+        for p in pegawai_list
+        if p.UNIT_KERJA_ID not in (None, '')
+    }
+    unit_map = {}
+
+    if unit_ids:
+        unit_rows = (
+            MfUnitKerja.query
+            .filter(MfUnitKerja.UNIT_KERJA_ID.in_(unit_ids))
+            .all()
+        )
+        unit_map = {
+            row.UNIT_KERJA_ID: row.NAMA_UNIT_KERJA
+            for row in unit_rows
+        }
+
     data = [
         {
             'no': idx + 1,
             'nip': p.NIP,
             'nama': p.NAMA,
             'jabatan': jabatan_map.get(p.JABATAN_ID),
-            'unit_kerja': (
-                next(
-                    (
-                        unit.NAMA_UNIT_KERJA
-                        for unit in [MfUnitKerja.query.filter(
-                            MfUnitKerja.UNIT_KERJA_ID == p.UNIT_KERJA_ID
-                        ).first()]
-                        if unit
-                    ),
-                    p.UNIT_KERJA or '-'
-                )
-            ),
+            'unit_kerja': unit_map.get(p.UNIT_KERJA_ID, p.UNIT_KERJA or '-'),
             'finger_id': p.FINGER_ID or '-',
             'gol': p.GOL or '-',
             'is_vip': is_vip_value(p.IS_VIP),
