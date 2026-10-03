@@ -1486,10 +1486,34 @@ def api_normalisasi_import_finger():
             conditions.append(f"{field} LIKE :{param_name}")
             params[param_name] = f"%{field_value}%"
 
-        filter_sql = ''
-        if conditions:
-            filter_sql = ' AND ' + ' AND '.join(conditions)
+        # Apply employee/unit filters inside BOTH source queries.  The previous
+        # implementation materialized the complete monthly UNION first and only
+        # then filtered by employee name, which caused 30s Gunicorn timeouts.
+        source_filter_mapping = {
+            'NIP': 'p0.NIP', 'Nama': 'p0.Nama', 'NAMA': 'p0.Nama',
+            'FingerID': 'src0.FINGER_ID', 'UnitKerja': 'p0.UnitKerja',
+            'Unit': 'p0.UnitKerja', 'UnitKerjaName': 'uk0.UnitKerjaName',
+            'Jabatan': 'p0.Jabatan', 'Gol': 'p0.Gol', 'Gol-Pangkat': 'p0.Gol',
+            'Status': 'src0.STATUS', 'Transaksi': 'src0.TRANSAKSI',
+        }
+        early_conditions = []
+        for idx, (field_name, field_value) in enumerate((
+            (filter_field1, filter_value1),
+            (filter_field2, filter_value2),
+        ), start=1):
+            if not field_name or not field_value:
+                continue
+            field = source_filter_mapping.get(field_name)
+            if not field:
+                continue
+            early_conditions.append(f"{field} LIKE :filter_value{idx}")
 
+        early_filter_sql = ''
+        if early_conditions:
+            early_filter_sql = ' AND ' + ' AND '.join(early_conditions)
+
+        # Status/Transaksi are source columns; for the RAW branch they are
+        # normalized aliases so the same filter semantics are preserved.
         sql = text(f"""
             SELECT
                 src.FINGER_ID,
@@ -1510,8 +1534,13 @@ def api_normalisasi_import_finger():
                     tr.Status AS STATUS,
                     tr.Transaksi AS TRANSAKSI
                 FROM TIME_RECORDER tr
+                LEFT JOIN PEGAWAI p0
+                    ON CAST(p0.FingerID AS CHAR) = CAST(tr.FingerID AS CHAR)
+                LEFT JOIN MF_UNIT_KERJA uk0
+                    ON CAST(uk0.IDUnitKerja AS CHAR) = CAST(p0.UnitKerja AS CHAR)
                 WHERE tr.Waktu >= :tgl_awal
                   AND tr.Waktu < :tgl_akhir
+                  {early_filter_sql}
 
                 UNION ALL
 
@@ -1521,22 +1550,25 @@ def api_normalisasi_import_finger():
                     r.STATUS,
                     'RAW' AS TRANSAKSI
                 FROM FINGER_HARVEST_RAW r
+                LEFT JOIN PEGAWAI p0
+                    ON CAST(p0.FingerID AS CHAR) = CAST(r.FINGER_ID AS CHAR)
+                LEFT JOIN MF_UNIT_KERJA uk0
+                    ON CAST(uk0.IDUnitKerja AS CHAR) = CAST(p0.UnitKerja AS CHAR)
+                LEFT JOIN TIME_RECORDER tr2
+                    ON CAST(tr2.FingerID AS CHAR) = CAST(r.FINGER_ID AS CHAR)
+                   AND tr2.Waktu = r.WAKTU
+                   AND UPPER(TRIM(tr2.Status)) =
+                       UPPER(TRIM(
+                           CASE
+                               WHEN r.PUNCH = 0 THEN 'IN'
+                               WHEN r.PUNCH = 1 THEN 'OUT'
+                               ELSE r.STATUS
+                           END
+                       ))
                 WHERE r.WAKTU >= :tgl_awal
                   AND r.WAKTU < :tgl_akhir
-                  AND NOT EXISTS (
-                      SELECT 1
-                      FROM TIME_RECORDER tr2
-                      WHERE CAST(tr2.FingerID AS CHAR) = CAST(r.FINGER_ID AS CHAR)
-                        AND tr2.Waktu = r.WAKTU
-                        AND UPPER(TRIM(tr2.Status)) =
-                            UPPER(TRIM(
-                                CASE
-                                    WHEN r.PUNCH = 0 THEN 'IN'
-                                    WHEN r.PUNCH = 1 THEN 'OUT'
-                                    ELSE r.STATUS
-                                END
-                            ))
-                  )
+                  AND tr2.FingerID IS NULL
+                  {early_filter_sql.replace('src0.', 'r.').replace('p0.', 'p0.').replace('uk0.', 'uk0.')}
             ) src
             LEFT JOIN PEGAWAI p
                 ON CAST(p.FingerID AS CHAR) = CAST(src.FINGER_ID AS CHAR)
@@ -1544,8 +1576,6 @@ def api_normalisasi_import_finger():
                 ON g.Gol = p.Gol
             LEFT JOIN MF_UNIT_KERJA uk
                 ON CAST(uk.IDUnitKerja AS CHAR) = CAST(p.UnitKerja AS CHAR)
-            WHERE 1=1
-              {filter_sql}
             ORDER BY src.FINGER_ID, src.WAKTU
         """)
 
