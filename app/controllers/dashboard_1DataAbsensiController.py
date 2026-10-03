@@ -1528,6 +1528,24 @@ def api_normalisasi_import_finger():
         if raw_conditions:
             raw_filter_sql = ' AND ' + ' AND '.join(raw_conditions)
 
+        # Only Status/Transaksi remain as outer filters. Employee/unit filters
+        # have already been pushed into the individual source branches above.
+        outer_conditions = []
+        for idx, (field_name, field_value) in enumerate((
+            (filter_field1, filter_value1),
+            (filter_field2, filter_value2),
+        ), start=1):
+            if field_name in ('Status', 'Transaksi') and field_value:
+                outer_field = {
+                    'Status': 'src.STATUS',
+                    'Transaksi': 'src.TRANSAKSI',
+                }[field_name]
+                outer_conditions.append(f"{outer_field} LIKE :filter_value{idx}")
+
+        filter_sql = ''
+        if outer_conditions:
+            filter_sql = ' AND ' + ' AND '.join(outer_conditions)
+
         sql = text(f"""
             SELECT
                 src.FINGER_ID,
