@@ -134,19 +134,46 @@ def get_operational_pegawai_nips():
     ]
 
 
-def resolve_operational_employee_name(nip):
+def resolve_operational_employee_name(identifier):
     """
     Mengembalikan nama pegawai hanya jika pegawai masih operasional.
 
-    Dipakai untuk field audit seperti UPDATE_BY agar pegawai dari
-    unit nonaktif tidak ikut ditampilkan sebagai identitas operasional.
+    UPDATE_BY pada database legacy dapat menyimpan NIP dan pada data
+    lama dapat pula menyimpan nama. Resolver ini menerima keduanya.
+
+    Jika pegawai ditemukan tetapi sudah tidak operasional, None
+    dikembalikan agar identitas tersebut tidak ditampilkan sebagai
+    identitas operasional HRIS Reborn.
     """
-    if not nip:
+    if identifier is None:
         return None
 
+    value = str(identifier).strip()
+
+    if not value:
+        return None
+
+    # ------------------------------------------------------------
+    # Format utama UPDATE_BY: NIP
+    # ------------------------------------------------------------
     row = (
         operational_pegawai_query()
-        .filter(Pegawai.NIP == str(nip).strip())
+        .filter(Pegawai.NIP == value)
+        .with_entities(Pegawai.NAMA)
+        .first()
+    )
+
+    if row and row[0]:
+        return row[0]
+
+    # ------------------------------------------------------------
+    # Compatibility legacy: UPDATE_BY kadang menyimpan nama.
+    # Tetap gunakan global operational rule; jangan pernah
+    # mengembalikan nama pegawai dari unit nonaktif.
+    # ------------------------------------------------------------
+    row = (
+        operational_pegawai_query()
+        .filter(Pegawai.NAMA == value)
         .with_entities(Pegawai.NAMA)
         .first()
     )
