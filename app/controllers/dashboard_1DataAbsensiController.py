@@ -2924,6 +2924,53 @@ def api_normalisasi_export():
             )
 
             # --------------------------------------------------------
+            # Transaksi final mengikuti hasil NORMALISASI.
+            #
+            # HRIS 2013 tidak mengubah Cuti/Sakit/Alpa/DinasLuar/WFH
+            # menjadi LogFP saat EXPORT.
+            # --------------------------------------------------------
+            transaksi_in = str(
+                r.get('transaksi_in') or 'LogFP'
+            ).strip() or 'LogFP'
+            transaksi_out = str(
+                r.get('transaksi_out') or transaksi_in
+            ).strip() or transaksi_in
+
+            special_transactions = {
+                'DINASLUAR',
+                'CUTI',
+                'SAKIT',
+                'ALPA',
+                'IJIN',
+                'WFH',
+            }
+
+            is_special = (
+                transaksi_in.upper()
+                in special_transactions
+            )
+
+            if is_special:
+                # Untuk transaksi khusus, legacy menyimpan jam baku
+                # sebagai TglJamIn/TglJamOut.
+                tgl_jam_in = tgl_jam_baku_in
+                tgl_jam_out = tgl_jam_baku_out
+
+            ket_special = str(
+                r.get('dinas_luar_keterangan')
+                or r.get('dinas_luar_jenis')
+                or transaksi_in
+            ).strip()
+
+            update_by = (
+                str(
+                    session.get('nip')
+                    or session.get('username')
+                    or 'system'
+                ).strip()
+            )
+
+            # --------------------------------------------------------
             # Cari ABSENSI existing berdasarkan FINGER_ID + tanggal.
             # --------------------------------------------------------
 
@@ -2937,8 +2984,36 @@ def api_normalisasi_export():
             if existing:
                 existing.TGL_JAM_IN = tgl_jam_in
                 existing.TGL_JAM_OUT = tgl_jam_out
-                existing.TRANSAKSI_IN = 'LogFP'
-                existing.TRANSAKSI_OUT = 'LogFP'
+                existing.TRANSAKSI_IN = transaksi_in
+                existing.TRANSAKSI_OUT = transaksi_out
+                existing.KET_IN = (
+                    ket_special if is_special else 'LogFP'
+                )
+                existing.KET_OUT = (
+                    ket_special if is_special else 'LogFP'
+                )
+                existing.UPDATE_IN_BY = update_by
+                existing.UPDATE_OUT_BY = update_by
+                existing.TRANSAKSI_ID_FROM = (
+                    r.get('dinas_luar_transaksi_id')
+                    if is_special
+                    else None
+                )
+                existing.PENDUKUNG_IN = (
+                    r.get('dinas_luar_pendukung')
+                    if is_special
+                    else 'N'
+                )
+                existing.PENDUKUNG_OUT = (
+                    r.get('dinas_luar_pendukung')
+                    if is_special
+                    else 'N'
+                )
+                existing.STATUS_UM = (
+                    r.get('status_um')
+                    if is_special
+                    else None
+                )
                 existing.TINGKAT_TLM = r['tingkat_tlm']
                 existing.TOTAL_TLM = r['total_tlm']
                 existing.PERSEN_POT_TLM = r['persen_pot_tlm']
@@ -2963,8 +3038,36 @@ def api_normalisasi_export():
                     TGL_KERJA=tgl_kerja,
                     TGL_JAM_IN=tgl_jam_in,
                     TGL_JAM_OUT=tgl_jam_out,
-                    TRANSAKSI_IN='LogFP',
-                    TRANSAKSI_OUT='LogFP',
+                    TRANSAKSI_IN=transaksi_in,
+                    TRANSAKSI_OUT=transaksi_out,
+                    KET_IN=(
+                        ket_special if is_special else 'LogFP'
+                    ),
+                    KET_OUT=(
+                        ket_special if is_special else 'LogFP'
+                    ),
+                    UPDATE_IN_BY=update_by,
+                    UPDATE_OUT_BY=update_by,
+                    TRANSAKSI_ID_FROM=(
+                        r.get('dinas_luar_transaksi_id')
+                        if is_special
+                        else None
+                    ),
+                    PENDUKUNG_IN=(
+                        r.get('dinas_luar_pendukung')
+                        if is_special
+                        else 'N'
+                    ),
+                    PENDUKUNG_OUT=(
+                        r.get('dinas_luar_pendukung')
+                        if is_special
+                        else 'N'
+                    ),
+                    STATUS_UM=(
+                        r.get('status_um')
+                        if is_special
+                        else None
+                    ),
                     TINGKAT_TLM=r['tingkat_tlm'],
                     TOTAL_TLM=r['total_tlm'],
                     PERSEN_POT_TLM=r['persen_pot_tlm'],
@@ -3035,8 +3138,8 @@ def api_normalisasi_export():
                 'total_psw': r.get('total_psw'),
                 'tingkat_psw': r.get('tingkat_psw'),
                 'persen_pot_psw': r.get('persen_pot_psw'),
-                'transaksi_in': 'LogFP',
-                'transaksi_out': 'LogFP',
+                'transaksi_in': transaksi_in,
+                'transaksi_out': transaksi_out,
             })
 
         db.session.commit()
