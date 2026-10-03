@@ -2025,7 +2025,8 @@ def api_normalisasi_process():
             # SHIFT_2 = 1
             #
             hadir_shift2 = (
-                int(sr['shift2'] or 0) == 1
+                int(sr['StatusID'] or 0) == 3
+                or int(sr['shift2'] or 0) == 1
             )
 
             shift2_map[
