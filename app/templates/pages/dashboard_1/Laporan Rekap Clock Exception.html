@@ -61,7 +61,8 @@
                                 class="hris-multi-select-trigger"
                                 id="unitKerjaTrigger"
                                 aria-haspopup="listbox"
-                                aria-expanded="false">
+                                aria-expanded="false"
+                                onclick="(function(btn, ev){ ev.stopPropagation(); var p=btn.closest('.hris-multi-select'); var open=p.classList.toggle('is-open'); btn.setAttribute('aria-expanded', open ? 'true' : 'false'); if(open){ var q=p.querySelector('.hris-multi-select-search'); if(q) q.focus(); } })(this, event);">
                             <span class="hris-multi-select-summary" id="unitKerjaSummary">
                                 Pilih unit kerja
                             </span>
@@ -356,15 +357,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         emptyLabel.style.display = visible ? 'none' : 'block';
     }
-
-    trigger.addEventListener('click', function () {
-        const open = picker.classList.toggle('is-open');
-        trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
-
-        if (open) {
-            search.focus();
-        }
-    });
 
     document.addEventListener('click', function (event) {
         if (!picker.contains(event.target)) {
