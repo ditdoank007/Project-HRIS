@@ -3156,10 +3156,17 @@ def api_update_pendukung_search():
         ).join(
             Pegawai,
             Absensi.FINGER_ID == Pegawai.FINGER_ID,
+        ).join(
+            MfUnitKerja,
+            Pegawai.UNIT_KERJA_ID == MfUnitKerja.UNIT_KERJA_ID,
         ).outerjoin(
             MfGolongan,
             Pegawai.GOL == MfGolongan.GOL,
         ).filter(
+            # Hanya Pegawai Operasional:
+            # IS_KELUAR = N dan Unit Kerja IS_USE = Y.
+            Pegawai.IS_KELUAR.in_(['N', '0']),
+            MfUnitKerja.IS_USE.in_(['Y', '1']),
             db.extract('year', Absensi.TGL_KERJA) == tahun,
             db.extract('month', Absensi.TGL_KERJA) == bulan,
             ~Absensi.TRANSAKSI_IN.in_([
@@ -3190,10 +3197,17 @@ def api_update_pendukung_search():
         ).join(
             Pegawai,
             Absensi.FINGER_ID == Pegawai.FINGER_ID,
+        ).join(
+            MfUnitKerja,
+            Pegawai.UNIT_KERJA_ID == MfUnitKerja.UNIT_KERJA_ID,
         ).outerjoin(
             MfGolongan,
             Pegawai.GOL == MfGolongan.GOL,
         ).filter(
+            # Hanya Pegawai Operasional:
+            # IS_KELUAR = N dan Unit Kerja IS_USE = Y.
+            Pegawai.IS_KELUAR.in_(['N', '0']),
+            MfUnitKerja.IS_USE.in_(['Y', '1']),
             db.extract('year', Absensi.TGL_KERJA) == tahun,
             db.extract('month', Absensi.TGL_KERJA) == bulan,
             Absensi.TRANSAKSI_IN.in_(['Alpa', 'sakit']),
@@ -3217,10 +3231,17 @@ def api_update_pendukung_search():
         ).join(
             Pegawai,
             Absensi.FINGER_ID == Pegawai.FINGER_ID,
+        ).join(
+            MfUnitKerja,
+            Pegawai.UNIT_KERJA_ID == MfUnitKerja.UNIT_KERJA_ID,
         ).outerjoin(
             MfGolongan,
             Pegawai.GOL == MfGolongan.GOL,
         ).filter(
+            # Hanya Pegawai Operasional:
+            # IS_KELUAR = N dan Unit Kerja IS_USE = Y.
+            Pegawai.IS_KELUAR.in_(['N', '0']),
+            MfUnitKerja.IS_USE.in_(['Y', '1']),
             db.extract('year', Absensi.TGL_KERJA) == tahun,
             db.extract('month', Absensi.TGL_KERJA) == bulan,
             ~Absensi.TRANSAKSI_IN.in_([
@@ -3454,35 +3475,30 @@ def api_update_pendukung_save():
 
 
 def api_update_pendukung_autocomplete():
-    """API autocomplete Nama Pegawai untuk Update Pendukung."""
+    """API autocomplete Nama Pegawai memakai Business Rule Pegawai Operasional."""
     try:
         keyword = str(request.args.get('q') or '').strip()
         if len(keyword) < 2:
             return jsonify({'success': True, 'data': []})
 
-        rows = (
-            db.session.query(
-                Pegawai.NIP.label('NIP'),
-                Pegawai.NAMA.label('Nama'),
-                Pegawai.FINGER_ID.label('FingerID'),
-            )
-            .filter(Pegawai.NAMA.ilike(f'%{keyword}%'))
-            .order_by(Pegawai.NAMA.asc())
-            .limit(20)
-            .all()
+        # Gunakan helper yang sama dengan Dinas Luar Umum/Operasi/SD:
+        # Pegawai.IS_KELUAR = N + Unit Kerja.IS_USE = Y.
+        pegawai_list = search_operational_pegawai(
+            keyword,
+            limit=20,
         )
 
         data = [
             {
-                'nip': row.NIP or '',
-                'nama': row.Nama or '',
-                'finger_id': row.FingerID or '',
+                'nip': pegawai.NIP or '',
+                'nama': pegawai.NAMA or '',
+                'finger_id': pegawai.FINGER_ID or '',
                 'label': (
-                    f"{row.Nama or ''} — {row.NIP or ''}"
-                    if row.NIP else (row.Nama or '')
+                    f"{pegawai.NAMA or ''} — {pegawai.NIP or ''}"
+                    if pegawai.NIP else (pegawai.NAMA or '')
                 ),
             }
-            for row in rows
+            for pegawai in pegawai_list
         ]
 
         return jsonify({'success': True, 'data': data})
@@ -3492,7 +3508,6 @@ def api_update_pendukung_autocomplete():
             'error': str(e),
             'data': [],
         }), 500
-
 
 def api_update_pendukung_get_tingkatan():
     """API: Get Tingkatan TLM/PSW seperti daMFTingkatPot HRIS 2013."""
