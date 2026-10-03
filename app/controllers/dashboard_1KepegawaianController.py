@@ -1100,7 +1100,7 @@ def api_pegawai_delete():
 
 def kepegawaian_dinas_luar_operasi():
     return render_template(
-        'pages/dashboard_1/Kepegawaian Dinas Luar Umum.html',
+        'pages/dashboard_1/Kepegawaian Dinas Luar Operasi.html',
         dinas_type='OP',
         dinas_label='Dinas Luar Operasi',
         dinas_badge='DINAS LUAR / OPERASI',
