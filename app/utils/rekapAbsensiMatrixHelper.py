@@ -16,6 +16,7 @@ Layer:
 
 from app import db
 from datetime import timedelta, datetime
+from sqlalchemy import bindparam, text
 
 from app.models.pegawaiModel import Pegawai
 from app.models.absensiModel import Absensi
@@ -24,7 +25,6 @@ from app.models.kalenderModel import MfKalender
 from app.models.jabatanModel import MfJabatan
 from app.models.eselonModel import MfEselon
 from app.models.golonganModel import MfGolongan
-from app.models.logActivityModel import LogActivity
 
 from app.utils.pegawaiHelper import is_pegawai_aktif_periode
 from app.utils.pegawaiSortHelper import sort_pegawai_rows
@@ -135,17 +135,35 @@ def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
         .all()
     )
 
-    # Siaga: ambil kedua shift seperti RDailyAbsensi.
-    siaga_rows = (
-        LogActivity.query
-        .filter(LogActivity.ACTIVITY == "Piket Siaga")
-        .filter(LogActivity.STATUS_ID == 3)
-        .filter(LogActivity.STATUS_TRX == "-")
-        .filter(LogActivity.SHIFT.in_(["1", "2"]))
-        .filter(LogActivity.ACTIVITY_DATE >= (tgl_awal - timedelta(days=1)))
-        .filter(LogActivity.ACTIVITY_DATE <= tgl_akhir)
-        .all()
-    )
+    # Siaga dibaca dengan SQL langsung karena tabel hasil migrasi
+    # menggunakan nama kolom fisik legacy-mapped (GUIDLog, ActivityDate,
+    # StatusID, IDUnitKerja, dll), bukan nama atribut ORM lama.
+    siaga_sql = text("""
+        SELECT
+            NIP,
+            ActivityDate,
+            Shift
+        FROM LOG_ACTIVITIY
+        WHERE Activity = :activity
+          AND StatusID = :status_id
+          AND StatusTrx = :status_trx
+          AND Shift IN ('1', '2')
+          AND ActivityDate >= :activity_awal
+          AND ActivityDate <= :activity_akhir
+          AND IDUnitKerja IN :unit_ids
+    """).bindparams(bindparam("unit_ids", expanding=True))
+
+    siaga_rows = db.session.execute(
+        siaga_sql,
+        {
+            "activity": "Piket Siaga",
+            "status_id": 3,
+            "status_trx": "-",
+            "activity_awal": (tgl_awal - timedelta(days=1)).date(),
+            "activity_akhir": tgl_akhir.date(),
+            "unit_ids": [str(x) for x in unit_ids],
+        },
+    ).mappings().all()
 
     absensi_index = {}
     for absensi, pegawai in absensi_rows:
