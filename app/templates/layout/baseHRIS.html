@@ -185,8 +185,16 @@
         })();
     </script>
 
+    {# 
+       Global script standard:
+       - New pages may provide raw JavaScript inside {% block script %}.
+       - Legacy pages that still include <script>...</script> are also supported.
+       - The wrapper below normalizes both forms into exactly ONE script tag.
+    #}
     <script>
-        {% block script %}{% endblock %}
+        {% filter replace('<script>', '') | replace('</script>', '') %}
+            {% block script %}{% endblock %}
+        {% endfilter %}
     </script>
 </body>
 </html>
