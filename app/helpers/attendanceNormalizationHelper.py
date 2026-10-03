@@ -10,7 +10,8 @@ class AttendanceNormalizationEngine:
     - MF_LOAD_FINGER: window fingerprint
     - MF_POT        : kategori/potongan TLM/PSW
     - MF_KALENDER   : hari libur
-    - FINGER_HARVEST_RAW : fingerprint aktual
+    - TIME_RECORDER     : event fingerprint/manual/VIP
+    - FINGER_HARVEST_RAW : event RAW file yang belum masuk recorder
     - LOG_ACTIVITIY  : penentuan petugas Siaga Shift 2
 
     Engine ini TIDAK mengubah database.
