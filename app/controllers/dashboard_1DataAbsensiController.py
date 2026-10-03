@@ -3621,6 +3621,38 @@ def api_normalisasi_export():
                 or transaksi_in
             ).strip()
 
+            # Metadata tampilan Rekap dipersist bersama ABSENSI final.
+            #
+            # HRIS 2013 mengambil:
+            #   - DL/OP/SD dari DINAS_LUAR.Jenis
+            #   - CT/S-1 dari DINAS_LUAR.PenempatanDinasLuar
+            #
+            # Reborn tidak perlu membaca DINAS_LUAR lagi saat Rekap.
+            # HISTORY_TRANSAKSI_IN/OUT dipakai sebagai carrier metadata
+            # display final yang sebelumnya hilang saat EXPORT.
+            if bool(r.get('shift2_siaga')):
+                rekap_display_code = 'SIAGA'
+            elif transaksi_in.upper() == 'DINASLUAR':
+                rekap_display_code = str(
+                    r.get('sprin_code')
+                    or r.get('dinas_luar_jenis')
+                    or ''
+                ).strip().upper()
+            elif transaksi_in.upper() in ('CUTI', 'SAKIT'):
+                rekap_display_code = str(
+                    r.get('tingkat_tlm')
+                    or r.get('tingkat_psw')
+                    or ''
+                ).strip().upper()
+            elif transaksi_in.upper() == 'ALPA':
+                rekap_display_code = 'A'
+            elif transaksi_in.upper() in ('IJIN', 'IZIN'):
+                rekap_display_code = 'I'
+            elif transaksi_in.upper() == 'WFH':
+                rekap_display_code = 'WFH'
+            else:
+                rekap_display_code = ''
+
             update_by = (
                 str(
                     session.get('nip')
@@ -3672,6 +3704,14 @@ def api_normalisasi_export():
                     r.get('status_um')
                     if is_special
                     else None
+                )
+                existing.HISTORY_TRANSAKSI_IN = (
+                    rekap_display_code
+                    or None
+                )
+                existing.HISTORY_TRANSAKSI_OUT = (
+                    rekap_display_code
+                    or None
                 )
                 existing.TINGKAT_TLM = r['tingkat_tlm']
                 existing.TOTAL_TLM = r['total_tlm']
@@ -3726,6 +3766,14 @@ def api_normalisasi_export():
                         r.get('status_um')
                         if is_special
                         else None
+                    ),
+                    HISTORY_TRANSAKSI_IN=(
+                        rekap_display_code
+                        or None
+                    ),
+                    HISTORY_TRANSAKSI_OUT=(
+                        rekap_display_code
+                        or None
                     ),
                     TINGKAT_TLM=r['tingkat_tlm'],
                     TOTAL_TLM=r['total_tlm'],
