@@ -1505,10 +1505,10 @@ def api_normalisasi_import_finger():
             FROM TIME_RECORDER tr
             LEFT JOIN PEGAWAI p
                 ON CAST(p.FingerID AS CHAR) = CAST(tr.FingerID AS CHAR)
-            LEFT JOIN MFGol g
+            LEFT JOIN MF_GOL g
                 ON g.Gol = p.Gol
-            LEFT JOIN MFUnitKerja uk
-                ON uk.IDUnitKerja = p.UnitKerja
+            LEFT JOIN MF_UNIT_KERJA uk
+                ON CAST(uk.IDUnitKerja AS CHAR) = CAST(p.UnitKerja AS CHAR)
             WHERE tr.Waktu >= :tgl_awal
               AND tr.Waktu < :tgl_akhir
               {filter_sql}
