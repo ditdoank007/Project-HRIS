@@ -43,6 +43,38 @@ def format_jam_absensi(value):
     return value.strftime("%H.%M")
 
 
+def _is_vip(pegawai):
+    value = getattr(pegawai, "IS_VIP", None)
+    return str(value or "").strip().upper() in ("Y", "1", "TRUE")
+
+
+def _legacy_vip_jam(actual, baku, is_vip, arah):
+    """
+    Reproduce the active VIP display rule from HRIS 2013 RDailyAbsensi.
+    This changes only the displayed/reporting time; raw ABSENSI remains untouched.
+    """
+    if not is_vip or not actual or not baku:
+        return actual
+
+    actual_minutes = actual.hour * 60 + actual.minute
+    baku_minutes = baku.hour * 60 + baku.minute
+
+    if arah == "IN" and actual <= baku:
+        return actual
+    if arah == "OUT" and actual >= baku:
+        return actual
+
+    diff = baku_minutes - actual_minutes
+    sql_remainder = diff - int(diff / 11) * 11
+
+    if arah == "IN":
+        delta_minutes = sql_remainder - 1
+    else:
+        delta_minutes = sql_remainder + 1
+
+    return baku + timedelta(minutes=delta_minutes)
+
+
 def format_status_absensi(status):
     mapping = {
         "DINAS_LUAR": "DL",
@@ -267,10 +299,23 @@ def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
                     status = "HADIR"
                     color = "normal"
 
+                jam_in_report = _legacy_vip_jam(
+                    finger.TGL_JAM_IN,
+                    finger.TGL_JAM_BAKU_IN,
+                    _is_vip(pegawai),
+                    "IN",
+                )
+                jam_out_report = _legacy_vip_jam(
+                    finger.TGL_JAM_OUT,
+                    finger.TGL_JAM_BAKU_OUT,
+                    _is_vip(pegawai),
+                    "OUT",
+                )
+
                 matrix[pegawai.NIP][tanggal].update({
                     "status": status,
-                    "jam_in": finger.TGL_JAM_IN,
-                    "jam_out": finger.TGL_JAM_OUT,
+                    "jam_in": jam_in_report,
+                    "jam_out": jam_out_report,
                     "sumber_absensi": "ONLINE_WFH" if is_online_wfh else "FINGER",
                     "warna": color,
                     "layer": "ABSENSI",
@@ -333,8 +378,24 @@ def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
                     finger = absensi_index.get(key)
                     cell.update({
                         "status": "HADIR" if finger else "",
-                        "jam_in": finger.TGL_JAM_IN if finger else None,
-                        "jam_out": finger.TGL_JAM_OUT if finger else None,
+                        "jam_in": (
+                            _legacy_vip_jam(
+                                finger.TGL_JAM_IN,
+                                finger.TGL_JAM_BAKU_IN,
+                                _is_vip(pegawai),
+                                "IN",
+                            )
+                            if finger else None
+                        ),
+                        "jam_out": (
+                            _legacy_vip_jam(
+                                finger.TGL_JAM_OUT,
+                                finger.TGL_JAM_BAKU_OUT,
+                                _is_vip(pegawai),
+                                "OUT",
+                            )
+                            if finger else None
+                        ),
                         "sumber_absensi": "DINAS_LUAR",
                         "warna": "blue",
                         "layer": "SPRIN",
