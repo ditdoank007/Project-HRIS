@@ -218,15 +218,19 @@ def api_pegawai_cari():
         # pada operasional HRIS.
         # ========================================================
 
-        query = query.filter(
-            MfUnitKerja.IS_USE == 'Y'
-        )
-
-        # Filter status pegawai (aktif/keluar)
+        # Filter status pegawai (aktif/keluar).
+        # Data pegawai yang sudah keluar tetap harus dapat dimonitor
+        # walaupun Unit Kerja saat ini sudah tidak aktif, karena ini
+        # adalah data historis/master dan bukan populasi operasional.
         if status_pegawai == 'aktif':
-            query = query.filter(Pegawai.IS_KELUAR == 'N')
+            query = query.filter(
+                MfUnitKerja.IS_USE == 'Y',
+                Pegawai.IS_KELUAR == 'N'
+            )
         else:
-            query = query.filter(Pegawai.IS_KELUAR == 'Y')
+            query = query.filter(
+                Pegawai.IS_KELUAR == 'Y'
+            )
         
         # Filter status jenis (PNS/NON PNS)
         if status_jenis == 'pns':
@@ -336,6 +340,11 @@ def api_pegawai_cari():
                     if peg.STATUS_PEG == 1
                     else 'NON PNS'
                 ),
+                'tgl_keluar': (
+                    peg.TGL_KELUAR.strftime('%d-%m-%Y')
+                    if peg.TGL_KELUAR else ''
+                ),
+                'keterangan_keluar': peg.ALASAN_KELUAR or '',
 
             })
         
