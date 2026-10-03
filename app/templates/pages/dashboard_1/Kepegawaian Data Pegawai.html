@@ -1162,6 +1162,20 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
+        // Jika pegawai dinyatakan keluar, Tanggal Keluar wajib dicatat.
+        // Validasi ini dilakukan sebelum request dikirim ke server.
+        if (
+            String(payload.is_keluar || "").trim().toUpperCase() === "Y" &&
+            !String(payload.tgl_keluar || "").trim()
+        ) {
+            alert("Tanggal Keluar wajib diisi jika Is Keluar = Y.");
+            const tglKeluarField = document.querySelector('[data-field="tgl_keluar"]');
+            if (tglKeluarField) {
+                tglKeluarField.focus();
+            }
+            return;
+        }
+
         /*
          * STATUS:
          * 1 = PNS
