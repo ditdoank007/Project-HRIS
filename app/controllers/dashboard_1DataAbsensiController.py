@@ -1486,34 +1486,48 @@ def api_normalisasi_import_finger():
             conditions.append(f"{field} LIKE :{param_name}")
             params[param_name] = f"%{field_value}%"
 
-        # Apply employee/unit filters inside BOTH source queries.  The previous
-        # implementation materialized the complete monthly UNION first and only
-        # then filtered by employee name, which caused 30s Gunicorn timeouts.
-        source_filter_mapping = {
+        # Push employee/unit filters into each source branch so a request
+        # such as "Nama=dityo" does not materialize the entire month first.
+        # Keep Status/Transaksi as outer filters because RAW has synthetic
+        # transaction/status values.
+        source_field_map = {
             'NIP': 'p0.NIP', 'Nama': 'p0.Nama', 'NAMA': 'p0.Nama',
-            'FingerID': 'src0.FINGER_ID', 'UnitKerja': 'p0.UnitKerja',
-            'Unit': 'p0.UnitKerja', 'UnitKerjaName': 'uk0.UnitKerjaName',
+            'UnitKerja': 'p0.UnitKerja', 'Unit': 'p0.UnitKerja',
+            'UnitKerjaName': 'uk0.UnitKerjaName',
             'Jabatan': 'p0.Jabatan', 'Gol': 'p0.Gol', 'Gol-Pangkat': 'p0.Gol',
-            'Status': 'src0.STATUS', 'Transaksi': 'src0.TRANSAKSI',
         }
-        early_conditions = []
+        time_filter_map = {
+            **source_field_map,
+            'FingerID': 'tr.FingerID',
+        }
+        raw_filter_map = {
+            **source_field_map,
+            'FingerID': 'r.FINGER_ID',
+        }
+
+        time_conditions = []
+        raw_conditions = []
         for idx, (field_name, field_value) in enumerate((
             (filter_field1, filter_value1),
             (filter_field2, filter_value2),
         ), start=1):
             if not field_name or not field_value:
                 continue
-            field = source_filter_mapping.get(field_name)
-            if not field:
-                continue
-            early_conditions.append(f"{field} LIKE :filter_value{idx}")
 
-        early_filter_sql = ''
-        if early_conditions:
-            early_filter_sql = ' AND ' + ' AND '.join(early_conditions)
+            time_field = time_filter_map.get(field_name)
+            raw_field = raw_filter_map.get(field_name)
+            if time_field:
+                time_conditions.append(f"{time_field} LIKE :filter_value{idx}")
+            if raw_field:
+                raw_conditions.append(f"{raw_field} LIKE :filter_value{idx}")
 
-        # Status/Transaksi are source columns; for the RAW branch they are
-        # normalized aliases so the same filter semantics are preserved.
+        time_filter_sql = ''
+        raw_filter_sql = ''
+        if time_conditions:
+            time_filter_sql = ' AND ' + ' AND '.join(time_conditions)
+        if raw_conditions:
+            raw_filter_sql = ' AND ' + ' AND '.join(raw_conditions)
+
         sql = text(f"""
             SELECT
                 src.FINGER_ID,
@@ -1540,7 +1554,7 @@ def api_normalisasi_import_finger():
                     ON CAST(uk0.IDUnitKerja AS CHAR) = CAST(p0.UnitKerja AS CHAR)
                 WHERE tr.Waktu >= :tgl_awal
                   AND tr.Waktu < :tgl_akhir
-                  {early_filter_sql}
+                  {time_filter_sql}
 
                 UNION ALL
 
@@ -1568,7 +1582,7 @@ def api_normalisasi_import_finger():
                 WHERE r.WAKTU >= :tgl_awal
                   AND r.WAKTU < :tgl_akhir
                   AND tr2.FingerID IS NULL
-                  {early_filter_sql.replace('src0.', 'r.').replace('p0.', 'p0.').replace('uk0.', 'uk0.')}
+                  {raw_filter_sql}
             ) src
             LEFT JOIN PEGAWAI p
                 ON CAST(p.FingerID AS CHAR) = CAST(src.FINGER_ID AS CHAR)
@@ -1576,7 +1590,11 @@ def api_normalisasi_import_finger():
                 ON g.Gol = p.Gol
             LEFT JOIN MF_UNIT_KERJA uk
                 ON CAST(uk.IDUnitKerja AS CHAR) = CAST(p.UnitKerja AS CHAR)
+            WHERE 1=1
+              {filter_sql}
             ORDER BY src.FINGER_ID, src.WAKTU
+        """)
+
         """)
 
         rows = db.session.execute(sql, params).mappings().all()
