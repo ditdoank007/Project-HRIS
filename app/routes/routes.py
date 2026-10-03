@@ -27,7 +27,7 @@ from app.controllers.dashboard_1MasterFileController import (
     master_unit_kerja, toggle_unit_kerja, master_user, master_uang_makan, cari_master_pegawai_vip, cari_master_jabatan, cari_master_jam_finger, cari_master_jam_kerja,
     cari_master_kalender, cari_master_potongan, cari_master_tunkin_class, cari_master_uang_makan, cari_master_unit_kerja,
     cari_user_account, create_kalender, save_jabatan, save_jam_kerja, save_joblist, save_potongan, save_tunkin_class, save_uang_makan, save_unit_kerja, save_user_account,
-    toggle_pegawai_vip, save_jam_finger, update_potongan, delete_potongan, update_unit_kerja,
+    toggle_pegawai_vip, save_pegawai_vip, save_jam_finger, update_potongan, delete_potongan, update_unit_kerja,
     get_jam_kerja_by_id, update_jam_kerja, delete_jam_kerja,
     get_auth_config, save_auth_config,
     get_jam_finger_by_id, update_jam_finger, delete_jam_finger,
@@ -888,6 +888,13 @@ def api_pegawai_vip_list():
 @login_required
 def api_pegawai_vip_toggle():
     return toggle_pegawai_vip()
+
+@main.route('/api/pegawai-vip/save', methods=['POST'])
+@login_required
+def api_pegawai_vip_save():
+    return save_pegawai_vip()
+
+
 
 @main.route('/master/potongan')
 @login_required
