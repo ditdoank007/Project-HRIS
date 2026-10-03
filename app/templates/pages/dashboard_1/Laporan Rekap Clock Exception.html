@@ -243,129 +243,49 @@ function renderPreviewClockException(hasil){
 document.addEventListener('DOMContentLoaded', function () {
 
     const btn = document.getElementById('btnRunClockException');
-    const checkAll = document.getElementById('checkAllUnit');
-    const unitCheckboxes = document.querySelectorAll('.check-unit-item');
-    const unitLabel = document.getElementById('dropdownLabelUnit');
+    const exportPdfButton = document.getElementById('btnExportClockExceptionPdf');
+    const resetButton = document.getElementById('btnResetClockException');
+    const unitSelect = document.getElementById('unitKerja');
 
-    function updateUnitLabel() {
-        const checked = Array.from(
-            document.querySelectorAll('.check-unit-item:checked')
-        );
+    function showAlert(type, message) {
+        if (!alertBox) return;
+        alertBox.className = 'alert mb-3 alert-' + type;
+        alertBox.textContent = message;
+        alertBox.classList.remove('d-none');
+        window.setTimeout(function () {
+            alertBox.classList.add('d-none');
+        }, 4000);
+    }
 
-        if (!checked.length) {
-            unitLabel.textContent = 'Pilih Unit Kerja';
-            return;
+    function getSelectedUnits() {
+        return Array.from(unitSelect?.selectedOptions || []);
+    }
+
+    function resetReport() {
+        document.getElementById('tglAwal').value = '';
+        document.getElementById('tglAkhir').value = '';
+        if (unitSelect) {
+            Array.from(unitSelect.options).forEach(function (option) {
+                option.selected = false;
+            });
         }
 
-        const names = checked.map(function (cb) {
-            const label = document.querySelector(
-                'label[for="' + cb.id + '"]'
-            );
+        document.getElementById('previewClockExceptionContainer').innerHTML =
+            '<div class="hris-empty">Preview akan tampil setelah laporan dijalankan.</div>';
 
-            return label
-                ? label.textContent.trim()
-                : cb.value;
-        });
-
-        unitLabel.textContent = names.join(', ');
+        resultInfo.textContent = 'Silakan tentukan filter lalu klik Run.';
+        if (exportPdfButton) exportPdfButton.style.display = 'none';
+        if (alertBox) alertBox.classList.add('d-none');
     }
 
-    if (checkAll) {
-        checkAll.addEventListener('change', function () {
-            unitCheckboxes.forEach(function (cb) {
-                cb.checked = checkAll.checked;
-            });
-
-            updateUnitLabel();
-        });
-    }
-
-    unitCheckboxes.forEach(function (cb) {
-        cb.addEventListener('change', function () {
-
-            const total = unitCheckboxes.length;
-            const checked = document.querySelectorAll(
-                '.check-unit-item:checked'
-            ).length;
-
-            if (checkAll) {
-                checkAll.checked = total > 0 && checked === total;
-            }
-
-            updateUnitLabel();
-        });
-    });
-
-    updateUnitLabel();
-
-    if (!btn) {
-        console.error('RUN button tidak ditemukan.');
-        return;
-    }
-
-    const exportPdfButton = document.getElementById('btnExportClockExceptionPdf');
-
-    if (exportPdfButton) {
-        exportPdfButton.addEventListener('click', async function () {
-            const unitChecked = document.querySelectorAll('.check-unit-item:checked');
-            const tglAwal = document.getElementById('tglAwal')?.value || '';
-            const tglAkhir = document.getElementById('tglAkhir')?.value || '';
-
-            if (!tglAwal || !tglAkhir || !unitChecked.length) {
-                alert('Jalankan RUN terlebih dahulu.');
-                return;
-            }
-
-            const formData = new FormData();
-            unitChecked.forEach(function (cb) {
-                formData.append('unit_kerja[]', cb.value);
-            });
-            formData.append('tgl_awal', tglAwal);
-            formData.append('tgl_akhir', tglAkhir);
-
-            exportPdfButton.disabled = true;
-            exportPdfButton.innerHTML = '<i class="ti ti-loader-2 me-1"></i> Menyiapkan PDF...';
-
-            try {
-                const response = await fetch(
-                    "{{ url_for('main.export_laporan_rekap_clock_exception_pdf') }}",
-                    { method: 'POST', body: formData }
-                );
-
-                if (!response.ok) {
-                    const text = await response.text();
-                    throw new Error(text.substring(0, 500));
-                }
-
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const anchor = document.createElement('a');
-                anchor.href = url;
-                anchor.download =
-                    'Rekap_Absensi_Bulanan_' +
-                    tglAwal.replaceAll('-', '') + '_' +
-                    tglAkhir.replaceAll('-', '') + '.pdf';
-                document.body.appendChild(anchor);
-                anchor.click();
-                anchor.remove();
-                window.URL.revokeObjectURL(url);
-            } catch (error) {
-                console.error('Export PDF:', error);
-                alert('Gagal membuat PDF:\n\n' + error.message);
-            } finally {
-                exportPdfButton.disabled = false;
-                exportPdfButton.innerHTML =
-                    '<i class="ti ti-file-type-pdf me-1"></i> Ekspor PDF';
-            }
-        });
+    if (resetButton) {
+        resetButton.addEventListener('click', resetReport);
     }
 
     btn.addEventListener('click', async function (e) {
         e.preventDefault();
 
-        const unitChecked = document.querySelectorAll(
-            '.check-unit-item:checked'
-        );
+        const unitChecked = getSelectedUnits();
 
         const tglAwal =
             document.getElementById('tglAwal')?.value || '';
@@ -374,17 +294,17 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('tglAkhir')?.value || '';
 
         if (!tglAwal || !tglAkhir) {
-            alert('Silakan isi tanggal awal dan tanggal akhir.');
+            showAlert('warning', 'Silakan isi tanggal awal dan tanggal akhir.');
             return;
         }
 
         if (tglAwal > tglAkhir) {
-            alert('Tanggal awal tidak boleh lebih besar dari tanggal akhir.');
+            showAlert('warning', 'Tanggal awal tidak boleh lebih besar dari tanggal akhir.');
             return;
         }
 
         if (!unitChecked.length) {
-            alert('Silakan pilih minimal satu Unit Kerja.');
+            showAlert('warning', 'Silakan pilih minimal satu Unit Kerja.');
             return;
         }
 
@@ -450,9 +370,10 @@ const endpoint =
             );
 
 
-            renderPreviewClockException(
-                hasil
-            );
+            renderPreviewClockException(hasil);
+            resultInfo.textContent =
+                'Preview berhasil dibuat untuk ' + hasil.pegawai.length +
+                ' pegawai dan ' + hasil.tanggal.length + ' hari.';
 
 
         } catch (err) {
