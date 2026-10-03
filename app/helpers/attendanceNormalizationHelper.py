@@ -501,12 +501,14 @@ class AttendanceNormalizationEngine:
         if not jam_out or not baku_out:
             return -1 * self.xdefault
 
-        return min(
-            0,
-            (
-                jam_out - baku_out
-            ).total_seconds() / 60,
-        )
+        # Legacy HRIS menghitung selisih signed:
+        #   OUT > baku OUT  -> positif
+        #   OUT < baku OUT  -> negatif
+        # Nilai positif dipakai untuk kompensasi TLM-1,
+        # sedangkan nilai negatif menjadi pelanggaran PSW.
+        return (
+            jam_out - baku_out
+        ).total_seconds() / 60
 
     # ================================================================
     # KOMPENSASI TLM-1
@@ -542,17 +544,17 @@ class AttendanceNormalizationEngine:
         if not jam_out or not baku_out:
             return awal_tlm
 
-        tambahan_pulang = max(
-            0,
-            (
-                jam_out - baku_out
-            ).total_seconds() / 60,
-        )
+        tambahan_pulang = (
+            jam_out - baku_out
+        ).total_seconds() / 60
 
-        return max(
-            0,
-            awal_tlm - tambahan_pulang,
-        )
+        # Persis rule legacy:
+        # jika OUT lebih lambat dari jam baku, menit tambahan
+        # mengurangi TLM-1. Hasil boleh negatif.
+        if tambahan_pulang > 0:
+            return awal_tlm - tambahan_pulang
+
+        return awal_tlm
 
     # ================================================================
     # KATEGORI / POTONGAN
@@ -870,28 +872,15 @@ class AttendanceNormalizationEngine:
             tk_psw = ''
             pot_psw = 0
         else:
-            # ========================================================
-            # KATEGORI TLM DITENTUKAN DARI AWAL_TLM
-            #
-            # Kompensasi TLM-1 hanya mengurangi NILAI total_tlm.
-            # Kompensasi tidak boleh mengubah kategori.
-            #
-            # Contoh:
-            #   awal_tlm  = 10 menit -> TLM-1
-            #   kompensasi = 8 menit
-            #   total_tlm = 2 menit
-            #
-            # Hasil tetap:
-            #   TLM-1
-            # ========================================================
-
+            # Legacy menentukan tingkat TLM dari TOTAL_TLM
+            # setelah kompensasi, bukan dari AWAL_TLM.
             (
                 tk_tlm,
                 pot_tlm,
                 _unused_tk_psw,
                 _unused_pot_psw,
             ) = self.resolve_penalty(
-                awal_tlm,
+                total_tlm,
                 0,
                 tgl_kerja,
             )
@@ -953,11 +942,7 @@ class AttendanceNormalizationEngine:
             ),
             'is_valid_in': bool(jam_in),
             'is_valid_out': bool(jam_out),
-            'is_libur': (
-                'LIBUR'
-                if is_libur
-                else 'TDKLIBUR'
-            ),
+            'is_libur': bool(is_libur),
             'awal_tlm': round(
                 awal_tlm,
                 2,
