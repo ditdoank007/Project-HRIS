@@ -1,63 +1,53 @@
-# app/models/logActivityModel.py
 from app import db
 
 
 class LogActivity(db.Model):
     """
-    Model untuk tabel LOG_ACTIVITIY.
+    Mapping LOG_ACTIVITIY ke kolom fisik hasil migrasi SQL Server -> MariaDB.
+
+    Nama atribut Python dipertahankan agar kode lama tetap kompatibel,
+    sedangkan nama kolom database mengikuti schema fisik yang sebenarnya.
     """
-    __tablename__ = 'LOG_ACTIVITIY'
+    __tablename__ = "LOG_ACTIVITIY"
 
-    # Tabel legacy LOG_ACTIVITIY tidak memiliki kolom ID.
-    # GUID_LOG adalah identifier unik yang tersedia dan menjadi
-    # primary key ORM agar SQLAlchemy tidak meminta kolom ID.
-    GUID_LOG = db.Column(
-        db.String(50),
-        primary_key=True,
-        nullable=False,
-        unique=True,
-    )
+    GUID_LOG = db.Column("GUIDLog", db.String(50), primary_key=True, nullable=False)
 
-    # ✅ TANPA FOREIGN KEY - semua kolom biasa
-    TRAKSAKSI_ID = db.Column(db.Integer, nullable=False)
-    UNIT_KERJA_ID = db.Column(db.Integer, nullable=False)
-    GUID_LOG_BACKUP = db.Column(db.String(50), nullable=False)
-    GUID_TIM = db.Column(db.String(50), nullable=False)
-    STATUS_ID = db.Column(db.Integer, nullable=False)
-    NIP = db.Column(db.String(50), nullable=False)
+    TRX = db.Column("Trx", db.String(50))
+    ACTIVITY = db.Column("Activity", db.String(50))
+    STATUS_ID = db.Column("StatusID", db.Integer)
+    NIP = db.Column("NIP", db.String(50))
+    ACTIVITY_DATE = db.Column("ActivityDate", db.Date)
+    NOTE = db.Column("Note", db.String(150))
+    TEMPAT = db.Column("Tempat", db.String(150))
+    PERIHAL = db.Column("Perihal", db.String(150))
+    UPDATE_BY = db.Column("UpdateBy", db.String(50))
+    UPDATE_DATE = db.Column("UpdateDate", db.DateTime)
 
-    TRX = db.Column(db.String(50))
-    ACTIVITY = db.Column(db.String(50))
-    ACTIVITY_DATE = db.Column(db.Date)
-    NOTE = db.Column(db.String(150))
-    TEMPAT = db.Column(db.String(150))
-    PERIHAL = db.Column(db.String(150))
+    GUID_TIM = db.Column("GUIDTim", db.String(50))
+    FUNGSIONAL = db.Column("Fungsional", db.String(50))
+    UNIT_KERJA_ID = db.Column("IDUnitKerja", db.String(50))
+    TGL_CLOSING = db.Column("TglClosing", db.Date)
 
-    UPDATE_BY = db.Column(db.String(50))
-    UPDATE_DATE = db.Column(db.DateTime)
+    SHIFT_1 = db.Column("shift1", db.Integer)
+    SHIFT_2 = db.Column("shift2", db.Integer)
+    PENGGANTI = db.Column("Pengganti", db.Integer)
 
-    FUNGSIONAL = db.Column(db.String(50))
-    TGL_CLOSING = db.Column(db.Date)
+    STATUS_TRX = db.Column("StatusTrx", db.String(50))
+    KET_UPDATE = db.Column("ketUpdate", db.String(250))
+    NIP_PENGGANTI = db.Column("NIPPengganti", db.String(50))
 
-    SHIFT_1 = db.Column(db.Integer)
-    SHIFT_2 = db.Column(db.Integer)
-    PENGGANTI = db.Column(db.Integer)
+    BIAYA = db.Column("Biaya", db.Float)
+    QTY = db.Column("Qty", db.Float)
+    SATUAN_QTY = db.Column("SatuanQty", db.String(50))
 
-    STATUS_TRX = db.Column(db.String(50))
-    KET_UPDATE = db.Column(db.String(250))
-    NIP_PENGGANTI = db.Column(db.String(50))
+    SHIFT = db.Column("Shift", db.String(5))
+    TRAKSAKSI_ID = db.Column("TransacID", db.BigInteger)
+    TRANSAKSI_FORM = db.Column("TransacForm", db.String(50))
 
-    BIAYA = db.Column(db.Float)
-    QTY = db.Column(db.Float)
-    SATUAN_QTY = db.Column(db.String(50))
-
-    SHIFT = db.Column(db.String(5))
-    TRANSAKSI_FORM = db.Column(db.String(50))
-
-    TGL_JAM_IN = db.Column(db.DateTime)
-    TGL_JAM_OUT = db.Column(db.DateTime)
-    TGL_JAM_BAKU_IN = db.Column(db.DateTime)
-    TGL_JAM_BAKU_OUT = db.Column(db.DateTime)
+    TGL_JAM_IN = db.Column("TglJamIn", db.DateTime)
+    TGL_JAM_OUT = db.Column("TglJamOut", db.DateTime)
+    TGL_JAM_BAKU_IN = db.Column("TglJamBakuIn", db.DateTime)
+    TGL_JAM_BAKU_OUT = db.Column("TglJamBakuOut", db.DateTime)
 
     def __repr__(self):
-        return f'<LogActivity {self.GUID_LOG}>'
+        return f"<LogActivity {self.GUID_LOG}>"
