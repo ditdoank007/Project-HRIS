@@ -82,9 +82,11 @@ def _jam_in_rekap(absensi):
         absensi.HISTORY_TRANSAKSI_IN or ''
     ).strip().upper()
 
+    # Shift 2 sudah menjadi indikator Siaga pada hasil final ABSENSI.
+    # Jangan mensyaratkan HISTORY_TRANSAKSI_IN == 'SIAGA' karena data
+    # legacy tertentu hanya memiliki TglJamBakuIn >= 18:00.
     if (
-        rekap_code == 'SIAGA'
-        and _is_shift2_absensi(absensi)
+        _is_shift2_absensi(absensi)
         and getattr(jam_in, 'hour', 0) == 0
         and getattr(jam_in, 'minute', 0) == 0
         and absensi.TGL_JAM_BAKU_IN
