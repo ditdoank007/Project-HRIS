@@ -411,13 +411,15 @@
         return '';
     }
 
+    const participantColspan = {% if dinas_type == 'OP' %}8{% else %}7{% endif %};
+
     function renderParticipants() {
         participantCount.textContent = participants.length + ' Pegawai';
         btnDelete.disabled = !guidSprin;
 
         if (!participants.length) {
             participantBody.innerHTML =
-                '<tr><td colspan="{% if dinas_type == 'OP' %}8{% else %}7{% endif %}" class="empty-row">Belum ada pegawai.</td></tr>';
+                '<tr><td colspan="' + participantColspan + '" class="empty-row">Belum ada pegawai.</td></tr>';
             return;
         }
 
