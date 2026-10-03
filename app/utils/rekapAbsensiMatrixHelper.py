@@ -140,10 +140,10 @@ def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
         LogActivity.query
         .filter(LogActivity.ACTIVITY == "Piket Siaga")
         .filter(LogActivity.STATUS_ID == "3")
-        .filter(LogActivity.STATUSTRX == "-")
+        .filter(LogActivity.STATUS_TRX == "-")
         .filter(LogActivity.SHIFT.in_(["1", "2"]))
-        .filter(LogActivity.ACTIVITYDATE >= (tgl_awal - timedelta(days=1)))
-        .filter(LogActivity.ACTIVITYDATE <= tgl_akhir)
+        .filter(LogActivity.ACTIVITY_DATE >= (tgl_awal - timedelta(days=1)))
+        .filter(LogActivity.ACTIVITY_DATE <= tgl_akhir)
         .all()
     )
 
@@ -176,9 +176,9 @@ def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
 
     siaga_index = {}
     for row in siaga_rows:
-        if not row.NIP or not row.ACTIVITYDATE:
+        if not row.NIP or not row.ACTIVITY_DATE:
             continue
-        activity_date = row.ACTIVITYDATE.date() if hasattr(row.ACTIVITYDATE, "date") else row.ACTIVITYDATE
+        activity_date = row.ACTIVITY_DATE.date() if hasattr(row.ACTIVITY_DATE, "date") else row.ACTIVITY_DATE
         siaga_index[(str(row.NIP), activity_date)] = str(row.SHIFT or "1")
 
     matrix = {}
