@@ -180,6 +180,36 @@ def api_pegawai_bdip():
     })
 
 
+def _format_pegawai_exit_date(value, output_format='%d-%m-%Y'):
+    """
+    Format Tglkeluar secara aman untuk data legacy maupun HRIS Reborn.
+
+    Model mendefinisikan Tglkeluar sebagai DateTime, tetapi data legacy/
+    hasil migrasi dapat sesekali diterima sebagai string oleh driver DB.
+    Jangan biarkan satu record bertipe string membuat seluruh pencarian gagal.
+    """
+    if not value:
+        return ''
+
+    if hasattr(value, 'strftime'):
+        return value.strftime(output_format)
+
+    raw = str(value).strip()
+    if not raw:
+        return ''
+
+    # ISO date/datetime umum dari MariaDB/legacy.
+    try:
+        parsed = datetime.fromisoformat(raw.replace('Z', '+00:00'))
+        return parsed.strftime(output_format)
+    except (TypeError, ValueError):
+        pass
+
+    # Fallback: tetap tampilkan nilai yang tersimpan daripada membuat
+    # endpoint pencarian gagal total.
+    return raw
+
+
 def api_pegawai_cari():
     """
     API: Cari data pegawai dengan filter
@@ -294,7 +324,7 @@ def api_pegawai_cari():
             # Keterangan
             keterangan = ''
             if peg.IS_KELUAR == 'Y':
-                tgl = peg.TGL_KELUAR.strftime('%Y.%m.%d') if peg.TGL_KELUAR else ''
+                tgl = _format_pegawai_exit_date(peg.TGL_KELUAR, '%Y.%m.%d')
                 keterangan = f"Tanggal keluar {tgl} {peg.ALASAN_KELUAR or ''}"
             
             data.append({
@@ -340,10 +370,7 @@ def api_pegawai_cari():
                     if peg.STATUS_PEG == 1
                     else 'NON PNS'
                 ),
-                'tgl_keluar': (
-                    peg.TGL_KELUAR.strftime('%d-%m-%Y')
-                    if peg.TGL_KELUAR else ''
-                ),
+                'tgl_keluar': _format_pegawai_exit_date(peg.TGL_KELUAR),
                 'keterangan_keluar': peg.ALASAN_KELUAR or '',
 
             })
