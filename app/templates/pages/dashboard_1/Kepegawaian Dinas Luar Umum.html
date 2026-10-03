@@ -137,11 +137,11 @@
                             <th>No</th>
                             <th>NIP</th>
                             <th>Nama</th>
-                            {% if dinas_type == 'OP' %}<th>Jenis</th>{% endif %}
-                            <th>Mulai</th>
-                            <th>Selesai</th>
-                            <th>Uang Makan</th>
-                            <th>Aksi</th>
+                            {% if dinas_type == 'OP' %}<th class="col-participant-type">Jenis</th>{% endif %}
+                            <th class="col-participant-date">Mulai</th>
+                            <th class="col-participant-date">Selesai</th>
+                            <th class="col-participant-meal">Uang Makan</th>
+                            <th class="col-participant-action">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="participantBody">
@@ -205,14 +205,12 @@
 .participant-table-wrap .hris-table td:nth-child(2) { width:195px; }
 .participant-table-wrap .hris-table th:nth-child(3),
 .participant-table-wrap .hris-table td:nth-child(3) { width:330px; white-space:normal; overflow-wrap:anywhere; }
-.participant-table-wrap .hris-table th:nth-child(4),
-.participant-table-wrap .hris-table td:nth-child(4),
-.participant-table-wrap .hris-table th:nth-child(5),
-.participant-table-wrap .hris-table td:nth-child(5) { width:125px; white-space:nowrap; }
-.participant-table-wrap .hris-table th:nth-child(6),
-.participant-table-wrap .hris-table td:nth-child(6) { width:235px; }
-.participant-table-wrap .hris-table th:nth-child(7),
-.participant-table-wrap .hris-table td:nth-child(7) { width:72px; text-align:center; }
+.participant-table-wrap .hris-table .col-participant-type { width:125px; white-space:nowrap; }
+.participant-table-wrap .hris-table .col-participant-date { width:155px; white-space:nowrap; }
+.participant-table-wrap .hris-table .col-participant-meal { width:190px; white-space:nowrap; }
+.participant-table-wrap .hris-table .col-participant-action { width:92px; text-align:center; white-space:nowrap; }
+.participant-table-wrap .hris-table .col-participant-date .hris-input { width:100%; min-width:0; box-sizing:border-box; }
+.participant-table-wrap .hris-table .col-participant-meal .hris-select { width:100%; min-width:0; box-sizing:border-box; }
 .participant-table-wrap .hris-table tbody tr:nth-child(even) { background:#f8fafc; }
 .participant-table-wrap .hris-table tbody tr:hover { background:#fff7ed; }
 .participant-row-editor { display:flex; align-items:center; gap:6px; }
@@ -454,11 +452,11 @@
                 '<td class="hris-text-center">' + (index + 1) + '</td>' +
                 '<td>' + escapeHtml(item.nip) + '</td>' +
                 '<td>' + escapeHtml(item.nama) + '</td>' +
-                {% if dinas_type == 'OP' %}'<td class="hris-text-center">' + (String(item.tipe ?? '1') === '1' ? 'OPS' : 'NON OPS') + '</td>' +{% endif %}
-                '<td class="hris-text-center">' + startCell + '</td>' +
-                '<td class="hris-text-center">' + endCell + '</td>' +
-                '<td>' + statusCell + '</td>' +
-                '<td class="hris-text-center"><div class="participant-row-editor">' + actionHtml + '</div></td>' +
+                {% if dinas_type == 'OP' %}'<td class="hris-text-center col-participant-type">' + (String(item.tipe ?? '1') === '1' ? 'OPS' : 'NON OPS') + '</td>' +{% endif %}
+                '<td class="hris-text-center col-participant-date">' + startCell + '</td>' +
+                '<td class="hris-text-center col-participant-date">' + endCell + '</td>' +
+                '<td class="col-participant-meal">' + statusCell + '</td>' +
+                '<td class="hris-text-center col-participant-action"><div class="participant-row-editor">' + actionHtml + '</div></td>' +
                 '</tr>';
         }).join('');
 
