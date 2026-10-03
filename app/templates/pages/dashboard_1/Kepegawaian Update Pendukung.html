@@ -1,97 +1,103 @@
 <!-- pages/dashboard_1/Kepegawaian Update Pendukung.html -->
-{% extends "layout/baseDashboard1.html" %}
+{% extends "layout/baseHRIS.html" %}
 
-{% block title %}- Update Pendukung{% endblock %}
+{% block title %}- Pendukung TLM PSW{% endblock %}
+{% block header_kicker %}KEPEGAWAIAN{% endblock %}
+{% block header_title %}Pendukung TLM PSW{% endblock %}
+
+{% block styles %}
+<script src="{{ url_for('static', filename='static_dashboard_1/assets/vendors/js/vendors.min.js') }}"></script>
+<style>
+    .hris-alert { padding:11px 14px; border-radius:var(--ui-radius-sm); margin-bottom:16px; }
+    .hris-alert-success { color:var(--ui-success); background:var(--ui-success-bg); }
+    .hris-alert-danger { color:var(--ui-danger); background:var(--ui-danger-bg); }
+    .hris-alert-warning { color:var(--ui-warning); background:var(--ui-warning-bg); }
+    .hris-table-scroll { max-height:520px; overflow:auto; }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="nxl-content">
-    <div class="page-header">
-        <div class="page-header-left d-flex align-items-center">
-            <div class="page-header-title">
-                <h5 class="m-b-10">Kepegawaian</h5>
-            </div>
-            <ul class="breadcrumb">
-                <li class="breadcrumb-item"><a href="/">Home</a></li>
-                <li class="breadcrumb-item"><a href="{{ url_for('main.view_kepegawaian_update_pendukung') }}">Update Pendukung</a></li>
-            </ul>
+<div class="hris-page">
+    <div class="hris-page-header">
+        <div>
+            <h2 class="hris-page-title"><i class="feather-upload"></i> Pendukung TLM PSW</h2>
+            <p class="hris-page-subtitle">Pengelolaan dan pembaruan data pendukung TLM PSW.</p>
         </div>
     </div>
 
-    <div class="main-content master-siaga">
-        <div class="container-fluid">
-            <div id="alertContainer" class="alert alert-dismissable d-none mb-3">
-                <span id="alertMessage"></span>
+    <div id="alertContainer" class="hris-alert d-none" role="alert">
+        <span id="alertMessage"></span>
+    </div>
+
+    <section class="hris-card">
+        <div class="hris-card-header">
+            <h3 class="hris-card-title"><i class="feather-filter"></i> Filter Data</h3>
+        </div>
+
+        <div class="hris-card-body">
+            <div class="hris-form-grid" style="grid-template-columns:repeat(4,minmax(0,1fr));">
+                <div class="hris-field">
+                    <label class="hris-label" for="periode">Periode <span class="text-danger">*</span></label>
+                    <input type="month" id="periode" class="hris-input">
+                </div>
+                <div class="hris-field">
+                    <label class="hris-label" for="tingkatan">Tingkatan</label>
+                    <select id="tingkatan" class="hris-select">
+                        <option value="">Semua</option>
+                    </select>
+                </div>
+                <div class="hris-field">
+                    <label class="hris-label" for="filterField">Field</label>
+                    <select id="filterField" class="hris-select">
+                        <option value="">- Pilih -</option>
+                    </select>
+                </div>
+                <div class="hris-field">
+                    <label class="hris-label" for="filterValue">Cari</label>
+                    <input type="text" id="filterValue" class="hris-input" placeholder="Ketik pencarian...">
+                </div>
             </div>
 
-            <div class="card mb-4 shadow-sm border-0" style="border-radius: 10px;">
-                <div class="card-header-custom d-flex justify-content-between align-items-center p-3 border-bottom">
-                    <h6 class="mb-0"><i class="feather-home me-2"></i>Update Pendukung</h6>
+            <div class="hris-toolbar" style="padding:14px 0 0;border-bottom:0;">
+                <div class="hris-toolbar-left">
+                    <span style="font-size:12px;color:var(--ui-muted);">Pilih periode lalu muat data pendukung.</span>
                 </div>
-                <div class="card-body p-4">
-                    <!-- Filter -->
-                    <div class="row mb-3 align-items-end">
-                        <div class="col-md-2">
-                            <label class="form-label-custom">Periode <span class="text-danger">*</span></label>
-                            <input type="month" id="periode" class="form-control form-control-sm input-custom-style">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label-custom">Tingkatan</label>
-                            <select id="tingkatan" class="form-select form-select-sm input-custom-style">
-                                <option value="">Semua</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label-custom">Field</label>
-                            <select id="filterField" class="form-select form-select-sm input-custom-style">
-                                <option value="">- Pilih -</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label-custom">Cari</label>
-                            <input type="text" id="filterValue" class="form-control form-control-sm input-custom-style" placeholder="Ketik...">
-                        </div>
-                        <div class="col-md-2">
-                            <button class="btn btn-orange-figma btn-sm w-100" id="btnRefresh">
-                                <i class="bi bi-arrow-clockwise me-1"></i>Refresh
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Tabel -->
-                    <div class="table-responsive border rounded" style="max-height: 500px; overflow-y: auto;">
-                        <table class="table table-sm table-bordered text-center align-middle mb-0" style="font-size: 0.78rem;">
-                            <thead class="table-light sticky-top">
-                                <tr>
-                                    <th>No</th><th>Tanggal</th><th>Pendukung</th>
-                                    <th>Status</th><th>NIP</th><th>Nama</th><th>Keterangan</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tableBody">
-                                <tr><td colspan="7" class="py-3 text-muted">Silakan pilih periode dan klik Refresh</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Save -->
-                    <div class="text-center mt-3">
-                        <button class="btn btn-primary btn-sm px-4 rounded-pill fw-bold text-white" id="btnSave"
-                            style="background-color: #0000ff; border: none; font-size: 0.8rem;">
-                            <i class="bi bi-save me-1"></i>SAVE
-                        </button>
-                    </div>
+                <div class="hris-toolbar-right">
+                    <button class="hris-btn hris-btn-primary" id="btnRefresh">
+                        <i class="feather-refresh-cw"></i> Refresh
+                    </button>
                 </div>
             </div>
         </div>
+    </section>
+
+    <section class="hris-card" style="margin-top:16px;">
+        <div class="hris-card-header">
+            <h3 class="hris-card-title"><i class="feather-list"></i> Data Pendukung</h3>
+        </div>
+        <div class="hris-card-body" style="padding:0;">
+            <div class="hris-table-wrap hris-table-scroll">
+                <table class="hris-table-modern">
+                    <thead>
+                        <tr>
+                            <th>No</th><th>Tanggal</th><th>Pendukung</th>
+                            <th>Status</th><th>NIP</th><th>Nama</th><th>Keterangan</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr><td colspan="7" class="hris-empty">Silakan pilih periode dan klik Refresh</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <div style="display:flex;justify-content:flex-end;margin-top:16px;">
+        <button class="hris-btn hris-btn-primary" id="btnSave">
+            <i class="feather-save"></i> Simpan
+        </button>
     </div>
 </div>
-
-<style>
-    .input-custom-style { border: 1px solid #ccc; border-radius: 3px; padding: 3px 8px; font-size: 0.85rem; width: 100%; background-color: #fff; }
-    .form-label-custom { font-size: 0.85rem; color: #333; font-weight: 600; margin-bottom: 4px; }
-    .btn-orange-figma { background-color: #e66b30; color: #fff; border: none; border-radius: 5px; font-weight: 600; padding: 6px 12px; }
-    .btn-orange-figma:hover { background-color: #cc5a20; color: #fff; }
-    .sticky-top { position: sticky; top: 0; z-index: 10; }
-</style>
 {% endblock %}
 
 {% block script %}
