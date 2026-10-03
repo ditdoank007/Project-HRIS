@@ -1791,8 +1791,34 @@ def export_rekap_clock_exception_pdf():
                 in_text = jam_in
                 out_text = jam_out
 
-            row_in.append(Paragraph(xml_escape(in_text), cell_style))
-            row_out.append(Paragraph(xml_escape(out_text), cell_style))
+            # Warna harus diberikan ke Paragraph, bukan hanya TableStyle,
+            # karena isi cell berupa ReportLab Paragraph.
+            is_holiday = (
+                cal.TGL_KERJA.weekday() in (5, 6)
+                or str(cal.IS_LIBUR or 'N').upper() == 'Y'
+                or cal.TGL_KERJA.strftime('%m-%d') in ('01-01', '08-17', '12-25')
+            )
+            cell_color = (
+                '#b91c1c'
+                if is_holiday
+                else {
+                    'siaga': '#15803d',
+                    'blue': '#1d4ed8',
+                    'orange': '#b45309',
+                    'wfh': '#475569',
+                    'normal': '#172033',
+                }.get(cell.get('warna'), '#172033')
+            )
+
+            def colored_paragraph(text_value):
+                safe = xml_escape(text_value or '')
+                return Paragraph(
+                    f'<font color="{cell_color}">{safe}</font>',
+                    cell_style
+                )
+
+            row_in.append(colored_paragraph(in_text))
+            row_out.append(colored_paragraph(out_text))
 
         table_data.append(row_in)
         table_data.append(row_out)
