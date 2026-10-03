@@ -1714,7 +1714,21 @@ def api_normalisasi_process():
         }
 
         filter_clauses = []
+        source_filter_clauses = []
         filter_params = {}
+
+        source_filter_map = {
+            'NIP': 'p0.NIP',
+            'Nama': 'p0.Nama',
+            'NAMA': 'p0.Nama',
+            'FingerID': 'p0.FingerID',
+            'UnitKerja': 'p0.UnitKerja',
+            'Unit': 'p0.UnitKerja',
+            'Unit Kerja': 'p0.UnitKerja',
+            'Jabatan': 'p0.Jabatan',
+            'Gol': 'p0.Gol',
+            'Gol-Pangkat': 'p0.Gol',
+        }
 
         for idx, (field, value) in enumerate(
             (
@@ -1724,6 +1738,7 @@ def api_normalisasi_process():
             start=1
         ):
             column = filter_column_map.get(field)
+            source_column = source_filter_map.get(field)
 
             if column and value:
                 param_name = f'filter_value{idx}'
@@ -1732,10 +1747,22 @@ def api_normalisasi_process():
                 )
                 filter_params[param_name] = f'%{value}%'
 
+            if source_column and value:
+                param_name = f'filter_value{idx}'
+                source_filter_clauses.append(
+                    f"AND {source_column} LIKE :{param_name}"
+                )
+
         filter_sql = ''
         if filter_clauses:
             filter_sql = '\n              ' + '\n              '.join(
                 filter_clauses
+            )
+
+        source_filter_sql = ''
+        if source_filter_clauses:
+            source_filter_sql = '\n                  ' + '\n                  '.join(
+                source_filter_clauses
             )
 
         raw_sql = text(f"""
@@ -1769,8 +1796,11 @@ def api_normalisasi_process():
                     END AS PUNCH,
                     tr.Mesin AS DEVICE_IP
                 FROM TIME_RECORDER tr
+                INNER JOIN PEGAWAI p0
+                    ON CAST(p0.FingerID AS CHAR) = CAST(tr.FingerID AS CHAR)
                 WHERE tr.Waktu >= :tgl_awal_raw
                   AND tr.Waktu < :tgl_akhir_raw
+                  {source_filter_sql}
 
                 UNION ALL
 
@@ -1785,8 +1815,11 @@ def api_normalisasi_process():
                     r.PUNCH,
                     r.DEVICE_IP
                 FROM FINGER_HARVEST_RAW r
+                INNER JOIN PEGAWAI p0
+                    ON CAST(p0.FingerID AS CHAR) = CAST(r.USER_ID AS CHAR)
                 WHERE r.WAKTU >= :tgl_awal_raw
                   AND r.WAKTU < :tgl_akhir_raw
+                  {source_filter_sql}
                   AND NOT EXISTS (
                       SELECT 1
                       FROM TIME_RECORDER tr2
