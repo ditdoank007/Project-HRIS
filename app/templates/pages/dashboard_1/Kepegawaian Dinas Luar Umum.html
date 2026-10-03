@@ -96,6 +96,16 @@
                     </div>
                 </div>
 
+                {% if dinas_type == 'OP' %}
+                <div class="participant-type-choice">
+                    <label>Jenis</label>
+                    <div class="d-flex gap-2 align-items-center">
+                        <label class="sprin-radio"><input type="radio" name="jenis_operasi" value="1" checked><span>OPS</span></label>
+                        <label class="sprin-radio"><input type="radio" name="jenis_operasi" value="0"><span>NON OPS</span></label>
+                    </div>
+                </div>
+                {% endif %}
+
                 <div>
                     <label for="tglAwalDL">Mulai</label>
                     <input id="tglAwalDL" class="hris-input" type="date">
@@ -127,6 +137,7 @@
                             <th>No</th>
                             <th>NIP</th>
                             <th>Nama</th>
+                            {% if dinas_type == 'OP' %}<th>Jenis</th>{% endif %}
                             <th>Mulai</th>
                             <th>Selesai</th>
                             <th>Uang Makan</th>
@@ -134,7 +145,7 @@
                         </tr>
                     </thead>
                     <tbody id="participantBody">
-                        <tr><td colspan="7" class="empty-row">Belum ada pegawai ditambahkan ke SPRIN. Silakan pilih pegawai di atas lalu klik Tambah.</td></tr>
+                        <tr><td {% if dinas_type == 'OP' %}colspan="8"{% else %}colspan="7"{% endif %} class="empty-row">Belum ada pegawai ditambahkan ke SPRIN. Silakan pilih pegawai di atas lalu klik Tambah.</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -167,7 +178,7 @@
 .hris-upload input[type=file] { width:100%; font-size:13px; }
 .hris-upload small { display:block; margin-top:6px; color:#64748b; }
 .hris-file-note { margin-top:7px; font-size:12px; color:#475569; }
-.participant-entry { display:grid; grid-template-columns:minmax(280px,2fr) 150px 150px 210px auto; gap:12px; align-items:end; margin-bottom:18px; }
+.participant-entry { display:grid; grid-template-columns:minmax(280px,2fr) 150px 150px 150px 210px auto; gap:12px; align-items:end; margin-bottom:18px; }
 .participant-entry label { display:block; font-size:12px; font-weight:700; color:#475569; margin-bottom:6px; }
 .autocomplete-wrap { position:relative; }
 .autocomplete-list { position:absolute; left:0; right:0; top:calc(100% + 4px); z-index:50; max-height:240px; overflow:auto; background:#fff; border:1px solid var(--hris-border,#e2e8f0); border-radius:10px; box-shadow:0 12px 28px rgba(15,23,42,.14); }
@@ -377,7 +388,8 @@
                 '<td class="hris-text-center">' + (index + 1) + '</td>' +
                 '<td>' + escapeHtml(item.nip) + '</td>' +
                 '<td>' + escapeHtml(item.nama) + '</td>' +
-                '<td class="hris-text-center">' + formatDateDisplay(item.tgl_awal) + '</td>' +
+                {% if dinas_type == 'OP' %}'<td class="hris-text-center">' + (String(item.tipe ?? '1') === '1' ? 'OPS' : 'NON OPS') + '</td>' +{% endif %}
+                '<td class="hris-text-center"> + formatDateDisplay(item.tgl_awal) + '</td>' +
                 '<td class="hris-text-center">' + formatDateDisplay(item.tgl_akhir) + '</td>' +
                 '<td>' + escapeHtml(item.status_um_text) + '</td>' +
                 '<td class="hris-text-center"><button type="button" class="hris-icon-btn remove-participant" data-index="' + index + '" title="Hapus peserta"><i class="feather-x"></i></button></td>' +
@@ -399,13 +411,14 @@
         const end = document.getElementById('tglAkhirDL').value;
         const status = document.getElementById('statusUM').value;
         const statusText = document.getElementById('statusUM').selectedOptions[0].textContent;
+        const jenisOperasi = document.querySelector('input[name="jenis_operasi"]:checked')?.value || '1';
 
         if (!nip) return showAlert('Pilih pegawai dari hasil pencarian terlebih dahulu.', true);
         if (!start || !end) return showAlert('Tanggal mulai dan selesai pegawai wajib diisi.', true);
         if (end < start) return showAlert('Tanggal selesai pegawai tidak boleh sebelum tanggal mulai.', true);
         if (participants.some(item => item.nip === nip)) return showAlert('Pegawai tersebut sudah ada dalam daftar.', true);
 
-        participants.push({nip, nama, tgl_awal:start, tgl_akhir:end, status_um:status, status_um_text:statusText});
+        participants.push({nip, nama, tgl_awal:start, tgl_akhir:end, status_um:status, status_um_text:statusText, tipe:jenisOperasi});
         searchPegawai.value = '';
         selectedNip.value = '';
         setDefaultParticipantDates();
@@ -439,6 +452,7 @@
                 tgl_awal:item.tgl_awal,
                 tgl_akhir:item.tgl_akhir,
                 status_um:item.status_um,
+                tipe:String(item.tipe ?? header.tipe ?? '1'),
                 status_um_text: item.status_um === '1' ? 'Terpotong' : item.status_um === '2' ? 'Tdk Terpotong Penempatan' : 'Tdk Terpotong'
             }));
 
@@ -535,6 +549,8 @@
         currentFile.textContent = '';
         guidSprin = '';
         participants = [];
+        const defaultJenis = document.querySelector('input[name="jenis_operasi"][value="1"]');
+        if (defaultJenis) defaultJenis.checked = true;
         renderParticipants();
         hideAlert();
     }
