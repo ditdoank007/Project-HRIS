@@ -1802,13 +1802,7 @@ def export_rekap_clock_exception_pdf():
             cell_color = (
                 '#b91c1c'
                 if is_holiday
-                else {
-                    'siaga': '#15803d',
-                    'blue': '#1d4ed8',
-                    'orange': '#b45309',
-                    'wfh': '#475569',
-                    'normal': '#172033',
-                }.get(cell.get('warna'), '#172033')
+                else color_map.get(cell.get('warna'), '#172033')
             )
 
             def colored_paragraph(text_value):
@@ -1876,11 +1870,11 @@ def export_rekap_clock_exception_pdf():
             else:
                 color = color_map.get(cell.get('warna'))
             if color:
+                # Preview HRIS Reborn tidak memberi background khusus
+                # pada cell weekend/libur; hanya warna teks yang berubah.
+                # PDF harus mengikuti Preview 1:1.
                 style_commands.append(
-                    ('BACKGROUND', (col_index, row_index), (col_index, row_index + 1),
-                     colors.HexColor('#fee2e2') if cal.TGL_KERJA.weekday() in (5, 6)
-                     or str(cal.IS_LIBUR or 'N').upper() == 'Y'
-                     else colors.white)
+                    ('BACKGROUND', (col_index, row_index), (col_index, row_index + 1), colors.white)
                 )
                 style_commands.append(
                     ('TEXTCOLOR', (col_index, row_index), (col_index, row_index + 1), color)
