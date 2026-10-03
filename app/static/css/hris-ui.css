@@ -371,7 +371,7 @@ body {
   gap: 12px;
   padding: 8px 11px;
   border-bottom: 1px solid var(--ui-border);
-  background: #f8fafc;
+  background: #eef2f7;
 }
 .hris-unit-select-all {
   display: flex;
