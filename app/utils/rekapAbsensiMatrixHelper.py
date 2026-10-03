@@ -25,38 +25,6 @@ def format_jam_absensi(value):
     return value.strftime("%H.%M")
 
 
-def _is_vip(pegawai):
-    value = getattr(pegawai, "IS_VIP", None)
-    return str(value or "").strip().upper() in ("Y", "1", "TRUE")
-
-
-def _legacy_vip_jam(actual, baku, is_vip, arah):
-    """
-    Reproduce the active VIP display rule from HRIS 2013 RDailyAbsensi.
-    This changes only the displayed/reporting time; raw ABSENSI remains untouched.
-    """
-    if not is_vip or not actual or not baku:
-        return actual
-
-    actual_minutes = actual.hour * 60 + actual.minute
-    baku_minutes = baku.hour * 60 + baku.minute
-
-    if arah == "IN" and actual <= baku:
-        return actual
-    if arah == "OUT" and actual >= baku:
-        return actual
-
-    diff = baku_minutes - actual_minutes
-    sql_remainder = diff - int(diff / 11) * 11
-
-    if arah == "IN":
-        delta_minutes = sql_remainder - 1
-    else:
-        delta_minutes = sql_remainder + 1
-
-    return baku + timedelta(minutes=delta_minutes)
-
-
 def format_status_absensi(status):
     mapping = {
         "DINAS_LUAR": "DL",
