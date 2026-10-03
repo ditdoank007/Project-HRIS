@@ -1660,6 +1660,213 @@ def preview_rekap_clock_exception():
 
 
 
+
+def export_rekap_clock_exception_pdf():
+    """Export Rekap Absensi Bulanan ke PDF berdasarkan matrix yang sama dengan preview."""
+    unit_list = request.form.getlist('unit_kerja[]')
+    tgl_awal_str = request.form.get('tgl_awal')
+    tgl_akhir_str = request.form.get('tgl_akhir')
+
+    if not unit_list or not tgl_awal_str or not tgl_akhir_str:
+        return {'error': 'Unit kosong atau format tanggal salah'}, 400
+
+    try:
+        unit_ids = [int(u) for u in unit_list]
+        tgl_awal = datetime.strptime(tgl_awal_str, '%Y-%m-%d')
+        tgl_akhir = datetime.strptime(tgl_akhir_str, '%Y-%m-%d')
+    except (TypeError, ValueError) as exc:
+        return {'error': f'Parameter laporan tidak valid: {exc}'}, 400
+
+    if tgl_awal > tgl_akhir:
+        return {'error': 'Tanggal awal tidak boleh lebih besar dari tanggal akhir'}, 400
+
+    data = generate_rekap_absensi_matrix(
+        unit_ids,
+        tgl_awal,
+        tgl_akhir
+    )
+
+    unit_names = ', '.join(
+        u.NAMA_UNIT_KERJA
+        for u in MfUnitKerja.query
+        .filter(MfUnitKerja.UNIT_KERJA_ID.in_(unit_ids))
+        .order_by(MfUnitKerja.URUT_REPORT.asc(), MfUnitKerja.NAMA_UNIT_KERJA.asc())
+        .all()
+    )
+
+    tanggal_rows = data['kalender']
+    pegawai_rows = data['pegawai']
+    matrix = data['matrix']
+
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'ClockTitle',
+        parent=styles['Title'],
+        fontSize=12,
+        leading=14,
+        alignment=1,
+        spaceAfter=3,
+    )
+    subtitle_style = ParagraphStyle(
+        'ClockSubtitle',
+        parent=styles['Normal'],
+        fontSize=7,
+        leading=9,
+        alignment=1,
+        spaceAfter=2,
+    )
+    cell_style = ParagraphStyle(
+        'ClockCell',
+        parent=styles['Normal'],
+        fontSize=5.2,
+        leading=6,
+        alignment=1,
+    )
+    name_style = ParagraphStyle(
+        'ClockName',
+        parent=cell_style,
+        fontSize=6,
+        leading=7,
+        alignment=0,
+    )
+
+    story = [
+        Paragraph('REKAP ABSENSI BULANAN', title_style),
+        Paragraph(f'Periode {tgl_awal:%d.%m.%Y} s/d {tgl_akhir:%d.%m.%Y}', subtitle_style),
+        Paragraph(f'Unit : {unit_names}', subtitle_style),
+        Spacer(1, 5),
+    ]
+
+    header = [
+        Paragraph('<b>No</b>', cell_style),
+        Paragraph('<b>Nama</b>', cell_style),
+    ]
+
+    for cal in tanggal_rows:
+        day = cal.TGL_KERJA.day
+        short_day = cal.TGL_KERJA.strftime('%a').upper()
+        header.append(
+            Paragraph(f'<b>{day}<br/>{short_day}</b>', cell_style)
+        )
+
+    table_data = [header]
+
+    color_map = {
+        'holiday': colors.HexColor('#b91c1c'),
+        'siaga': colors.HexColor('#15803d'),
+        'blue': colors.HexColor('#1d4ed8'),
+        'orange': colors.HexColor('#b45309'),
+        'wfh': colors.HexColor('#475569'),
+        'normal': colors.HexColor('#172033'),
+    }
+
+    for index, peg in enumerate(pegawai_rows, start=1):
+        row = [
+            Paragraph(str(index), cell_style),
+            Paragraph(str(peg.NAMA or ''), name_style),
+        ]
+
+        for cal in tanggal_rows:
+            key = cal.TGL_KERJA.strftime('%Y-%m-%d')
+            cell = matrix.get(peg.NIP, {}).get(key, {})
+            status = cell.get('status') or ''
+            jam_in = format_jam_absensi(cell.get('jam_in'))
+            jam_out = format_jam_absensi(cell.get('jam_out'))
+
+            if status in ('LIBUR',):
+                text = ''
+            elif status and status != 'HADIR':
+                text = status
+            elif jam_in or jam_out:
+                text = f'{jam_in}<br/>{jam_out}' if jam_in and jam_out else (jam_in or jam_out)
+            else:
+                text = ''
+
+            row.append(Paragraph(text, cell_style))
+
+        table_data.append(row)
+
+    available_width = landscape(A4)[0] - 36
+    date_width = max(16, min(24, (available_width - 150) / max(len(tanggal_rows), 1)))
+    col_widths = [20, 130] + [date_width] * len(tanggal_rows)
+
+    table = Table(
+        table_data,
+        repeatRows=1,
+        colWidths=col_widths,
+        hAlign='LEFT',
+    )
+
+    style_commands = [
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#172033')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('GRID', (0, 0), (-1, -1), 0.25, colors.HexColor('#d5dbe3')),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 2),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 2),
+        ('TOPPADDING', (0, 0), (-1, -1), 2),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
+    ]
+
+    # Warna header hari libur.
+    for idx, cal in enumerate(tanggal_rows, start=2):
+        if (
+            cal.TGL_KERJA.weekday() in (5, 6)
+            or str(cal.IS_LIBUR or 'N').upper() == 'Y'
+            or cal.TGL_KERJA.strftime('%m-%d') in ('01-01', '08-17', '12-25')
+        ):
+            style_commands.append(
+                ('TEXTCOLOR', (idx, 0), (idx, 0), colors.HexColor('#b91c1c'))
+            )
+
+    # Warna cell mengikuti hasil matrix yang sama dengan preview.
+    for row_index, peg in enumerate(pegawai_rows, start=1):
+        for col_index, cal in enumerate(tanggal_rows, start=2):
+            key = cal.TGL_KERJA.strftime('%Y-%m-%d')
+            cell = matrix.get(peg.NIP, {}).get(key, {})
+            color = color_map.get(cell.get('warna'))
+            if color:
+                style_commands.append(
+                    ('TEXTCOLOR', (col_index, row_index), (col_index, row_index), color)
+                )
+            if cell.get('warna') == 'holiday':
+                style_commands.append(
+                    ('TEXTCOLOR', (col_index, row_index), (col_index, row_index), colors.HexColor('#b91c1c'))
+                )
+
+    table.setStyle(TableStyle(style_commands))
+    story.append(table)
+
+    story.extend([
+        Spacer(1, 7),
+        Paragraph(
+            'Keterangan: merah = hari libur, hijau = Siaga, biru = SPRIN/DL tidak memotong Uang Makan, '
+            'oranye = SPRIN/DL memotong Uang Makan, abu-abu = Absen Online WFH.',
+            ParagraphStyle('ClockLegend', parent=styles['Normal'], fontSize=6.5, leading=8)
+        ),
+    ])
+
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=landscape(A4),
+        rightMargin=18,
+        leftMargin=18,
+        topMargin=18,
+        bottomMargin=18,
+    )
+    doc.build(story)
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name=f'Rekap_Absensi_Bulanan_{tgl_awal:%Y%m%d}_{tgl_akhir:%Y%m%d}.pdf',
+        mimetype='application/pdf',
+    )
+
 def export_rekap_clock_exception():
     """Export Rekap Exception Clock (matriks pegawai x tanggal)."""
     unit_list = request.form.getlist('unit_kerja[]')
