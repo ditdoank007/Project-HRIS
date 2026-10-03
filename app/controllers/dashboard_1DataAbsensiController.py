@@ -2377,7 +2377,30 @@ def api_normalisasi_process():
         #
         # Fingerprint yang sudah digunakan Shift 2 tidak boleh
         # diproses kembali.
+        #
+        # PENTING:
+        # ABSENSI legacy memiliki primary key:
+        #     FingerID + TglKerja
+        #
+        # Karena Shift 2 malam H -> H+1 disimpan pada TglKerja H+1,
+        # tanggal H+1 yang sudah dimiliki row Shift 2 TIDAK BOLEH
+        # dibuat lagi sebagai row reguler. Jika tetap dibuat, akan
+        # terbentuk dua row normalisasi untuk key ABSENSI yang sama:
+        #
+        #   Shift 1 : 00:00 / 09:23
+        #   Shift 2 : 19:01 / 09:23
+        #
+        # lalu EXPORT dapat menimpa hasil Shift 2 menjadi 00:00.
         # ============================================================
+
+        shift2_owned_dates = {
+            (
+                str(row.get('nip') or '').strip(),
+                str(row.get('tgl_kerja') or '').strip(),
+            )
+            for row in result
+            if bool(row.get('shift2_siaga'))
+        }
 
         for (finger_id, tgl_str), logs in grouped.items():
 
@@ -2385,6 +2408,18 @@ def api_normalisasi_process():
                 tgl_str,
                 '%Y-%m-%d'
             )
+
+            nip_group = str(
+                logs[0].get('nip') or ''
+            ).strip() if logs else ''
+
+            # Shift 2 adalah pemilik ABSENSI pada TglKerja H+1.
+            # Jangan membuat row reguler kedua untuk tanggal yang sama.
+            if (
+                nip_group,
+                tgl_str,
+            ) in shift2_owned_dates:
+                continue
 
             filtered_logs = [
                 raw
@@ -3539,6 +3574,55 @@ def api_normalisasi_export():
         saved = 0
         skipped = 0
         exported_rows = []
+
+        # --------------------------------------------------------
+        # SAFETY GUARD: satu FingerID + TglKerja = satu ABSENSI.
+        #
+        # Normalisasi seharusnya sudah mencegah duplikasi ini.
+        # Guard tetap dipasang di EXPORT agar row reguler yang salah
+        # tidak pernah menimpa row Shift 2 pada database legacy.
+        #
+        # Jika terjadi duplikasi, Shift 2 selalu menjadi pemenang
+        # karena merupakan transaksi lintas tengah malam yang memang
+        # memiliki TglKerja H+1.
+        # --------------------------------------------------------
+        rows_by_absensi_key = {}
+
+        for candidate in rows:
+            candidate_key = (
+                str(candidate.get('finger_id') or '').strip(),
+                str(candidate.get('tgl_kerja') or '').strip(),
+            )
+
+            previous = rows_by_absensi_key.get(candidate_key)
+
+            if previous is None:
+                rows_by_absensi_key[candidate_key] = candidate
+                continue
+
+            candidate_shift2 = bool(
+                candidate.get('shift2_siaga')
+            )
+            previous_shift2 = bool(
+                previous.get('shift2_siaga')
+            )
+
+            if candidate_shift2 and not previous_shift2:
+                rows_by_absensi_key[candidate_key] = candidate
+
+        rows = list(rows_by_absensi_key.values())
+
+        rows.sort(
+            key=lambda row: (
+                str(row.get('nip') or '').strip(),
+                str(row.get('tgl_kerja') or '').strip(),
+                str(
+                    row.get('shift_kerja')
+                    or row.get('shift')
+                    or '1'
+                ).strip(),
+            )
+        )
 
         for r in rows:
 
