@@ -2954,3 +2954,136 @@ body.hris-sidebar-mini .hris-submenu {
     max-width: 100%;
   }
 }
+
+
+/* ============================================================
+   HRIS GLOBAL MODAL
+   Opaque modal card + blurred page backdrop.
+   Use:
+     <div class="hris-modal-backdrop" id="...">
+       <div class="hris-modal">...</div>
+     </div>
+   ============================================================ */
+
+.hris-modal-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  padding: 20px;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, .34);
+  -webkit-backdrop-filter: blur(7px);
+  backdrop-filter: blur(7px);
+}
+
+.hris-modal-backdrop.show {
+  display: flex;
+}
+
+.hris-modal-backdrop .hris-modal {
+  width: 100%;
+  max-width: 430px;
+  background: #fff !important;
+  opacity: 1 !important;
+  color: var(--ui-ink);
+  border: 1px solid rgba(226, 232, 240, .95);
+  border-radius: 16px;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, .24);
+  overflow: hidden;
+  transform: translateY(0);
+}
+
+.hris-modal-backdrop .hris-modal .modal-header,
+.hris-modal-backdrop .hris-modal .modal-body,
+.hris-modal-backdrop .hris-modal .modal-footer {
+  background: #fff;
+}
+
+.hris-modal-backdrop .hris-modal .modal-header {
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--ui-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.hris-modal-backdrop .hris-modal .modal-header h4 {
+  margin: 0;
+  color: var(--ui-ink);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.hris-modal-backdrop .hris-modal .modal-body {
+  padding: 20px;
+}
+
+.hris-modal-backdrop .hris-modal .modal-footer {
+  padding: 14px 20px;
+  border-top: 1px solid var(--ui-border);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.hris-modal-backdrop .hris-modal .modal-close {
+  border: 0;
+  background: transparent;
+  color: var(--ui-muted);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.hris-modal-backdrop .hris-modal .modal-close:hover {
+  color: var(--ui-ink);
+}
+
+.hris-modal-backdrop .hris-modal .modal-save,
+.hris-modal-backdrop .hris-modal .modal-cancel {
+  min-height: 38px;
+  padding: 0 15px;
+  border-radius: var(--ui-radius-sm);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+}
+
+.hris-modal-backdrop .hris-modal .modal-save {
+  border: 0;
+  background: var(--ui-brand);
+  color: #fff;
+}
+
+.hris-modal-backdrop .hris-modal .modal-save:hover {
+  background: var(--ui-brand-dark);
+}
+
+.hris-modal-backdrop .hris-modal .modal-cancel {
+  border: 1px solid var(--ui-border-strong);
+  background: #fff;
+  color: var(--ui-ink);
+}
+
+.hris-modal-backdrop .hris-modal .modal-cancel:hover {
+  border-color: var(--ui-brand);
+  color: var(--ui-brand-dark);
+}
+
+@media (max-width: 560px) {
+  .hris-modal-backdrop {
+    padding: 12px;
+  }
+
+  .hris-modal-backdrop .hris-modal .modal-header,
+  .hris-modal-backdrop .hris-modal .modal-body,
+  .hris-modal-backdrop .hris-modal .modal-footer {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
