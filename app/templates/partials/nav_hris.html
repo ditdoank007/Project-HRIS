@@ -240,16 +240,7 @@
                         <li class="hris-nav-item">
                             <a class="hris-nav-link" href="{{ url_for('main.view_kepegawaian_pegawai_tidak_hadir') }}">
                                 <span class="hris-nav-icon"><i class="feather-user-minus"></i></span>
-                                <span class="hris-nav-text">Pegawai Tidak Hadir</span>
-                            </a>
-                        </li>
-                        {% endif %}
-
-                        {% if is_administrator() or has_form_access('Updatependukung.aspx') %}
-                        <li class="hris-nav-item">
-                            <a class="hris-nav-link" href="{{ url_for('main.view_kepegawaian_update_pendukung') }}">
-                                <span class="hris-nav-icon"><i class="feather-upload"></i></span>
-                                <span class="hris-nav-text">Update Pendukung</span>
+                                <span class="hris-nav-text">Pegawai Ijin</span>
                             </a>
                         </li>
                         {% endif %}
@@ -259,6 +250,15 @@
                             <a class="hris-nav-link" href="{{ url_for('main.view_kepegawaian_mutasi_penempatan_pegawai') }}">
                                 <span class="hris-nav-icon"><i class="feather-repeat"></i></span>
                                 <span class="hris-nav-text">Pegawai Mutasi</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if is_administrator() or has_form_access('Updatependukung.aspx') %}
+                        <li class="hris-nav-item">
+                            <a class="hris-nav-link" href="{{ url_for('main.view_kepegawaian_update_pendukung') }}">
+                                <span class="hris-nav-icon"><i class="feather-upload"></i></span>
+                                <span class="hris-nav-text">Pendukung TLM PSW</span>
                             </a>
                         </li>
                         {% endif %}
