@@ -83,11 +83,12 @@
                                 <th>Range</th>
                                 <th>Tanggal Mulai</th>
                                 <th>Updated</th>
+                                <th>By</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
                         <tbody id="potonganTableBody">
-                            <tr><td colspan="9" class="hris-empty">Memuat data...</td></tr>
+                            <tr><td colspan="10" class="hris-empty">Memuat data...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -124,20 +125,20 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     async function loadPotonganList() {
-        tbody.innerHTML = '<tr><td colspan="9" class="hris-empty">Memuat data...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" class="hris-empty">Memuat data...</td></tr>';
 
         try {
             const res = await fetch('/api/potongan/list?' + buildQueryParams().toString());
             const json = await res.json();
 
             if (!res.ok || json.status !== 'success') {
-                tbody.innerHTML = '<tr><td colspan="9" class="hris-empty">' +
+                tbody.innerHTML = '<tr><td colspan="10" class="hris-empty">' +
                     (json.message || 'Gagal memuat data.') + '</td></tr>';
                 return;
             }
 
             if (!json.data || json.data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" class="hris-empty">No records to display.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="10" class="hris-empty">No records to display.</td></tr>';
                 return;
             }
 
@@ -151,6 +152,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     <td>${row.range}</td>
                     <td>${row.tgl_mulai}</td>
                     <td>${row.updated}</td>
+                    <td>${row.updated_by}</td>
                     <td style="white-space: nowrap;">
                         <button type="button"
                                 class="hris-btn hris-btn-secondary hris-btn-icon btn-edit-potongan"
@@ -170,7 +172,7 @@ document.addEventListener('DOMContentLoaded', function () {
             `).join('');
         } catch (err) {
             console.error('Gagal memuat data potongan:', err);
-            tbody.innerHTML = '<tr><td colspan="9" class="hris-empty">Gagal memuat data.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="10" class="hris-empty">Gagal memuat data.</td></tr>';
         }
     }
 
