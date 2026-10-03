@@ -445,6 +445,9 @@
             tglAkhirSurat.value = header.tgl_akhir_surat || '';
             keterangan.value = header.keterangan || '';
             penempatan.value = header.penempatan || '';
+            const loadedJenis = String(header.tipe ?? '1');
+            const loadedRadio = document.querySelector('input[name="jenis_operasi"][value="' + loadedJenis + '"]');
+            if (loadedRadio) loadedRadio.checked = true;
 
             participants = (payload.data.peserta || []).map(item => ({
                 nip:item.nip,
