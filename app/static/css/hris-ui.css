@@ -3469,3 +3469,118 @@ body.hris-sidebar-mini .hris-submenu {
   font-size: 13px;
   background: var(--ui-surface);
 }
+
+
+/* ============================================================
+   REKAP ABSENSI BULANAN — UNIT SELECTION
+   Wide operator-friendly selection panel.
+   ============================================================ */
+.hris-rekap-period-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.hris-rekap-unit-field {
+  margin-top: 20px;
+}
+
+.hris-rekap-unit-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.hris-rekap-unit-heading .hris-field-help {
+  margin-top: 2px;
+}
+
+.hris-unit-selector--report .hris-unit-options {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  max-height: none;
+  overflow-y: visible;
+}
+
+.hris-unit-selector--report .hris-unit-option {
+  min-height: 42px;
+}
+
+.hris-unit-select-action {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ui-brand-dark);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.hris-unit-select-action:hover {
+  text-decoration: underline;
+}
+
+.hris-rekap-runbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--ui-border);
+}
+
+.hris-rekap-runbar-info {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  color: var(--ui-muted);
+  font-size: 11px;
+}
+
+.hris-rekap-runbar-info i {
+  flex: 0 0 auto;
+  color: var(--ui-brand);
+}
+
+.hris-rekap-runbar .hris-btn {
+  min-width: 110px;
+}
+
+@media (max-width: 1150px) {
+  .hris-unit-selector--report .hris-unit-options {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .hris-unit-selector--report .hris-unit-options {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .hris-rekap-period-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hris-rekap-unit-heading,
+  .hris-rekap-runbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .hris-unit-selector--report .hris-unit-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hris-rekap-runbar .hris-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .hris-unit-selector--report .hris-unit-options {
+    grid-template-columns: 1fr;
+  }
+}
