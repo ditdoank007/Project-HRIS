@@ -2060,6 +2060,7 @@ def api_normalisasi_process():
               AND ActivityDate >= :activity_awal
               AND ActivityDate <= :activity_akhir
               AND StatusTrx = '-'
+              AND (StatusID = 3 OR shift1 = 1)
         """)
 
         shift1_rows = db.session.execute(
