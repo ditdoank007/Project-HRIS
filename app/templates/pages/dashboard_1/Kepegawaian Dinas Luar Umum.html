@@ -215,6 +215,12 @@
 .participant-table-wrap .hris-table td:nth-child(7) { width:72px; text-align:center; }
 .participant-table-wrap .hris-table tbody tr:nth-child(even) { background:#f8fafc; }
 .participant-table-wrap .hris-table tbody tr:hover { background:#fff7ed; }
+.participant-row-editor { display:flex; align-items:center; gap:6px; }
+.participant-row-editor .hris-input,
+.participant-row-editor .hris-select { min-width:0; width:100%; height:36px; padding:7px 9px; font-size:12px; }
+.participant-row-action { width:34px; height:34px; min-width:34px; display:inline-flex; align-items:center; justify-content:center; }
+.participant-row-action.save-participant { color:#15803d; border-color:#bbf7d0; background:#f0fdf4; }
+.participant-row-action.edit-participant { color:#c2410c; border-color:#fed7aa; background:#fff7ed; }
 .empty-row { text-align:center !important; color:#94a3b8; padding:22px !important; }
 .hris-card-footer { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:16px 20px; border-top:1px solid var(--hris-border,#e2e8f0); }
 .dinas-save-toast {
@@ -374,27 +380,117 @@
         if (!event.target.closest('.autocomplete-wrap')) dropdown.hidden = true;
     });
 
+    function participantStatusText(status) {
+        const value = String(status ?? '0');
+        if (value === '1') return 'Terpotong';
+        if (value === '2') return 'Tdk Terpotong Penempatan';
+        return 'Tdk Terpotong';
+    }
+
+    function validateParticipantPeriod(start, end) {
+        const suratStart = tglAwalSurat.value;
+        const suratEnd = tglAkhirSurat.value;
+
+        if (!suratStart || !suratEnd) {
+            return 'Tanggal surat/header SPRIN wajib diisi terlebih dahulu.';
+        }
+        if (!start || !end) {
+            return 'Tanggal mulai dan selesai pegawai wajib diisi.';
+        }
+        if (end < start) {
+            return 'Tanggal selesai pegawai tidak boleh sebelum tanggal mulai.';
+        }
+        if (start < suratStart) {
+            return 'Tanggal mulai pegawai tidak boleh sebelum tanggal awal surat (' +
+                formatDateDisplay(suratStart) + ').';
+        }
+        if (end > suratEnd) {
+            return 'Tanggal selesai pegawai tidak boleh melewati tanggal akhir surat (' +
+                formatDateDisplay(suratEnd) + ').';
+        }
+        return '';
+    }
+
     function renderParticipants() {
         participantCount.textContent = participants.length + ' Pegawai';
         btnDelete.disabled = !guidSprin;
 
         if (!participants.length) {
-            participantBody.innerHTML = '<tr><td colspan="7" class="empty-row">Belum ada pegawai.</td></tr>';
+            participantBody.innerHTML =
+                '<tr><td colspan="{% if dinas_type == 'OP' %}8{% else %}7{% endif %}" class="empty-row">Belum ada pegawai.</td></tr>';
             return;
         }
 
+        const suratStart = tglAwalSurat.value || '';
+        const suratEnd = tglAkhirSurat.value || '';
+
         participantBody.innerHTML = participants.map((item, index) => {
+            const editing = Boolean(item._editing);
+            const actionHtml = editing
+                ? '<button type="button" class="hris-icon-btn participant-row-action save-participant" data-index="' + index + '" title="Simpan perubahan pegawai"><i class="feather-check"></i></button>' +
+                  '<button type="button" class="hris-icon-btn remove-participant" data-index="' + index + '" title="Hapus peserta"><i class="feather-x"></i></button>'
+                : '<button type="button" class="hris-icon-btn participant-row-action edit-participant" data-index="' + index + '" title="Edit pegawai"><i class="feather-edit-2"></i></button>' +
+                  '<button type="button" class="hris-icon-btn remove-participant" data-index="' + index + '" title="Hapus peserta"><i class="feather-x"></i></button>';
+
+            const startCell = editing
+                ? '<input type="date" class="hris-input participant-edit-start" data-index="' + index + '" value="' + escapeHtml(item.tgl_awal || '') + '" min="' + escapeHtml(suratStart) + '" max="' + escapeHtml(suratEnd) + '">'
+                : formatDateDisplay(item.tgl_awal);
+
+            const endCell = editing
+                ? '<input type="date" class="hris-input participant-edit-end" data-index="' + index + '" value="' + escapeHtml(item.tgl_akhir || '') + '" min="' + escapeHtml(suratStart) + '" max="' + escapeHtml(suratEnd) + '">'
+                : formatDateDisplay(item.tgl_akhir);
+
+            const statusCell = editing
+                ? '<select class="hris-select participant-edit-status" data-index="' + index + '">' +
+                    '<option value="0"' + (String(item.status_um) === '0' ? ' selected' : '') + '>Tdk Terpotong</option>' +
+                    '<option value="1"' + (String(item.status_um) === '1' ? ' selected' : '') + '>Terpotong</option>' +
+                    '<option value="2"' + (String(item.status_um) === '2' ? ' selected' : '') + '>Tdk Terpotong Penempatan</option>' +
+                  '</select>'
+                : escapeHtml(participantStatusText(item.status_um));
+
             return '<tr>' +
                 '<td class="hris-text-center">' + (index + 1) + '</td>' +
                 '<td>' + escapeHtml(item.nip) + '</td>' +
                 '<td>' + escapeHtml(item.nama) + '</td>' +
                 {% if dinas_type == 'OP' %}'<td class="hris-text-center">' + (String(item.tipe ?? '1') === '1' ? 'OPS' : 'NON OPS') + '</td>' +{% endif %}
-                '<td class="hris-text-center">' + formatDateDisplay(item.tgl_awal) + '</td>' +
-                '<td class="hris-text-center">' + formatDateDisplay(item.tgl_akhir) + '</td>' +
-                '<td>' + escapeHtml(item.status_um_text) + '</td>' +
-                '<td class="hris-text-center"><button type="button" class="hris-icon-btn remove-participant" data-index="' + index + '" title="Hapus peserta"><i class="feather-x"></i></button></td>' +
+                '<td class="hris-text-center">' + startCell + '</td>' +
+                '<td class="hris-text-center">' + endCell + '</td>' +
+                '<td>' + statusCell + '</td>' +
+                '<td class="hris-text-center"><div class="participant-row-editor">' + actionHtml + '</div></td>' +
                 '</tr>';
         }).join('');
+
+        document.querySelectorAll('.edit-participant').forEach(button => {
+            button.addEventListener('click', () => {
+                const index = Number(button.dataset.index);
+                participants[index]._editing = true;
+                renderParticipants();
+            });
+        });
+
+        document.querySelectorAll('.save-participant').forEach(button => {
+            button.addEventListener('click', () => {
+                const index = Number(button.dataset.index);
+                const startInput = document.querySelector('.participant-edit-start[data-index="' + index + '"]');
+                const endInput = document.querySelector('.participant-edit-end[data-index="' + index + '"]');
+                const statusInput = document.querySelector('.participant-edit-status[data-index="' + index + '"]');
+
+                const error = validateParticipantPeriod(startInput?.value || '', endInput?.value || '');
+                if (error) {
+                    showAlert(error, true);
+                    return;
+                }
+
+                participants[index].tgl_awal = startInput.value;
+                participants[index].tgl_akhir = endInput.value;
+                participants[index].status_um = statusInput.value;
+                participants[index].status_um_text = participantStatusText(statusInput.value);
+                participants[index]._editing = false;
+
+                hideAlert();
+                renderParticipants();
+            });
+        });
 
         document.querySelectorAll('.remove-participant').forEach(button => {
             button.addEventListener('click', () => {
@@ -414,8 +510,8 @@
         const jenisOperasi = document.querySelector('input[name="jenis_operasi"]:checked')?.value || '1';
 
         if (!nip) return showAlert('Pilih pegawai dari hasil pencarian terlebih dahulu.', true);
-        if (!start || !end) return showAlert('Tanggal mulai dan selesai pegawai wajib diisi.', true);
-        if (end < start) return showAlert('Tanggal selesai pegawai tidak boleh sebelum tanggal mulai.', true);
+        const periodError = validateParticipantPeriod(start, end);
+        if (periodError) return showAlert(periodError, true);
         if (participants.some(item => item.nip === nip)) return showAlert('Pegawai tersebut sudah ada dalam daftar.', true);
 
         participants.push({nip, nama, tgl_awal:start, tgl_akhir:end, status_um:status, status_um_text:statusText, tipe:jenisOperasi});
@@ -484,6 +580,21 @@
         if (!sprinFile.files.length && !guidSprin) return showAlert('File SPRIN PDF wajib dipilih.', true);
         if (!participants.length) return showAlert('Minimal satu pegawai harus ditambahkan.', true);
 
+        const editingIndex = participants.findIndex(item => item._editing);
+        if (editingIndex >= 0) {
+            return showAlert('Selesaikan edit pegawai pada baris yang sedang diedit terlebih dahulu.', true);
+        }
+
+        for (const item of participants) {
+            const periodError = validateParticipantPeriod(item.tgl_awal, item.tgl_akhir);
+            if (periodError) {
+                return showAlert(
+                    'Periode ' + (item.nama || item.nip) + ' tidak valid. ' + periodError,
+                    true
+                );
+            }
+        }
+
         const fd = new FormData();
         fd.append('type_sprin', '{{ dinas_type }}');
         fd.append('no_surat', noSurat.value.trim());
@@ -534,6 +645,7 @@
             if (!response.ok || !payload.success) throw new Error(payload.error || 'Gagal menghapus.');
             resetForm();
             showAlert(payload.message);
+            showSaveToast('HAPUS BERHASIL', payload.message || 'SPRIN berhasil dihapus.');
         } catch (error) {
             showAlert(error.message || 'Gagal menghapus SPRIN.', true);
         }
