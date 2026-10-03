@@ -77,7 +77,7 @@
 
         <div class="hris-card-body">
             <div class="hris-table-wrapper">
-                <table class="hris-table search-results-table">
+                <table class="hris-table search-results-table {% if type_sprin == 'OPR' %}is-operation{% else %}is-non-operation{% endif %}">
                     <thead>
                         <tr>
                             <th>No</th>
@@ -155,22 +155,37 @@
 .search-results-table tbody tr:hover {
     background:#fff7ed;
 }
-.search-results-table th:nth-child(1),
-.search-results-table td:nth-child(1) { width:4%; text-align:center; }
-.search-results-table th:nth-child(2),
-.search-results-table td:nth-child(2) { width:18%; }
-.search-results-table th.col-search-type,
-.search-results-table td.col-search-type { width:8%; text-align:center; white-space:nowrap; }
-.search-results-table th.col-search-date,
-.search-results-table td.col-search-date { width:22%; white-space:normal; overflow-wrap:anywhere; }
-.search-results-table th.col-search-keterangan,
-.search-results-table td.col-search-keterangan { width:18%; white-space:normal; overflow-wrap:anywhere; }
-.search-results-table th.col-search-lokasi,
-.search-results-table td.col-search-lokasi { width:16%; white-space:normal; overflow-wrap:anywhere; }
-.search-results-table th.col-search-update,
-.search-results-table td.col-search-update { width:18%; white-space:normal; overflow-wrap:anywhere; }
-.search-results-table th.col-search-action,
-.search-results-table td.col-search-action { width:4%; text-align:center; }
+.search-results-table.is-non-operation th:nth-child(1),
+.search-results-table.is-non-operation td:nth-child(1) { width:4%; text-align:center; }
+.search-results-table.is-non-operation th:nth-child(2),
+.search-results-table.is-non-operation td:nth-child(2) { width:18%; }
+.search-results-table.is-non-operation th.col-search-date,
+.search-results-table.is-non-operation td.col-search-date { width:22%; white-space:normal; overflow-wrap:anywhere; }
+.search-results-table.is-non-operation th.col-search-keterangan,
+.search-results-table.is-non-operation td.col-search-keterangan { width:18%; white-space:normal; overflow-wrap:anywhere; }
+.search-results-table.is-non-operation th.col-search-lokasi,
+.search-results-table.is-non-operation td.col-search-lokasi { width:16%; white-space:normal; overflow-wrap:anywhere; }
+.search-results-table.is-non-operation th.col-search-update,
+.search-results-table.is-non-operation td.col-search-update { width:18%; white-space:normal; overflow-wrap:anywhere; }
+.search-results-table.is-non-operation th.col-search-action,
+.search-results-table.is-non-operation td.col-search-action { width:4%; text-align:center; }
+
+.search-results-table.is-operation th:nth-child(1),
+.search-results-table.is-operation td:nth-child(1) { width:4%; text-align:center; }
+.search-results-table.is-operation th:nth-child(2),
+.search-results-table.is-operation td:nth-child(2) { width:16%; }
+.search-results-table.is-operation th.col-search-type,
+.search-results-table.is-operation td.col-search-type { width:8%; text-align:center; white-space:nowrap; }
+.search-results-table.is-operation th.col-search-date,
+.search-results-table.is-operation td.col-search-date { width:20%; white-space:normal; overflow-wrap:anywhere; }
+.search-results-table.is-operation th.col-search-keterangan,
+.search-results-table.is-operation td.col-search-keterangan { width:17%; white-space:normal; overflow-wrap:anywhere; }
+.search-results-table.is-operation th.col-search-lokasi,
+.search-results-table.is-operation td.col-search-lokasi { width:15%; white-space:normal; overflow-wrap:anywhere; }
+.search-results-table.is-operation th.col-search-update,
+.search-results-table.is-operation td.col-search-update { width:16%; white-space:normal; overflow-wrap:anywhere; }
+.search-results-table.is-operation th.col-search-action,
+.search-results-table.is-operation td.col-search-action { width:4%; text-align:center; }
 .sprin-type-badge { display:inline-flex; align-items:center; justify-content:center; min-width:78px; padding:4px 9px; border-radius:999px; font-size:11px; font-weight:800; letter-spacing:.04em; }
 .sprin-type-ops { background:#dcfce7; color:#166534; }
 .sprin-type-nonops { background:#dbeafe; color:#1d4ed8; }
