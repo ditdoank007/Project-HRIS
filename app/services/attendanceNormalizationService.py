@@ -62,6 +62,17 @@ class AttendanceNormalizationService:
         try:
             return int(value)
         except (TypeError, ValueError):
+            status = str(
+                raw.get("status")
+                or raw.get("STATUS")
+                or ""
+            ).strip().upper()
+
+            if status == "IN":
+                return 0
+            if status == "OUT":
+                return 1
+
             return None
 
     @staticmethod
