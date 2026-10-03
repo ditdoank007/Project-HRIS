@@ -139,7 +139,7 @@ def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
     siaga_rows = (
         LogActivity.query
         .filter(LogActivity.ACTIVITY == "Piket Siaga")
-        .filter(LogActivity.STATUS_ID == "3")
+        .filter(LogActivity.STATUS_ID == 3)
         .filter(LogActivity.STATUS_TRX == "-")
         .filter(LogActivity.SHIFT.in_(["1", "2"]))
         .filter(LogActivity.ACTIVITY_DATE >= (tgl_awal - timedelta(days=1)))
