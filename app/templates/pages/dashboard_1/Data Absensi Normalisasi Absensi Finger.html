@@ -248,6 +248,46 @@ document.addEventListener('DOMContentLoaded', function () {
     tglAwal.value = formatLocalDate(activityStart);
     tglAkhir.value = formatLocalDate(activityEnd);
 
+    // ---------- custom HRIS tabs ----------
+    // baseHRIS tidak memuat Bootstrap JS. Gunakan tab controller
+    // native agar panel tidak tampil bersamaan dan seluruh tombol tab aktif.
+    const absensiTabButtons = Array.from(
+        document.querySelectorAll('#absensiTab .hris-tab')
+    );
+    const absensiTabPanes = Array.from(
+        document.querySelectorAll('#absensiTabContent > .tab-pane')
+    );
+
+    function activateAbsensiTab(button) {
+        if (!button) return;
+
+        absensiTabButtons.forEach(function (tab) {
+            tab.classList.toggle('active', tab === button);
+            tab.setAttribute(
+                'aria-selected',
+                tab === button ? 'true' : 'false'
+            );
+        });
+
+        absensiTabPanes.forEach(function (pane) {
+            const isActive = pane.id ===
+                button.getAttribute('data-bs-target')?.replace('#', '');
+
+            pane.classList.toggle('active', isActive);
+            pane.classList.toggle('show', isActive);
+        });
+    }
+
+    absensiTabButtons.forEach(function (button) {
+        button.addEventListener('click', function () {
+            activateAbsensiTab(button);
+        });
+    });
+
+    activateAbsensiTab(
+        document.getElementById('database-tab')
+    );
+
     // ---------- helper ----------
     function qs(params) {
         return Object.entries(params)
@@ -784,12 +824,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (exportTab) {
                     // Tandai bahwa tab ini baru saja menerima
                     // hasil EXPORT langsung dari server.
-                    // Event shown.bs.tab tidak boleh query ulang ABSENSI.
+                    // Event tab custom tidak boleh query ulang ABSENSI.
                     exportTab.dataset.skipReload = '1';
 
-                    bootstrap.Tab.getOrCreateInstance(
-                        exportTab
-                    ).show();
+                    activateAbsensiTab(exportTab);
                 }
             })
             .catch(err => alert('Gagal export: ' + err));
@@ -817,7 +855,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // ============================================================
 
     if (exportTab) {
-        exportTab.addEventListener('shown.bs.tab', function () {
+        exportTab.addEventListener('click', function () {
 
             // ----------------------------------------------------
             // Jika tab dibuka langsung setelah EXPORT berhasil,
