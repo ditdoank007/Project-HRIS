@@ -1866,7 +1866,7 @@ def export_rekap_clock_exception_pdf():
                     'BACKGROUND',
                     (0, row_index),
                     (-1, row_index + 1),
-                    colors.HexColor('#f8fafc'),
+                    colors.HexColor('#eef2f7'),
                 )
             )
 
