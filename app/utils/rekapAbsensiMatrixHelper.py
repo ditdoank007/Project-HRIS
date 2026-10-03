@@ -65,33 +65,48 @@ def _is_shift2_absensi(absensi):
     return bool(value and getattr(value, 'hour', 0) >= 18)
 
 
-def _jam_in_rekap(absensi):
+def _jam_in_rekap(absensi, absensi_hari_sebelumnya=None):
     """
     Jam masuk yang ditampilkan di Rekap Absensi.
 
-    Untuk Siaga Shift 2, data legacy tertentu menyimpan TglJamIn
-    sebagai 00:00 sementara TglJamBakuIn menyimpan jam mulai shift
-    (18:00 dst). 00:00 tersebut bukan jam masuk yang layak ditampilkan
-    pada rekap, sehingga gunakan jam baku shift sebagai fallback.
+    Shift-2 bekerja lintas tanggal: jam masuk terjadi pada hari
+    sebelumnya (misalnya masuk 05 Sep pukul 18.xx untuk TGL_KERJA
+    06 Sep). Data legacy tertentu menaruh 00:00 pada TGL_JAM_IN
+    tanggal kerja dan menyimpan jam masuk sebenarnya pada ABSENSI
+    hari sebelumnya.
+
+    Prioritas:
+      1. TGL_JAM_IN hari sebelumnya bila valid.
+      2. TGL_JAM_BAKU_IN sebagai fallback.
+      3. TGL_JAM_IN milik record saat ini.
     """
     jam_in = absensi.TGL_JAM_IN
     if not jam_in:
         return jam_in
 
-    rekap_code = str(
-        absensi.HISTORY_TRANSAKSI_IN or ''
-    ).strip().upper()
-
-    # Shift 2 sudah menjadi indikator Siaga pada hasil final ABSENSI.
-    # Jangan mensyaratkan HISTORY_TRANSAKSI_IN == 'SIAGA' karena data
-    # legacy tertentu hanya memiliki TglJamBakuIn >= 18:00.
     if (
         _is_shift2_absensi(absensi)
         and getattr(jam_in, 'hour', 0) == 0
         and getattr(jam_in, 'minute', 0) == 0
-        and absensi.TGL_JAM_BAKU_IN
     ):
-        return absensi.TGL_JAM_BAKU_IN
+        if absensi_hari_sebelumnya:
+            prev_jam_in = absensi_hari_sebelumnya.TGL_JAM_IN
+            if (
+                prev_jam_in
+                and not (
+                    getattr(prev_jam_in, 'year', 0) == 1900
+                    and getattr(prev_jam_in, 'month', 0) == 1
+                    and getattr(prev_jam_in, 'day', 0) == 1
+                )
+                and (
+                    getattr(prev_jam_in, 'hour', 0) != 0
+                    or getattr(prev_jam_in, 'minute', 0) != 0
+                )
+            ):
+                return prev_jam_in
+
+        if absensi.TGL_JAM_BAKU_IN:
+            return absensi.TGL_JAM_BAKU_IN
 
     return jam_in
 
@@ -216,7 +231,7 @@ def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
             Absensi.FINGER_ID == Pegawai.FINGER_ID,
         )
         .filter(
-            Absensi.TGL_KERJA >= tgl_awal,
+            Absensi.TGL_KERJA >= (tgl_awal - timedelta(days=1)),
             Absensi.TGL_KERJA <= tgl_akhir,
         )
         .filter(
@@ -307,9 +322,19 @@ def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
 
                 color = _warna_absensi(absensi)
 
+                absensi_hari_sebelumnya = absensi_index.get(
+                    (
+                        str(pegawai.NIP or '').strip(),
+                        absensi.TGL_KERJA.date() - timedelta(days=1),
+                    )
+                )
+
                 cell.update({
                     'status': status,
-                    'jam_in': _jam_in_rekap(absensi),
+                    'jam_in': _jam_in_rekap(
+                        absensi,
+                        absensi_hari_sebelumnya,
+                    ),
                     'jam_out': absensi.TGL_JAM_OUT,
                     'sumber_absensi': 'ABSENSI',
                     'warna': color,
