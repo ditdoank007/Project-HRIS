@@ -3338,6 +3338,7 @@ def api_normalisasi_export():
             ).first()
 
             if existing:
+                existing.NIP = nip
                 existing.TGL_JAM_IN = tgl_jam_in
                 existing.TGL_JAM_OUT = tgl_jam_out
                 existing.TRANSAKSI_IN = transaksi_in
@@ -3391,6 +3392,7 @@ def api_normalisasi_export():
             else:
                 absensi = Absensi(
                     FINGER_ID=r['finger_id'],
+                    NIP=nip,
                     TGL_KERJA=tgl_kerja,
                     TGL_JAM_IN=tgl_jam_in,
                     TGL_JAM_OUT=tgl_jam_out,
