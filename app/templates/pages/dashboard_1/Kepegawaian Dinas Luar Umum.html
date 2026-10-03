@@ -389,7 +389,7 @@
                 '<td>' + escapeHtml(item.nip) + '</td>' +
                 '<td>' + escapeHtml(item.nama) + '</td>' +
                 {% if dinas_type == 'OP' %}'<td class="hris-text-center">' + (String(item.tipe ?? '1') === '1' ? 'OPS' : 'NON OPS') + '</td>' +{% endif %}
-                '<td class="hris-text-center"> + formatDateDisplay(item.tgl_awal) + '</td>' +
+                '<td class="hris-text-center">' + formatDateDisplay(item.tgl_awal) + '</td>' +
                 '<td class="hris-text-center">' + formatDateDisplay(item.tgl_akhir) + '</td>' +
                 '<td>' + escapeHtml(item.status_um_text) + '</td>' +
                 '<td class="hris-text-center"><button type="button" class="hris-icon-btn remove-participant" data-index="' + index + '" title="Hapus peserta"><i class="feather-x"></i></button></td>' +
