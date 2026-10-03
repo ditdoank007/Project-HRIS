@@ -2005,6 +2005,7 @@ def api_dinas_luar_get(type_sprin=None):
             'data': {
                 'header': {
                     'guid_sprin': first.GUID_SPRIN,
+                    'tipe': str(first.TIPE if first.TIPE is not None else 0),
                     'no_surat': first.NO_SURAT,
                     'tgl_awal_surat': first.TGL_AWAL_SURAT.strftime('%Y-%m-%d') if first.TGL_AWAL_SURAT else '',
                     'tgl_akhir_surat': first.TGL_AKHIR_SURAT.strftime('%Y-%m-%d') if first.TGL_AKHIR_SURAT else '',
@@ -2021,6 +2022,7 @@ def api_dinas_luar_get(type_sprin=None):
                         'tgl_awal': dl.TGL_AWAL_DINAS_LUAR.strftime('%Y-%m-%d') if dl.TGL_AWAL_DINAS_LUAR else '',
                         'tgl_akhir': dl.TGL_AKHIR_DINAS_LUAR.strftime('%Y-%m-%d') if dl.TGL_AKHIR_DINAS_LUAR else '',
                         'status_um': str(dl.STATUS_UM if dl.STATUS_UM is not None else 0),
+                        'tipe': str(dl.TIPE if dl.TIPE is not None else 0),
                     }
                     for dl, peg in rows
                 ],
