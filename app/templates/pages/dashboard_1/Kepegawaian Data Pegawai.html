@@ -252,9 +252,15 @@
                                                 </div>
                                             </div>
                                             <div class="row align-items-center mb-2 field-keluar" id="rowAlasanKeluar">
-                                                <label class="col-sm-4 form-label-custom">Alasan Keluar</label>
+                                                <label class="col-sm-4 form-label-custom">Keterangan Keluar</label>
                                                 <div class="col-sm-8">
-                                                    <input type="text" data-field="alasan_keluar" class="input-custom-style">
+                                                    <select data-field="alasan_keluar" class="input-custom-style">
+                                                        <option value="" disabled selected>Pilih Keterangan Keluar</option>
+                                                        <option value="Mutasi">Mutasi</option>
+                                                        <option value="Pensiun">Pensiun</option>
+                                                        <option value="Meninggal">Meninggal</option>
+                                                        <option value="Diberhentikan">Diberhentikan</option>
+                                                    </select>
                                                 </div>
                                             </div>
                                         </div>
@@ -560,6 +566,15 @@ document.addEventListener("DOMContentLoaded", function () {
         });
 
         toggleFieldKeluar();
+
+        // Simpan kondisi awal untuk membedakan data legacy HRIS 2013.
+        // Record lama yang sudah Is Keluar=Y tetapi Tanggal/Keterangan
+        // kosong boleh tetap disimpan tanpa dipaksa backfill.
+        window.__pegawaiInitialExit = {
+            is_keluar: String(data.is_keluar || "").trim().toUpperCase(),
+            tgl_keluar: String(data.tgl_keluar || "").trim(),
+            alasan_keluar: String(data.alasan_keluar || "").trim()
+        };
 
         // PNS: informasi tanggal lahir/jenis kelamin dari NIP adalah
         // business rule HRIS 2013. Nilai database tetap tidak ditimpa.
@@ -1162,18 +1177,41 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        // Jika pegawai dinyatakan keluar, Tanggal Keluar wajib dicatat.
-        // Validasi ini dilakukan sebelum request dikirim ke server.
+        // Mulai HRIS Reborn, Is Keluar=Y wajib memiliki
+        // Tanggal Keluar dan Keterangan Keluar.
+        // Data legacy HRIS 2013 yang sudah terlanjur Y tetapi kedua
+        // field tersebut kosong tetap boleh disimpan tanpa backfill.
+        const initialExit = window.__pegawaiInitialExit || null;
+        const isLegacyExitWithoutDetail =
+            initialExit &&
+            initialExit.is_keluar === "Y" &&
+            !initialExit.tgl_keluar &&
+            !initialExit.alasan_keluar &&
+            String(payload.is_keluar || "").trim().toUpperCase() === "Y" &&
+            !String(payload.tgl_keluar || "").trim() &&
+            !String(payload.alasan_keluar || "").trim();
+
         if (
             String(payload.is_keluar || "").trim().toUpperCase() === "Y" &&
-            !String(payload.tgl_keluar || "").trim()
+            !isLegacyExitWithoutDetail
         ) {
-            alert("Tanggal Keluar wajib diisi jika Is Keluar = Y.");
-            const tglKeluarField = document.querySelector('[data-field="tgl_keluar"]');
-            if (tglKeluarField) {
-                tglKeluarField.focus();
+            if (!String(payload.tgl_keluar || "").trim()) {
+                alert("Tanggal Keluar wajib diisi jika Is Keluar = Y.");
+                const tglKeluarField = document.querySelector('[data-field="tgl_keluar"]');
+                if (tglKeluarField) {
+                    tglKeluarField.focus();
+                }
+                return;
             }
-            return;
+
+            if (!String(payload.alasan_keluar || "").trim()) {
+                alert("Keterangan Keluar wajib dipilih jika Is Keluar = Y.");
+                const alasanKeluarField = document.querySelector('[data-field="alasan_keluar"]');
+                if (alasanKeluarField) {
+                    alasanKeluarField.focus();
+                }
+                return;
+            }
         }
 
         /*
