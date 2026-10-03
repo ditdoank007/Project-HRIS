@@ -1,5 +1,5 @@
 # controllers/dashboard_1LaporanRekapController.py
-from flask import render_template, request, send_file
+from flask import render_template, request, send_file, current_app
 from io import BytesIO
 from sqlalchemy import func
 from datetime import datetime, timedelta
