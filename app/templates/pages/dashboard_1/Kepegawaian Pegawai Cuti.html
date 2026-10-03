@@ -1,149 +1,114 @@
 <!-- pages/dashboard_1/Kepegawaian Pegawai Cuti.html -->
-{% extends "layout/baseDashboard1.html" %}
+{% extends "layout/baseHRIS.html" %}
 
-{% block title %}- Kepegawaian Pegawai Cuti{% endblock %}
+{% block title %}- Pegawai Cuti{% endblock %}
+{% block header_kicker %}KEPEGAWAIAN{% endblock %}
+{% block header_title %}Pegawai Cuti{% endblock %}
+
+{% block styles %}
+<script src="{{ url_for('static', filename='static_dashboard_1/assets/vendors/js/vendors.min.js') }}"></script>
+<style>
+    .hris-alert { padding: 11px 14px; border-radius: var(--ui-radius-sm); margin-bottom: 16px; }
+    .hris-alert-success { color: var(--ui-success); background: var(--ui-success-bg); }
+    .hris-alert-danger { color: var(--ui-danger); background: var(--ui-danger-bg); }
+    .hris-alert-warning { color: var(--ui-warning); background: var(--ui-warning-bg); }
+    .pegawai-item { cursor: pointer; }
+    #pegawaiDropdown { width: 100%; max-height: 220px; overflow-y: auto; z-index: 1000; }
+    .hris-date-range { display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); align-items:end; gap:10px; }
+    .hris-field-inline { min-width:0; }
+    @media (max-width:720px){ .hris-date-range{grid-template-columns:1fr;} .hris-date-range > span{text-align:center;} }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="nxl-content">
-    <div class="page-header">
-        <div class="page-header-left d-flex align-items-center">
-            <div class="page-header-title">
-                <h5 class="m-b-10">Kepegawaian</h5>
-            </div>
-            <ul class="breadcrumb">
-                <li class="breadcrumb-item"><a href="/">Home</a></li>
-                <li class="breadcrumb-item"><a href="{{ url_for('main.view_kepegawaian_pegawai_cuti') }}">Pegawai Cuti</a></li>
-            </ul>
+<div class="hris-page">
+    <div class="hris-page-header">
+        <div>
+            <h2 class="hris-page-title"><i class="feather-user-x"></i> Pegawai Cuti</h2>
+            <p class="hris-page-subtitle">Pengelolaan data cuti pegawai.</p>
         </div>
+        <button type="button" id="btnCariPage" class="hris-btn hris-btn-secondary">
+            <i class="feather-search"></i> Cari Data
+        </button>
     </div>
 
-    <div class="main-content master-siaga">
-        <div class="container-fluid">
-            <!-- Alert -->
-            <div id="alertContainer" class="alert alert-dismissable d-none mb-3">
-                <span id="alertMessage"></span>
+    <div id="alertContainer" class="hris-alert d-none" role="alert">
+        <span id="alertMessage"></span>
+    </div>
+
+    <form id="formCuti">
+        <input type="hidden" id="transaksiId" value="">
+        <input type="hidden" id="isEdit" value="false">
+
+        <section class="hris-card">
+            <div class="hris-card-header">
+                <h3 class="hris-card-title"><i class="feather-edit-3"></i> Form Cuti Pegawai</h3>
             </div>
-
-            <!-- Header Card -->
-            <div class="card-header-custom d-flex justify-content-between align-items-center mb-3" style="border-radius: 10px;">
-                <h6 class="mb-0"><i class="feather-user-x me-2"></i>Pegawai Cuti</h6>
-                <div class="header-actions">
-                    <a href="#" class="btn p-0 border-0 bg-transparent shadow-none text-decoration-none" title="Cari Data" id="btnCariPage">
-                        <i class="bi bi-search" style="color: #333; font-size: 1.1rem;"></i>
-                    </a>
-                </div>
-            </div>
-
-            <form id="formCuti">
-                <input type="hidden" id="transaksiId" value="">
-                <input type="hidden" id="isEdit" value="false">
-
-                <!-- ========== CARD FORM CUTI ========== -->
-                <div class="sub-panel-card mb-3">
-                    <div class="sub-panel-header">Form Cuti Pegawai</div>
-                    <div class="p-3">
-                        <!-- Pegawai Search -->
-                        <div class="row mb-3 align-items-center">
-                            <label class="col-md-2 form-label-custom">Pegawai <span class="text-danger">*</span></label>
-                            <div class="col-md-8 position-relative">
-                                <div class="input-group input-group-sm">
-                                    <input type="text" id="searchPegawai" class="form-control input-custom-style"
-                                           placeholder="Ketik nama pegawai..." autocomplete="off">
-                                    <button class="btn btn-outline-secondary" type="button" id="btnSearchPegawai">
-                                        <i class="bi bi-search"></i>
-                                    </button>
-                                </div>
-                                <div id="pegawaiDropdown" class="dropdown-menu w-100 shadow"
-                                     style="display:none; max-height:200px;overflow-y:auto;position:absolute;z-index:1000;"></div>
-                            </div>
-                            <input type="hidden" id="selectedNIP">
-                        </div>
-
-                        <!-- Pegawai Terpilih (Readonly) -->
-                        <div class="row mb-3 align-items-center" id="rowPegawaiTerpilih" style="display:none;">
-                            <label class="col-md-2 form-label-custom">Terpilih</label>
-                            <div class="col-md-8">
-                                <input type="text" id="pegawaiTerpilih" class="input-custom-style" readonly
-                                       style="background-color:#e9ecef;">
-                            </div>
-                            <div class="col-md-2">
-                                <button class="btn btn-sm btn-outline-warning" id="btnGantiPegawai" type="button" title="Ganti Pegawai">
-                                    <i class="bi bi-arrow-repeat"></i>
+            <div class="hris-card-body">
+                <div class="hris-form-grid">
+                    <div class="hris-field" style="grid-column:1 / -1;">
+                        <label class="hris-label" for="searchPegawai">Pegawai <span class="text-danger">*</span></label>
+                        <div style="position:relative;">
+                            <div style="display:flex;gap:8px;">
+                                <input type="text" id="searchPegawai" class="hris-input"
+                                       placeholder="Ketik nama pegawai..." autocomplete="off">
+                                <button class="hris-btn hris-btn-secondary" type="button" id="btnSearchPegawai" title="Cari pegawai">
+                                    <i class="feather-search"></i>
                                 </button>
                             </div>
+                            <div id="pegawaiDropdown" class="hris-card" style="display:none;position:absolute;left:0;top:44px;"></div>
                         </div>
+                        <input type="hidden" id="selectedNIP">
+                    </div>
 
-                        <!-- Tanggal -->
-                        <div class="row mb-3 align-items-center">
-                            <label class="col-md-2 form-label-custom">Tanggal <span class="text-danger">*</span></label>
-                            <div class="col-md-8">
-                                <div class="d-flex align-items-center gap-2">
-                                    <div class="input-group input-group-sm" style="max-width: 200px;">
-                                        <span class="input-group-text" style="background-color: #e65c00; color: #fff; font-size: 0.78rem;">Awal</span>
-                                        <input type="date" id="tglAwal" class="form-control form-control-sm input-custom-style">
-                                    </div>
-                                    <span class="fw-bold small">s/d</span>
-                                    <div class="input-group input-group-sm" style="max-width: 200px;">
-                                        <span class="input-group-text" style="background-color: #e65c00; color: #fff; font-size: 0.78rem;">Akhir</span>
-                                        <input type="date" id="tglAkhir" class="form-control form-control-sm input-custom-style">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Jenis Cuti -->
-                        <div class="row mb-3 align-items-center">
-                            <label class="col-md-2 form-label-custom">Jenis Cuti <span class="text-danger">*</span></label>
-                            <div class="col-md-8">
-                                <select id="jenisCuti" class="form-select form-select-sm input-custom-style">
-                                    <option value="">- Pilih Jenis Cuti -</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- Keterangan -->
-                        <div class="row mb-4 align-items-center">
-                            <label class="col-md-2 form-label-custom">Keterangan</label>
-                            <div class="col-md-8">
-                                <textarea id="keterangan" class="input-custom-style" rows="2" placeholder="Keterangan cuti..."></textarea>
-                            </div>
-                        </div>
-
-                        <!-- Tombol Aksi -->
-                        <div class="text-center d-flex justify-content-center gap-3">
-                            <button type="button" id="btnSave" class="btn btn-primary btn-sm px-4 rounded-pill fw-bold text-white"
-                                style="font-size: 0.8rem; background-color: #0000ff; border: none;">
-                                <i class="bi bi-save me-1"></i>SAVE
-                            </button>
-                            <button type="button" id="btnDelete" class="btn btn-danger btn-sm px-4 rounded-pill fw-bold text-white"
-                                style="display:none; font-size: 0.8rem;">
-                                <i class="bi bi-trash me-1"></i>DELETE
-                            </button>
-                            <button type="button" id="btnNew" class="btn btn-secondary btn-sm px-4 rounded-pill fw-bold text-white"
-                                style="font-size: 0.8rem;">
-                                <i class="bi bi-plus-lg me-1"></i>NEW
+                    <div class="hris-field" id="rowPegawaiTerpilih" style="display:none;grid-column:1 / -1;">
+                        <label class="hris-label" for="pegawaiTerpilih">Pegawai Terpilih</label>
+                        <div style="display:flex;gap:8px;">
+                            <input type="text" id="pegawaiTerpilih" class="hris-input" readonly>
+                            <button class="hris-btn hris-btn-secondary" id="btnGantiPegawai" type="button" title="Ganti Pegawai">
+                                <i class="feather-refresh-cw"></i>
                             </button>
                         </div>
                     </div>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 
-<style>
-    *, *::before, *::after { box-sizing: border-box; }
-    .sub-panel-card { border: 1px solid #dee2e6; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); background: #fff; }
-    .sub-panel-header { background-color: #e65c00; color: #fff; font-weight: 600; font-size: 0.9rem; padding: 8px 15px; width: 100%; border-radius: 8px 8px 0 0; }
-    .input-custom-style { border: 1px solid #ccc; border-radius: 3px; padding: 3px 8px; font-size: 0.85rem; width: 100%; max-width: 100%; background-color: #fff; position: relative; z-index: 1; }
-    input[type="date"].input-custom-style { cursor: pointer; min-height: 31px; }
-    .input-custom-style:focus { border-color: #e65c00; outline: none; z-index: 2; }
-    .form-label-custom { font-size: 0.85rem; color: #333; font-weight: 600; margin-bottom: 4px; }
-    .pegawai-item { cursor: pointer; padding: 6px 12px; }
-    .pegawai-item:hover { background-color: #f0f0f0; }
-    #pegawaiDropdown { position: absolute !important; z-index: 9999 !important; background: #fff; border: 1px solid #dee2e6; box-shadow: 0 4px 12px rgba(0,0,0,0.15); max-height: 200px; overflow-y: auto; }
-    .position-relative { position: relative; z-index: auto; }
-</style>
+                    <div class="hris-field" style="grid-column:1 / -1;">
+                        <label class="hris-label">Tanggal <span class="text-danger">*</span></label>
+                        <div class="hris-date-range">
+                            <div class="hris-field-inline">
+                                <label class="hris-label">Awal</label>
+                                <input type="date" id="tglAwal" class="hris-input">
+                            </div>
+                            <span class="hris-label" style="margin:0 0 10px;">s/d</span>
+                            <div class="hris-field-inline">
+                                <label class="hris-label">Akhir</label>
+                                <input type="date" id="tglAkhir" class="hris-input">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="hris-field">
+                        <label class="hris-label" for="jenisCuti">Jenis Cuti <span class="text-danger">*</span></label>
+                        <select id="jenisCuti" class="hris-select">
+                            <option value="">- Pilih Jenis Cuti -</option>
+                        </select>
+                    </div>
+
+                    <div class="hris-field">
+                        <label class="hris-label" for="keterangan">Keterangan</label>
+                        <textarea id="keterangan" class="hris-textarea" rows="2" placeholder="Keterangan cuti..."></textarea>
+                    </div>
+                </div>
+
+                <div class="hris-divider"></div>
+                <div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;">
+                    <button type="button" id="btnSave" class="hris-btn hris-btn-primary"><i class="feather-save"></i> Simpan</button>
+                    <button type="button" id="btnDelete" class="hris-btn hris-btn-danger" style="display:none;"><i class="feather-trash-2"></i> Hapus</button>
+                    <button type="button" id="btnNew" class="hris-btn hris-btn-secondary"><i class="feather-file-plus"></i> Baru</button>
+                </div>
+            </div>
+        </section>
+    </form>
+</div>
 {% endblock %}
 
 {% block script %}
