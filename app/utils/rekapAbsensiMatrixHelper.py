@@ -42,15 +42,20 @@ def format_status_absensi(status):
 
 
 def _sprin_code_from_absensi(absensi):
-    """Ambil kode DL/OP/SD yang sudah dibawa oleh hasil export."""
+    """Ambil kode DL/OP/SD yang dipersist oleh hasil export final."""
     transaction = str(absensi.TRANSAKSI_IN or '').strip().upper()
     if transaction != 'DINASLUAR':
         return ''
 
-    supporting = str(absensi.PENDUKUNG_IN or '').strip().upper()
-    if supporting in ('DL', 'OP', 'SD'):
-        return supporting
+    display_code = str(
+        absensi.HISTORY_TRANSAKSI_IN or ''
+    ).strip().upper()
 
+    if display_code in ('DL', 'OP', 'SD'):
+        return display_code
+
+    # Kompatibilitas untuk data lama yang belum memiliki metadata
+    # HISTORY_TRANSAKSI_IN. Jangan menebak OP/SD dari field lain.
     return 'DL'
 
 
@@ -76,9 +81,6 @@ def _warna_absensi(absensi):
 
     if _is_shift2_absensi(absensi):
         return 'siaga'
-
-    if transaction in ('CUTI', 'SAKIT', 'ALPA', 'IJIN', 'IZIN'):
-        return 'orange'
 
     return 'normal'
 
@@ -248,6 +250,16 @@ def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
 
                 if transaksi_in == 'DINASLUAR':
                     status = _sprin_code_from_absensi(absensi)
+                elif transaksi_in in ('CUTI', 'SAKIT'):
+                    # HRIS 2013 menampilkan kode tingkat transaksi,
+                    # misalnya CT atau S-1, bukan sekadar label generik.
+                    tingkat = str(
+                        absensi.TINGKAT_TLM or
+                        absensi.TINGKAT_PSW or
+                        ''
+                    ).strip().upper()
+                    if tingkat:
+                        status = tingkat
                 elif status in (
                     '',
                     'LOGFP',
