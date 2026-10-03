@@ -1853,7 +1853,41 @@ def api_dinas_luar_save(type_sprin=None):
             person_start = datetime.strptime(start_text, '%Y-%m-%d')
             person_end = datetime.strptime(end_text, '%Y-%m-%d')
             if person_end < person_start:
-                return jsonify({'success': False, 'error': f'Periode Dinas Luar {nip} tidak valid.'}), 400
+                return jsonify({
+                    'success': False,
+                    'error': f'Periode Dinas Luar {nip} tidak valid: tanggal selesai tidak boleh sebelum tanggal mulai.'
+                }), 400
+
+            # ============================================================
+            # BATAS PERIODE PESERTA
+            #
+            # Periode tiap pegawai boleh berbeda, tetapi WAJIB berada
+            # di dalam rentang tanggal surat/header SPRIN.
+            # ============================================================
+            if person_start.date() < start_date:
+                return jsonify({
+                    'success': False,
+                    'error': (
+                        f'Periode pegawai {nip} tidak boleh dimulai '
+                        f'sebelum tanggal awal surat ({start_date:%d-%m-%Y}).'
+                    )
+                }), 400
+
+            if person_end.date() > end_date:
+                return jsonify({
+                    'success': False,
+                    'error': (
+                        f'Periode pegawai {nip} tidak boleh melewati '
+                        f'tanggal akhir surat ({end_date:%d-%m-%Y}).'
+                    )
+                }), 400
+
+            status_um = int(peserta.get('status_um') or 0)
+            if status_um not in (0, 1, 2):
+                return jsonify({
+                    'success': False,
+                    'error': f'Status Uang Makan pegawai {nip} tidak valid.'
+                }), 400
 
             pegawai = Pegawai.query.filter(Pegawai.NIP == nip).first()
             if not pegawai or not pegawai.FINGER_ID:
@@ -1867,7 +1901,7 @@ def api_dinas_luar_save(type_sprin=None):
                 'pegawai': pegawai,
                 'start': person_start,
                 'end': person_end,
-                'status_um': int(peserta.get('status_um') or 0),
+                'status_um': status_um,
                 'tipe': int(peserta.get('tipe')) if type_sprin == 'OP' and str(peserta.get('tipe')) in ('0','1') else cfg['tipe'],
             })
 
@@ -2133,10 +2167,30 @@ def api_dinas_luar_delete(type_sprin=None):
 
         db.session.commit()
 
+        # Penghapusan data DB adalah operasi utama. Jika file PDF berada
+        # di NFS dan gagal dihapus karena transient error/permission,
+        # jangan membuat operator mengira SPRIN gagal dihapus.
+        file_delete_warning = ''
         if file_path and os.path.isfile(file_path):
-            os.unlink(file_path)
+            try:
+                os.unlink(file_path)
+            except OSError as file_error:
+                print(
+                    f'WARNING: gagal menghapus file SPRIN {file_path}: '
+                    f'{file_error}'
+                )
+                file_delete_warning = (
+                    ' Data SPRIN sudah dihapus, tetapi file PDF '
+                    'belum berhasil dihapus dari NFS.'
+                )
 
-        return jsonify({'success': True, 'message': f'{jenis} SPRIN Dinas Luar berhasil dihapus.'})
+        return jsonify({
+            'success': True,
+            'message': (
+                f'{jenis} SPRIN Dinas Luar berhasil dihapus.'
+                f'{file_delete_warning}'
+            )
+        })
     except Exception as e:
         db.session.rollback()
         import traceback
