@@ -2321,11 +2321,53 @@ def api_normalisasi_process():
                 == db.func.trim(Pegawai.FINGER_ID)
             )
             .filter(
-                DinasLuar.TRANSAKSI == 'DinasLuar',
+                DinasLuar.TRANSAKSI.in_([
+                    'DinasLuar',
+                    'sakit',
+                    'cuti',
+                    'alpa',
+                    'ijin',
+                    'WFH',
+                ]),
                 DinasLuar.TGL_AWAL_DINAS_LUAR <= tgl_akhir,
                 DinasLuar.TGL_AKHIR_DINAS_LUAR >= tgl_awal,
             )
             .all()
+        )
+
+        # Legacy memilih transaksi khusus berdasarkan:
+        # PriorityTransaksi ASC, UpdateDate DESC.
+        # Reborn mempertahankan urutan tersebut bila master
+        # MF_PRIORITY_TRANSAKSI tersedia.
+        try:
+            priority_rows = db.session.execute(
+                text("""
+                    SELECT Transaksi, PriorityTransaksi
+                    FROM MFPriorityTransaksi
+                    WHERE Modul = 'Absensi'
+                """)
+            ).mappings().all()
+
+            priority_map = {
+                str(row['Transaksi'] or '').strip().upper():
+                    int(row['PriorityTransaksi'] or 99)
+                for row in priority_rows
+            }
+        except Exception:
+            priority_map = {}
+
+        dinas_luar_rows.sort(
+            key=lambda item: (
+                priority_map.get(
+                    str(item[0].TRANSAKSI or '').strip().upper(),
+                    99,
+                ),
+                -(
+                    item[0].UPDATE_DATE.timestamp()
+                    if item[0].UPDATE_DATE
+                    else 0
+                ),
+            )
         )
 
         def _dl_filter_match(pegawai):
