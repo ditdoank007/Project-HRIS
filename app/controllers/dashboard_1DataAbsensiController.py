@@ -1735,10 +1735,10 @@ def api_normalisasi_process():
         # every attendance row to PEGAWAI and applying LIKE afterwards.
         if employee_finger_ids is not None:
             source_filter_clauses = [
-                "tr.FingerID IN :employee_finger_ids"
+                "AND tr.FingerID IN :employee_finger_ids"
             ]
             raw_source_filter_clauses = [
-                "r.USER_ID IN :employee_finger_ids"
+                "AND r.USER_ID IN :employee_finger_ids"
             ]
         else:
             raw_source_filter_clauses = []
