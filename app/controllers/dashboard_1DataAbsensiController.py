@@ -3957,7 +3957,31 @@ def api_normalisasi_export():
                 'persen_pot_psw': r.get('persen_pot_psw'),
                 'transaksi_in': transaksi_in,
                 'transaksi_out': transaksi_out,
+                # Simpan key sorting internal agar response export
+                # mengikuti urutan yang sama dengan preview normalisasi.
+                '_sort_nip': str(r.get('nip') or '').strip(),
+                '_sort_tgl': tgl_kerja.strftime('%Y-%m-%d') if tgl_kerja else '9999-12-31',
+                '_sort_shift': str(
+                    r.get('shift_kerja')
+                    or r.get('shift')
+                    or '1'
+                ).strip(),
             })
+
+        exported_rows.sort(
+            key=lambda row: (
+                row.get('_sort_nip') or '999999999999999999',
+                row.get('_sort_tgl') or '9999-12-31',
+                row.get('_sort_shift') or '1',
+                str(row.get('finger_id') or '').strip(),
+            )
+        )
+
+        for i, row in enumerate(exported_rows, 1):
+            row['no'] = i
+            row.pop('_sort_nip', None)
+            row.pop('_sort_tgl', None)
+            row.pop('_sort_shift', None)
 
         db.session.commit()
 
