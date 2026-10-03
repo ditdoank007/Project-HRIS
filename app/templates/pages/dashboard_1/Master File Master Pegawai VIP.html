@@ -9,24 +9,107 @@
     <div class="hris-page-header">
         <div>
             <h2 class="hris-page-title">Master Pegawai VIP</h2>
-            <p class="hris-page-subtitle">Daftar pegawai yang ditetapkan sebagai VIP.</p>
+            <p class="hris-page-subtitle">
+                Penetapan status VIP pegawai berdasarkan data PEGAWAI HRIS 2013.
+            </p>
         </div>
-        <a href="{{ url_for('main.view_cari_master_pegawai_vip') }}" class="hris-btn hris-btn-secondary">
-            <i class="feather-search"></i>
-            <span>Cari VIP</span>
-        </a>
+        <div class="d-flex gap-2">
+            <button type="button" class="hris-btn hris-btn-secondary" id="btnCariVip">
+                <i class="feather-search"></i>
+                <span>Cari</span>
+            </button>
+            <button type="button" class="hris-btn hris-btn-secondary" id="btnRefreshVip">
+                <i class="feather-refresh-cw"></i>
+                <span>Refresh</span>
+            </button>
+            <button type="button" class="hris-btn hris-btn-primary" id="btnSaveVip">
+                <i class="feather-save"></i>
+                <span>Simpan</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="vipAlert" class="alert d-none mb-3" role="alert"></div>
+
+    <div class="hris-card mb-3">
+        <div class="hris-card-header">
+            <div>
+                <h3 class="hris-card-title">Filter Data Pegawai</h3>
+                <p class="hris-section-subtitle">
+                    Gunakan filter seperti MFVIP.aspx HRIS 2013. Hanya pegawai aktif pada unit kerja aktif yang ditampilkan.
+                </p>
+            </div>
+        </div>
+
+        <div class="hris-card-body">
+            <div class="hris-form-grid" style="grid-template-columns:repeat(3,minmax(0,1fr));">
+                <div class="hris-field">
+                    <label class="hris-label" for="filterField1">Field 1</label>
+                    <select id="filterField1" class="hris-select">
+                        <option value="">- Pilih Field -</option>
+                        <option value="NIP">NIP</option>
+                        <option value="Nama Peg">Nama Pegawai</option>
+                        <option value="Gol">Golongan</option>
+                        <option value="Jabatan">Jabatan</option>
+                        <option value="No Finger">FingerID</option>
+                        <option value="Jenis Kelamin">Jenis Kelamin</option>
+                        <option value="Unit Kerja">Unit Kerja</option>
+                    </select>
+                </div>
+
+                <div class="hris-field">
+                    <label class="hris-label" for="keyword1">Kata Kunci 1</label>
+                    <input type="text" id="keyword1" class="hris-input"
+                           placeholder="Ketik kata kunci...">
+                </div>
+
+                <div class="hris-field">
+                    <label class="hris-label" for="unitKerja">Unit Kerja</label>
+                    <select id="unitKerja" class="hris-select">
+                        <option value="">Semua Unit Kerja Aktif</option>
+                        {% for unit in unit_kerja_list %}
+                        <option value="{{ unit.UNIT_KERJA_ID }}">
+                            {{ unit.UNIT_KERJA_ID }} - {{ unit.NAMA_UNIT_KERJA }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="hris-field">
+                    <label class="hris-label" for="filterField2">Field 2</label>
+                    <select id="filterField2" class="hris-select">
+                        <option value="">- Pilih Field -</option>
+                        <option value="NIP">NIP</option>
+                        <option value="Nama Peg">Nama Pegawai</option>
+                        <option value="Gol">Golongan</option>
+                        <option value="Jabatan">Jabatan</option>
+                        <option value="No Finger">FingerID</option>
+                        <option value="Jenis Kelamin">Jenis Kelamin</option>
+                        <option value="Unit Kerja">Unit Kerja</option>
+                    </select>
+                </div>
+
+                <div class="hris-field">
+                    <label class="hris-label" for="keyword2">Kata Kunci 2</label>
+                    <input type="text" id="keyword2" class="hris-input"
+                           placeholder="Ketik kata kunci...">
+                </div>
+
+                <div class="hris-field d-flex align-items-end">
+                    <div class="small text-muted">
+                        Centang <strong>VIP</strong> untuk pegawai yang ditetapkan sebagai VIP, lalu klik <strong>Simpan</strong>.
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="hris-card">
         <div class="hris-card-header">
             <div>
-                <h3 class="hris-card-title">Daftar Pegawai VIP</h3>
-                <p class="hris-section-subtitle">Pegawai yang tercantum di sini adalah VIP aktif.</p>
+                <h3 class="hris-card-title">Daftar Pegawai</h3>
+                <p class="hris-section-subtitle" id="resultInfo">Silakan klik Cari.</p>
             </div>
-            <button type="button" class="hris-btn hris-btn-secondary" id="btnRefreshVip">
-                <i class="feather-refresh-cw"></i>
-                <span>Refresh</span>
-            </button>
         </div>
 
         <div class="hris-card-body">
@@ -37,13 +120,19 @@
                             <th>No</th>
                             <th>NIP</th>
                             <th>Nama</th>
+                            <th>Gol</th>
                             <th>Jabatan</th>
                             <th>Unit Kerja</th>
-                            <th>Action</th>
+                            <th>FingerID</th>
+                            <th class="text-center">VIP</th>
                         </tr>
                     </thead>
                     <tbody id="vipTableBody">
-                        <tr><td colspan="6" class="hris-empty">Memuat data...</td></tr>
+                        <tr>
+                            <td colspan="8" class="hris-empty">
+                                Silakan pilih filter lalu klik Cari.
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -55,80 +144,179 @@
 {% block script %}
 document.addEventListener('DOMContentLoaded', function () {
     const tbody = document.getElementById('vipTableBody');
-    const refreshBtn = document.getElementById('btnRefreshVip');
+    const resultInfo = document.getElementById('resultInfo');
+    const alertBox = document.getElementById('vipAlert');
 
-    async function loadVipList() {
-        tbody.innerHTML = '<tr><td colspan="6" class="hris-empty">Memuat data...</td></tr>';
+    function showAlert(type, message) {
+        alertBox.className = 'alert mb-3 alert-' + type;
+        alertBox.textContent = message;
+        alertBox.classList.remove('d-none');
 
-        try {
-            const res = await fetch('/api/pegawai-vip/list?only_vip=Y');
-            const json = await res.json();
-
-            if (json.status !== 'success' || !json.data || json.data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="hris-empty">Belum ada pegawai VIP.</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = json.data.map(p => `
-                <tr>
-                    <td>${p.no}</td>
-                    <td>${p.nip ?? '-'}</td>
-                    <td>${p.nama ?? '-'}</td>
-                    <td>${p.jabatan ?? '-'}</td>
-                    <td>${p.unit_kerja ?? '-'}</td>
-                    <td style="white-space: nowrap;">
-                        <button type="button"
-                                class="hris-btn hris-btn-danger-soft hris-btn-icon btn-remove-vip"
-                                data-nip="${p.nip}"
-                                data-nama="${(p.nama || '').replace(/"/g, '&quot;')}"
-                                title="Hapus dari VIP">
-                            <i class="feather-trash-2"></i>
-                        </button>
-                    </td>
-                </tr>
-            `).join('');
-        } catch (err) {
-            console.error('Gagal memuat daftar VIP:', err);
-            tbody.innerHTML = '<tr><td colspan="6" class="hris-empty">Gagal memuat data.</td></tr>';
-        }
+        window.setTimeout(function () {
+            alertBox.classList.add('d-none');
+        }, 3500);
     }
 
-    tbody.addEventListener('click', async function (e) {
-        const button = e.target.closest('.btn-remove-vip');
-        if (!button) return;
+    function buildParams() {
+        const params = new URLSearchParams();
 
-        const nip = button.dataset.nip;
-        const nama = button.dataset.nama || nip;
+        const field1 = document.getElementById('filterField1').value;
+        const keyword1 = document.getElementById('keyword1').value.trim();
+        const field2 = document.getElementById('filterField2').value;
+        const keyword2 = document.getElementById('keyword2').value.trim();
+        const unit = document.getElementById('unitKerja').value;
 
-        if (!confirm('Hapus pegawai berikut dari daftar VIP?\n\n' + nama + '\nNIP: ' + nip)) {
-            return;
+        if (field1 && keyword1) {
+            params.set('field1', field1);
+            params.set('keyword1', keyword1);
         }
 
-        button.disabled = true;
+        if (field2 && keyword2) {
+            params.set('field2', field2);
+            params.set('keyword2', keyword2);
+        }
+
+        if (unit) {
+            params.set('unit_kerja_id', unit);
+        }
+
+        return params;
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    async function loadVipList() {
+        const btn = document.getElementById('btnCariVip');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="feather-loader"></i><span>Mencari...</span>';
+
+        tbody.innerHTML =
+            '<tr><td colspan="8" class="hris-empty">Memuat data pegawai...</td></tr>';
 
         try {
-            const res = await fetch('/api/pegawai-vip/toggle', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nip, is_vip: false })
-            });
+            const query = buildParams();
+            const res = await fetch('/api/pegawai-vip/list?' + query.toString());
             const json = await res.json();
 
             if (json.status !== 'success') {
-                alert(json.message || 'Gagal menghapus status VIP.');
-                button.disabled = false;
+                throw new Error(json.message || 'Gagal membaca data pegawai.');
+            }
+
+            if (!json.data || json.data.length === 0) {
+                tbody.innerHTML =
+                    '<tr><td colspan="8" class="hris-empty">Tidak ada pegawai sesuai filter.</td></tr>';
+                resultInfo.textContent = 'Tidak ada data.';
                 return;
             }
 
+            tbody.innerHTML = json.data.map(function (p) {
+                return `
+                    <tr>
+                        <td>${escapeHtml(p.no)}</td>
+                        <td>${escapeHtml(p.nip || '-')}</td>
+                        <td class="text-start">${escapeHtml(p.nama || '-')}</td>
+                        <td>${escapeHtml(p.gol || '-')}</td>
+                        <td class="text-start">${escapeHtml(p.jabatan || '-')}</td>
+                        <td class="text-start">${escapeHtml(p.unit_kerja || '-')}</td>
+                        <td>${escapeHtml(p.finger_id || '-')}</td>
+                        <td class="text-center">
+                            <input type="checkbox"
+                                   class="vip-check"
+                                   data-nip="${escapeHtml(p.nip || '')}"
+                                   ${p.is_vip ? 'checked' : ''}
+                                   title="Tetapkan sebagai VIP">
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            resultInfo.textContent =
+                'Ditemukan ' + json.data.length + ' pegawai. Perubahan disimpan sekaligus melalui tombol Simpan.';
+        } catch (err) {
+            console.error('Gagal memuat VIP List:', err);
+            tbody.innerHTML =
+                '<tr><td colspan="8" class="hris-empty text-danger">Gagal memuat data pegawai.</td></tr>';
+            resultInfo.textContent = 'Gagal memuat data.';
+            showAlert('danger', err.message || 'Gagal memuat data.');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="feather-search"></i><span>Cari</span>';
+        }
+    }
+
+    async function saveVipList() {
+        const rows = Array.from(document.querySelectorAll('#vipTableBody tr'));
+        const items = [];
+
+        rows.forEach(function (row) {
+            const checkbox = row.querySelector('.vip-check');
+            if (!checkbox) return;
+
+            items.push({
+                nip: checkbox.dataset.nip,
+                is_vip: checkbox.checked
+            });
+        });
+
+        if (!items.length) {
+            showAlert('warning', 'Tidak ada data pegawai yang dapat disimpan.');
+            return;
+        }
+
+        const changedCount = items.length;
+        if (!confirm(
+            'Simpan status VIP untuk ' + changedCount + ' pegawai yang tampil?'
+        )) {
+            return;
+        }
+
+        const btn = document.getElementById('btnSaveVip');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="feather-loader"></i><span>Menyimpan...</span>';
+
+        try {
+            const res = await fetch('/api/pegawai-vip/save', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ items: items })
+            });
+
+            const json = await res.json();
+
+            if (json.status !== 'success') {
+                throw new Error(json.message || 'Gagal menyimpan status VIP.');
+            }
+
+            showAlert('success', json.message || 'Status VIP berhasil disimpan.');
             await loadVipList();
         } catch (err) {
-            console.error('Gagal menghapus status VIP:', err);
-            alert('Gagal menghubungi server.');
-            button.disabled = false;
+            console.error('Gagal menyimpan VIP:', err);
+            showAlert('danger', err.message || 'Gagal menyimpan status VIP.');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="feather-save"></i><span>Simpan</span>';
         }
-    });
+    }
 
-    refreshBtn.addEventListener('click', loadVipList);
-    loadVipList();
+    document.getElementById('btnCariVip').addEventListener('click', loadVipList);
+    document.getElementById('btnRefreshVip').addEventListener('click', loadVipList);
+    document.getElementById('btnSaveVip').addEventListener('click', saveVipList);
+
+    ['keyword1', 'keyword2'].forEach(function (id) {
+        document.getElementById(id).addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') {
+                loadVipList();
+            }
+        });
+    });
 });
 {% endblock %}
