@@ -2050,7 +2050,7 @@ def api_dinas_luar_get(type_sprin=None):
             return jsonify({'success': False, 'error': 'Data tidak ditemukan.'}), 404
 
         first = rows[0][0]
-        pdf_path = dinas_luar_absolute_path_by_filename(first.TGL_AWAL_SURAT, jenis, first.NAMA_FILE or '')
+        pdf_path = dinas_luar_absolute_path_by_filename(first.TGL_AWAL_SURAT, first.JENIS, first.NAMA_FILE or '')
         return jsonify({
             'success': True,
             'data': {
