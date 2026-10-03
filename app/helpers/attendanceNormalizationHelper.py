@@ -426,11 +426,11 @@ class AttendanceNormalizationEngine:
             if not waktu:
                 continue
 
-            punch = (
-                raw.get('punch')
-                if raw.get('punch') is not None
-                else raw.get('PUNCH')
-            )
+            # PUNCH tetap menjadi sumber utama.
+            # Jika PUNCH kosong, gunakan STATUS IN/OUT sebagai fallback
+            # agar fingerprint Shift 2 dari mesin/harvest yang tidak
+            # mengisi PUNCH tetap dapat dipasangkan.
+            punch = self.punch_status(raw)
 
             # IN Shift 2 mengikuti window MF_LOAD_FINGER.
             if (
