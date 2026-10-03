@@ -82,6 +82,7 @@
                         <tr>
                             <th>No</th>
                             <th>No. Surat</th>
+                            <th>Jenis</th>
                             <th>Tgl Surat</th>
                             <th>Keterangan</th>
                             <th>Lokasi</th>
@@ -91,7 +92,7 @@
                     </thead>
                     <tbody id="tableBody">
                         <tr>
-                            <td colspan="7" class="empty-row">Pilih periode lalu klik Cari.</td>
+                            <td colspan="8" class="empty-row">Pilih periode lalu klik Cari.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -157,9 +158,9 @@
 .search-results-table th:nth-child(1),
 .search-results-table td:nth-child(1) { width:52px; text-align:center; }
 .search-results-table th:nth-child(2),
-.search-results-table td:nth-child(2) { width:260px; }
+.search-results-table td:nth-child(2) { width:240px; }
 .search-results-table th:nth-child(3),
-.search-results-table td:nth-child(3) { width:190px; white-space:nowrap; }
+.search-results-table td:nth-child(3) { width:110px; text-align:center; white-space:nowrap; }
 .search-results-table th:nth-child(4),
 .search-results-table td:nth-child(4) { width:320px; white-space:normal; overflow-wrap:anywhere; }
 .search-results-table th:nth-child(5),
@@ -167,7 +168,12 @@
 .search-results-table th:nth-child(6),
 .search-results-table td:nth-child(6) { width:255px; white-space:normal; overflow-wrap:anywhere; }
 .search-results-table th:nth-child(7),
-.search-results-table td:nth-child(7) { width:70px; text-align:center; }
+.search-results-table td:nth-child(7) { width:230px; white-space:normal; overflow-wrap:anywhere; }
+.search-results-table th:nth-child(8),
+.search-results-table td:nth-child(8) { width:70px; text-align:center; }
+.sprin-type-badge { display:inline-flex; align-items:center; justify-content:center; min-width:78px; padding:4px 9px; border-radius:999px; font-size:11px; font-weight:800; letter-spacing:.04em; }
+.sprin-type-ops { background:#dcfce7; color:#166534; }
+.sprin-type-nonops { background:#dbeafe; color:#1d4ed8; }
 .search-results-table td:nth-child(2) a {
     color:#334155;
     font-weight:700;
@@ -251,7 +257,7 @@
         searchBtn.disabled = true;
         searchBtn.innerHTML = '<i class="feather-loader"></i><span>Mencari...</span>';
         bodyEl.innerHTML =
-            '<tr><td colspan="7" class="empty-row">Memuat data...</td></tr>';
+            '<tr><td colspan="8" class="empty-row">Memuat data...</td></tr>';
 
         const params = new URLSearchParams({
             periode: tahun + '-' + bulan,
@@ -281,7 +287,7 @@
         .catch(error => {
             resultInfo.textContent = 'Pencarian gagal.';
             bodyEl.innerHTML =
-                '<tr><td colspan="7" class="empty-row" style="color:#b91c1c;">' +
+                '<tr><td colspan="8" class="empty-row" style="color:#b91c1c;">' +
                 escapeHtml(error.message || 'Gagal memuat data.') +
                 '</td></tr>';
         })
@@ -304,7 +310,7 @@
     function renderTable(data) {
         if (!data.length) {
             bodyEl.innerHTML =
-                '<tr><td colspan="7" class="empty-row">Tidak ada data pada periode dan filter yang dipilih.</td></tr>';
+                '<tr><td colspan="8" class="empty-row">Tidak ada data pada periode dan filter yang dipilih.</td></tr>';
             return;
         }
 
@@ -312,6 +318,7 @@
             '<tr>' +
             '<td class="hris-text-center">' + escapeHtml(item.no) + '</td>' +
             '<td><a href="' + getDetailUrl(item.no_surat) + '">' + escapeHtml(item.no_surat) + '</a></td>' +
+            '<td><span class="sprin-type-badge ' + (String(item.tipe) === '1' ? 'sprin-type-ops' : 'sprin-type-nonops') + '">' + escapeHtml(item.tipe_text || (String(item.tipe) === '1' ? 'OPS' : 'NON OPS')) + '</span></td>' +
             '<td>' + escapeHtml(item.tgl_sprin) + '</td>' +
             '<td>' + escapeHtml(item.keterangan) + '</td>' +
             '<td>' + escapeHtml(item.penempatan) + '</td>' +
