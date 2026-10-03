@@ -933,7 +933,15 @@ def api_pegawai_save():
         is_keluar = is_keluar_val
         tgl_keluar = _safe_date(data.get('tgl_keluar'))
         alasan_keluar = data.get('alasan_keluar', '') or ''
-        
+
+        # Jika Is Keluar = Y, Tanggal Keluar wajib diisi.
+        # Validasi backend menjaga konsistensi data walaupun request
+        # dikirim tanpa melalui validasi JavaScript di halaman.
+        if is_keluar == 'Y' and tgl_keluar is None:
+            return jsonify({
+                'error': 'Tanggal Keluar wajib diisi jika Is Keluar = Y.'
+            })
+
         if is_update:
             # Update
             pegawai.NAMA = nama
