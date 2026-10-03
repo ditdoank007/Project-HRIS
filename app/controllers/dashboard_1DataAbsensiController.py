@@ -3273,23 +3273,64 @@ def api_normalisasi_process():
                 row['vip_correction'] = True
 
         # ============================================================
+        # ============================================================
+        # URUTAN HASIL NORMALISASI
+        #
+        # Semua layer normalisasi (Shift 1, Shift 2, DL, WFH, dst.)
+        # harus berada dalam SATU urutan kronologis.
+        #
+        # Sebelumnya sorting menggunakan:
+        #   Unit -> FingerID -> Tanggal
+        #
+        # Hal tersebut membuat row yang berasal dari layer berbeda
+        # dapat terpecah walaupun pegawai dan tanggalnya sama/berurutan
+        # (contoh Shift 2 dan Shift 1/DL).
+        #
+        # Gunakan NIP sebagai identitas pegawai utama, lalu tanggal
+        # kerja sebagai urutan utama di dalam kelompok pegawai.
+        # Shift hanya menjadi tie-breaker.
+        # ============================================================
+
         def _normalisasi_sort_key(r):
-            unit = str(
-                r.get('unit_kerja') or ''
+            nip = str(
+                r.get('nip') or ''
             ).strip()
 
-            try:
-                unit_num = int(unit)
-            except (TypeError, ValueError):
-                unit_num = 999999
+            nama = str(
+                r.get('nama') or ''
+            ).strip().upper()
+
+            tgl_kerja = str(
+                r.get('tgl_kerja') or ''
+            ).strip()
+
+            # ISO YYYY-MM-DD aman untuk sorting kronologis.
+            # Jika kosong, letakkan di paling belakang.
+            tanggal_sort = (
+                tgl_kerja
+                if len(tgl_kerja) == 10
+                else '9999-12-31'
+            )
+
+            shift = str(
+                r.get('shift_kerja')
+                or r.get('shift')
+                or '1'
+            ).strip()
 
             return (
-                unit_num,
-                str(r.get('finger_id') or ''),
-                r.get('tgl_kerja') or ''
+                nip,
+                nama,
+                tanggal_sort,
+                shift,
+                str(r.get('finger_id') or '').strip(),
             )
 
         result.sort(key=_normalisasi_sort_key)
+
+        # Nomor ditetapkan SETELAH sorting final agar nomor pada
+        # preview normalisasi dan hasil export selalu mengikuti
+        # urutan tanggal yang sama.
         for i, r in enumerate(result, 1):
             r['no'] = i
 
