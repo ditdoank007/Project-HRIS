@@ -1554,7 +1554,7 @@ def api_normalisasi_import_finger():
         cache_rows = []
 
         for i, r in enumerate(rows, 1):
-            status = str(r['Status'] or '').strip().upper()
+            status = str(r['STATUS'] or '').strip().upper()
             row = {
                 'no': i,
                 'finger_id': str(r['FINGER_ID'] or ''),
