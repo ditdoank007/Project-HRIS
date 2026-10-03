@@ -592,9 +592,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Toggle field keluar
     function toggleFieldKeluar() {
-        const show = isKeluarField.value === "Y";
+        const show = String(isKeluarField.value || "").trim().toUpperCase() === "Y";
+
         document.querySelectorAll(".field-keluar").forEach(function (row) {
-            row.style.display = show ? "" : "none";
+            // .field-keluar punya CSS display:none sebagai default.
+            // Jangan mengosongkan inline style saat show=true karena
+            // CSS default akan kembali menyembunyikan row.
+            row.style.display = show ? "flex" : "none";
         });
     }
     isKeluarField.addEventListener("change", toggleFieldKeluar);
