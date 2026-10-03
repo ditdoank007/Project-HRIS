@@ -235,18 +235,27 @@
 
             <div class="card mt-4">
 
-                <div class="card-header-custom">
+                <div class="card-header-custom d-flex justify-content-between align-items-center">
                     <h6 class="mb-0">
                         <i class="ti ti-table"></i>
                         Preview Rekap Absensi Bulanan
                     </h6>
+                    <div class="hris-report-actions mb-0">
+                        <button type="button"
+                                id="btnExportClockExceptionPdf"
+                                class="hris-btn hris-btn-primary"
+                                style="display:none;">
+                            <i class="ti ti-file-type-pdf me-1"></i>
+                            Ekspor PDF
+                        </button>
+                    </div>
                 </div>
 
 
                 <div class="card-body">
 
                     <div
-                        class="table-responsive"
+                        class="hris-report-preview"
                         id="previewClockExceptionContainer">
 
                         <!-- tabel dibuat oleh Javascript -->
@@ -329,251 +338,87 @@ function formatHariIndonesia(value){
 }
 
 
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 function renderPreviewClockException(hasil){
 
-    const container =
-        document.getElementById(
-            'previewClockExceptionContainer'
-        );
+    const container = document.getElementById('previewClockExceptionContainer');
+    const exportButton = document.getElementById('btnExportClockExceptionPdf');
 
+    if (!container) return;
 
-    if (!container){
-        console.error(
-            'Container preview tidak ditemukan'
-        );
+    if (!hasil || !hasil.pegawai || !hasil.pegawai.length) {
+        container.innerHTML =
+            '<div class="hris-empty-state">Tidak ada pegawai pada periode/unit yang dipilih.</div>';
+        if (exportButton) exportButton.style.display = 'none';
         return;
     }
 
+    let html = '<table class="hris-report-table">';
+    html += '<thead><tr>';
+    html += '<th class="report-col-no">No</th>';
+    html += '<th class="report-col-name">Nama</th>';
 
-    let html = `
-    <table class="table table-bordered table-sm">
-
-    <thead>
-    <tr>
-
-        <th rowspan="2"
-            class="text-center align-middle">
-            No
-        </th>
-
-        <th rowspan="2"
-            style="text-align:left; white-space:nowrap;"
-            class="align-middle">
-            Nama
-        </th>
-    `;
-
-
-    hasil.tanggal.forEach(function(t){
-
-        const isLibur = t.is_libur === true;
-
-        const headerClass =
-            isLibur
-                ? 'text-center align-middle hris-calendar-holiday-header'
-                : 'text-center align-middle';
-
-        html += `
-            <th
-                colspan="1"
-                class="${headerClass}">
-                ${t.tgl.substring(8,10)}
-            </th>
-        `;
-
+    hasil.tanggal.forEach(function(t) {
+        const holiday = t.is_libur === true ? ' holiday' : '';
+        html += '<th class="report-day' + holiday + '">' +
+            escapeHtml(t.tgl.substring(8,10)) + '<br>' +
+            escapeHtml(formatHariIndonesia(t.hari)) +
+            '</th>';
     });
 
+    html += '</tr></thead><tbody>';
 
-    html += `
-    </tr>
+    hasil.pegawai.forEach(function(peg, index) {
+        html += '<tr>';
+        html += '<td class="report-col-no">' + (index + 1) + '</td>';
+        html += '<td class="report-col-name">' + escapeHtml(peg.nama) + '</td>';
 
-    <tr>
-    `;
+        hasil.tanggal.forEach(function(t) {
+            const row = hasil.matrix[peg.nip]
+                ? hasil.matrix[peg.nip][t.tgl]
+                : null;
 
+            const holiday = t.is_libur === true;
+            let cls = 'report-cell';
+            if (holiday) cls += ' holiday';
+            else if (row && row.warna) cls += ' ' + row.warna;
 
-    hasil.tanggal.forEach(function(t){
+            let content = '';
 
-        const isLibur = t.is_libur === true;
-
-        const headerClass =
-            isLibur
-                ? 'text-center hris-calendar-holiday-header'
-                : 'text-center';
-
-        html += `
-            <th
-                class="${headerClass}"
-                style="font-size:10px;">
-                ${formatHariIndonesia(t.hari)}
-            </th>
-        `;
-
-    });
-
-
-    html += `
-    </tr>
-    </thead>
-
-    <tbody>
-    `;
-
-
-    hasil.pegawai.forEach(function(peg, index){
-
-        html += `
-        <tr>
-
-            <td rowspan="2"
-                class="text-center align-middle">
-                ${index + 1}
-            </td>
-
-            <td rowspan="2"
-                class="align-middle hris-text-left"
-                style="
-                    text-align:left !important;
-                    white-space:nowrap;
-                ">
-                ${peg.nama}
-            </td>
-        `;
-
-
-        hasil.tanggal.forEach(function(t){
-
-            const row =
-                hasil.matrix[peg.nip]
-                    ? hasil.matrix[peg.nip][t.tgl]
-                    : null;
-
-
-            let atas = '';
-            let bawah = '';
-
-
-            if (row){
-
-                if (row.status === 'HADIR'){
-
-                    atas =
-                        formatJamPreview(
-                            row.jam_in
-                        );
-
-                    bawah =
-                        formatJamPreview(
-                            row.jam_out
-                        );
-
-                } else {
-
-                    /*
-                     * Semua status non HADIR
-                     * hanya ditampilkan di
-                     * baris pertama.
-                     */
-
-                    atas =
-                        row.status || '';
-
+            if (row) {
+                if (row.status && row.status !== 'LIBUR' && row.status !== 'HADIR') {
+                    content = escapeHtml(row.status);
+                } else if (row.status === 'HADIR') {
+                    const jamIn = formatJamPreview(row.jam_in);
+                    const jamOut = formatJamPreview(row.jam_out);
+                    if (jamIn && jamOut) {
+                        content = escapeHtml(jamIn) + '<br>' + escapeHtml(jamOut);
+                    } else {
+                        content = escapeHtml(jamIn || jamOut);
+                    }
                 }
-
             }
 
-
-            let cellClass =
-                'text-center';
-
-            if (t.is_libur === true) {
-                cellClass += ' hris-calendar-holiday';
-            } else if (
-                row &&
-                row.sumber_absensi === 'ONLINE_WFH'
-            ) {
-                cellClass += ' hris-absen-wfh';
-            }
-
-            html += `
-                <td
-                    class="${cellClass}"
-                    style="height:24px;">
-                    ${atas}
-                </td>
-            `;
-
+            html += '<td class="' + cls + '">' + content + '</td>';
         });
 
-
-        html += `
-        </tr>
-
-        <tr>
-        `;
-
-
-        hasil.tanggal.forEach(function(t){
-
-            const row =
-                hasil.matrix[peg.nip]
-                    ? hasil.matrix[peg.nip][t.tgl]
-                    : null;
-
-
-            let bawah = '';
-
-
-            if (
-                row &&
-                row.status === 'HADIR'
-            ){
-
-                bawah =
-                    formatJamPreview(
-                        row.jam_out
-                    );
-
-            }
-
-
-            let cellClass =
-                'text-center';
-
-            if (t.is_libur === true) {
-                cellClass += ' hris-calendar-holiday';
-            } else if (
-                row &&
-                row.sumber_absensi === 'ONLINE_WFH'
-            ) {
-                cellClass += ' hris-absen-wfh';
-            }
-
-            html += `
-                <td
-                    class="${cellClass}"
-                    style="height:24px;">
-                    ${bawah}
-                </td>
-            `;
-
-        });
-
-
-        html += `
-        </tr>
-        `;
-
+        html += '</tr>';
     });
 
-
-    html += `
-    </tbody>
-    </table>
-    `;
-
-
+    html += '</tbody></table>';
     container.innerHTML = html;
 
+    if (exportButton) {
+        exportButton.style.display = 'inline-flex';
+    }
 }
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -637,6 +482,63 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!btn) {
         console.error('RUN button tidak ditemukan.');
         return;
+    }
+
+    const exportPdfButton = document.getElementById('btnExportClockExceptionPdf');
+
+    if (exportPdfButton) {
+        exportPdfButton.addEventListener('click', async function () {
+            const unitChecked = document.querySelectorAll('.check-unit-item:checked');
+            const tglAwal = document.getElementById('tglAwal')?.value || '';
+            const tglAkhir = document.getElementById('tglAkhir')?.value || '';
+
+            if (!tglAwal || !tglAkhir || !unitChecked.length) {
+                alert('Jalankan RUN terlebih dahulu.');
+                return;
+            }
+
+            const formData = new FormData();
+            unitChecked.forEach(function (cb) {
+                formData.append('unit_kerja[]', cb.value);
+            });
+            formData.append('tgl_awal', tglAwal);
+            formData.append('tgl_akhir', tglAkhir);
+
+            exportPdfButton.disabled = true;
+            exportPdfButton.innerHTML = '<i class="ti ti-loader-2 me-1"></i> Menyiapkan PDF...';
+
+            try {
+                const response = await fetch(
+                    "{{ url_for('main.export_laporan_rekap_clock_exception_pdf') }}",
+                    { method: 'POST', body: formData }
+                );
+
+                if (!response.ok) {
+                    const text = await response.text();
+                    throw new Error(text.substring(0, 500));
+                }
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const anchor = document.createElement('a');
+                anchor.href = url;
+                anchor.download =
+                    'Rekap_Absensi_Bulanan_' +
+                    tglAwal.replaceAll('-', '') + '_' +
+                    tglAkhir.replaceAll('-', '') + '.pdf';
+                document.body.appendChild(anchor);
+                anchor.click();
+                anchor.remove();
+                window.URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error('Export PDF:', error);
+                alert('Gagal membuat PDF:\n\n' + error.message);
+            } finally {
+                exportPdfButton.disabled = false;
+                exportPdfButton.innerHTML =
+                    '<i class="ti ti-file-type-pdf me-1"></i> Ekspor PDF';
+            }
+        });
     }
 
     btn.addEventListener('click', async function (e) {
