@@ -75,15 +75,15 @@
                         <!-- Jenis Operasi/Non Operasi -->
                         <div class="row g-3 mt-2 align-items-center">
                             <div class="col-md-4">
-                                <label class="form-label-custom d-block">Jenis</label>
-                                <div class="d-flex gap-4">
+                                <label class="form-label-custom d-block">Jenis Dinas Luar Operasi <span class="text-danger">*</span></label>
+                                <div class="d-flex gap-4 align-items-center">
                                     <div class="form-check">
                                         <input class="form-check-input" type="radio" name="jenis_operasi" id="jenisOperasi" value="1" checked>
-                                        <label class="form-check-label fw-bold" for="jenisOperasi">Operasi</label>
+                                        <label class="form-check-label fw-bold" for="jenisOperasi">OPS</label>
                                     </div>
                                     <div class="form-check">
                                         <input class="form-check-input" type="radio" name="jenis_operasi" id="jenisNonOperasi" value="0">
-                                        <label class="form-check-label fw-bold" for="jenisNonOperasi">Non Operasi</label>
+                                        <label class="form-check-label fw-bold" for="jenisNonOperasi">NON OPS</label>
                                     </div>
                                 </div>
                             </div>
@@ -262,13 +262,16 @@ $(document).ready(function() {
             tgl_akhir_surat: tglAkhir,
             keterangan: $('#keterangan').val(),
             penempatan: $('#penempatan').val(),
-            type_sprin_id: 'OPR'  // ✅ Operasi
+            type_sprin_id: 'OPR',
+            jenis_operasi: $('input[name="jenis_operasi"]:checked').val() === '1',
+            status_um: $('#statusUM').val() || '0',
+            save_header_only: true
         };
 
         const $btn = $(this).prop('disabled', true).html('<i class="bi bi-hourglass-split me-1"></i>Menyimpan...');
 
         $.ajax({
-            url: '/api/sprin-header/save',
+            url: '/api/dinas-luar-operasi/save',
             method: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(data),
