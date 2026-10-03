@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 
 
 class AttendanceNormalizationEngine:
@@ -416,6 +416,7 @@ class AttendanceNormalizationEngine:
 
         shift2_in = []
         shift2_out = []
+        recovery_out = []
 
         for raw in raw_person:
 
@@ -424,14 +425,13 @@ class AttendanceNormalizationEngine:
             if not waktu:
                 continue
 
-            # RAW SQL menggunakan PUNCH, sedangkan RAW hasil
-            # grouping menggunakan punch.
             punch = (
                 raw.get('punch')
                 if raw.get('punch') is not None
                 else raw.get('PUNCH')
             )
 
+            # IN Shift 2 mengikuti window MF_LOAD_FINGER.
             if (
                 punch == 0
                 and start_in
@@ -439,21 +439,44 @@ class AttendanceNormalizationEngine:
                 and start_in <= waktu <= end_in
             ):
                 shift2_in.append(raw)
+                continue
 
-            elif (
+            # OUT normal mengikuti window MF_LOAD_FINGER pada H+1.
+            if (
                 punch == 1
                 and start_out
                 and end_out
                 and start_out <= waktu <= end_out
             ):
                 shift2_out.append(raw)
+                continue
+
+            # Rule legacy/Reborn yang sudah dikunci:
+            # actual OUT Shift 2 boleh dicari sampai sebelum 12:00.
+            if (
+                punch == 1
+                and waktu.date() == target_date
+                and waktu.time() < time(12, 0)
+            ):
+                shift2_out.append(raw)
+                continue
+
+            # Recovery salah tekan:
+            # jika nanti tidak ada PUNCH=1, PUNCH=0 H+1
+            # sebelum 12:00 dapat dipakai sebagai OUT Shift 2.
+            if (
+                punch == 0
+                and waktu.date() == target_date
+                and waktu.time() < time(12, 0)
+            ):
+                recovery_out.append(raw)
 
         shift2_in.sort(
-            key=lambda r: r.get('waktu') or ''
+            key=lambda r: self._parse_waktu(r) or datetime.min
         )
 
         shift2_out.sort(
-            key=lambda r: r.get('waktu') or ''
+            key=lambda r: self._parse_waktu(r) or datetime.min
         )
 
         jam_in = self._parse_waktu(
@@ -465,7 +488,11 @@ class AttendanceNormalizationEngine:
         jam_out = self._parse_waktu(
             shift2_out[-1]
             if shift2_out
-            else None
+            else (
+                recovery_out[-1]
+                if recovery_out
+                else None
+            )
         )
 
         return jam_in, jam_out
@@ -506,9 +533,13 @@ class AttendanceNormalizationEngine:
         #   OUT < baku OUT  -> negatif
         # Nilai positif dipakai untuk kompensasi TLM-1,
         # sedangkan nilai negatif menjadi pelanggaran PSW.
-        return (
+        selisih = (
             jam_out - baku_out
         ).total_seconds() / 60
+
+        # Legacy attendance: OUT setelah jam baku tidak menjadi
+        # PSW. PSW hanya muncul ketika actual OUT lebih awal.
+        return min(0, selisih)
 
     # ================================================================
     # KOMPENSASI TLM-1
@@ -788,6 +819,106 @@ class AttendanceNormalizationEngine:
             tk_psw,
             pot_psw,
         )
+
+    # ================================================================
+    # VIP CORRECTION
+    # ================================================================
+
+    @staticmethod
+    def apply_vip_correction(
+        *,
+        is_vip,
+        sequence_no,
+        nama,
+        tgl_kerja,
+        baku_in,
+        baku_out,
+        jam_in,
+        jam_out,
+    ):
+        """
+        Port rule VIP aktif pada AbsensiFP HRIS 2013.
+
+        - VIP tidak membuat absensi baru jika IN dan OUT sama-sama
+          kosong.
+        - Jika salah satu sisi ada, VIP boleh mengoreksi sisi yang
+          terlambat/terlalu cepat dan mengisi sisi yang hilang.
+        - Waktu sintetis diturunkan dari jam baku, sequence pegawai,
+          tanggal dan waktu proses, mengikuti formula legacy.
+        """
+        if not is_vip or (not jam_in and not jam_out):
+            return jam_in, jam_out, False
+
+        tgl_kerja = AttendanceNormalizationEngine._date(tgl_kerja)
+        baku_in = baku_in
+        baku_out = baku_out
+
+        if not baku_in and not baku_out:
+            return jam_in, jam_out, False
+
+        # Nilai legacy.
+        konstanta = 9
+        batas_max = 61
+        tambahan_awal = 27
+
+        now = datetime.now()
+        intjam = now.hour + now.second
+
+        nama_len = len(nama or '')
+        nourut = max(int(sequence_no or 1), 1)
+
+        tambahan = (
+            nourut
+            + konstanta
+            + (
+                (
+                    tgl_kerja.day
+                    + tgl_kerja.month
+                    + tgl_kerja.year
+                    + intjam
+                    + nama_len
+                )
+                * nourut
+            ) % batas_max
+        )
+
+        if tambahan > batas_max:
+            tambahan = (
+                (tambahan % konstanta)
+                + nama_len
+                + (nourut % 19)
+            )
+
+        if tambahan < 7:
+            jam_pulang = tambahan + nama_len
+        else:
+            jam_pulang = tambahan - (nourut % 7)
+
+        synthetic_in = (
+            baku_in - timedelta(minutes=tambahan)
+            if baku_in
+            else None
+        )
+        synthetic_out = (
+            baku_out + timedelta(minutes=jam_pulang)
+            if baku_out
+            else None
+        )
+
+        # Sama dengan legacy:
+        # IN yang lebih lambat dari baku dikoreksi menjadi IN sintetis.
+        # IN yang kosong diisi jika ada sisi OUT.
+        if synthetic_in:
+            if not jam_in or jam_in > baku_in:
+                jam_in = synthetic_in
+
+        # OUT yang lebih cepat dari baku dikoreksi menjadi OUT sintetis.
+        # OUT yang kosong diisi jika ada sisi IN.
+        if synthetic_out:
+            if not jam_out or jam_out < baku_out:
+                jam_out = synthetic_out
+
+        return jam_in, jam_out, True
 
     # ================================================================
     # NORMALIZE ONE ROW
