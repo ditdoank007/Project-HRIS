@@ -65,6 +65,35 @@ def _is_shift2_absensi(absensi):
     return bool(value and getattr(value, 'hour', 0) >= 18)
 
 
+def _jam_in_rekap(absensi):
+    """
+    Jam masuk yang ditampilkan di Rekap Absensi.
+
+    Untuk Siaga Shift 2, data legacy tertentu menyimpan TglJamIn
+    sebagai 00:00 sementara TglJamBakuIn menyimpan jam mulai shift
+    (18:00 dst). 00:00 tersebut bukan jam masuk yang layak ditampilkan
+    pada rekap, sehingga gunakan jam baku shift sebagai fallback.
+    """
+    jam_in = absensi.TGL_JAM_IN
+    if not jam_in:
+        return jam_in
+
+    rekap_code = str(
+        absensi.HISTORY_TRANSAKSI_IN or ''
+    ).strip().upper()
+
+    if (
+        rekap_code == 'SIAGA'
+        and _is_shift2_absensi(absensi)
+        and getattr(jam_in, 'hour', 0) == 0
+        and getattr(jam_in, 'minute', 0) == 0
+        and absensi.TGL_JAM_BAKU_IN
+    ):
+        return absensi.TGL_JAM_BAKU_IN
+
+    return jam_in
+
+
 def _warna_absensi(absensi):
     """Warna presentation Rekap berdasarkan hasil final ABSENSI."""
     transaction = str(absensi.TRANSAKSI_IN or '').strip().upper()
@@ -278,7 +307,7 @@ def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
 
                 cell.update({
                     'status': status,
-                    'jam_in': absensi.TGL_JAM_IN,
+                    'jam_in': _jam_in_rekap(absensi),
                     'jam_out': absensi.TGL_JAM_OUT,
                     'sumber_absensi': 'ABSENSI',
                     'warna': color,
