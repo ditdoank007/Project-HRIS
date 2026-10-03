@@ -1652,7 +1652,20 @@ def get_pegawai_vip_list():
             'nip': p.NIP,
             'nama': p.NAMA,
             'jabatan': jabatan_map.get(p.JABATAN_ID),
-            'unit_kerja': p.UNIT_KERJA or '-',
+            'unit_kerja': (
+                next(
+                    (
+                        unit.NAMA_UNIT_KERJA
+                        for unit in [MfUnitKerja.query.filter(
+                            MfUnitKerja.UNIT_KERJA_ID == p.UNIT_KERJA_ID
+                        ).first()]
+                        if unit
+                    ),
+                    p.UNIT_KERJA or '-'
+                )
+            ),
+            'finger_id': p.FINGER_ID or '-',
+            'gol': p.GOL or '-',
             'is_vip': is_vip_value(p.IS_VIP),
         }
         for idx, p in enumerate(pegawai_list)
@@ -1664,6 +1677,80 @@ def get_pegawai_vip_list():
     })
 
 
+
+
+def save_pegawai_vip():
+    """
+    Simpan seluruh status VIP dari grid seperti BtnSave_Click MFVIP.aspx.
+
+    Body:
+        {"items": [{"nip": "...", "is_vip": true}, ...]}
+
+    Nilai database:
+        Y = VIP
+        N = bukan VIP
+    """
+    payload = request.get_json(silent=True) or {}
+    items = payload.get('items')
+
+    if not isinstance(items, list):
+        return jsonify({
+            'status': 'error',
+            'message': 'Data VIP tidak valid.'
+        }), 400
+
+    nip_values = [
+        str(item.get('nip') or '').strip()
+        for item in items
+        if isinstance(item, dict) and str(item.get('nip') or '').strip()
+    ]
+
+    if not nip_values:
+        return jsonify({
+            'status': 'error',
+            'message': 'Tidak ada data pegawai yang disimpan.'
+        }), 400
+
+    try:
+        pegawai_rows = (
+            Pegawai.query
+            .filter(Pegawai.NIP.in_(nip_values))
+            .all()
+        )
+        pegawai_map = {str(row.NIP).strip(): row for row in pegawai_rows}
+
+        update_by = session.get('nip') or 'system'
+        update_date = datetime.now()
+        updated = 0
+
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+
+            nip = str(item.get('nip') or '').strip()
+            pegawai = pegawai_map.get(nip)
+            if not pegawai:
+                continue
+
+            is_vip = bool(item.get('is_vip'))
+            pegawai.IS_VIP = 'Y' if is_vip else 'N'
+            pegawai.UPDATE_BY = update_by
+            pegawai.UPDATE_DATE = update_date
+            updated += 1
+
+        db.session.commit()
+
+        return jsonify({
+            'status': 'success',
+            'message': f'{updated} data pegawai berhasil diperbarui.',
+            'updated': updated,
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'status': 'error',
+            'message': str(e),
+        }), 500
 
 def toggle_pegawai_vip():
     """
