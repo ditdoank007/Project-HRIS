@@ -1826,14 +1826,17 @@ def export_rekap_clock_exception_pdf():
         for col_index, cal in enumerate(tanggal_rows, start=2):
             key = cal.TGL_KERJA.strftime('%Y-%m-%d')
             cell = matrix.get(peg.NIP, {}).get(key, {})
-            color = color_map.get(cell.get('warna'))
+            if (
+                cal.TGL_KERJA.weekday() in (5, 6)
+                or str(cal.IS_LIBUR or 'N').upper() == 'Y'
+                or cal.TGL_KERJA.strftime('%m-%d') in ('01-01', '08-17', '12-25')
+            ):
+                color = colors.HexColor('#b91c1c')
+            else:
+                color = color_map.get(cell.get('warna'))
             if color:
                 style_commands.append(
                     ('TEXTCOLOR', (col_index, row_index), (col_index, row_index), color)
-                )
-            if cell.get('warna') == 'holiday':
-                style_commands.append(
-                    ('TEXTCOLOR', (col_index, row_index), (col_index, row_index), colors.HexColor('#b91c1c'))
                 )
 
     table.setStyle(TableStyle(style_commands))
