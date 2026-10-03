@@ -859,7 +859,6 @@ class AttendanceNormalizationEngine:
         # Nilai legacy.
         konstanta = 9
         batas_max = 61
-        tambahan_awal = 27
 
         now = datetime.now()
         intjam = now.hour + now.second
