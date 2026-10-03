@@ -315,6 +315,11 @@ def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
                         "status_um": 0,
                     })
 
+            # HRIS 2013 menerapkan warna hari libur setelah seluruh
+            # resolusi absensi/Siaga/DL selesai.
+            if _is_holiday(kalender):
+                matrix[pegawai.NIP][tanggal]["warna"] = "holiday"
+
     return {
         "kalender": kalender_rows,
         "pegawai": pegawai_rows,
