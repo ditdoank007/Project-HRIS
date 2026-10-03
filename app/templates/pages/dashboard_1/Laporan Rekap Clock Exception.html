@@ -148,377 +148,289 @@
 
 {% block script %}
 <script>
-function formatJamPreview(value) {
-    if (!value) return '';
+(function () {
+    function formatJamPreview(value) {
+        if (!value) return '';
 
-    const text = String(value);
-    const match = text.match(
-        /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?/
-    );
+        var text = String(value);
+        var match = text.match(
+            /^(\\d{4})-(\\d{2})-(\\d{2})[T ](\\d{2}):(\\d{2})(?::(\\d{2}))?/
+        );
 
-    if (match) return match[4] + '.' + match[5];
+        if (match) return match[4] + '.' + match[5];
 
-    const d = new Date(value);
-    if (isNaN(d)) return '';
+        var d = new Date(value);
+        if (isNaN(d.getTime())) return '';
 
-    return String(d.getHours()).padStart(2, '0') +
-        '.' +
-        String(d.getMinutes()).padStart(2, '0');
-}
-
-function formatHariIndonesia(value) {
-    const map = {
-        Sun: 'MIN', Mon: 'SEN', Tue: 'SEL', Wed: 'RAB',
-        Thu: 'KAM', Fri: 'JUM', Sat: 'SAB'
-    };
-
-    return map[value] || value || '';
-}
-
-function escapeHtml(value) {
-    return String(value ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-}
-
-function renderPreviewClockException(hasil) {
-    const container = document.getElementById('previewClockExceptionContainer');
-    const exportButton = document.getElementById('btnExportClockExceptionPdf');
-
-    if (!container) return;
-
-    if (!hasil || !hasil.pegawai || !hasil.pegawai.length) {
-        container.innerHTML =
-            '<div class="hris-empty-state">Tidak ada pegawai pada periode/unit yang dipilih.</div>';
-        if (exportButton) exportButton.style.display = 'none';
-        return;
+        return String(d.getHours()).padStart(2, '0') + '.' +
+               String(d.getMinutes()).padStart(2, '0');
     }
 
-    let html = '<table class="hris-report-table"><thead><tr>';
-    html += '<th class="report-col-no">No</th>';
-    html += '<th class="report-col-name">Nama</th>';
-
-    hasil.tanggal.forEach(function(t) {
-        const holiday = t.is_libur === true ? ' holiday' : '';
-        html += '<th class="report-day' + holiday + '">' +
-            escapeHtml(t.tgl.substring(8, 10)) + '<br>' +
-            escapeHtml(formatHariIndonesia(t.hari)) +
-            '</th>';
-    });
-
-    html += '</tr></thead><tbody>';
-
-    hasil.pegawai.forEach(function(peg, index) {
-        html += '<tr>';
-        html += '<td class="report-col-no">' + (index + 1) + '</td>';
-        html += '<td class="report-col-name">' + escapeHtml(peg.nama) + '</td>';
-
-        hasil.tanggal.forEach(function(t) {
-            const row = hasil.matrix[peg.nip]
-                ? hasil.matrix[peg.nip][t.tgl]
-                : null;
-
-            const holiday = t.is_libur === true;
-            let cls = 'report-cell';
-
-            if (holiday) cls += ' holiday';
-            else if (row && row.warna) cls += ' ' + row.warna;
-
-            let cell = '';
-
-            if (row) {
-                if (row.status && row.status !== 'LIBUR' && row.status !== 'HADIR') {
-                    cell = escapeHtml(row.status);
-                } else if (row.status === 'HADIR') {
-                    const jamIn = formatJamPreview(row.jam_in);
-                    const jamOut = formatJamPreview(row.jam_out);
-
-                    cell = jamIn && jamOut
-                        ? escapeHtml(jamIn) + '<br>' + escapeHtml(jamOut)
-                        : escapeHtml(jamIn || jamOut);
-                }
-            }
-
-            html += '<td class="' + cls + '">' + cell + '</td>';
-        });
-
-        html += '</tr>';
-    });
-
-    html += '</tbody></table>';
-    container.innerHTML = html;
-
-    if (exportButton) exportButton.style.display = 'inline-flex';
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    const btn = document.getElementById('btnRunClockException');
-    const exportPdfButton = document.getElementById('btnExportClockExceptionPdf');
-    const resetButton = document.getElementById('btnResetClockException');
-    const alertBox = document.getElementById('clockExceptionAlert');
-    const resultInfo = document.getElementById('resultInfo');
-
-    const selectAll = document.getElementById('unitKerjaSelectAll');
-    const toggleAll = document.getElementById('unitKerjaToggleAll');
-    const search = document.getElementById('unitKerjaSearch');
-    const countLabel = document.getElementById('unitKerjaCount');
-    const emptyLabel = document.getElementById('unitKerjaEmpty');
-    const checks = Array.from(document.querySelectorAll('.unit-kerja-check'));
-
-    function getSelectedUnits() {
-        return checks.filter(function(check) {
-            return check.checked;
-        });
+    function formatHariIndonesia(value) {
+        var map = {
+            Sun: 'MIN', Mon: 'SEN', Tue: 'SEL', Wed: 'RAB',
+            Thu: 'KAM', Fri: 'JUM', Sat: 'SAB'
+        };
+        return map[value] || value || '';
     }
 
-    function getVisibleChecks() {
-        return checks.filter(function(check) {
-            const item = check.closest('.hris-unit-option');
-            return item && !item.classList.contains('is-hidden');
-        });
+    function escapeHtml(value) {
+        return String(value == null ? '' : value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
     }
 
-    function updateUnitPicker() {
-        const selected = getSelectedUnits();
-        const total = checks.length;
+    function renderPreview(hasil) {
+        var container = document.getElementById('previewClockExceptionContainer');
+        var exportButton = document.getElementById('btnExportClockExceptionPdf');
 
-        if (!selected.length) {
-            countLabel.textContent = 'Belum ada unit dipilih';
-        } else if (selected.length === total) {
-            countLabel.textContent = 'Semua unit kerja (' + total + ')';
-        } else {
-            countLabel.textContent =
-                selected.length + ' dari ' + total + ' unit dipilih';
+        if (!container) return;
+
+        if (!hasil || !hasil.pegawai || !hasil.pegawai.length) {
+            container.innerHTML =
+                '<div class="hris-empty-state">Tidak ada pegawai pada periode/unit yang dipilih.</div>';
+            if (exportButton) exportButton.style.display = 'none';
+            return;
         }
 
-        selectAll.checked = total > 0 && selected.length === total;
-        selectAll.indeterminate =
-            selected.length > 0 && selected.length < total;
+        var html = '<table class="hris-report-table"><thead><tr>';
+        html += '<th class="report-col-no">No</th>';
+        html += '<th class="report-col-name">Nama</th>';
 
-        toggleAll.textContent =
-            selected.length === total && total > 0
-                ? 'Batalkan Semua'
-                : 'Pilih Semua';
-    }
-
-    function filterUnitOptions() {
-        const keyword = (search.value || '').trim().toLowerCase();
-        let visible = 0;
-
-        checks.forEach(function(check) {
-            const item = check.closest('.hris-unit-option');
-            const text = (item?.dataset.search || '').toLowerCase();
-            const match = !keyword || text.includes(keyword);
-
-            item?.classList.toggle('is-hidden', !match);
-            if (match) visible++;
+        hasil.tanggal.forEach(function (t) {
+            var holiday = t.is_libur === true ? ' holiday' : '';
+            html += '<th class="report-day' + holiday + '">' +
+                escapeHtml(t.tgl.substring(8, 10)) + '<br>' +
+                escapeHtml(formatHariIndonesia(t.hari)) +
+                '</th>';
         });
 
-        emptyLabel.style.display = visible ? 'none' : 'block';
-    }
+        html += '</tr></thead><tbody>';
 
-    function setAllUnits(checked) {
-        checks.forEach(function(check) {
-            check.checked = checked;
+        hasil.pegawai.forEach(function (peg, index) {
+            html += '<tr>';
+            html += '<td class="report-col-no">' + (index + 1) + '</td>';
+            html += '<td class="report-col-name">' + escapeHtml(peg.nama) + '</td>';
+
+            hasil.tanggal.forEach(function (t) {
+                var row = hasil.matrix[peg.nip]
+                    ? hasil.matrix[peg.nip][t.tgl]
+                    : null;
+
+                var holiday = t.is_libur === true;
+                var cls = 'report-cell';
+
+                if (holiday) cls += ' holiday';
+                else if (row && row.warna) cls += ' ' + row.warna;
+
+                var cell = '';
+
+                if (row) {
+                    if (row.status &&
+                        row.status !== 'LIBUR' &&
+                        row.status !== 'HADIR') {
+                        cell = escapeHtml(row.status);
+                    } else if (row.status === 'HADIR') {
+                        var jamIn = formatJamPreview(row.jam_in);
+                        var jamOut = formatJamPreview(row.jam_out);
+
+                        cell = jamIn && jamOut
+                            ? escapeHtml(jamIn) + '<br>' + escapeHtml(jamOut)
+                            : escapeHtml(jamIn || jamOut);
+                    }
+                }
+
+                html += '<td class="' + cls + '">' + cell + '</td>';
+            });
+
+            html += '</tr>';
         });
 
-        updateUnitPicker();
+        html += '</tbody></table>';
+        container.innerHTML = html;
+
+        if (exportButton) exportButton.style.display = 'inline-flex';
     }
 
-    selectAll.addEventListener('change', function(event) {
-        event.stopPropagation();
-        setAllUnits(selectAll.checked);
-    });
+    function initRekapAbsensi() {
+        var btnRun = document.getElementById('btnRunClockException');
+        var btnExport = document.getElementById('btnExportClockExceptionPdf');
+        var btnReset = document.getElementById('btnResetClockException');
+        var alertBox = document.getElementById('clockExceptionAlert');
+        var resultInfo = document.getElementById('resultInfo');
 
-    toggleAll.addEventListener('click', function(event) {
-        event.preventDefault();
-        event.stopPropagation();
+        var tglAwal = document.getElementById('tglAwal');
+        var tglAkhir = document.getElementById('tglAkhir');
 
-        const allSelected =
-            checks.length > 0 &&
-            checks.every(function(check) {
+        var selectAll = document.getElementById('unitKerjaSelectAll');
+        var toggleAll = document.getElementById('unitKerjaToggleAll');
+        var search = document.getElementById('unitKerjaSearch');
+        var countLabel = document.getElementById('unitKerjaCount');
+        var emptyLabel = document.getElementById('unitKerjaEmpty');
+        var checks = Array.prototype.slice.call(
+            document.querySelectorAll('.unit-kerja-check')
+        );
+
+        if (!btnRun || !tglAwal || !tglAkhir ||
+            !selectAll || !toggleAll || !search ||
+            !countLabel || !emptyLabel) {
+            console.error('Rekap Absensi Bulanan: elemen halaman tidak lengkap.');
+            return;
+        }
+
+        function selectedChecks() {
+            return checks.filter(function (check) {
                 return check.checked;
             });
-
-        setAllUnits(!allSelected);
-    });
-
-    search.addEventListener('input', filterUnitOptions);
-
-    checks.forEach(function(check) {
-        check.addEventListener('change', updateUnitPicker);
-    });
-
-    function showAlert(type, message) {
-        if (!alertBox) return;
-
-        alertBox.className = 'alert mb-3 alert-' + type;
-        alertBox.textContent = message;
-        alertBox.classList.remove('d-none');
-
-        window.setTimeout(function() {
-            alertBox.classList.add('d-none');
-        }, 4000);
-    }
-
-    function resetReport() {
-        document.getElementById('tglAwal').value = '';
-        document.getElementById('tglAkhir').value = '';
-
-        checks.forEach(function(check) {
-            check.checked = false;
-        });
-
-        search.value = '';
-        filterUnitOptions();
-        updateUnitPicker();
-
-        document.getElementById('previewClockExceptionContainer').innerHTML =
-            '<div class="hris-empty">Preview akan tampil setelah laporan dijalankan.</div>';
-
-        resultInfo.textContent = 'Silakan tentukan filter lalu klik Run.';
-
-        if (exportPdfButton) {
-            exportPdfButton.style.display = 'none';
         }
 
-        if (alertBox) {
-            alertBox.classList.add('d-none');
-        }
-    }
+        function updateSelection() {
+            var selected = selectedChecks();
+            var total = checks.length;
 
-    resetButton?.addEventListener('click', resetReport);
+            if (!selected.length) {
+                countLabel.textContent = 'Belum ada unit dipilih';
+            } else if (selected.length === total) {
+                countLabel.textContent = 'Semua unit kerja (' + total + ')';
+            } else {
+                countLabel.textContent =
+                    selected.length + ' dari ' + total + ' unit dipilih';
+            }
 
-    btn?.addEventListener('click', async function(event) {
-        event.preventDefault();
+            selectAll.checked = total > 0 && selected.length === total;
+            selectAll.indeterminate =
+                selected.length > 0 && selected.length < total;
 
-        const unitChecked = getSelectedUnits();
-        const tglAwal = document.getElementById('tglAwal')?.value || '';
-        const tglAkhir = document.getElementById('tglAkhir')?.value || '';
-
-        if (!tglAwal || !tglAkhir) {
-            showAlert('warning', 'Silakan isi tanggal awal dan tanggal akhir.');
-            return;
-        }
-
-        if (tglAwal > tglAkhir) {
-            showAlert('warning', 'Tanggal awal tidak boleh lebih besar dari tanggal akhir.');
-            return;
-        }
-
-        if (!unitChecked.length) {
-            showAlert('warning', 'Silakan pilih minimal satu Unit Kerja.');
-            search.focus();
-            return;
+            toggleAll.textContent =
+                total > 0 && selected.length === total
+                    ? 'Batalkan Semua'
+                    : 'Pilih Semua';
         }
 
-        const formData = new FormData();
+        function setAll(checked) {
+            checks.forEach(function (check) {
+                check.checked = checked;
+            });
+            updateSelection();
+        }
 
-        unitChecked.forEach(function(check) {
-            formData.append('unit_kerja[]', check.value);
-        });
+        function filterUnits() {
+            var keyword = String(search.value || '').trim().toLowerCase();
+            var visible = 0;
 
-        formData.append('tgl_awal', tglAwal);
-        formData.append('tgl_akhir', tglAkhir);
+            checks.forEach(function (check) {
+                var item = check.closest('.hris-unit-option');
+                if (!item) return;
 
-        btn.disabled = true;
-        btn.innerHTML =
-            '<i class="feather-loader"></i><span>Memproses...</span>';
+                var text = String(item.getAttribute('data-search') || '').toLowerCase();
+                var match = !keyword || text.indexOf(keyword) !== -1;
 
-        try {
-            const endpoint =
-                "{{ url_for('main.preview_laporan_rekap_clock_exception') }}";
+                item.classList.toggle('is-hidden', !match);
 
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
+                if (match) visible++;
             });
 
-            const contentType =
-                response.headers.get('content-type') || '';
-
-            if (!response.ok) {
-                let message = 'Server menolak permintaan.';
-
-                if (contentType.includes('application/json')) {
-                    const errorJson = await response.json();
-                    message =
-                        errorJson.error ||
-                        errorJson.message ||
-                        message;
-                } else {
-                    const text = await response.text();
-                    message = text.substring(0, 1000) || message;
-                }
-
-                throw new Error(
-                    'HTTP ' + response.status + ': ' + message
-                );
-            }
-
-            const hasil = await response.json();
-
-            if (hasil.error) {
-                throw new Error(hasil.error);
-            }
-
-            renderPreviewClockException(hasil);
-
-            resultInfo.textContent =
-                'Preview berhasil dibuat untuk ' +
-                (hasil.pegawai?.length || 0) +
-                ' pegawai dan ' +
-                (hasil.tanggal?.length || 0) +
-                ' hari.';
-
-            showAlert('success', 'Rekap Absensi Bulanan berhasil dibuat.');
-        } catch (error) {
-            console.error('Rekap Absensi Bulanan:', error);
-
-            showAlert(
-                'danger',
-                'Gagal menjalankan Rekap Absensi Bulanan: ' +
-                error.message
-            );
-        } finally {
-            btn.disabled = false;
-            btn.innerHTML =
-                '<i class="feather-play"></i><span>Run</span>';
-        }
-    });
-
-    exportPdfButton?.addEventListener('click', async function() {
-        const unitChecked = getSelectedUnits();
-        const tglAwal = document.getElementById('tglAwal')?.value || '';
-        const tglAkhir = document.getElementById('tglAkhir')?.value || '';
-
-        if (!tglAwal || !tglAkhir || !unitChecked.length) {
-            showAlert('warning', 'Jalankan laporan terlebih dahulu.');
-            return;
+            emptyLabel.style.display = visible ? 'none' : 'block';
         }
 
-        const formData = new FormData();
+        function showAlert(type, message) {
+            if (!alertBox) return;
 
-        unitChecked.forEach(function(check) {
-            formData.append('unit_kerja[]', check.value);
+            alertBox.className = 'alert mb-3 alert-' + type;
+            alertBox.textContent = message;
+            alertBox.classList.remove('d-none');
+        }
+
+        selectAll.addEventListener('change', function () {
+            setAll(selectAll.checked);
         });
 
-        formData.append('tgl_awal', tglAwal);
-        formData.append('tgl_akhir', tglAkhir);
+        toggleAll.addEventListener('click', function (event) {
+            event.preventDefault();
 
-        exportPdfButton.disabled = true;
-        exportPdfButton.innerHTML =
-            '<i class="feather-loader"></i><span>Menyiapkan PDF...</span>';
+            var allSelected =
+                checks.length > 0 &&
+                checks.every(function (check) {
+                    return check.checked;
+                });
 
-        try {
-            const response = await fetch(
-                "{{ url_for('main.export_laporan_rekap_clock_exception_pdf') }}",
+            setAll(!allSelected);
+        });
+
+        checks.forEach(function (check) {
+            check.addEventListener('change', updateSelection);
+        });
+
+        search.addEventListener('input', filterUnits);
+
+        btnReset.addEventListener('click', function () {
+            tglAwal.value = '';
+            tglAkhir.value = '';
+
+            checks.forEach(function (check) {
+                check.checked = false;
+            });
+
+            search.value = '';
+            filterUnits();
+            updateSelection();
+
+            document.getElementById('previewClockExceptionContainer').innerHTML =
+                '<div class="hris-empty">Preview akan tampil setelah laporan dijalankan.</div>';
+
+            resultInfo.textContent = 'Silakan tentukan filter lalu klik Run.';
+
+            if (btnExport) btnExport.style.display = 'none';
+            if (alertBox) alertBox.classList.add('d-none');
+        });
+
+        btnRun.addEventListener('click', function (event) {
+            event.preventDefault();
+
+            var units = selectedChecks();
+
+            if (!tglAwal.value || !tglAkhir.value) {
+                showAlert(
+                    'warning',
+                    'Silakan isi tanggal awal dan tanggal akhir.'
+                );
+                return;
+            }
+
+            if (tglAwal.value > tglAkhir.value) {
+                showAlert(
+                    'warning',
+                    'Tanggal awal tidak boleh lebih besar dari tanggal akhir.'
+                );
+                return;
+            }
+
+            if (!units.length) {
+                showAlert(
+                    'warning',
+                    'Silakan pilih minimal satu Unit Kerja.'
+                );
+                return;
+            }
+
+            var formData = new FormData();
+
+            units.forEach(function (check) {
+                formData.append('unit_kerja[]', check.value);
+            });
+
+            formData.append('tgl_awal', tglAwal.value);
+            formData.append('tgl_akhir', tglAkhir.value);
+
+            btnRun.disabled = true;
+            btnRun.innerHTML =
+                '<i class="feather-loader"></i><span>Memproses...</span>';
+
+            fetch(
+                "{{ url_for('main.preview_laporan_rekap_clock_exception') }}",
                 {
                     method: 'POST',
                     body: formData,
@@ -526,60 +438,159 @@ document.addEventListener('DOMContentLoaded', function() {
                         'X-Requested-With': 'XMLHttpRequest'
                     }
                 }
-            );
-
-            if (!response.ok) {
-                const contentType =
+            )
+            .then(function (response) {
+                var contentType =
                     response.headers.get('content-type') || '';
 
-                let message = 'Gagal membuat PDF.';
+                if (!response.ok) {
+                    return response.text().then(function (text) {
+                        var message = 'Server menolak permintaan.';
 
-                if (contentType.includes('application/json')) {
-                    const errorJson = await response.json();
-                    message =
-                        errorJson.error ||
-                        errorJson.message ||
-                        message;
-                } else {
-                    const text = await response.text();
-                    message = text.substring(0, 1000) || message;
+                        if (contentType.indexOf('application/json') !== -1) {
+                            try {
+                                var json = JSON.parse(text);
+                                message =
+                                    json.error ||
+                                    json.message ||
+                                    message;
+                            } catch (err) {}
+                        } else if (text) {
+                            message = text.substring(0, 1000);
+                        }
+
+                        throw new Error(
+                            'HTTP ' + response.status + ': ' + message
+                        );
+                    });
                 }
 
-                throw new Error(message);
-            }
+                return response.json();
+            })
+            .then(function (hasil) {
+                if (hasil.error) {
+                    throw new Error(hasil.error);
+                }
 
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const anchor = document.createElement('a');
+                renderPreview(hasil);
 
-            anchor.href = url;
-            anchor.download =
-                'Rekap_Absensi_Bulanan_' +
-                tglAwal.replaceAll('-', '') +
-                '_' +
-                tglAkhir.replaceAll('-', '') +
-                '.pdf';
+                resultInfo.textContent =
+                    'Preview berhasil dibuat untuk ' +
+                    (hasil.pegawai ? hasil.pegawai.length : 0) +
+                    ' pegawai dan ' +
+                    (hasil.tanggal ? hasil.tanggal.length : 0) +
+                    ' hari.';
 
-            document.body.appendChild(anchor);
-            anchor.click();
-            anchor.remove();
-            window.URL.revokeObjectURL(url);
-        } catch (error) {
-            console.error('Export PDF:', error);
+                showAlert(
+                    'success',
+                    'Rekap Absensi Bulanan berhasil dibuat.'
+                );
+            })
+            .catch(function (error) {
+                console.error('Rekap Absensi Bulanan:', error);
 
-            showAlert(
-                'danger',
-                'Gagal membuat PDF: ' + error.message
-            );
-        } finally {
-            exportPdfButton.disabled = false;
-            exportPdfButton.innerHTML =
-                '<i class="feather-file-text"></i><span>Ekspor PDF</span>';
+                showAlert(
+                    'danger',
+                    'Gagal menjalankan Rekap Absensi Bulanan: ' +
+                    error.message
+                );
+            })
+            .then(function () {
+                btnRun.disabled = false;
+                btnRun.innerHTML =
+                    '<i class="feather-play"></i><span>Run</span>';
+            });
+        });
+
+        if (btnExport) {
+            btnExport.addEventListener('click', function () {
+                var units = selectedChecks();
+
+                if (!tglAwal.value || !tglAkhir.value || !units.length) {
+                    showAlert(
+                        'warning',
+                        'Jalankan laporan terlebih dahulu.'
+                    );
+                    return;
+                }
+
+                var formData = new FormData();
+
+                units.forEach(function (check) {
+                    formData.append('unit_kerja[]', check.value);
+                });
+
+                formData.append('tgl_awal', tglAwal.value);
+                formData.append('tgl_akhir', tglAkhir.value);
+
+                btnExport.disabled = true;
+                btnExport.innerHTML =
+                    '<i class="feather-loader"></i><span>Menyiapkan PDF...</span>';
+
+                fetch(
+                    "{{ url_for('main.export_laporan_rekap_clock_exception_pdf') }}",
+                    {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    }
+                )
+                .then(function (response) {
+                    if (!response.ok) {
+                        return response.text().then(function (text) {
+                            throw new Error(
+                                text ? text.substring(0, 1000) :
+                                'Gagal membuat PDF.'
+                            );
+                        });
+                    }
+
+                    return response.blob();
+                })
+                .then(function (blob) {
+                    var url = window.URL.createObjectURL(blob);
+                    var anchor = document.createElement('a');
+
+                    anchor.href = url;
+                    anchor.download =
+                        'Rekap_Absensi_Bulanan_' +
+                        tglAwal.value.replace(/-/g, '') +
+                        '_' +
+                        tglAkhir.value.replace(/-/g, '') +
+                        '.pdf';
+
+                    document.body.appendChild(anchor);
+                    anchor.click();
+                    anchor.remove();
+
+                    window.URL.revokeObjectURL(url);
+                })
+                .catch(function (error) {
+                    console.error('Export PDF:', error);
+                    showAlert(
+                        'danger',
+                        'Gagal membuat PDF: ' + error.message
+                    );
+                })
+                .then(function () {
+                    btnExport.disabled = false;
+                    btnExport.innerHTML =
+                        '<i class="feather-file-text"></i><span>Ekspor PDF</span>';
+                });
+            });
         }
-    });
 
-    filterUnitOptions();
-    updateUnitPicker();
-});
+        filterUnits();
+        updateSelection();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initRekapAbsensi);
+    } else {
+        initRekapAbsensi();
+    }
+})();
 </script>
 {% endblock %}
