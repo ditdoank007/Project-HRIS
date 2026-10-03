@@ -1856,8 +1856,20 @@ def export_rekap_clock_exception_pdf():
             )
 
     # Nama dan nomor di-merge vertikal; warna mengikuti matrix.
+    # Setiap pegawai terdiri dari dua baris (IN/OUT), sehingga zebra
+    # diterapkan per blok pegawai agar IN dan OUT tetap satu kelompok.
     for employee_index, peg in enumerate(pegawai_rows, start=1):
         row_index = 1 + (employee_index - 1) * 2
+        if employee_index % 2 == 0:
+            style_commands.append(
+                (
+                    'BACKGROUND',
+                    (0, row_index),
+                    (-1, row_index + 1),
+                    colors.HexColor('#f8fafc'),
+                )
+            )
+
         style_commands.append(('SPAN', (0, row_index), (0, row_index + 1)))
         style_commands.append(('SPAN', (1, row_index), (1, row_index + 1)))
         for col_index, cal in enumerate(tanggal_rows, start=2):
