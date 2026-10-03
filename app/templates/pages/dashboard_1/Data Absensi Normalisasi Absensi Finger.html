@@ -759,8 +759,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 renderNormalisasi(normalisasiRows);
 
-                btnNormalisasi.style.display = 'none';
+                btnNormalisasi.style.display = '';
+                btnNormalisasi.disabled = false;
 
+                btnExportNormalisasi.style.display = '';
                 btnExportNormalisasi.disabled =
                     normalisasiRows.length === 0;
 
@@ -836,9 +838,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     'Export berhasil. Proses normalisasi dan export selesai.'
                 );
 
-                btnNormalisasi.style.display = 'none';
+                btnNormalisasi.style.display = '';
+                btnNormalisasi.disabled = false;
 
-                btnExportNormalisasi.style.display = 'none';
+                btnExportNormalisasi.style.display = '';
                 btnExportNormalisasi.disabled = true;
 
                 const absensiFilterSection =
