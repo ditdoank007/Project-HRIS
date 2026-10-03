@@ -271,7 +271,9 @@ body {
 }
 
 .hris-multi-select.is-open .hris-multi-select-menu {
-  display: block;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 .hris-multi-select-search {
