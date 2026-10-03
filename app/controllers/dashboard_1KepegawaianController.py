@@ -3535,14 +3535,3 @@ def api_update_pendukung_get_filter_fields():
             {'field_id': 'Nama', 'field_name': 'Nama Pegawai'},
         ],
     })
-
-def api_update_pendukung_get_filter_fields():
-    """API: Get list field untuk filter"""
-    try:
-        fields = [
-            {'field_id': 'NIP', 'field_name': 'NIP'},
-            {'field_id': 'Nama', 'field_name': 'Nama Pegawai'},
-        ]
-        return jsonify({'success': True, 'data': fields})
-    except Exception as e:
-        return jsonify({'error': str(e), 'data': []})
