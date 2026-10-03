@@ -59,51 +59,58 @@ def _sprin_code_from_absensi(absensi):
     return 'DL'
 
 
-def _is_shift2_absensi(absensi):
-    """Deteksi Shift 2 dari jam baku IN final ABSENSI."""
+def _is_shift2_absensi(absensi, absensi_hari_sebelumnya=None):
+    """
+    Deteksi Shift 2.
+
+    Data legacy tertentu menyimpan awal Shift-2 pada TGL_JAM_OUT
+    tanggal sebelumnya (misalnya 05 Sep 18:47), sedangkan record
+    tanggal berikutnya (06 Sep) memiliki TGL_JAM_IN = 00:00.
+    """
     value = absensi.TGL_JAM_BAKU_IN
-    return bool(value and getattr(value, 'hour', 0) >= 18)
+    if value and getattr(value, 'hour', 0) >= 18:
+        return True
+
+    if (
+        absensi_hari_sebelumnya
+        and getattr(absensi.TGL_JAM_IN, 'hour', 0) == 0
+        and getattr(absensi.TGL_JAM_IN, 'minute', 0) == 0
+    ):
+        prev_out = absensi_hari_sebelumnya.TGL_JAM_OUT
+        if prev_out and getattr(prev_out, 'hour', 0) >= 18:
+            return True
+
+    return False
 
 
 def _jam_in_rekap(absensi, absensi_hari_sebelumnya=None):
     """
     Jam masuk yang ditampilkan di Rekap Absensi.
 
-    Shift-2 bekerja lintas tanggal: jam masuk terjadi pada hari
-    sebelumnya (misalnya masuk 05 Sep pukul 18.xx untuk TGL_KERJA
-    06 Sep). Data legacy tertentu menaruh 00:00 pada TGL_JAM_IN
-    tanggal kerja dan menyimpan jam masuk sebenarnya pada ABSENSI
-    hari sebelumnya.
+    Pada Shift-2 legacy, jam masuk aktual dapat tersimpan sebagai
+    TGL_JAM_OUT pada tanggal sebelumnya. Contoh:
+      05 Sep : IN 07:28, OUT 18:47
+      06 Sep : IN 00:00, OUT 09:23
 
-    Prioritas:
-      1. TGL_JAM_IN hari sebelumnya bila valid.
-      2. TGL_JAM_BAKU_IN sebagai fallback.
-      3. TGL_JAM_IN milik record saat ini.
+    Untuk record 06 Sep, 18:47 adalah jam masuk Shift-2 yang harus
+    ditampilkan. TGL_JAM_BAKU_IN hanya fallback setelah itu.
     """
     jam_in = absensi.TGL_JAM_IN
     if not jam_in:
         return jam_in
 
     if (
-        _is_shift2_absensi(absensi)
+        _is_shift2_absensi(absensi, absensi_hari_sebelumnya)
         and getattr(jam_in, 'hour', 0) == 0
         and getattr(jam_in, 'minute', 0) == 0
     ):
         if absensi_hari_sebelumnya:
-            prev_jam_in = absensi_hari_sebelumnya.TGL_JAM_IN
+            prev_jam_out = absensi_hari_sebelumnya.TGL_JAM_OUT
             if (
-                prev_jam_in
-                and not (
-                    getattr(prev_jam_in, 'year', 0) == 1900
-                    and getattr(prev_jam_in, 'month', 0) == 1
-                    and getattr(prev_jam_in, 'day', 0) == 1
-                )
-                and (
-                    getattr(prev_jam_in, 'hour', 0) != 0
-                    or getattr(prev_jam_in, 'minute', 0) != 0
-                )
+                prev_jam_out
+                and getattr(prev_jam_out, 'hour', 0) >= 18
             ):
-                return prev_jam_in
+                return prev_jam_out
 
         if absensi.TGL_JAM_BAKU_IN:
             return absensi.TGL_JAM_BAKU_IN
@@ -111,7 +118,7 @@ def _jam_in_rekap(absensi, absensi_hari_sebelumnya=None):
     return jam_in
 
 
-def _warna_absensi(absensi):
+def _warna_absensi(absensi, absensi_hari_sebelumnya=None):
     """Warna presentation Rekap berdasarkan hasil final ABSENSI."""
     transaction = str(absensi.TRANSAKSI_IN or '').strip().upper()
 
@@ -131,7 +138,10 @@ def _warna_absensi(absensi):
         absensi.HISTORY_TRANSAKSI_IN or ''
     ).strip().upper()
 
-    if rekap_code == 'SIAGA' or _is_shift2_absensi(absensi):
+    if rekap_code == 'SIAGA' or _is_shift2_absensi(
+        absensi,
+        absensi_hari_sebelumnya,
+    ):
         return 'siaga'
 
     return 'normal'
@@ -320,13 +330,16 @@ def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
                 ):
                     status = 'HADIR'
 
-                color = _warna_absensi(absensi)
-
                 absensi_hari_sebelumnya = absensi_index.get(
                     (
                         str(pegawai.NIP or '').strip(),
                         absensi.TGL_KERJA.date() - timedelta(days=1),
                     )
+                )
+
+                color = _warna_absensi(
+                    absensi,
+                    absensi_hari_sebelumnya,
                 )
 
                 cell.update({
