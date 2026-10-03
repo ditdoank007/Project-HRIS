@@ -2014,8 +2014,15 @@ def api_dinas_luar_get(type_sprin=None):
             return str(value)[:10]
 
         type_sprin = str(request.args.get('type_sprin') or type_sprin or 'DL').strip().upper()
-        jenis = {'DL':'DL','OPR':'OP','OP':'OP','POT':'PL','PL':'PL'}.get(type_sprin)
-        if not jenis:
+        jenis_map = {
+            'DL': ['DL'],
+            'OPR': ['OP', 'OPR'],
+            'OP': ['OP', 'OPR'],
+            'POT': ['PL', 'POT', 'SD'],
+            'PL': ['PL', 'POT', 'SD'],
+        }
+        jenis_values = jenis_map.get(type_sprin)
+        if not jenis_values:
             return jsonify({'success': False, 'error': 'Jenis Dinas Luar tidak valid.'}), 400
 
         no_surat = request.args.get('no_surat', '').strip()
@@ -2034,7 +2041,7 @@ def api_dinas_luar_get(type_sprin=None):
             .filter(
                 DinasLuar.NO_SURAT == no_surat,
                 DinasLuar.TRANSAKSI == 'DinasLuar',
-                DinasLuar.JENIS == jenis,
+                DinasLuar.JENIS.in_(jenis_values),
             )
             .order_by(Pegawai.NAMA.asc())
             .all()
@@ -2139,16 +2146,23 @@ def api_dinas_luar_delete(type_sprin=None):
         data = request.get_json(silent=True) or {}
         guid_sprin = str(data.get('guid_sprin') or '').strip()
         type_sprin = str(data.get('type_sprin') or type_sprin or 'DL').strip().upper()
-        jenis = {'DL':'DL','OPR':'OP','OP':'OP','POT':'PL','PL':'PL'}.get(type_sprin)
+        jenis_map = {
+            'DL': ['DL'],
+            'OPR': ['OP', 'OPR'],
+            'OP': ['OP', 'OPR'],
+            'POT': ['PL', 'POT', 'SD'],
+            'PL': ['PL', 'POT', 'SD'],
+        }
+        jenis_values = jenis_map.get(type_sprin)
 
-        if not jenis:
+        if not jenis_values:
             return jsonify({'success': False, 'error': 'Jenis Dinas Luar tidak valid.'}), 400
         if not guid_sprin:
             return jsonify({'success': False, 'error': 'GUID SPRIN wajib diisi.'}), 400
 
         rows = DinasLuar.query.filter(
             DinasLuar.GUID_SPRIN == guid_sprin,
-            DinasLuar.JENIS == jenis,
+            DinasLuar.JENIS.in_(jenis_values),
             DinasLuar.TRANSAKSI == 'DinasLuar',
         ).all()
         if not rows:
@@ -2157,11 +2171,11 @@ def api_dinas_luar_delete(type_sprin=None):
         file_path = None
         first = rows[0]
         if first.TGL_AWAL_SURAT and first.NAMA_FILE:
-            file_path = dinas_luar_absolute_path_by_filename(first.TGL_AWAL_SURAT, jenis, first.NAMA_FILE)
+            file_path = dinas_luar_absolute_path_by_filename(first.TGL_AWAL_SURAT, first.JENIS, first.NAMA_FILE)
 
         DinasLuar.query.filter(
             DinasLuar.GUID_SPRIN == guid_sprin,
-            DinasLuar.JENIS == jenis,
+            DinasLuar.JENIS.in_(jenis_values),
             DinasLuar.TRANSAKSI == 'DinasLuar',
         ).delete(synchronize_session=False)
 
@@ -2187,7 +2201,7 @@ def api_dinas_luar_delete(type_sprin=None):
         return jsonify({
             'success': True,
             'message': (
-                f'{jenis} SPRIN Dinas Luar berhasil dihapus.'
+                f'{type_sprin} SPRIN Dinas Luar berhasil dihapus.'
                 f'{file_delete_warning}'
             )
         })
