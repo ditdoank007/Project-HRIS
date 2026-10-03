@@ -1,312 +1,203 @@
-<!-- pages/dashboard_1/Data Absensi Normalisasi Absensi Finger.html -->
-{% extends "layout/baseDashboard1.html" %}
+{% extends "layout/baseHRIS.html" %}
 
 {% block title %}- Data Absensi Finger{% endblock %}
+{% block header_kicker %}DATA ABSENSI{% endblock %}
+{% block header_title %}Absensi Finger{% endblock %}
 
 {% block content %}
-<div class="nxl-content">
-    <div class="page-header">
-        <div class="page-header-left d-flex align-items-center">
-            <div class="page-header-title">
-                <h5 class="m-b-10">Data Absensi</h5>
-            </div>
-            <ul class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url_for('main.view_data_absensi_normalisasi_finger') }}">Absensi Finger</a></li>
-            </ul>
+<div class="hris-page">
+    <div class="hris-page-header">
+        <div>
+            <h2 class="hris-page-title">Absensi Finger</h2>
+            <p class="hris-page-subtitle">Kelola data absensi finger, normalisasi, hasil ekspor, dan tanggal closing absensi.</p>
         </div>
+        <a href="{{ url_for('main.view_cari_absensi_normalisasi_finger') }}"
+           class="hris-btn hris-btn-secondary">
+            <i class="feather-search"></i>
+            <span>Cari</span>
+        </a>
     </div>
 
-    <div class="main-content master-siaga">
-        <div class="container-fluid">
-            <div class="card mb-4 filter-card">
-                <div class="card-header-custom d-flex justify-content-between align-items-center" style="border-radius: 10px;">
-                    <h6 class="mb-0">
-                        <i class="ti ti-fingerprint me-2"></i> Absensi Finger
-                    </h6>
-                    <div class="header-actions">
-                        <a href="{{ url_for('main.view_cari_absensi_normalisasi_finger') }}" class="btn p-0 border-0 bg-transparent shadow-none text-decoration-none">
-                            <i class="bi bi-search" style="color: #333; font-size: 1.1rem;"></i>
-                        </a>
+    <div class="hris-card">
+        <div class="hris-card-header">
+            <div>
+                <h3 class="hris-card-title">
+                    <i class="feather-fingerprint"></i>
+                    Absensi Finger
+                </h3>
+                <p class="hris-section-subtitle">Pilih periode aktivitas dan filter pegawai sebelum menjalankan proses.</p>
+            </div>
+        </div>
+
+        <div class="hris-card-body">
+            <div class="hris-form-stack" id="absensiFilterSection">
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="tglActivityAwal">Tanggal Activity</label>
+                    <div class="hris-form-inline">
+                        <input type="date" id="tglActivityAwal" class="hris-input">
+                        <span class="hris-form-separator">s/d</span>
+                        <input type="date" id="tglActivityAkhir" class="hris-input">
                     </div>
                 </div>
 
-                <div class="card-body">
-                    <!-- Filter Section -->
-                    <div
-                        class="row g-3 mb-4"
-                        id="absensiFilterSection"
-                    >
-                        <!-- Baris 1: Tanggal Activity -->
-                        <div class="col-12 d-md-flex align-items-center">
-                            <label class="col-md-2 form-label-custom mb-1 mb-md-0">Tanggal Activity</label>
-                            <div class="col-md-9 d-flex align-items-center gap-2 flex-wrap flex-md-nowrap">
-                                <div class="input-group input-group-sm" style="max-width: 200px;">
-                                    <input type="date" id="tglActivityAwal" class="form-control-sm border w-100 px-2" style="outline: none;">
-                                </div>
-                                <span class="mx-2 fw-bold text-muted small">s/d</span>
-                                <div class="input-group input-group-sm" style="max-width: 200px;">
-                                        <input type="date" id="tglActivityAkhir" class="form-control-sm border w-100 px-2" style="outline: none;">
-                                </div>
-                            </div>
-                        </div>
+                <div class="hris-form-row">
+                    <label class="hris-form-row-label" for="filterField1">Filter</label>
+                    <div class="hris-form-inline hris-filter-pair">
+                        <select id="filterField1" class="hris-select">
+                            <option value="">- Pilih Field -</option>
+                        </select>
+                        <input type="text" id="filterValue1" class="hris-input" placeholder="Nilai filter...">
+                        <span class="hris-form-separator">Dan</span>
+                        <select id="filterField2" class="hris-select">
+                            <option value="">- Pilih Field -</option>
+                        </select>
+                        <input type="text" id="filterValue2" class="hris-input" placeholder="Nilai filter...">
+                    </div>
+                </div>
+            </div>
 
-                        <!-- Baris 2: Filter -->
-                        <div class="col-12 d-md-flex align-items-center">
-                            <label class="col-md-2 filter-label-wide mb-1 mb-md-0 text-nowrap">Filter</label>
-                            <div class="d-flex flex-wrap flex-md-nowrap align-items-center gap-2">
-                                <select id="filterField1" class="hris-filter-field hris-filter-field-sm">
-                                    <option value="">- Pilih Field -</option>
-                                </select>
-                                <input type="text" id="filterValue1" class="form-control-sm border" style="width: 110px; outline: none;">
-                                <span class="mx-1 fw-bold text-dan text-nowrap text-center" style="min-width: 30px;">Dan</span>
-                                <select id="filterField2" class="hris-filter-field hris-filter-field-sm">
-                                    <option value="">- Pilih Field -</option>
-                                </select>
-                                <input type="text" id="filterValue2" class="form-control-sm border" style="width: 110px; outline: none;">
-                            </div>
-                        </div>
+            <div class="hris-tabbar-wrap">
+                <div class="hris-tabbar" id="absensiTab" role="tablist">
+                    <button class="hris-tab active" id="database-tab" data-bs-toggle="tab"
+                            data-bs-target="#database-pane" type="button" role="tab">
+                        FROM DATABASE
+                    </button>
+                    <button class="hris-tab" id="file-tab" data-bs-toggle="tab"
+                            data-bs-target="#file-pane" type="button" role="tab">
+                        FROM FILE
+                    </button>
+                    <button class="hris-tab" id="normalisasi-tab" data-bs-toggle="tab"
+                            data-bs-target="#normalisasi-pane" type="button" role="tab">
+                        Normalisasi
+                    </button>
+                    <button class="hris-tab" id="export-tab" data-bs-toggle="tab"
+                            data-bs-target="#export-pane" type="button" role="tab">
+                        Data Hasil Ekspor
+                    </button>
+                    <button class="hris-tab" id="closing-tab" data-bs-toggle="tab"
+                            data-bs-target="#closing-pane" type="button" role="tab">
+                        Penentuan Tanggal Closing Absensi
+                    </button>
+                </div>
+            </div>
+
+            <div class="tab-content hris-tab-content" id="absensiTabContent">
+                <div class="tab-pane fade show active" id="database-pane" role="tabpanel">
+                    <div class="hris-table-wrap">
+                        <table class="hris-table-modern">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>NIP</th>
+                                    <th>Nama</th>
+                                    <th>Gol-Pangkat</th>
+                                    <th>Unit Kerja</th>
+                                    <th>Waktu</th>
+                                    <th>Status</th>
+                                    <th>Transaksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="8" class="hris-empty">Silakan pilih rentang tanggal lalu klik View Data atau Impor file .dat</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="file-pane" role="tabpanel">
+                    <div class="hris-actionbar">
+                        <input type="file" id="datFileInput" accept=".dat" multiple hidden>
+                        <button class="hris-btn hris-btn-primary" id="btnImporDat" type="button">
+                            <i class="feather-upload"></i>
+                            <span>Impor File Finger (.DAT)</span>
+                        </button>
+                        <span id="datFileSummary" class="hris-helper-text">Belum ada file .DAT dipilih</span>
+                    </div>
+                    <div id="datFileList" class="hris-helper-text" style="display:none;"></div>
+
+                    <div class="hris-table-wrap hris-mt-12">
+                        <table class="hris-table-modern">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>NIP</th>
+                                    <th>Nama</th>
+                                    <th>Gol-Pangkat</th>
+                                    <th>Unit Kerja</th>
+                                    <th>Waktu</th>
+                                    <th>Status</th>
+                                    <th>Transaksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="8" class="hris-empty">Silakan impor file .dat lalu klik View Data.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="normalisasi-pane" role="tabpanel">
+                    <div class="hris-actionbar">
+                        <label class="hris-action-label" for="inputDefaultTLM">Default Nilai TLM/PSW tdk Check In/Out</label>
+                        <input type="text" id="inputDefaultTLM" class="hris-input hris-input-sm hris-input-number" value="180">
+                        <button class="hris-btn hris-btn-primary" id="btnNormalisasi" type="button">
+                            <i class="feather-refresh-cw"></i>
+                            <span>Normalisasi</span>
+                        </button>
+                        <button class="hris-btn hris-btn-secondary" id="btnExportNormalisasi" type="button">
+                            <i class="feather-download"></i>
+                            <span>Export</span>
+                        </button>
                     </div>
 
-                    <!-- Custom Style -->
-                    <style>
-                        .orange-tab-bar {
-                            background-color: #e66b30 !important;
-                            padding: 5px 10px;
-                            border-radius: 8px 8px 0 0;
-                            border-bottom: none !important;
-                            display: flex;
-                            flex-wrap: nowrap;
-                            gap: 5px;
-                            align-items: center;
-                            overflow-x: auto;
-                        }
-                        .orange-tab-bar::-webkit-scrollbar { display: none; }
-                        .orange-tab-bar .nav-item { flex-shrink: 0; }
-                        .orange-tab-bar .nav-link {
-                            color: #ffffff !important;
-                            font-weight: 500;
-                            border: none !important;
-                            background: transparent !important;
-                            padding: 6px 12px;
-                            font-size: 0.85rem;
-                            border-radius: 5px !important;
-                            transition: all 0.2s ease;
-                            white-space: nowrap;
-                        }
-                        .orange-tab-bar .nav-link.active {
-                            background-color: rgba(255, 255, 255, 0.25) !important;
-                            color: #ffffff !important;
-                        }
-                        .orange-tab-bar .nav-link:hover:not(.active) { background-color: rgba(255, 255, 255, 0.1); }
-                        .tab-action-bar { padding: 12px 5px; }
-                        .btn-pill-blue {
-                            background-color: #0000ff;
-                            color: white !important;
-                            border-radius: 50px;
-                            padding: 4px 18px;
-                            font-size: 0.8rem;
-                            border: none;
-                            font-weight: 500;
-                            cursor: pointer;
-                        }
-                        .btn-pill-blue:hover { background-color: #0000cc; }
-                        .table-custom-header th {
-                            background-color: #f1f3f5 !important;
-                            color: #495057 !important;
-                            font-size: 0.8rem;
-                            font-weight: 500;
-                            border-bottom: none;
-                            padding: 8px 10px;
-                        }
-                        .form-label-bold { font-weight: 600; font-size: 13px; }
-                        .filter-label-wide { min-width: 60px; font-weight: 600; font-size: 13px; }
-                        .text-dan { color: #EB6831; }
-                    </style>
+                    <div class="hris-table-wrap hris-table-wide">
+                        <table class="hris-table-modern">
+                            <thead>
+                                <tr>
+                                    <th>No</th><th>Reg</th><th>Nama</th><th>Tgl Activity</th><th>Shift</th>
+                                    <th>Utk Tgl Kerja</th><th>Hari</th><th>Pot TLM 1</th>
+                                    <th>Baku (In)</th><th>Baku (Out)</th><th>In</th><th>Out</th>
+                                    <th>Awal TLM</th><th>Total TLM</th><th>Tk TLM</th><th>Pot TLM (%)</th>
+                                    <th>Total PSW</th><th>Tk PSW</th><th>Pot PSW (%)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="19" class="hris-empty">No records to display.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
 
-                    <!-- Navigasi Tab -->
-                    <ul class="nav nav-tabs orange-tab-bar" id="absensiTab" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="database-tab" data-bs-toggle="tab" data-bs-target="#database-pane" type="button" role="tab">FROM DATABASE</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="file-tab" data-bs-toggle="tab" data-bs-target="#file-pane" type="button" role="tab">FROM FILE</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="normalisasi-tab" data-bs-toggle="tab" data-bs-target="#normalisasi-pane" type="button" role="tab">Normalisasi</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="export-tab" data-bs-toggle="tab" data-bs-target="#export-pane" type="button" role="tab">Data Hasil Ekspor</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="closing-tab" data-bs-toggle="tab" data-bs-target="#closing-pane" type="button" role="tab">Penentuan Tanggal Closing Absensi</button>
-                        </li>
-                    </ul>
+                <div class="tab-pane fade" id="export-pane" role="tabpanel">
+                    <div class="hris-table-wrap hris-table-wide">
+                        <table class="hris-table-modern">
+                            <thead>
+                                <tr>
+                                    <th>No</th><th>Nama</th><th>Fingerid</th><th>Tgl Kerja</th><th>Hari</th>
+                                    <th>Baku (In)</th><th>Baku (Out)</th><th>In</th><th>Out</th>
+                                    <th>Awal TLM</th><th>Total TLM</th><th>Tk TLM</th><th>Pot TLM (%)</th>
+                                    <th>Total PSW</th><th>Tk PSW</th><th>Pot PSW (%)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="16" class="hris-empty">No records to display.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
 
-                    <!-- Konten Tab -->
-                    <div class="tab-content border border-top-0 rounded-bottom p-2 bg-white" id="absensiTabContent">
-
-                        <!-- TAB 1: View Data -->
-                        <div class="tab-pane fade show active" id="database-pane" role="tabpanel" aria-labelledby="database-tab">
-                            <div class="table-responsive">
-                                <table class="table text-center align-middle">
-                                    <thead class="table-custom-header">
-                                        <tr>
-                                            <th>No</th>
-                                            <th>NIP</th>
-                                            <th>Nama</th>
-                                            <th>Gol-Pangkat</th>
-                                            <th>Unit Kerja</th>
-                                            <th>Waktu</th>
-                                            <th>Status</th>
-                                            <th>Transaksi</th>
-                                        </tr>
-                                    </thead>
-
-                        <style>
-                            /* VIEW DATA - NIP dan NAMA rata kiri */
-                            #normalisasi-pane table tbody td:nth-child(2),
-                            #normalisasi-pane table tbody td:nth-child(3),
-                            #normalisasi-pane table tbody td:nth-child(4),
-                            #normalisasi-pane table tbody td:nth-child(6),
-                            #normalisasi-pane table tbody td:nth-child(7) {
-                                text-align: left !important;
-                            }
-
-                            #database-pane table tbody td:nth-child(2),
-                            #database-pane table tbody td:nth-child(3) {
-                                text-align: left !important;
-                            }
-                        </style>
-                        <tbody>
-                                        <tr><td colspan="8" style="padding: 25px;" class="text-start text-muted ps-3">Silakan pilih rentang tanggal lalu klik View Data atau Impor file .dat</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
+                <div class="tab-pane fade" id="closing-pane" role="tabpanel">
+                    <div class="hris-closing-card">
+                        <div class="hris-form-row">
+                            <label class="hris-form-row-label" for="inputTglClosing">Tanggal Closing</label>
+                            <input type="text" id="inputTglClosing" class="hris-input" placeholder="Per Tgl">
                         </div>
-
-                        <!-- TAB FROM FILE -->
-                        <div class="tab-pane fade" id="file-pane" role="tabpanel" aria-labelledby="file-tab">
-                            <div class="tab-action-bar">
-                                <div class="d-flex align-items-center gap-2 flex-wrap">
-                                    <!-- NEW: IMPORT FILE .DAT -->
-                                    <input
-                                        type="file"
-                                        id="datFileInput"
-                                        accept=".dat"
-                                        multiple
-                                        hidden
-                                    >
-
-                                    <button
-                                        class="btn btn-pill-blue"
-                                        id="btnImporDat"
-                                        type="button"
-                                    >
-                                        IMPOR FILE FINGER (.DAT)
-                                    </button>
-
-                                    <span
-                                        id="datFileSummary"
-                                        class="small text-muted"
-                                    >
-                                        Belum ada file .DAT dipilih
-                                    </span>
-                                </div>
-
-                                <div
-                                    id="datFileList"
-                                    class="mt-2 small"
-                                    style="display:none;"
-                                ></div>
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table text-center align-middle">
-                                    <thead class="table-custom-header">
-                                        <tr>
-                                            <th>No</th>
-                                            <th>NIP</th>
-                                            <th>Nama</th>
-                                            <th>Gol-Pangkat</th>
-                                            <th>Unit Kerja</th>
-                                            <th>Waktu</th>
-                                            <th>Status</th>
-                                            <th>Transaksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td colspan="8"
-                                                style="padding: 25px;"
-                                                class="text-start text-muted ps-3">
-                                                Silakan impor file .dat lalu klik View Data.
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
+                        <div class="hris-form-actions">
+                            <button class="hris-btn hris-btn-primary" id="btnSimpanClosing" type="button">
+                                <i class="feather-lock"></i>
+                                <span>Simpan</span>
+                            </button>
                         </div>
-
-                        <!-- TAB 2: Normalisasi -->
-                        <div class="tab-pane fade" id="normalisasi-pane" role="tabpanel" aria-labelledby="normalisasi-tab">
-                            <div class="tab-action-bar">
-                                <div class="d-flex align-items-center gap-2 flex-wrap">
-                                    <span class="fw-bold small text-dark">Default Nilai TLM atau PSW tdk Check In/Out</span>
-                                    <input type="text" id="inputDefaultTLM" class="form-control form-control-sm text-center mx-1 py-1" value="180" style="width: 75px; height: 31px;">
-                                    <button class="btn btn-pill-blue" id="btnNormalisasi">NORMALISASI</button>
-                                    <button class="btn btn-pill-blue" id="btnExportNormalisasi">EXPORT</button>
-                                </div>
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table text-center align-middle" style="min-width: 1200px;">
-                                    <thead class="table-custom-header">
-                                        <tr>
-                                            <th>No</th><th>Reg</th><th>Nama</th><th>Tgl Activity</th><th>Shift</th>
-                                            <th>Utk Tgl Kerja</th><th>Hari</th><th>Pot TLM 1</th>
-                                            <th>Baku (In)</th><th>Baku (Out)</th><th>In</th><th>Out</th>
-                                            <th>Awal TLM</th><th>Total TLM</th><th>Tk TLM</th><th>Pot TLM (%)</th>
-                                            <th>Total PSW</th><th>Tk PSW</th><th>Pot PSW (%)</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr><td colspan="19" style="padding: 25px;" class="text-start text-muted ps-3">No records to display.</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        <!-- TAB 3: Data Hasil Ekspor -->
-                        <div class="tab-pane fade" id="export-pane" role="tabpanel" aria-labelledby="export-tab">
-                            <div class="table-responsive">
-                                <table class="table text-center align-middle" style="min-width: 1200px;">
-                                    <thead class="table-custom-header">
-                                        <tr>
-                                            <th>No</th><th>Nama</th><th>Fingerid</th><th>Tgl Kerja</th><th>Hari</th>
-                                            <th>Baku (In)</th><th>Baku (Out)</th><th>In</th><th>Out</th>
-                                            <th>Awal TLM</th><th>Total TLM</th><th>Tk TLM</th><th>Pot TLM (%)</th>
-                                            <th>Total PSW</th><th>Tk PSW</th><th>Pot PSW (%)</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr><td colspan="16" style="padding: 25px;" class="text-start text-muted ps-3">No records to display.</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        <!-- TAB 4: Penentuan Tanggal Closing Absensi -->
-                        <div class="tab-pane fade" id="closing-pane" role="tabpanel" aria-labelledby="closing-tab">
-                            <div class="p-3 bg-light rounded mt-2" style="max-width: 450px;">
-                                <div class="d-flex align-items-center mb-3 gap-3">
-                                    <label class="form-label-bold mb-0" style="max-width: 120px; flex-shrink: 0;">Tanggal Closing</label>
-                                    <div class="input-group input-group-sm">
-                                        <input type="text" id="inputTglClosing" class="form-control" placeholder="Per Tgl">
-                                        <span class="input-group-text bg-white"><i class="bi bi-calendar3"></i></span>
-                                    </div>
-                                </div>
-                                <button class="btn btn-sm btn-success px-4 ms-auto d-block" id="btnSimpanClosing"><i class="bi bi-lock-fill"></i> Simpan</button>
-                            </div>
-                        </div>
-
                     </div>
                 </div>
             </div>
@@ -314,28 +205,6 @@
     </div>
 </div>
 {% endblock %}
-
-<style>
-/* ============================================================
-   DATA HASIL EKSPOR
-   Nama dan Hari HARUS rata kiri.
-   !important digunakan karena tabel induk menggunakan
-   text-center.
-   ============================================================ */
-
-#export-pane tbody td:nth-child(2),
-#export-pane tbody td:nth-child(5) {
-    text-align: left !important;
-}
-</style>
-
-<style id="export-data-final-alignment">
-/* FINAL: Data Hasil Ekspor */
-#tableExportData tbody td:nth-child(2),
-#tableExportData tbody td:nth-child(5) {
-    text-align: left !important;
-}
-</style>
 
 {% block script %}
 <script>
