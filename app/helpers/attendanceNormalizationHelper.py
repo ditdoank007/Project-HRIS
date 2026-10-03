@@ -272,7 +272,16 @@ class AttendanceNormalizationEngine:
 
     @staticmethod
     def punch_status(raw):
+        # Engine menerima dua bentuk RAW:
+        #   1. hasil grouping controller: punch / status
+        #   2. hasil raw_rows SQL: PUNCH / STATUS
+        #
+        # Shift 2 memakai raw_rows langsung, sehingga kedua bentuk
+        # field harus diperlakukan identik.
         punch = raw.get('punch')
+
+        if punch is None:
+            punch = raw.get('PUNCH')
 
         if punch == 0:
             return 'IN'
@@ -281,7 +290,9 @@ class AttendanceNormalizationEngine:
             return 'OUT'
 
         status = str(
-            raw.get('status') or ''
+            raw.get('status')
+            or raw.get('STATUS')
+            or ''
         ).strip().upper()
 
         if status in ('IN', 'OUT'):
