@@ -179,7 +179,15 @@ def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
         if not row.NIP or not row.ACTIVITY_DATE:
             continue
         activity_date = row.ACTIVITY_DATE.date() if hasattr(row.ACTIVITY_DATE, "date") else row.ACTIVITY_DATE
-        siaga_index[(str(row.NIP), activity_date)] = str(row.SHIFT or "1")
+        shift = str(row.SHIFT or "1")
+        # HRIS 2013: shift 2 tercatat pada tanggal H-1 untuk
+        # kehadiran yang direkap pada tanggal H.
+        report_date = (
+            activity_date + timedelta(days=1)
+            if shift == "2"
+            else activity_date
+        )
+        siaga_index[(str(row.NIP), report_date)] = shift
 
     matrix = {}
 
