@@ -1806,9 +1806,9 @@ def api_dinas_luar_save(type_sprin=None):
     try:
         type_sprin = str(request.form.get('type_sprin') or type_sprin or 'DL').strip().upper()
         config = {
-            'DL': {'jenis': 'DL', 'prefix': 'DLU', 'tipe': 0, 'label': 'Dinas Luar Umum'},
-            'OP': {'jenis': 'OP', 'prefix': 'DLO', 'tipe': 1, 'label': 'Dinas Luar Operasi'},
-            'PL': {'jenis': 'PL', 'prefix': 'DLP', 'tipe': 0, 'label': 'Dinas Luar SD'},
+            'DL': {'jenis': 'DL', 'jenis_values': ['DL'], 'prefix': 'DLU', 'tipe': 0, 'label': 'Dinas Luar Umum'},
+            'OP': {'jenis': 'OP', 'jenis_values': ['OP', 'OPR'], 'prefix': 'DLO', 'tipe': 1, 'label': 'Dinas Luar Operasi'},
+            'PL': {'jenis': 'PL', 'jenis_values': ['PL', 'POT', 'SD'], 'prefix': 'DLP', 'tipe': 0, 'label': 'Dinas Luar SD'},
         }
         cfg = config.get(type_sprin)
         if not cfg:
@@ -1912,13 +1912,13 @@ def api_dinas_luar_save(type_sprin=None):
         if guid_requested:
             existing_rows = DinasLuar.query.filter(
                 DinasLuar.GUID_SPRIN == guid_requested,
-                DinasLuar.JENIS == cfg['jenis'],
+                DinasLuar.JENIS.in_(cfg['jenis_values']),
                 DinasLuar.TRANSAKSI == 'DinasLuar',
             ).all()
         if not existing_rows:
             existing_rows = DinasLuar.query.filter(
                 DinasLuar.NO_SURAT == no_surat,
-                DinasLuar.JENIS == cfg['jenis'],
+                DinasLuar.JENIS.in_(cfg['jenis_values']),
                 DinasLuar.TRANSAKSI == 'DinasLuar',
             ).all()
 
