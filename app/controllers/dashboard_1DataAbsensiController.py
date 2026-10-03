@@ -1876,6 +1876,7 @@ def api_normalisasi_process():
                   AND tr.Waktu < :tgl_akhir_raw
                   {source_filter_sql}
 
+                UNION ALL
 
                 /* File .DAT / RAW yang belum masuk TIME_RECORDER.
                    Jika event sudah ada di TIME_RECORDER, jangan
