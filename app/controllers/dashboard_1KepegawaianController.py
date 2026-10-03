@@ -1100,7 +1100,7 @@ def api_pegawai_delete():
 
 def kepegawaian_dinas_luar_operasi():
     return render_template(
-        'pages/dashboard_1/Kepegawaian Dinas Luar Operasi.html',
+        'pages/dashboard_1/Kepegawaian Dinas Luar Umum.html',
         dinas_type='OP',
         dinas_label='Dinas Luar Operasi',
         dinas_badge='DINAS LUAR / OPERASI',
@@ -1868,6 +1868,7 @@ def api_dinas_luar_save(type_sprin=None):
                 'start': person_start,
                 'end': person_end,
                 'status_um': int(peserta.get('status_um') or 0),
+                'tipe': int(peserta.get('tipe')) if type_sprin == 'OP' and str(peserta.get('tipe')) in ('0','1') else cfg['tipe'],
             })
 
         if not normalized:
@@ -1945,7 +1946,7 @@ def api_dinas_luar_save(type_sprin=None):
                 TGL_AWAL_SURAT=start_date,
                 TGL_AKHIR_SURAT=end_date,
                 NAMA_FILE=saved_file['filename'],
-                TIPE=cfg['tipe'],
+                TIPE=item['tipe'],
             ))
 
         db.session.commit()
