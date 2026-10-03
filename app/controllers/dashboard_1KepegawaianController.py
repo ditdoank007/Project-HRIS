@@ -934,13 +934,32 @@ def api_pegawai_save():
         tgl_keluar = _safe_date(data.get('tgl_keluar'))
         alasan_keluar = data.get('alasan_keluar', '') or ''
 
-        # Jika Is Keluar = Y, Tanggal Keluar wajib diisi.
-        # Validasi backend menjaga konsistensi data walaupun request
-        # dikirim tanpa melalui validasi JavaScript di halaman.
-        if is_keluar == 'Y' and tgl_keluar is None:
-            return jsonify({
-                'error': 'Tanggal Keluar wajib diisi jika Is Keluar = Y.'
-            })
+        # Mulai HRIS Reborn, Is Keluar = Y wajib memiliki
+        # Tanggal Keluar dan Keterangan Keluar.
+        #
+        # Data legacy HRIS 2013 yang sudah terlanjur memiliki
+        # Is Keluar = Y tetapi Tglkeluar/AlasanKeluar kosong
+        # boleh tetap disimpan tanpa backfill.
+        legacy_exit_without_detail = (
+            is_update
+            and str(pegawai.IS_KELUAR or '').strip().upper() == 'Y'
+            and pegawai.TGL_KELUAR is None
+            and not str(pegawai.ALASAN_KELUAR or '').strip()
+            and is_keluar == 'Y'
+            and tgl_keluar is None
+            and not str(alasan_keluar).strip()
+        )
+
+        if is_keluar == 'Y' and not legacy_exit_without_detail:
+            if tgl_keluar is None:
+                return jsonify({
+                    'error': 'Tanggal Keluar wajib diisi jika Is Keluar = Y.'
+                })
+
+            if not str(alasan_keluar).strip():
+                return jsonify({
+                    'error': 'Keterangan Keluar wajib dipilih jika Is Keluar = Y.'
+                })
 
         if is_update:
             # Update
