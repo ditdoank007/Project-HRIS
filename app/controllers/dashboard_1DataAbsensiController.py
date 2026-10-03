@@ -1595,8 +1595,6 @@ def api_normalisasi_import_finger():
             ORDER BY src.FINGER_ID, src.WAKTU
         """)
 
-        """)
-
         rows = db.session.execute(sql, params).mappings().all()
         data = []
         cache_rows = []
