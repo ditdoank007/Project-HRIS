@@ -1992,7 +1992,10 @@ def api_dinas_luar_get(type_sprin=None):
             db.session.query(DinasLuar, Pegawai)
             .outerjoin(
                 Pegawai,
-                DinasLuar.FINGER_ID == Pegawai.FINGER_ID
+                or_(
+                    DinasLuar.FINGER_ID == Pegawai.FINGER_ID,
+                    DinasLuar.FINGER_ID == Pegawai.NIP,
+                )
             )
             .filter(
                 DinasLuar.NO_SURAT == no_surat,
