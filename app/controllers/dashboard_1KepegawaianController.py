@@ -224,12 +224,12 @@ def api_pegawai_cari():
         # adalah data historis/master dan bukan populasi operasional.
         if status_pegawai == 'aktif':
             query = query.filter(
-                MfUnitKerja.IS_USE == 'Y',
-                Pegawai.IS_KELUAR == 'N'
+                MfUnitKerja.IS_USE.in_(['Y', '1']),
+                Pegawai.IS_KELUAR.in_(['N', '0'])
             )
         else:
             query = query.filter(
-                Pegawai.IS_KELUAR == 'Y'
+                Pegawai.IS_KELUAR.in_(['Y', '1'])
             )
         
         # Filter status jenis (PNS/NON PNS)
