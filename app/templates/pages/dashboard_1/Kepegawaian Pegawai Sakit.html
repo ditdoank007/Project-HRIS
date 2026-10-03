@@ -5,6 +5,22 @@
 {% block header_kicker %}KEPEGAWAIAN{% endblock %}
 {% block header_title %}Pegawai Sakit{% endblock %}
 
+{% block styles %}
+<script src="{{ url_for('static', filename='static_dashboard_1/assets/vendors/js/vendors.min.js') }}"></script>
+<style>
+    .pegawai-item { cursor:pointer; display:block; padding:9px 12px; text-decoration:none; }
+    .pegawai-item:hover { background:var(--ui-surface-soft); }
+    #pegawaiSakitDropdown { width:100%; max-height:220px; overflow-y:auto; z-index:1000; }
+    .hris-search-card { margin-top:16px; }
+    .hris-search-table { width:100%; border-collapse:collapse; }
+    .hris-search-table th,.hris-search-table td { padding:10px 12px; border-bottom:1px solid var(--ui-border); text-align:left; white-space:nowrap; }
+    .hris-search-table th { font-size:12px; color:var(--ui-muted); font-weight:700; text-transform:uppercase; }
+    .hris-search-table tbody tr { cursor:pointer; }
+    .hris-search-table tbody tr:hover { background:var(--ui-surface-soft); }
+    .hris-search-scroll { overflow:auto; }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="hris-page">
     <div class="hris-page-header">
@@ -12,9 +28,13 @@
             <h2 class="hris-page-title"><i class="feather-heart"></i> Pegawai Sakit</h2>
             <p class="hris-page-subtitle">Pengelolaan data pegawai sakit.</p>
         </div>
-        <button type="button" class="hris-btn hris-btn-secondary" title="Cari Data">
+        <button type="button" id="btnCariSakit" class="hris-btn hris-btn-secondary" title="Cari Data">
             <i class="feather-search"></i> Cari Data
         </button>
+    </div>
+
+    <div id="alertSakit" class="hris-alert hris-alert-warning" style="display:none;">
+        <span id="alertSakitMessage"></span>
     </div>
 
     <section class="hris-card">
@@ -23,9 +43,13 @@
         </div>
         <div class="hris-card-body">
             <div class="hris-form-grid">
-                <div class="hris-field">
+                <div class="hris-field" style="grid-column:1 / -1;">
                     <label class="hris-label">Pegawai</label>
-                    <input type="text" class="hris-input" placeholder="Ketik nama pegawai...">
+                    <div style="position:relative;">
+                        <input id="searchPegawaiSakit" type="text" class="hris-input" placeholder="Ketik nama pegawai..." autocomplete="off">
+                        <div id="pegawaiSakitDropdown" class="hris-card" style="display:none;position:absolute;left:0;right:0;top:44px;"></div>
+                    </div>
+                    <input id="selectedNIPSakit" type="hidden">
                 </div>
 
                 <div class="hris-field">
@@ -33,24 +57,26 @@
                     <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:end;gap:10px;">
                         <div>
                             <label class="hris-label">Awal</label>
-                            <input type="date" class="hris-input">
+                            <input id="tglAwalSakit" type="date" class="hris-input">
                         </div>
                         <span class="hris-label" style="margin-bottom:10px;">s/d</span>
                         <div>
                             <label class="hris-label">Akhir</label>
-                            <input type="date" class="hris-input">
+                            <input id="tglAkhirSakit" type="date" class="hris-input">
                         </div>
                     </div>
                 </div>
 
                 <div class="hris-field">
-                    <label class="hris-label">Pendukung</label>
-                    <input type="text" class="hris-input" placeholder="Pendukung / dokumen sakit">
+                    <label class="hris-label">Jenis Sakit <span class="text-danger">*</span></label>
+                    <select id="jenisSakit" class="hris-select">
+                        <option value="">- Pilih Jenis Sakit -</option>
+                    </select>
                 </div>
 
                 <div class="hris-field">
                     <label class="hris-label">Keterangan</label>
-                    <textarea class="hris-textarea" rows="2" placeholder="Keterangan..."></textarea>
+                    <textarea id="keteranganSakit" class="hris-textarea" rows="2" placeholder="Keterangan sakit..."></textarea>
                 </div>
             </div>
 
@@ -62,8 +88,196 @@
             </div>
         </div>
     </section>
+
+    <section id="searchSakitCard" class="hris-card hris-search-card" style="display:none;">
+        <div class="hris-card-header">
+            <h3 class="hris-card-title"><i class="feather-search"></i> Cari Data Sakit</h3>
+            <button type="button" id="btnTutupCariSakit" class="hris-btn hris-btn-secondary">
+                <i class="feather-x"></i> Tutup
+            </button>
+        </div>
+        <div class="hris-card-body">
+            <div class="hris-form-grid">
+                <div class="hris-field">
+                    <label class="hris-label">Filter 1</label>
+                    <select id="sakitFilterField1" class="hris-select">
+                        <option value="">- Pilih Field -</option>
+                        <option value="NIP">NIP</option>
+                        <option value="Nama">Nama Pegawai</option>
+                        <option value="Keterangan">Keterangan</option>
+                        <option value="JenisSakit">Jenis Sakit</option>
+                        <option value="Pendukung">Pendukung</option>
+                    </select>
+                </div>
+                <div class="hris-field">
+                    <label class="hris-label">Nilai Filter 1</label>
+                    <input id="sakitFilterValue1" class="hris-input" placeholder="Ketik nilai pencarian...">
+                </div>
+                <div class="hris-field">
+                    <label class="hris-label">Filter 2</label>
+                    <select id="sakitFilterField2" class="hris-select">
+                        <option value="">- Pilih Field -</option>
+                        <option value="NIP">NIP</option>
+                        <option value="Nama">Nama Pegawai</option>
+                        <option value="Keterangan">Keterangan</option>
+                        <option value="JenisSakit">Jenis Sakit</option>
+                        <option value="Pendukung">Pendukung</option>
+                    </select>
+                </div>
+                <div class="hris-field">
+                    <label class="hris-label">Nilai Filter 2</label>
+                    <input id="sakitFilterValue2" class="hris-input" placeholder="Ketik nilai pencarian...">
+                </div>
+            </div>
+            <div class="hris-divider"></div>
+            <div style="display:flex;justify-content:flex-end;">
+                <button type="button" id="btnRefreshSakit" class="hris-btn hris-btn-primary">
+                    <i class="feather-refresh-cw"></i> Cari
+                </button>
+            </div>
+            <div class="hris-search-scroll" style="margin-top:14px;">
+                <table class="hris-search-table">
+                    <thead>
+                        <tr><th>No</th><th>NIP</th><th>Nama</th><th>Tanggal</th><th>Jenis Sakit</th><th>Pendukung</th><th>Keterangan</th><th>Update</th></tr>
+                    </thead>
+                    <tbody id="sakitSearchBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
 </div>
 {% endblock %}
 
 {% block script %}
+<script>
+$(function() {
+    function alertSakit(message) {
+        $('#alertSakitMessage').text(message);
+        $('#alertSakit').show();
+    }
+
+    function escapeHtml(value) {
+        return $('<div>').text(value == null ? '' : value).html();
+    }
+
+    function loadJenisSakit() {
+        $.get('/api/sakit/jenis', function(r) {
+            const $select = $('#jenisSakit').empty().append('<option value="">- Pilih Jenis Sakit -</option>');
+            if (!r.success) {
+                alertSakit(r.error || 'Jenis Sakit gagal dimuat.');
+                return;
+            }
+            (r.data || []).forEach(function(j) {
+                $select.append($('<option>', {
+                    value: j.tingkat,
+                    text: j.tingkat + ' - ' + j.nama
+                }));
+            });
+        }).fail(function(xhr) {
+            console.error(xhr.responseText);
+            alertSakit('Jenis Sakit gagal dimuat dari master MfPot.');
+        });
+    }
+
+    loadJenisSakit();
+
+    let timer;
+    $('#searchPegawaiSakit').on('input', function() {
+        const keyword = $(this).val().trim();
+        clearTimeout(timer);
+        if (!keyword) {
+            $('#pegawaiSakitDropdown').hide();
+            return;
+        }
+        timer = setTimeout(function() {
+            $.get('/api/dinas-luar/search-pegawai', {keyword: keyword}, function(r) {
+                const $dd = $('#pegawaiSakitDropdown').empty();
+                (r.data || []).forEach(function(p) {
+                    $dd.append(
+                        $('<a>', {href:'#', class:'pegawai-item'})
+                            .attr('data-nip', p.nip)
+                            .attr('data-nama', p.nama)
+                            .html('<strong>' + escapeHtml(p.nama) + '</strong> <small class="text-muted">(' + escapeHtml(p.nip) + ')</small>')
+                    );
+                });
+                if (!$dd.children().length) {
+                    $dd.html('<div class="hris-empty">Pegawai tidak ditemukan.</div>');
+                }
+                $dd.show();
+            }).fail(function(xhr) {
+                console.error(xhr.responseText);
+                $dd = $('#pegawaiSakitDropdown').html('<div class="hris-empty">Gagal mencari pegawai.</div>').show();
+            });
+        }, 250);
+    });
+
+    $('#pegawaiSakitDropdown').on('click', '.pegawai-item', function(e) {
+        e.preventDefault();
+        $('#selectedNIPSakit').val($(this).data('nip'));
+        $('#searchPegawaiSakit').val($(this).data('nama'));
+        $('#pegawaiSakitDropdown').hide();
+    });
+
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('#searchPegawaiSakit,#pegawaiSakitDropdown').length) {
+            $('#pegawaiSakitDropdown').hide();
+        }
+    });
+
+    $('#btnCariSakit').click(function() {
+        $('#searchSakitCard').slideToggle(120, function() {
+            if ($('#searchSakitCard').is(':visible')) loadCariSakit();
+        });
+    });
+
+    $('#btnTutupCariSakit').click(function() {
+        $('#searchSakitCard').hide();
+    });
+
+    $('#btnRefreshSakit').click(loadCariSakit);
+
+    function loadCariSakit() {
+        const params = {
+            filter_field1: $('#sakitFilterField1').val(),
+            filter_value1: $('#sakitFilterValue1').val().trim(),
+            filter_field2: $('#sakitFilterField2').val(),
+            filter_value2: $('#sakitFilterValue2').val().trim()
+        };
+        $('#sakitSearchBody').html('<tr><td colspan="8" class="hris-loading">Memuat data...</td></tr>');
+        $.get('/api/sakit/cari', params, function(r) {
+            if (!r.success) {
+                $('#sakitSearchBody').html('<tr><td colspan="8" class="hris-empty">' + escapeHtml(r.error || 'Gagal mencari data.') + '</td></tr>');
+                return;
+            }
+            const rows = r.data || [];
+            if (!rows.length) {
+                $('#sakitSearchBody').html('<tr><td colspan="8" class="hris-empty">Data sakit tidak ditemukan.</td></tr>');
+                return;
+            }
+            $('#sakitSearchBody').html(rows.map(function(row) {
+                return '<tr data-row="' + encodeURIComponent(JSON.stringify(row)) + '">' +
+                    '<td>' + escapeHtml(row.no) + '</td><td>' + escapeHtml(row.nip) + '</td>' +
+                    '<td>' + escapeHtml(row.nama) + '</td>' +
+                    '<td>' + escapeHtml(row.tgl_awal) + ' s/d ' + escapeHtml(row.tgl_akhir) + '</td>' +
+                    '<td>' + escapeHtml(row.jenis_sakit) + '</td><td>' + escapeHtml(row.pendukung) + '</td>' +
+                    '<td>' + escapeHtml(row.keterangan) + '</td><td>' + escapeHtml(row.update_by) + '</td></tr>';
+            }).join(''));
+            $('#sakitSearchBody tr[data-row]').on('click', function() {
+                const row = JSON.parse(decodeURIComponent($(this).attr('data-row')));
+                $('#selectedNIPSakit').val(row.nip || '');
+                $('#searchPegawaiSakit').val(row.nama || '');
+                $('#tglAwalSakit').val(row.tgl_awal || '');
+                $('#tglAkhirSakit').val(row.tgl_akhir || '');
+                $('#jenisSakit').val(row.jenis_sakit || '');
+                $('#keteranganSakit').val(row.keterangan || '');
+                $('#searchSakitCard').hide();
+                window.scrollTo({top:0, behavior:'smooth'});
+            });
+        }).fail(function(xhr) {
+            console.error(xhr.responseText);
+            $('#sakitSearchBody').html('<tr><td colspan="8" class="hris-empty">Gagal memuat data sakit.</td></tr>');
+        });
+    }
+});
+</script>
 {% endblock %}
