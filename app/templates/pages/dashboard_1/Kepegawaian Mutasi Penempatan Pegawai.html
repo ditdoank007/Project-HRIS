@@ -58,7 +58,7 @@
     <div class="hris-page-header">
         <div>
             <h2 class="hris-page-title"><i class="feather-repeat"></i> Pegawai Mutasi</h2>
-            <p class="hris-page-subtitle">Mutasi penempatan pegawai berdasarkan No. SK dan daftar peserta.</p>
+            <p class="hris-page-subtitle">Mutasi penempatan pegawai berdasarkan No. SK dan daftar pegawai.</p>
         </div>
         <button type="button" id="btnCariData" class="hris-btn hris-btn-secondary">
             <i class="feather-search"></i> Cari Data
@@ -108,7 +108,7 @@
 
         <section class="hris-card" style="margin-top:16px;">
             <div class="hris-card-header">
-                <h3 class="hris-card-title"><i class="feather-user-plus"></i> Tambah Peserta</h3>
+                <h3 class="hris-card-title"><i class="feather-user-plus"></i> Tambah Pegawai</h3>
             </div>
             <div class="hris-card-body">
                 <div class="hris-form-grid">
@@ -122,8 +122,8 @@
                         <input type="hidden" id="selectedNIP">
                     </div>
                     <div class="hris-field" style="display:flex;align-items:flex-end;">
-                        <button type="button" id="btnInsertPeserta" class="hris-btn hris-btn-primary">
-                            <i class="feather-plus-circle"></i> Tambah Peserta
+                        <button type="button" id="btnInsertPegawai" class="hris-btn hris-btn-primary">
+                            <i class="feather-plus-circle"></i> Tambah Pegawai
                         </button>
                     </div>
                 </div>
@@ -132,7 +132,7 @@
 
         <section class="hris-card" style="margin-top:16px;">
             <div class="hris-card-header">
-                <h3 class="hris-card-title"><i class="feather-users"></i> Daftar Peserta</h3>
+                <h3 class="hris-card-title"><i class="feather-users"></i> Daftar Pegawai</h3>
             </div>
             <div class="hris-card-body">
                 <div class="hris-table-wrap">
@@ -146,7 +146,7 @@
                             </tr>
                         </thead>
                         <tbody id="tableBody">
-                            <tr><td colspan="4" class="hris-empty">Belum ada peserta.</td></tr>
+                            <tr><td colspan="4" class="hris-empty">Belum ada pegawai.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -241,7 +241,7 @@
 
 {% block script %}
 $(function() {
-    let pesertaList = [];
+    let pegawaiList = [];
     let isEdit = false;
     let searchTimeout = null;
 
@@ -359,7 +359,7 @@ $(function() {
     // ========================================================
     // PESERTA
     // ========================================================
-    $('#btnInsertPeserta').click(function() {
+    $('#btnInsertPegawai').click(function() {
         const nip = $('#selectedNIP').val().trim();
         const nama = $('#searchPegawai').val().trim();
 
@@ -368,27 +368,27 @@ $(function() {
             return;
         }
 
-        if (pesertaList.some(function(p) { return p.nip === nip; })) {
-            showAlert('warning', 'Pegawai sudah ada di daftar peserta.');
+        if (pegawaiList.some(function(p) { return p.nip === nip; })) {
+            showAlert('warning', 'Pegawai sudah ada di daftar pegawai.');
             return;
         }
 
-        pesertaList.push({nip: nip, nama: nama});
-        renderPeserta();
+        pegawaiList.push({nip: nip, nama: nama});
+        renderPegawai();
 
         $('#selectedNIP').val('');
         $('#searchPegawai').val('').focus();
     });
 
-    function renderPeserta() {
+    function renderPegawai() {
         const $tbody = $('#tableBody').empty();
 
-        if (!pesertaList.length) {
-            $tbody.html('<tr><td colspan="4" class="hris-empty">Belum ada peserta.</td></tr>');
+        if (!pegawaiList.length) {
+            $tbody.html('<tr><td colspan="4" class="hris-empty">Belum ada pegawai.</td></tr>');
             return;
         }
 
-        pesertaList.forEach(function(p, index) {
+        pegawaiList.forEach(function(p, index) {
             const $row = $('<tr>');
             $row.append($('<td>').text(index + 1));
             $row.append($('<td>').text(p.nip));
@@ -396,14 +396,14 @@ $(function() {
             const $delete = $('<button>', {
                 type: 'button',
                 class: 'hris-btn hris-btn-danger',
-                title: 'Hapus peserta'
+                title: 'Hapus pegawai'
             }).css({padding:'5px 9px'})
               .append($('<i>', {class:'feather-x'}))
               .attr('data-index', index);
 
             $delete.on('click', function() {
-                pesertaList.splice(Number($(this).attr('data-index')), 1);
-                renderPeserta();
+                pegawaiList.splice(Number($(this).attr('data-index')), 1);
+                renderPegawai();
             });
 
             $row.append($('<td>').append($delete));
@@ -436,8 +436,8 @@ $(function() {
             return;
         }
 
-        if (!pesertaList.length) {
-            showAlert('warning', 'Pegawai kosong. Tambahkan minimal 1 peserta.');
+        if (!pegawaiList.length) {
+            showAlert('warning', 'Pegawai kosong. Tambahkan minimal 1 pegawai.');
             return;
         }
 
@@ -454,7 +454,7 @@ $(function() {
                 tgl_mutasi: tglMutasi,
                 unit_kerja_id: unitKerja,
                 keterangan: keterangan,
-                peserta: pesertaList,
+                pegawai: pegawaiList,
                 is_edit: isEdit
             })
         }).done(function(r) {
@@ -502,14 +502,14 @@ $(function() {
             loadUnitKerja(d.header.unit_kerja_id || '');
             $('#keterangan').val(d.header.keterangan || '');
 
-            pesertaList = (d.peserta || []).map(function(p) {
+            pegawaiList = (d.pegawai || []).map(function(p) {
                 return {nip: p.nip, nama: p.nama};
             });
 
             isEdit = true;
             $('#btnDelete').show();
-            renderPeserta();
-            showAlert('success', 'Data Mutasi ditemukan: ' + pesertaList.length + ' peserta.');
+            renderPegawai();
+            showAlert('success', 'Data Mutasi ditemukan: ' + pegawaiList.length + ' pegawai.');
             window.scrollTo({top:0, behavior:'smooth'});
         }).fail(function(xhr) {
             console.error(xhr.responseText);
@@ -636,7 +636,7 @@ $(function() {
     // BARU
     // ========================================================
     $('#btnNew').click(function() {
-        if (pesertaList.length || $('#noSK').val().trim()) {
+        if (pegawaiList.length || $('#noSK').val().trim()) {
             if (!confirm('Data pada form akan dibersihkan. Lanjutkan?')) {
                 return;
             }
@@ -653,15 +653,15 @@ $(function() {
         $('#searchPegawai').val('');
         $('#pegawaiDropdown').hide().empty();
 
-        pesertaList = [];
+        pegawaiList = [];
         isEdit = false;
         $('#btnDelete').hide();
 
-        renderPeserta();
+        renderPegawai();
         hideAlert();
         window.scrollTo({top:0, behavior:'smooth'});
     }
 
-    renderPeserta();
+    renderPegawai();
 });
 {% endblock %}

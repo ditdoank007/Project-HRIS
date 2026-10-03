@@ -2237,17 +2237,13 @@ def api_mutasi_save():
             ).delete(synchronize_session=False)
             db.session.flush()
 
-        last_trx = db.session.query(
-            db.func.max(PegMutasiUnit.TRAKSAKSI_ID)
-        ).scalar() or 0
-
+        # HRIS 2013 tidak mengisi IDTransaksi saat INSERT.
+        # Database yang membuat nomor transaksi otomatis.
         update_by = _mutasi_update_by()
         saved_count = 0
 
         for peserta in peserta_list:
-            last_trx += 1
             db.session.add(PegMutasiUnit(
-                TRAKSAKSI_ID=last_trx,
                 NIP=peserta['nip'],
                 TGL_MUTASI=tgl_mutasi_date,
                 UNIT_KERJA=unit_kerja_id,
