@@ -194,10 +194,18 @@ def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
 
     siaga_index = {}
     for row in siaga_rows:
-        if not row.NIP or not row.ACTIVITY_DATE:
+        # Karena hasil SQL diambil sebagai MappingResult, gunakan nama
+        # kolom fisik database, bukan atribut ORM lama.
+        nip = row.get("NIP")
+        activity_date_value = row.get("ActivityDate")
+        if not nip or not activity_date_value:
             continue
-        activity_date = row.ACTIVITY_DATE.date() if hasattr(row.ACTIVITY_DATE, "date") else row.ACTIVITY_DATE
-        shift = str(row.SHIFT or "1")
+        activity_date = (
+            activity_date_value.date()
+            if hasattr(activity_date_value, "date")
+            else activity_date_value
+        )
+        shift = str(row.get("Shift") or "1")
         # HRIS 2013: shift 2 tercatat pada tanggal H-1 untuk
         # kehadiran yang direkap pada tanggal H.
         report_date = (
@@ -205,7 +213,7 @@ def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
             if shift == "2"
             else activity_date
         )
-        siaga_index[(str(row.NIP), report_date)] = shift
+        siaga_index[(str(nip), report_date)] = shift
 
     matrix = {}
 
