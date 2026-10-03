@@ -1848,7 +1848,7 @@ def api_normalisasi_process():
                   AND NOT EXISTS (
                       SELECT 1
                       FROM TIME_RECORDER tr3
-                      WHERE tr3.FingerID = CAST(r.FINGER_ID AS CHAR)
+                      WHERE tr3.FingerID = (CAST(r.FINGER_ID AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci)
                         AND tr3.Waktu = r.WAKTU
                         AND tr3.Status = CASE
                             WHEN r.PUNCH = 0 THEN 'IN'
