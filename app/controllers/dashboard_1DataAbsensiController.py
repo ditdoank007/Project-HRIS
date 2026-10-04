@@ -1472,8 +1472,8 @@ def api_normalisasi_import_finger():
         params = {'tgl_awal': tgl_awal, 'tgl_akhir': tgl_akhir}
         field_mapping = {
             'NIP': 'p.NIP', 'Nama': 'p.Nama', 'NAMA': 'p.Nama',
-            'FingerID': 'src.FINGER_ID', 'UnitKerja': 'p.UnitKerja',
-            'Unit': 'p.UnitKerja', 'UnitKerjaName': 'uk.UnitKerjaName',
+            'FingerID': 'src.FINGER_ID', 'UnitKerja': 'uk.UnitKerjaName',
+            'Unit': 'uk.UnitKerjaName', 'UnitKerjaName': 'uk.UnitKerjaName',
             'Jabatan': 'p.Jabatan', 'Gol': 'p.Gol', 'Gol-Pangkat': 'p.Gol',
             'Status': 'src.STATUS', 'Transaksi': 'src.TRANSAKSI',
         }
@@ -1497,7 +1497,7 @@ def api_normalisasi_import_finger():
         # NORMALISASI agar View Data tetap ringan untuk periode bulanan.
         source_field_map = {
             'NIP': 'p.NIP', 'Nama': 'p.Nama', 'NAMA': 'p.Nama',
-            'UnitKerja': 'p.UnitKerja', 'Unit': 'p.UnitKerja',
+            'UnitKerja': 'uk.UnitKerjaName', 'Unit': 'uk.UnitKerjaName',
             'UnitKerjaName': 'uk.UnitKerjaName',
             'Jabatan': 'p.Jabatan', 'Gol': 'p.Gol', 'Gol-Pangkat': 'p.Gol',
             'FingerID': 'tr.FingerID',
@@ -1544,10 +1544,8 @@ def api_normalisasi_import_finger():
                 ON uk.IDUnitKerja = p.UnitKerja
             WHERE tr.Waktu >= :tgl_awal
               AND tr.Waktu < :tgl_akhir
-              AND NOT (
-                  UPPER(TRIM(COALESCE(p.isKeluar, ''))) = 'Y'
-                  AND UPPER(TRIM(COALESCE(uk.isUse, ''))) <> 'Y'
-              )
+              AND UPPER(TRIM(COALESCE(p.isKeluar, ''))) IN ('N', '0')
+              AND UPPER(TRIM(COALESCE(uk.isUse, ''))) IN ('Y', '1')
               AND tr.FingerID IS NOT NULL
               AND TRIM(CAST(tr.FingerID AS CHAR)) <> ''
               AND p.NIP IS NOT NULL
@@ -1678,9 +1676,9 @@ def api_normalisasi_process():
                 'Nama': 'p0.Nama',
                 'NAMA': 'p0.Nama',
                 'FingerID': 'p0.FingerID',
-                'UnitKerja': 'p0.UnitKerja',
-                'Unit': 'p0.UnitKerja',
-                'Unit Kerja': 'p0.UnitKerja',
+                'UnitKerja': 'uk0.UnitKerjaName',
+                'Unit': 'uk0.UnitKerjaName',
+                'Unit Kerja': 'uk0.UnitKerjaName',
                 'Jabatan': 'p0.Jabatan',
                 'Gol': 'p0.Gol',
                 'Gol-Pangkat': 'p0.Gol',
@@ -1704,10 +1702,8 @@ def api_normalisasi_process():
                 LEFT JOIN MF_UNIT_KERJA uk0
                     ON uk0.IDUnitKerja = p0.UnitKerja
                 WHERE {' AND '.join(employee_filter_clauses)}
-                  AND NOT (
-                      UPPER(TRIM(COALESCE(p0.isKeluar, ''))) = 'Y'
-                      AND UPPER(TRIM(COALESCE(uk0.isUse, ''))) <> 'Y'
-                  )
+                  AND UPPER(TRIM(COALESCE(p0.isKeluar, ''))) IN ('N', '0')
+                  AND UPPER(TRIM(COALESCE(uk0.isUse, ''))) IN ('Y', '1')
                   AND p0.FingerID IS NOT NULL
             """)
             employee_rows = db.session.execute(
@@ -1720,10 +1716,8 @@ def api_normalisasi_process():
                 FROM PEGAWAI p0
                 LEFT JOIN MF_UNIT_KERJA uk0
                     ON uk0.IDUnitKerja = p0.UnitKerja
-                WHERE NOT (
-                    UPPER(TRIM(COALESCE(p0.isKeluar, ''))) = 'Y'
-                    AND UPPER(TRIM(COALESCE(uk0.isUse, ''))) <> 'Y'
-                )
+                WHERE UPPER(TRIM(COALESCE(p0.isKeluar, ''))) IN ('N', '0')
+                  AND UPPER(TRIM(COALESCE(uk0.isUse, ''))) IN ('Y', '1')
                   AND p0.FingerID IS NOT NULL
             """)
             employee_rows = db.session.execute(
@@ -2291,8 +2285,9 @@ def api_normalisasi_process():
             )
 
             if (
-                str(pegawai_siaga.IS_KELUAR or '').strip().upper() == 'Y'
-                and str(unit_siaga.IS_USE or '').strip().upper() != 'Y'
+                str(pegawai_siaga.IS_KELUAR or '').strip().upper() not in ('N', '0')
+                or not unit_siaga
+                or str(unit_siaga.IS_USE or '').strip().upper() not in ('Y', '1')
             ):
                 continue
 
@@ -2588,10 +2583,8 @@ def api_normalisasi_process():
                 ]),
                 DinasLuar.TGL_AWAL_DINAS_LUAR <= tgl_akhir,
                 DinasLuar.TGL_AKHIR_DINAS_LUAR >= tgl_awal,
-                ~db.and_(
-                    db.func.upper(db.func.trim(db.func.coalesce(Pegawai.IS_KELUAR, ''))) == 'Y',
-                    db.func.upper(db.func.trim(db.func.coalesce(MfUnitKerja.IS_USE, ''))) != 'Y',
-                ),
+                db.func.upper(db.func.trim(db.func.coalesce(Pegawai.IS_KELUAR, ''))).in_(['N', '0']),
+                db.func.upper(db.func.trim(db.func.coalesce(MfUnitKerja.IS_USE, ''))).in_(['Y', '1']),
             )
             .all()
         )
@@ -4612,10 +4605,8 @@ def api_normalisasi_absensi_view():
                 db.func.trim(Absensi.FINGER_ID) != '',
                 Pegawai.NIP.isnot(None),
                 db.func.trim(Pegawai.NIP) != '',
-                ~db.and_(
-                    db.func.upper(db.func.trim(db.func.coalesce(Pegawai.IS_KELUAR, ''))) == 'Y',
-                    db.func.upper(db.func.trim(db.func.coalesce(MfUnitKerja.IS_USE, ''))) != 'Y',
-                ),
+                db.func.upper(db.func.trim(db.func.coalesce(Pegawai.IS_KELUAR, ''))).in_(['N', '0']),
+                db.func.upper(db.func.trim(db.func.coalesce(MfUnitKerja.IS_USE, ''))).in_(['Y', '1']),
             )
         )
 
