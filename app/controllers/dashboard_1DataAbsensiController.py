@@ -1,5 +1,5 @@
 # controllers/dashboard_1DataAbsensiController.py
-from flask import render_template, request, jsonify, session
+from flask import render_template, request, jsonify, session, send_file
 from pathlib import Path
 from datetime import datetime, timedelta
 from collections import defaultdict
@@ -1531,7 +1531,7 @@ def api_normalisasi_import_finger():
                 uk.UnitKerjaName AS UNIT_KERJA_NAME,
                 p.IsVIP AS IS_VIP
             FROM TIME_RECORDER tr
-            LEFT JOIN PEGAWAI p
+            INNER JOIN PEGAWAI p
                 ON p.FingerID = tr.FingerID
             LEFT JOIN MF_GOL g
                 ON g.Gol = p.Gol
@@ -1539,6 +1539,10 @@ def api_normalisasi_import_finger():
                 ON uk.IDUnitKerja = p.UnitKerja
             WHERE tr.Waktu >= :tgl_awal
               AND tr.Waktu < :tgl_akhir
+              AND tr.FingerID IS NOT NULL
+              AND TRIM(CAST(tr.FingerID AS CHAR)) <> ''
+              AND p.NIP IS NOT NULL
+              AND TRIM(p.NIP) <> ''
               {filter_sql}
             ORDER BY tr.FingerID, tr.Waktu
         """)
@@ -1689,7 +1693,10 @@ def api_normalisasi_process():
                 SELECT DISTINCT p0.FingerID
                 FROM PEGAWAI p0
                 WHERE {' AND '.join(employee_filter_clauses)}
+                  AND p0.NIP IS NOT NULL
+                  AND TRIM(p0.NIP) <> ''
                   AND p0.FingerID IS NOT NULL
+                  AND TRIM(CAST(p0.FingerID AS CHAR)) <> ''
             """)
             employee_rows = db.session.execute(
                 employee_sql,
@@ -1699,7 +1706,10 @@ def api_normalisasi_process():
             employee_sql = text("""
                 SELECT DISTINCT p0.FingerID
                 FROM PEGAWAI p0
-                WHERE p0.FingerID IS NOT NULL
+                WHERE p0.NIP IS NOT NULL
+                  AND TRIM(p0.NIP) <> ''
+                  AND p0.FingerID IS NOT NULL
+                  AND TRIM(CAST(p0.FingerID AS CHAR)) <> ''
             """)
             employee_rows = db.session.execute(
                 employee_sql
@@ -1859,7 +1869,11 @@ def api_normalisasi_process():
             ) src
             INNER JOIN PEGAWAI p
                 ON src.USER_ID = p.FingerID
-            WHERE 1=1
+            WHERE p.NIP IS NOT NULL
+              AND TRIM(p.NIP) <> ''
+              AND p.FingerID IS NOT NULL
+              AND TRIM(CAST(p.FingerID AS CHAR)) <> ''
+              AND 1=1
               {filter_sql}
             ORDER BY CAST(p.UnitKerja AS UNSIGNED), src.FINGER_ID, src.WAKTU
         """)
@@ -4093,6 +4107,124 @@ def api_normalisasi_export():
         return jsonify({
             'error': str(e)
         })
+
+
+def _data_absensi_export_rows_from_request():
+    """Ambil dataset final ABSENSI yang dipakai oleh download Excel/PDF."""
+    tgl_awal_str = str(request.args.get('tgl_awal') or '').strip()
+    tgl_akhir_str = str(request.args.get('tgl_akhir') or '').strip()
+
+    if not tgl_awal_str or not tgl_akhir_str:
+        raise ValueError('Tanggal periode kosong.')
+
+    activity_awal = datetime.strptime(tgl_awal_str, '%Y-%m-%d')
+    activity_akhir = datetime.strptime(tgl_akhir_str, '%Y-%m-%d')
+
+    # Hasil export Shift-2 dapat berada pada H+1.
+    kerja_awal = activity_awal
+    kerja_akhir_exclusive = activity_akhir + timedelta(days=2)
+
+    query = (
+        db.session.query(Absensi, Pegawai)
+        .join(Pegawai, Absensi.FINGER_ID == Pegawai.FINGER_ID)
+        .filter(
+            Absensi.TGL_KERJA >= kerja_awal,
+            Absensi.TGL_KERJA < kerja_akhir_exclusive,
+            Pegawai.NIP.isnot(None),
+            Pegawai.NIP != '',
+            Absensi.FINGER_ID.isnot(None),
+            Absensi.FINGER_ID != '',
+        )
+    )
+
+    filter_column_map = {
+        'NIP': Pegawai.NIP,
+        'Nama': Pegawai.NAMA,
+        'NAMA': Pegawai.NAMA,
+        'UnitKerja': Pegawai.UNIT_KERJA,
+        'Unit': Pegawai.UNIT_KERJA,
+        'Jabatan': Pegawai.JABATAN,
+        'FingerID': Absensi.FINGER_ID,
+        'Finger ID': Absensi.FINGER_ID,
+        'Fingerid': Absensi.FINGER_ID,
+        'FINGER_ID': Absensi.FINGER_ID,
+    }
+
+    for field, value in (
+        (str(request.args.get('filter_field1') or '').strip(),
+         str(request.args.get('filter_value1') or '').strip()),
+        (str(request.args.get('filter_field2') or '').strip(),
+         str(request.args.get('filter_value2') or '').strip()),
+    ):
+        column = filter_column_map.get(field)
+        if column is not None and value:
+            query = query.filter(column.like(f'%{value}%'))
+
+    results = query.order_by(
+        Pegawai.NIP.asc(),
+        Absensi.TGL_KERJA.asc(),
+        Absensi.FINGER_ID.asc(),
+    ).all()
+
+    hari_map = {
+        'Monday': 'Senin', 'Tuesday': 'Selasa', 'Wednesday': 'Rabu',
+        'Thursday': 'Kamis', 'Friday': 'Jumat', 'Saturday': 'Sabtu',
+        'Sunday': 'Minggu',
+    }
+
+    rows = []
+    for no, (a, peg) in enumerate(results, 1):
+        rows.append({
+            'no': no,
+            'nip': str(peg.NIP or ''),
+            'nama': str(peg.NAMA or ''),
+            'finger_id': str(a.FINGER_ID or ''),
+            'tgl_kerja': a.TGL_KERJA.strftime('%d %b %Y') if a.TGL_KERJA else '',
+            'hari': hari_map.get(a.TGL_KERJA.strftime('%A'), '') if a.TGL_KERJA else '',
+            'jam_baku_in': a.TGL_JAM_BAKU_IN.strftime('%H:%M') if a.TGL_JAM_BAKU_IN else '',
+            'jam_baku_out': a.TGL_JAM_BAKU_OUT.strftime('%H:%M') if a.TGL_JAM_BAKU_OUT else '',
+            'jam_in': a.TGL_JAM_IN.strftime('%H:%M') if a.TGL_JAM_IN else '',
+            'jam_out': a.TGL_JAM_OUT.strftime('%H:%M') if a.TGL_JAM_OUT else '',
+            'awal_tlm': a.AWAL_TLM,
+            'total_tlm': a.TOTAL_TLM,
+            'tingkat_tlm': a.TINGKAT_TLM,
+            'persen_pot_tlm': a.PERSEN_POT_TLM,
+            'total_psw': a.TOTAL_PSW,
+            'tingkat_psw': a.TINGKAT_PSW,
+            'persen_pot_psw': a.PERSEN_POT_PSW,
+        })
+
+    return rows, f'{tgl_awal_str} s/d {tgl_akhir_str}'
+
+
+def api_normalisasi_download_excel():
+    try:
+        from app.utils.dataAbsensiExportHelper import build_excel
+        rows, period_label = _data_absensi_export_rows_from_request()
+        output = build_excel(rows, period_label)
+        return send_file(
+            output,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=f'Data_Absensi_Export_{period_label.replace(" ", "_").replace("/", "-")}.xlsx',
+        )
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+def api_normalisasi_download_pdf():
+    try:
+        from app.utils.dataAbsensiExportHelper import build_pdf
+        rows, period_label = _data_absensi_export_rows_from_request()
+        output = build_pdf(rows, period_label)
+        return send_file(
+            output,
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=f'Data_Absensi_Export_{period_label.replace(" ", "_").replace("/", "-")}.pdf',
+        )
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 def api_normalisasi_absensi_view():
