@@ -386,6 +386,11 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
+        const oldDatalist = document.getElementById(datalistId);
+        if (oldDatalist) {
+            oldDatalist.remove();
+        }
+
         current.replaceWith(replacement);
 
         if (field === 'Nama') {
