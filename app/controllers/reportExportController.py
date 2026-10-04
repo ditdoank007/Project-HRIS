@@ -32,6 +32,25 @@ REPORT_LEGEND = (
 )
 
 
+# Standard nama hari untuk seluruh format laporan HRIS Reborn.
+HARI_INDONESIA = {
+    0: "SEN",
+    1: "SEL",
+    2: "RAB",
+    3: "KAM",
+    4: "JUM",
+    5: "SAB",
+    6: "MIN",
+}
+
+
+def format_hari_indonesia(tanggal):
+    """Return nama hari laporan dalam Bahasa Indonesia."""
+    if not tanggal:
+        return ""
+    return HARI_INDONESIA.get(tanggal.weekday(), "")
+
+
 def excel_font_color(color_key):
     """Return an OpenPyXL-compatible ARGB font color."""
     return "FF" + REPORT_COLORS.get(color_key, REPORT_COLORS["normal"])
