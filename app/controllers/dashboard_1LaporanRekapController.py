@@ -1600,6 +1600,73 @@ def laporan_rekap_clock_exception():
     )
 
 
+def _resolve_rekap_clock_filter(filter_field, filter_value, unit_list, tgl_awal, tgl_akhir):
+    """Resolve the global Rekap Bulanan filter: Nama or Unit."""
+    if filter_field == 'UnitKerjaName':
+        try:
+            unit_ids = [int(x) for x in unit_list]
+        except (TypeError, ValueError) as exc:
+            raise ValueError('Unit Kerja ID tidak valid: ' + str(exc))
+
+        if not unit_ids:
+            raise ValueError('Silakan pilih minimal satu Unit Kerja.')
+
+        return unit_ids, None
+
+    if filter_field == 'Nama':
+        active_unit_ids = [
+            u.UNIT_KERJA_ID
+            for u in MfUnitKerja.query
+            .filter(
+                db.func.upper(
+                    db.func.trim(
+                        db.func.coalesce(MfUnitKerja.IS_USE, '')
+                    )
+                ).in_(['Y', '1'])
+            )
+            .all()
+        ]
+
+        kandidat = (
+            Pegawai.query
+            .filter(Pegawai.UNIT_KERJA_ID.in_(active_unit_ids))
+            .filter(Pegawai.NAMA.ilike('%' + filter_value + '%'))
+            .filter(Pegawai.TGL_MASUK <= tgl_akhir)
+            .all()
+        )
+
+        kandidat = [
+            p for p in kandidat
+            if is_pegawai_aktif_periode(p, tgl_awal, tgl_akhir)
+        ]
+
+        if not kandidat:
+            raise LookupError(
+                'Pegawai dengan nama tersebut tidak ditemukan pada pegawai operasional.'
+            )
+
+        pegawai_nips = [
+            str(p.NIP).strip()
+            for p in kandidat
+            if p.NIP
+        ]
+
+        unit_ids = sorted({
+            int(p.UNIT_KERJA_ID)
+            for p in kandidat
+            if p.UNIT_KERJA_ID is not None
+        })
+
+        if not unit_ids or not pegawai_nips:
+            raise LookupError(
+                'Pegawai yang dipilih tidak memiliki data unit operasional.'
+            )
+
+        return unit_ids, pegawai_nips
+
+    raise ValueError('Field filter Rekap Absensi Bulanan tidak valid')
+
+
 def preview_rekap_clock_exception():
     """
     Preview Rekap Absensi Bulanan.
@@ -1768,34 +1835,55 @@ def _report_cell_color_key(cell, is_holiday):
 
 def export_rekap_clock_exception_pdf():
     """Export Rekap Absensi Bulanan ke PDF."""
+    filter_field = (request.form.get('filter_field') or 'UnitKerjaName').strip()
+    filter_value = (request.form.get('filter_value') or '').strip()
     unit_list = request.form.getlist('unit_kerja[]')
     tgl_awal_str = request.form.get('tgl_awal')
     tgl_akhir_str = request.form.get('tgl_akhir')
 
-    if not unit_list or not tgl_awal_str or not tgl_akhir_str:
-        return {'error': 'Unit kosong atau format tanggal salah'}, 400
+    if not tgl_awal_str or not tgl_akhir_str:
+        return {'error': 'Periode kosong'}, 400
+
+    if not filter_value:
+        return {'error': 'Nilai filter belum dipilih'}, 400
 
     try:
-        unit_ids = [int(u) for u in unit_list]
         tgl_awal = datetime.strptime(tgl_awal_str, '%Y-%m-%d')
         tgl_akhir = datetime.strptime(tgl_akhir_str, '%Y-%m-%d')
-    except (TypeError, ValueError) as exc:
-        return {'error': f'Parameter laporan tidak valid: {exc}'}, 400
+        if tgl_awal > tgl_akhir:
+            return {'error': 'Tanggal awal tidak boleh lebih besar dari tanggal akhir'}, 400
 
-    if tgl_awal > tgl_akhir:
-        return {'error': 'Tanggal awal tidak boleh lebih besar dari tanggal akhir'}, 400
-
-    data = generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir)
-    unit_names = ', '.join(
-        u.NAMA_UNIT_KERJA
-        for u in MfUnitKerja.query
-        .filter(MfUnitKerja.UNIT_KERJA_ID.in_(unit_ids))
-        .order_by(
-            MfUnitKerja.URUT_REPORT.asc(),
-            MfUnitKerja.NAMA_UNIT_KERJA.asc()
+        unit_ids, pegawai_nips = _resolve_rekap_clock_filter(
+            filter_field,
+            filter_value,
+            unit_list,
+            tgl_awal,
+            tgl_akhir
         )
-        .all()
+
+    except (TypeError, ValueError, LookupError) as exc:
+        return {'error': str(exc)}, 400
+
+    data = generate_rekap_absensi_matrix(
+        unit_ids,
+        tgl_awal,
+        tgl_akhir,
+        pegawai_nips=pegawai_nips
     )
+
+    if filter_field == 'Nama':
+        unit_names = 'Pegawai: ' + filter_value
+    else:
+        unit_names = ', '.join(
+            u.NAMA_UNIT_KERJA
+            for u in MfUnitKerja.query
+            .filter(MfUnitKerja.UNIT_KERJA_ID.in_(unit_ids))
+            .order_by(
+                MfUnitKerja.URUT_REPORT.asc(),
+                MfUnitKerja.NAMA_UNIT_KERJA.asc()
+            )
+            .all()
+        )
 
     tanggal_rows = data['kalender']
     pegawai_rows = data['pegawai']
@@ -2033,40 +2121,60 @@ def export_rekap_clock_exception_pdf():
 
 def export_rekap_clock_exception():
     """Export Rekap Absensi Bulanan ke Excel dari matrix yang sama dengan PDF."""
+    filter_field = (request.form.get('filter_field') or 'UnitKerjaName').strip()
+    filter_value = (request.form.get('filter_value') or '').strip()
     unit_list = request.form.getlist('unit_kerja[]')
     tgl_awal_str = request.form.get('tgl_awal')
     tgl_akhir_str = request.form.get('tgl_akhir')
 
-    if not unit_list or not tgl_awal_str or not tgl_akhir_str:
-        return {'error': 'Unit kosong atau format tanggal salah'}, 400
+    if not tgl_awal_str or not tgl_akhir_str:
+        return {'error': 'Periode kosong'}, 400
+
+    if not filter_value:
+        return {'error': 'Nilai filter belum dipilih'}, 400
 
     try:
-        unit_ids = [int(u) for u in unit_list]
         tgl_awal = datetime.strptime(tgl_awal_str, '%Y-%m-%d')
         tgl_akhir = datetime.strptime(tgl_akhir_str, '%Y-%m-%d')
-    except (TypeError, ValueError) as exc:
-        return {'error': f'Parameter laporan tidak valid: {exc}'}, 400
+        if tgl_awal > tgl_akhir:
+            return {'error': 'Tanggal awal tidak boleh lebih besar dari tanggal akhir'}, 400
 
-    if tgl_awal > tgl_akhir:
-        return {'error': 'Tanggal awal tidak boleh lebih besar dari tanggal akhir'}, 400
+        unit_ids, pegawai_nips = _resolve_rekap_clock_filter(
+            filter_field,
+            filter_value,
+            unit_list,
+            tgl_awal,
+            tgl_akhir
+        )
+
+    except (TypeError, ValueError, LookupError) as exc:
+        return {'error': str(exc)}, 400
 
     from openpyxl.utils import get_column_letter
 
-    data = generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir)
+    data = generate_rekap_absensi_matrix(
+        unit_ids,
+        tgl_awal,
+        tgl_akhir,
+        pegawai_nips=pegawai_nips
+    )
     tanggal_rows = data['kalender']
     pegawai_rows = data['pegawai']
     matrix = data['matrix']
 
-    unit_names = ', '.join(
-        u.NAMA_UNIT_KERJA
-        for u in MfUnitKerja.query
-        .filter(MfUnitKerja.UNIT_KERJA_ID.in_(unit_ids))
-        .order_by(
-            MfUnitKerja.URUT_REPORT.asc(),
-            MfUnitKerja.NAMA_UNIT_KERJA.asc()
+    if filter_field == 'Nama':
+        unit_names = 'Pegawai: ' + filter_value
+    else:
+        unit_names = ', '.join(
+            u.NAMA_UNIT_KERJA
+            for u in MfUnitKerja.query
+            .filter(MfUnitKerja.UNIT_KERJA_ID.in_(unit_ids))
+            .order_by(
+                MfUnitKerja.URUT_REPORT.asc(),
+                MfUnitKerja.NAMA_UNIT_KERJA.asc()
+            )
+            .all()
         )
-        .all()
-    )
 
     wb = Workbook()
     ws = wb.active
