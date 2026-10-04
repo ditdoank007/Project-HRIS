@@ -73,6 +73,7 @@ from app.controllers.reportExportController import (
     pdf_color,
     pdf_legend_text,
     format_hari_indonesia,
+    report_header_day_color,
 )
 
 def laporan_cetak_daftar_lembur_umum():
@@ -1801,14 +1802,12 @@ def export_rekap_clock_exception_pdf():
 
     for cal in tanggal_rows:
         hari = format_hari_indonesia(cal.TGL_KERJA)
-        if _is_report_holiday(cal):
-            header_text = (
-                f'<font color="#{REPORT_COLORS["holiday"]}">'
-                f'<b>{cal.TGL_KERJA.day}<br/>{hari}</b>'
-                f'</font>'
-            )
-        else:
-            header_text = f'<b>{cal.TGL_KERJA.day}<br/>{hari}</b>'
+        header_color = report_header_day_color(cal.TGL_KERJA)
+        header_text = (
+            f'<font color="#{header_color}">'
+            f'<b>{cal.TGL_KERJA.day}<br/>{hari}</b>'
+            f'</font>'
+        )
 
         header.append(
             Paragraph(header_text, header_style)
