@@ -68,6 +68,8 @@ from app.controllers.reportExportController import (
     REPORT_LEGEND,
     add_excel_legend,
     excel_font_color,
+    excel_header_fill,
+    excel_header_font,
     pdf_color,
     pdf_legend_text,
     format_hari_indonesia,
@@ -2075,11 +2077,7 @@ def export_rekap_clock_exception():
         bottom=thin
     )
 
-    header_fill = PatternFill(
-        start_color=REPORT_COLORS['header'],
-        end_color=REPORT_COLORS['header'],
-        fill_type='solid'
-    )
+    header_fill = excel_header_fill()
 
     for row_idx in (5, 6):
         for col_idx in range(2, last_col + 1):
@@ -2094,10 +2092,7 @@ def export_rekap_clock_exception():
             ws.cell(
                 row=row_idx,
                 column=col_idx
-            ).font = Font(
-                bold=True,
-                color='FFFFFFFF'
-            )
+            ).font = excel_header_font()
 
     ws.merge_cells(
         start_row=5,
