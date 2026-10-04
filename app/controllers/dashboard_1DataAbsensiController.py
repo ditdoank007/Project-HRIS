@@ -4176,8 +4176,15 @@ def _absensi_ket_metadata(absensi):
         tgl_kerja = absensi.TGL_KERJA
         tgl_in = absensi.TGL_JAM_IN
         try:
-            if tgl_kerja and tgl_in and tgl_in.date() < tgl_kerja.date():
-                return 'S-2', 'siaga'
+            if tgl_kerja:
+                if tgl_in and tgl_in.date() < tgl_kerja.date():
+                    return 'S-2', 'siaga'
+                if (
+                    absensi.TGL_JAM_BAKU_IN
+                    and absensi.TGL_JAM_BAKU_IN.date()
+                    < tgl_kerja.date()
+                ):
+                    return 'S-2', 'siaga'
         except AttributeError:
             pass
         return 'S-1', 'siaga'
