@@ -313,7 +313,13 @@ def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
         }
     ).mappings().all()
 
+    # (NIP, TglKerja) -> ActivityDate (tanggal H).
+    #
+    # IN Shift-2 HARUS berasal dari H, sedangkan TglKerja Rekap adalah
+    # H+1. Jangan biarkan row reguler 00:00 menjadi wakil Shift-2 hanya
+    # karena row tersebut kebetulan punya TglKerja yang sama.
     shift2_keys = set()
+    shift2_activity_dates = {}
 
     for row in shift2_rows:
         nip = str(row['NIP'] or '').strip()
@@ -328,9 +334,13 @@ def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
         target_date = activity_date + timedelta(days=1)
 
         if tgl_awal.date() <= target_date <= tgl_akhir.date():
-            shift2_keys.add((nip, target_date))
+            key = (nip, target_date)
+            shift2_keys.add(key)
+            shift2_activity_dates[key] = activity_date
 
-    absensi_index = {}
+    # Kumpulkan SEMUA hasil EXPORT ABSENSI terlebih dahulu.
+    # Rekap tidak melakukan pairing fingerprint lagi.
+    absensi_candidates = {}
 
     for absensi, pegawai in absensi_rows:
         if not absensi.TGL_KERJA:
@@ -346,24 +356,87 @@ def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
         # metadata sementara pada object SQLAlchemy selama proses request.
         absensi._rekap_nip = key[0]
 
-        current = absensi_index.get(key)
+        absensi_candidates.setdefault(key, []).append(absensi)
 
-        candidate_priority = _absensi_rekap_priority(
-            absensi,
-            shift2_keys=shift2_keys,
-        )
+    absensi_index = {}
 
-        current_priority = (
-            _absensi_rekap_priority(
-                current,
+    # ============================================================
+    # WAJIB: PILIH HASIL EXPORT SHIFT-2 UNTUK SETIAP KODE 3
+    #
+    # LOG_ACTIVITIY StatusID=3 adalah daftar pegawai yang HADIR
+    # Piket Siaga Shift-2.
+    #
+    # Untuk setiap (NIP, H+1):
+    #   - cari hasil EXPORT ABSENSI pada TglKerja = H+1
+    #   - IN wajib bertanggal H
+    #   - OUT bertanggal H+1
+    #
+    # Row reguler 00:00 pada H+1 TIDAK BOLEH menang.
+    # Ini berlaku untuk SEMUA pegawai dan SEMUA tanggal kode 3.
+    # ============================================================
+    for key, activity_date in shift2_activity_dates.items():
+        candidates = absensi_candidates.get(key, [])
+
+        shift2_export = [
+            candidate
+            for candidate in candidates
+            if (
+                not _is_placeholder_time(candidate.TGL_JAM_IN)
+                and candidate.TGL_JAM_IN.date() == activity_date
+            )
+        ]
+
+        if shift2_export:
+            # Utamakan hasil yang juga mempunyai OUT aktual pada H+1.
+            selected = max(
+                shift2_export,
+                key=lambda candidate: (
+                    1
+                    if (
+                        not _is_placeholder_time(candidate.TGL_JAM_OUT)
+                        and candidate.TGL_JAM_OUT.date() == key[1]
+                    )
+                    else 0,
+                    1
+                    if not _is_placeholder_time(candidate.TGL_JAM_OUT)
+                    else 0,
+                    1
+                    if str(
+                        candidate.HISTORY_TRANSAKSI_IN or ''
+                    ).strip().upper() == 'SIAGA'
+                    else 0,
+                ),
+            )
+            absensi_index[key] = selected
+
+    # ============================================================
+    # NON-SIAGA: pilih hasil EXPORT reguler dengan prioritas lama.
+    # Untuk key yang sudah dimiliki kode 3, hasil di atas sudah final
+    # dan tidak boleh ditimpa oleh row reguler.
+    # ============================================================
+    for key, candidates in absensi_candidates.items():
+        if key in shift2_activity_dates:
+            continue
+
+        for absensi in candidates:
+            current = absensi_index.get(key)
+
+            candidate_priority = _absensi_rekap_priority(
+                absensi,
                 shift2_keys=shift2_keys,
             )
-            if current is not None
-            else None
-        )
 
-        if current is None or candidate_priority > current_priority:
-            absensi_index[key] = absensi
+            current_priority = (
+                _absensi_rekap_priority(
+                    current,
+                    shift2_keys=shift2_keys,
+                )
+                if current is not None
+                else None
+            )
+
+            if current is None or candidate_priority > current_priority:
+                absensi_index[key] = absensi
 
     matrix = {}
 
