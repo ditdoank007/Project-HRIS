@@ -67,10 +67,15 @@ def build_excel(rows, period_label=""):
         ket_color = str(row.get("ket_color") or "").strip()
         if ket_color:
             for col in range(1, len(HEADERS) + 1):
-                ws.cell(row_index, col).fill = PatternFill(
-                    start_color=ket_color,
-                    end_color=ket_color,
+                cell = ws.cell(row_index, col)
+                cell.fill = PatternFill(
+                    start_color="FF" + ket_color,
+                    end_color="FF" + ket_color,
                     fill_type="solid",
+                )
+                cell.font = Font(
+                    color="FFFFFFFF",
+                    bold=(col == len(HEADERS)),
                 )
         elif row_index % 2 == 0:
             for col in range(1, len(HEADERS) + 1):
@@ -137,12 +142,20 @@ def build_pdf(rows, period_label=""):
     for row_index, row in enumerate(rows, 1):
         ket_color = str(row.get("ket_color") or "").strip()
         if ket_color:
-            commands.append((
-                "BACKGROUND",
-                (0, row_index),
-                (-1, row_index),
-                colors.HexColor("#" + ket_color),
-            ))
+            commands.extend([
+                (
+                    "BACKGROUND",
+                    (0, row_index),
+                    (-1, row_index),
+                    colors.HexColor("#" + ket_color),
+                ),
+                (
+                    "TEXTCOLOR",
+                    (0, row_index),
+                    (-1, row_index),
+                    colors.white,
+                ),
+            ])
         elif row_index % 2 == 0:
             commands.append((
                 "BACKGROUND",
