@@ -2016,14 +2016,6 @@ def export_rekap_clock_exception_pdf():
 
             style_commands.append(
                 (
-                    'BACKGROUND',
-                    (col_index, row_index),
-                    (col_index, row_index + 1),
-                    colors.white
-                )
-            )
-            style_commands.append(
-                (
                     'TEXTCOLOR',
                     (col_index, row_index),
                     (col_index, row_index + 1),
@@ -2344,16 +2336,8 @@ def export_rekap_clock_exception():
                     color=excel_font_color(color_key)
                 )
 
-            # Match PDF/preview: colored business-rule cells stay white
-            # instead of inheriting the zebra background.
-            white_fill = PatternFill(
-                start_color='FFFFFFFF',
-                end_color='FFFFFFFF',
-                fill_type='solid'
-            )
-            if color_key != 'normal':
-                in_cell.fill = white_fill
-                out_cell.fill = white_fill
+            # Keep the same zebra background as the Preview.
+            # Only the font color changes according to the business rule.
 
         ws.row_dimensions[row_in].height = 22
         ws.row_dimensions[row_out].height = 22
