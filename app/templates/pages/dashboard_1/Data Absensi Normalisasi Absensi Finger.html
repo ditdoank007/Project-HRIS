@@ -189,6 +189,17 @@
                 </div>
 
                 <div class="tab-pane fade" id="export-pane" role="tabpanel">
+                    <div class="hris-actionbar" id="exportDownloadBar" style="display:none;">
+                        <button class="hris-btn hris-btn-primary" id="btnDownloadExcel" type="button" disabled>
+                            <i class="feather-file-text"></i>
+                            <span>Download Excel</span>
+                        </button>
+                        <button class="hris-btn hris-btn-secondary" id="btnDownloadPdf" type="button" disabled>
+                            <i class="feather-file"></i>
+                            <span>Download PDF</span>
+                        </button>
+                        <span class="hris-helper-text">File dihasilkan dari hasil ABSENSI final periode yang baru diekspor.</span>
+                    </div>
                     <div class="hris-table-wrap hris-table-wide">
                         <table class="hris-table-modern">
                             <thead>
@@ -556,6 +567,27 @@ document.addEventListener('DOMContentLoaded', function () {
     const btnExportNormalisasi =
         document.getElementById('btnExportNormalisasi');
 
+    const exportDownloadBar =
+        document.getElementById('exportDownloadBar');
+    const btnDownloadExcel =
+        document.getElementById('btnDownloadExcel');
+    const btnDownloadPdf =
+        document.getElementById('btnDownloadPdf');
+
+    function setExportDownloadState(enabled) {
+        if (exportDownloadBar) {
+            exportDownloadBar.style.display = enabled ? '' : 'none';
+        }
+        if (btnDownloadExcel) {
+            btnDownloadExcel.disabled = !enabled;
+        }
+        if (btnDownloadPdf) {
+            btnDownloadPdf.disabled = !enabled;
+        }
+    }
+
+    setExportDownloadState(false);
+
     // Normalisasi dan Export belum boleh dilakukan
     // sebelum VIEW DATA berhasil.
     btnNormalisasi.disabled = true;
@@ -873,6 +905,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     : [];
 
                 renderExportData(exportedRows);
+                setExportDownloadState(exportedRows.length > 0);
 
                 const exportTab =
                     document.getElementById('export-tab');
@@ -887,6 +920,20 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             })
             .catch(err => alert('Gagal export: ' + err));
+    });
+
+    btnDownloadExcel.addEventListener('click', function () {
+        if (btnDownloadExcel.disabled) return;
+        const params = getFilterParams();
+        window.location.href =
+            '/api/normalisasi/download-excel?' + qs(params);
+    });
+
+    btnDownloadPdf.addEventListener('click', function () {
+        if (btnDownloadPdf.disabled) return;
+        const params = getFilterParams();
+        window.location.href =
+            '/api/normalisasi/download-pdf?' + qs(params);
     });
 
     // ================= TAB 3: Data Hasil Ekspor =================
