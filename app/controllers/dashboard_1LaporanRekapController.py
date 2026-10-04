@@ -1630,7 +1630,7 @@ def preview_rekap_clock_exception():
             "tanggal": [
                 {
                     "tgl": x.TGL_KERJA.strftime("%Y-%m-%d"),
-                    "hari": x.TGL_KERJA.strftime("%a"),
+                    "hari": format_hari_indonesia(x.TGL_KERJA),
                     "is_libur": (
                         (x.IS_LIBUR or "N").upper() == "Y"
                     ),
