@@ -1770,6 +1770,23 @@ def export_rekap_clock_exception_pdf():
         leading=7,
         alignment=0,
     )
+    header_style = ParagraphStyle(
+        'ClockHeader',
+        parent=cell_style,
+        fontSize=5.8,
+        leading=6.5,
+        alignment=1,
+    )
+
+    hari_indonesia = {
+        0: 'SEN',
+        1: 'SEL',
+        2: 'RAB',
+        3: 'KAM',
+        4: 'JUM',
+        5: 'SAB',
+        6: 'MIN',
+    }
 
     story = [
         Paragraph('REKAP ABSENSI BULANAN', title_style),
@@ -1785,17 +1802,23 @@ def export_rekap_clock_exception_pdf():
     ]
 
     header = [
-        Paragraph('<b>No</b>', cell_style),
-        Paragraph('<b>Nama</b>', cell_style),
+        Paragraph('<b>No</b>', header_style),
+        Paragraph('<b>Nama</b>', header_style),
     ]
 
     for cal in tanggal_rows:
-        header.append(
-            Paragraph(
-                f'<b>{cal.TGL_KERJA.day}<br/>'
-                f'{xml_escape(cal.TGL_KERJA.strftime("%a").upper())}</b>',
-                cell_style
+        hari = hari_indonesia.get(cal.TGL_KERJA.weekday(), '')
+        if _is_report_holiday(cal):
+            header_text = (
+                f'<font color="#{REPORT_COLORS["holiday"]}">'
+                f'<b>{cal.TGL_KERJA.day}<br/>{hari}</b>'
+                f'</font>'
             )
+        else:
+            header_text = f'<b>{cal.TGL_KERJA.day}<br/>{hari}</b>'
+
+        header.append(
+            Paragraph(header_text, header_style)
         )
 
     table_data = [header]
@@ -1832,13 +1855,13 @@ def export_rekap_clock_exception_pdf():
 
     available_width = landscape(A4)[0] - 36
     date_width = max(
-        16,
+        18,
         min(
             24,
-            (available_width - 150) / max(len(tanggal_rows), 1)
+            (available_width - 170) / max(len(tanggal_rows), 1)
         )
     )
-    col_widths = [20, 130] + [date_width] * len(tanggal_rows)
+    col_widths = [20, 150] + [date_width] * len(tanggal_rows)
 
     table = Table(
         table_data,
@@ -1854,10 +1877,10 @@ def export_rekap_clock_exception_pdf():
         ('GRID', (0, 0), (-1, -1), 0.25, pdf_color('grid')),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('LEFTPADDING', (0, 0), (-1, -1), 2),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 2),
-        ('TOPPADDING', (0, 0), (-1, -1), 2),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
+        ('LEFTPADDING', (0, 0), (-1, -1), 2.5),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 2.5),
+        ('TOPPADDING', (0, 0), (-1, -1), 3),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
     ]
 
     for idx, cal in enumerate(tanggal_rows, start=2):
