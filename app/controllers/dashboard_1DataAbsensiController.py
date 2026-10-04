@@ -2672,6 +2672,11 @@ def api_normalisasi_process():
         )
 
         def _dl_filter_match(pegawai):
+            # Dinas Luar harus memakai universe pegawai yang sama
+            # dengan NORMALISASI reguler.
+            if str(getattr(pegawai, 'NIP', '') or '').strip() not in allowed_nips:
+                return False
+
             for field, value in (
                 (filter_field1, filter_value1),
                 (filter_field2, filter_value2),
@@ -2694,26 +2699,10 @@ def api_normalisasi_process():
                         pegawai.FINGER_ID or ''
                     ).strip().lower()
                 elif field in ('UnitKerja', 'Unit', 'Unit Kerja', 'UnitKerjaName'):
-                    candidate = str(
-                        getattr(pegawai, 'UNIT_KERJA', '') or ''
-                    ).strip().lower()
-
-                    # UNIT_KERJA pada model Pegawai adalah ID unit.
-                    # Untuk filter berdasarkan nama unit (mis. Surabaya),
-                    # ambil nama master unit yang aktif.
-                    if field in ('Unit', 'UnitKerjaName', 'Unit Kerja'):
-                        unit_master = (
-                            MfUnitKerja.query
-                            .filter(
-                                MfUnitKerja.UNIT_KERJA_ID
-                                == getattr(pegawai, 'UNIT_KERJA', None)
-                            )
-                            .first()
-                        )
-                        candidate = str(
-                            getattr(unit_master, 'NAMA_UNIT_KERJA', '')
-                            if unit_master else ''
-                        ).strip().lower()
+                    # Universe allowed_nips sudah menyaring berdasarkan
+                    # nama unit melalui uk0.UnitKerjaName. Jangan
+                    # membandingkan nama unit dengan ID unit di sini.
+                    candidate = value_text
                 elif field in ('Gol', 'Gol-Pangkat'):
                     candidate = str(
                         pegawai.GOL or ''
