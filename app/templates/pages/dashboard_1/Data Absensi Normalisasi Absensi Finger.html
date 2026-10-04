@@ -519,13 +519,21 @@ document.addEventListener('DOMContentLoaded', function () {
             ? String(current.value || '')
             : '';
 
+        const activeUnitSet = new Set(
+            activeUnitOptions.map(function (unit) {
+                return unit.value;
+            })
+        );
+
         const selectedValues = new Set(
             oldValue
                 .split('||')
                 .map(function (value) {
                     return value.trim();
                 })
-                .filter(Boolean)
+                .filter(function (value) {
+                    return value && activeUnitSet.has(value);
+                })
         );
 
         const wrapper = document.createElement('div');
@@ -648,7 +656,19 @@ document.addEventListener('DOMContentLoaded', function () {
             field === 'Nama'
                 ? 'Ketik nama pegawai...'
                 : 'Pilih field terlebih dahulu...';
-        replacement.value = oldValue;
+        const isUnitValue = oldValue
+            .split('||')
+            .map(function (value) {
+                return value.trim();
+            })
+            .filter(Boolean)
+            .some(function (value) {
+                return activeUnitOptions.some(function (unit) {
+                    return unit.value === value;
+                });
+            });
+
+        replacement.value = isUnitValue ? '' : oldValue;
 
         container.appendChild(replacement);
 
