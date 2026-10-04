@@ -238,15 +238,28 @@
 {% endblock %}
 
 <style>
-    #export-pane .hris-table-modern tbody tr.absensi-ket-dinas-orange > td { background: #FDE2B3 !important; }
-    #export-pane .hris-table-modern tbody tr.absensi-ket-dinas-blue > td { background: #DCE6F1 !important; }
-    #export-pane .hris-table-modern tbody tr.absensi-ket-siaga > td { background: #E4D7F5 !important; }
-    #export-pane .hris-table-modern tbody tr.absensi-ket-wfh > td { background: #D9F0F2 !important; }
-    #export-pane .hris-table-modern tbody tr.absensi-ket-cuti > td { background: #E8DDF5 !important; }
-    #export-pane .hris-table-modern tbody tr.absensi-ket-sakit > td { background: #F8D7DA !important; }
-    #export-pane .hris-table-modern tbody tr.absensi-ket-ijin > td { background: #FFF0C2 !important; }
-    #export-pane .hris-table-modern tbody tr.absensi-ket-alpa > td { background: #F5C2C7 !important; }
-    #export-pane .hris-table-modern td.absensi-ket-code { font-weight: 700; text-align: center !important; }
+    /* GLOBAL REPORT LEGEND - sinkron dengan reportExportController.py */
+    #export-pane .hris-table-modern tbody tr.absensi-ket-orange > td {
+        background: #B45309 !important;
+        color: #FFFFFF !important;
+    }
+    #export-pane .hris-table-modern tbody tr.absensi-ket-blue > td {
+        background: #2563EB !important;
+        color: #FFFFFF !important;
+    }
+    #export-pane .hris-table-modern tbody tr.absensi-ket-siaga > td {
+        background: #15803D !important;
+        color: #FFFFFF !important;
+    }
+    #export-pane .hris-table-modern tbody tr.absensi-ket-wfh > td {
+        background: #475569 !important;
+        color: #FFFFFF !important;
+    }
+    #export-pane .hris-table-modern td.absensi-ket-code {
+        font-weight: 700 !important;
+        text-align: center !important;
+        color: #FFFFFF !important;
+    }
 </style>
 
 {% block script %}
@@ -541,14 +554,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Warna KET mengikuti legenda kategori hasil ABSENSI final.
     const ketRowClasses = {
-        'dinas-orange': 'absensi-ket-dinas-orange',
-        'dinas-blue': 'absensi-ket-dinas-blue',
+        'orange': 'absensi-ket-orange',
+        'blue': 'absensi-ket-blue',
         'siaga': 'absensi-ket-siaga',
         'wfh': 'absensi-ket-wfh',
-        'cuti': 'absensi-ket-cuti',
-        'sakit': 'absensi-ket-sakit',
-        'ijin': 'absensi-ket-ijin',
-        'alpa': 'absensi-ket-alpa',
         'normal': ''
     };
 
