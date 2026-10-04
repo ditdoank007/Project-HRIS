@@ -3616,3 +3616,24 @@ body.hris-sidebar-mini .hris-submenu {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Rekap Absensi Bulanan - export actions */
+.hris-rekap-export-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+    .hris-rekap-export-actions {
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+        margin-left: 0;
+        margin-top: 8px;
+    }
+}
