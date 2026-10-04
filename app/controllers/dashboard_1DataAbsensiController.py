@@ -23,6 +23,10 @@ from app.models.loadFingerModel import MfLoadFinger
 from app.models.logActivityModel import LogActivity
 from app.models.dinasLuarModel import DinasLuar
 from app.models.mediaInformasiModel import MediaInformasi
+from app.controllers.reportExportController import (
+    REPORT_COLORS,
+    ket_color_key,
+)
 import random
 
 _NORMALISASI_CACHE = {}
@@ -4043,7 +4047,12 @@ def api_normalisasi_export():
             # saja. Tidak ada normalisasi ulang di tahap presentation.
             # --------------------------------------------------------
             final_absensi = existing if existing else absensi
-            ket, ket_class = _absensi_ket_metadata(final_absensi)
+            ket, ket_class = _absensi_ket_metadata(
+                final_absensi,
+                None,
+                r.get('nip'),
+                _load_master_potongan_meal_cut_codes(),
+            )
 
             ket_color = {
                 'dinas-orange': 'FDE2B3',
@@ -4146,7 +4155,7 @@ def api_normalisasi_export():
                         if siaga_code:
                             row['ket'] = siaga_code
                             row['ket_class'] = 'siaga'
-                            row['ket_color'] = 'E4D7F5'
+                            row['ket_color'] = REPORT_COLORS['siaga']
 
         exported_rows.sort(
             key=lambda row: (
@@ -4247,13 +4256,58 @@ def _load_siaga_ket_map(tgl_awal, tgl_akhir):
     return result
 
 
-def _absensi_ket_metadata(absensi, siaga_ket_map=None, nip=None):
+def _load_master_potongan_meal_cut_codes():
+    """Ambil kode Master Potongan yang berlaku sebagai ketidakhadiran/potong UM."""
+    rows = (
+        db.session.query(
+            MfPot.TINGKAT,
+            MfPot.KATEGORI,
+            MfPot.NAMA_POT,
+            MfPot.TINDAKAN,
+        )
+        .all()
+    )
 
+    codes = set()
+    categories = {
+        'CUTI', 'SAKIT', 'IJIN', 'IZIN', 'ALPA', 'CAP'
+    }
+
+    for tingkat, kategori, nama_pot, tindakan in rows:
+        code = str(tingkat or '').strip().upper()
+        if not code:
+            continue
+
+        kategori_u = str(kategori or '').strip().upper()
+        nama_u = str(nama_pot or '').strip().upper()
+        tindakan_u = str(tindakan or '').strip().upper()
+
+        if (
+            kategori_u in categories
+            or 'UANG MAKAN' in nama_u
+            or 'UANG MAKAN' in tindakan_u
+        ):
+            codes.add(code)
+
+    # Kode yang sudah menjadi aturan bisnis eksplisit.
+    codes.update({
+        'CT', 'CAP', 'S', 'S-1', 'S-2',
+        'I', 'IJIN', 'IZIN', 'ALPA',
+    })
+    return codes
+
+
+def _absensi_ket_metadata(
+    absensi,
+    siaga_ket_map=None,
+    nip=None,
+    master_potongan_codes=None,
+):
     """
-    KET presentation dari ABSENSI final.
+    Presentation KET dari ABSENSI final.
 
-    Tidak melakukan normalisasi ulang. Semua kode diambil dari metadata
-    yang sudah dipersist saat EXPORT, dengan fallback dari transaksi final.
+    Tidak melakukan normalisasi ulang. Siaga berasal dari LOG_ACTIVITIY
+    hasil kehadiran petugas; kode lainnya berasal dari ABSENSI final.
     """
     history = str(
         absensi.HISTORY_TRANSAKSI_IN
@@ -4268,11 +4322,13 @@ def _absensi_ket_metadata(absensi, siaga_ket_map=None, nip=None):
             (str(nip).strip(), absensi.TGL_KERJA.date())
         )
         if siaga_code:
-            return siaga_code, 'siaga'
+            return siaga_code, ket_color_key(
+                siaga_code,
+                absensi.STATUS_UM,
+                master_potongan_codes,
+            )
 
     if history == 'SIAGA':
-        # Fallback hanya bila metadata LOG_ACTIVITIY tidak ditemukan.
-        # Jangan gunakan S-1/S-2 karena keduanya adalah kode sakit.
         return 'SIAGA', 'siaga'
 
     if history:
@@ -4294,25 +4350,11 @@ def _absensi_ket_metadata(absensi, siaga_ket_map=None, nip=None):
 
     code = code.strip().upper()
 
-    if code in ('DL', 'OP', 'SD'):
-        # Warna mengikuti kategori Dinas Luar yang sudah dipakai Rekap:
-        # StatusUM 1 = orange, selain itu = dark-blue.
-        return code, 'dinas-orange' if int(absensi.STATUS_UM or 0) == 1 else 'dinas-blue'
-    if code in ('S-1', 'S-2'):
-        return code, 'siaga'
-    if code == 'WFH':
-        return code, 'wfh'
-    if code in ('CT', 'CAP'):
-        return code, 'cuti'
-    if code in ('S',):
-        return code, 'sakit'
-    if code in ('I',):
-        return code, 'ijin'
-    if code in ('A',):
-        return code, 'alpa'
-
-    return code, 'normal'
-
+    return code, ket_color_key(
+        code,
+        absensi.STATUS_UM,
+        master_potongan_codes,
+    )
 
 def _absensi_awal_psw(absensi):
     """
@@ -4409,6 +4451,8 @@ def _data_absensi_export_rows_from_request():
         tgl_akhir_exclusive - timedelta(days=1),
     )
 
+    master_potongan_codes = _load_master_potongan_meal_cut_codes()
+
     hari_map = {
         'Monday': 'Senin', 'Tuesday': 'Selasa', 'Wednesday': 'Rabu',
         'Thursday': 'Kamis', 'Friday': 'Jumat', 'Saturday': 'Sabtu',
@@ -4421,6 +4465,7 @@ def _data_absensi_export_rows_from_request():
             a,
             siaga_ket_map,
             peg.NIP,
+            master_potongan_codes,
         )
         rows.append({
             'no': no,
@@ -4443,17 +4488,11 @@ def _data_absensi_export_rows_from_request():
             'persen_pot_psw': a.PERSEN_POT_PSW,
             'ket': ket,
             'ket_class': ket_class,
-            'ket_color': {
-                'dinas-orange': 'FDE2B3',
-                'dinas-blue': 'DCE6F1',
-                'siaga': 'E4D7F5',
-                'wfh': 'D9F0F2',
-                'cuti': 'E8DDF5',
-                'sakit': 'F8D7DA',
-                'ijin': 'FFF0C2',
-                'alpa': 'F5C2C7',
-                'normal': '',
-            }.get(ket_class, ''),
+            'ket_color': (
+                REPORT_COLORS.get(ket_class, '')
+                if ket_class != 'normal'
+                else ''
+            ),
         })
 
     return rows, f'{tgl_awal_str} s/d {tgl_akhir_str}'
@@ -4646,6 +4685,7 @@ def api_normalisasi_absensi_view():
             tgl_awal,
             tgl_akhir,
         )
+        master_potongan_codes = _load_master_potongan_meal_cut_codes()
 
         for i, (a, peg, unit) in enumerate(
             results,
@@ -4656,6 +4696,7 @@ def api_normalisasi_absensi_view():
                 a,
                 siaga_ket_map,
                 peg.NIP,
+                master_potongan_codes,
             )
 
             data.append({
