@@ -49,13 +49,6 @@
                             <option value="UnitKerjaName">Unit</option>
                         </select>
                         <input type="text" id="filterValue1" class="hris-input" placeholder="Pilih field terlebih dahulu...">
-                        <span class="hris-form-separator">Dan</span>
-                        <select id="filterField2" class="hris-select">
-                            <option value="">- Pilih Field -</option>
-                            <option value="Nama">Nama</option>
-                            <option value="UnitKerjaName">Unit</option>
-                        </select>
-                        <input type="text" id="filterValue2" class="hris-input" placeholder="Pilih field terlebih dahulu...">
                     </div>
                 </div>
             </div>
@@ -259,6 +252,119 @@
         text-align: center !important;
         color: #FFFFFF !important;
     }
+
+    .hris-filter-value-container,
+    .hris-unit-multiselect {
+        position: relative;
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .hris-autocomplete-menu {
+        position: absolute;
+        z-index: 1050;
+        top: calc(100% + 4px);
+        left: 0;
+        right: 0;
+        max-height: 280px;
+        overflow-y: auto;
+        background: #FFFFFF;
+        border: 1px solid #D9E1EA;
+        border-radius: 10px;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18);
+        padding: 4px;
+    }
+
+    .hris-autocomplete-item {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        border: 0;
+        background: transparent;
+        padding: 9px 10px;
+        border-radius: 7px;
+        text-align: left;
+        cursor: pointer;
+        color: #1E293B;
+    }
+
+    .hris-autocomplete-item:hover {
+        background: #F1F5F9;
+    }
+
+    .hris-autocomplete-name {
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .hris-autocomplete-nip {
+        color: #64748B;
+        font-size: 12px;
+        white-space: nowrap;
+    }
+
+    .hris-unit-multiselect-trigger {
+        width: 100%;
+        min-height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        border: 1px solid #D9E1EA;
+        border-radius: 8px;
+        background: #FFFFFF;
+        padding: 0 12px;
+        color: #334155;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .hris-unit-multiselect-menu {
+        position: absolute;
+        z-index: 1050;
+        top: calc(100% + 4px);
+        left: 0;
+        right: 0;
+        max-height: 300px;
+        overflow-y: auto;
+        background: #FFFFFF;
+        border: 1px solid #D9E1EA;
+        border-radius: 10px;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18);
+        padding: 7px;
+    }
+
+    .hris-unit-checkbox {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 8px 9px;
+        border-radius: 7px;
+        cursor: pointer;
+        color: #1E293B;
+        margin: 0;
+    }
+
+    .hris-unit-checkbox:hover {
+        background: #F1F5F9;
+    }
+
+    .hris-unit-checkbox input {
+        width: 16px;
+        height: 16px;
+        margin: 0;
+    }
+
+    .hris-unit-empty {
+        padding: 10px;
+        color: #64748B;
+        font-size: 13px;
+    }
+
 </style>
 
 {% block script %}
@@ -267,8 +373,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const tglAkhir = document.getElementById('tglActivityAkhir');
     const filterField1 = document.getElementById('filterField1');
     let filterValue1 = document.getElementById('filterValue1');
-    const filterField2 = document.getElementById('filterField2');
-    let filterValue2 = document.getElementById('filterValue2');
 
     // ============================================================
     // FILTER PEGAWAI
@@ -287,140 +391,288 @@ document.addEventListener('DOMContentLoaded', function () {
         return String(value ?? '').trim().toUpperCase();
     }
 
-    function createNamaAutocomplete(input, datalistId) {
-        input.setAttribute('list', datalistId);
+    function createNamaAutocomplete(input, datalistId, container) {
         input.setAttribute('autocomplete', 'off');
 
         let timer = null;
 
+        const dropdown = document.createElement('div');
+        dropdown.className = 'hris-autocomplete-menu';
+        dropdown.id = datalistId;
+        dropdown.setAttribute('role', 'listbox');
+        dropdown.style.display = 'none';
+        container.appendChild(dropdown);
+
+        function closeDropdown() {
+            dropdown.style.display = 'none';
+        }
+
+        function renderSuggestions(rows) {
+            dropdown.innerHTML = '';
+
+            if (!rows.length) {
+                closeDropdown();
+                return;
+            }
+
+            rows.forEach(function (row) {
+                const nama = String(row.nama || '').trim();
+                const nip = String(row.nip || '').trim();
+
+                if (!nama) return;
+
+                const item = document.createElement('button');
+                item.type = 'button';
+                item.className = 'hris-autocomplete-item';
+
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'hris-autocomplete-name';
+                nameSpan.textContent = nama;
+
+                const nipSpan = document.createElement('span');
+                nipSpan.className = 'hris-autocomplete-nip';
+                nipSpan.textContent = nip;
+
+                item.appendChild(nameSpan);
+                if (nip) item.appendChild(nipSpan);
+
+                item.addEventListener('mousedown', function (event) {
+                    event.preventDefault();
+                });
+
+                item.addEventListener('click', function () {
+                    input.value = nama;
+                    closeDropdown();
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                });
+
+                dropdown.appendChild(item);
+            });
+
+            if (dropdown.children.length) {
+                dropdown.style.display = 'block';
+            } else {
+                closeDropdown();
+            }
+        }
+
         input.addEventListener('input', function () {
             const keyword = input.value.trim();
-            const datalist = document.getElementById(datalistId);
-
-            if (!datalist) return;
 
             clearTimeout(timer);
 
             if (keyword.length < 2) {
-                datalist.innerHTML = '';
+                dropdown.innerHTML = '';
+                closeDropdown();
                 return;
             }
 
             timer = setTimeout(function () {
                 fetch(
                     '/api/search_pegawai?keyword='
-                    + encodeURIComponent(keyword)
+                    + encodeURIComponent(keyword),
+                    {
+                        credentials: 'same-origin',
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    }
                 )
-                    .then(r => r.json())
-                    .then(res => {
-                        const rows = Array.isArray(res.data)
-                            ? res.data
-                            : [];
-
-                        datalist.innerHTML = rows.map(function (row) {
-                            const nama = String(row.nama || '').replace(/"/g, '&quot;');
-                            const nip = String(row.nip || '').replace(/"/g, '&quot;');
-
-                            return '<option value="' + nama + '" label="' + nip + '"></option>';
-                        }).join('');
+                    .then(function (response) {
+                        if (!response.ok) {
+                            throw new Error('HTTP ' + response.status);
+                        }
+                        return response.json();
                     })
-                    .catch(function () {
-                        datalist.innerHTML = '';
+                    .then(function (res) {
+                        renderSuggestions(
+                            Array.isArray(res.data) ? res.data : []
+                        );
+                    })
+                    .catch(function (error) {
+                        console.error(
+                            'Gagal autocomplete pegawai:',
+                            error
+                        );
+                        dropdown.innerHTML = '';
+                        closeDropdown();
                     });
             }, 200);
         });
+
+        input.addEventListener('focus', function () {
+            if (input.value.trim().length >= 2 && dropdown.children.length) {
+                dropdown.style.display = 'block';
+            }
+        });
+
+        document.addEventListener('click', function (event) {
+            if (!container.contains(event.target)) {
+                closeDropdown();
+            }
+        });
     }
 
-    function buildFilterValueControl(index, field) {
-        const current =
-            index === 1 ? filterValue1 : filterValue2;
-
+    function buildUnitMultiSelect(index) {
+        const current = filterValue1;
         const oldValue = current
             ? String(current.value || '')
             : '';
 
-        const datalistId = 'filterNamaDatalist' + index;
+        const selectedValues = new Set(
+            oldValue
+                .split('||')
+                .map(function (value) {
+                    return value.trim();
+                })
+                .filter(Boolean)
+        );
 
-        let replacement;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'hris-unit-multiselect';
+        wrapper.id = 'filterUnitWrapper' + index;
 
-        if (field === 'UnitKerjaName') {
-            replacement = document.createElement('select');
-            replacement.className = 'hris-select';
-            replacement.id = 'filterValue' + index;
+        const trigger = document.createElement('button');
+        trigger.type = 'button';
+        trigger.className = 'hris-unit-multiselect-trigger';
+        trigger.innerHTML = '<span class="hris-unit-multiselect-label">Pilih Unit Aktif</span><span class="hris-unit-multiselect-chevron">▾</span>';
 
-            const placeholder = document.createElement('option');
-            placeholder.value = '';
-            placeholder.textContent = '- Pilih Unit Aktif -';
-            replacement.appendChild(placeholder);
+        const menu = document.createElement('div');
+        menu.className = 'hris-unit-multiselect-menu';
+        menu.style.display = 'none';
 
-            activeUnitOptions.forEach(function (unit) {
-                const option = document.createElement('option');
-                option.value = unit.value;
-                option.textContent = unit.label;
-                replacement.appendChild(option);
+        const hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.id = 'filterValue' + index;
+        hidden.value = Array.from(selectedValues).join('||');
+
+        function updateLabel() {
+            const values = Array.from(selectedValues);
+            const label = trigger.querySelector('.hris-unit-multiselect-label');
+
+            if (!values.length) {
+                label.textContent = 'Pilih Unit Aktif';
+                return;
+            }
+
+            if (values.length === 1) {
+                label.textContent = values[0];
+                return;
+            }
+
+            label.textContent = values.length + ' Unit Dipilih';
+        }
+
+        activeUnitOptions.forEach(function (unit) {
+            const label = document.createElement('label');
+            label.className = 'hris-unit-checkbox';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.value = unit.value;
+            checkbox.checked = selectedValues.has(unit.value);
+
+            const text = document.createElement('span');
+            text.textContent = unit.label;
+
+            checkbox.addEventListener('change', function () {
+                if (checkbox.checked) {
+                    selectedValues.add(unit.value);
+                } else {
+                    selectedValues.delete(unit.value);
+                }
+
+                hidden.value = Array.from(selectedValues).join('||');
+                updateLabel();
             });
 
-            if (activeUnitOptions.some(function (unit) {
-                return unit.value === oldValue;
-            })) {
-                replacement.value = oldValue;
-            }
-        } else {
-            replacement = document.createElement('input');
-            replacement.type = 'text';
-            replacement.id = 'filterValue' + index;
-            replacement.className = 'hris-input';
-            replacement.placeholder =
-                field === 'Nama'
-                    ? 'Ketik nama pegawai...'
-                    : 'Pilih field terlebih dahulu...';
+            label.appendChild(checkbox);
+            label.appendChild(text);
+            menu.appendChild(label);
+        });
 
-            replacement.value = oldValue;
-
-            if (field === 'Nama') {
-                replacement.setAttribute('list', datalistId);
-                createNamaAutocomplete(
-                    replacement,
-                    datalistId
-                );
-            }
+        if (!activeUnitOptions.length) {
+            const empty = document.createElement('div');
+            empty.className = 'hris-unit-empty';
+            empty.textContent = 'Tidak ada Unit Kerja aktif.';
+            menu.appendChild(empty);
         }
 
-        const oldDatalist = document.getElementById(datalistId);
-        if (oldDatalist) {
-            oldDatalist.remove();
+        trigger.addEventListener('click', function (event) {
+            event.stopPropagation();
+
+            const isOpen = menu.style.display === 'block';
+            menu.style.display = isOpen ? 'none' : 'block';
+        });
+
+        document.addEventListener('click', function (event) {
+            if (!wrapper.contains(event.target)) {
+                menu.style.display = 'none';
+            }
+        });
+
+        wrapper.appendChild(trigger);
+        wrapper.appendChild(menu);
+        wrapper.appendChild(hidden);
+
+        updateLabel();
+
+        return wrapper;
+    }
+
+    function buildFilterValueControl(index, field) {
+        const current = filterValue1;
+        const oldValue = current
+            ? String(current.value || '')
+            : '';
+
+        const currentControl =
+            current.closest('.hris-filter-value-container, .hris-unit-multiselect')
+            || current;
+
+        if (field === 'UnitKerjaName') {
+            const wrapper = buildUnitMultiSelect(index);
+            currentControl.replaceWith(wrapper);
+            filterValue1 = wrapper.querySelector('#filterValue' + index);
+            return;
         }
 
-        current.replaceWith(replacement);
+        const container = document.createElement('div');
+        container.className = 'hris-filter-value-container';
+
+        const replacement = document.createElement('input');
+        replacement.type = 'text';
+        replacement.id = 'filterValue' + index;
+        replacement.className = 'hris-input';
+        replacement.placeholder =
+            field === 'Nama'
+                ? 'Ketik nama pegawai...'
+                : 'Pilih field terlebih dahulu...';
+        replacement.value = oldValue;
+
+        container.appendChild(replacement);
 
         if (field === 'Nama') {
-            const datalist = document.createElement('datalist');
-            datalist.id = datalistId;
-            replacement.insertAdjacentElement('afterend', datalist);
+            createNamaAutocomplete(
+                replacement,
+                'filterNamaAutocomplete' + index,
+                container
+            );
         }
 
-        if (index === 1) {
-            filterValue1 = replacement;
-        } else {
-            filterValue2 = replacement;
-        }
+        currentControl.replaceWith(container);
+        filterValue1 = replacement;
     }
 
     function configureFilterValue(index) {
-        const field =
-            index === 1
-                ? filterField1.value
-                : filterField2.value;
-
-        buildFilterValueControl(index, field);
+        buildFilterValueControl(
+            index,
+            filterField1.value
+        );
     }
 
     filterField1.addEventListener('change', function () {
         configureFilterValue(1);
-    });
-
-    filterField2.addEventListener('change', function () {
-        configureFilterValue(2);
     });
 
     // Ambil hanya Unit Kerja yang dipakai secara operasional.
@@ -460,14 +712,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 );
             });
 
-            // Jika operator sudah memilih Unit sebelum daftar selesai
-            // dimuat, bangun ulang dropdown-nya.
             if (filterField1.value === 'UnitKerjaName') {
                 buildFilterValueControl(1, filterField1.value);
-            }
-
-            if (filterField2.value === 'UnitKerjaName') {
-                buildFilterValueControl(2, filterField2.value);
             }
         })
         .catch(function (err) {
@@ -563,8 +809,6 @@ document.addEventListener('DOMContentLoaded', function () {
             tgl_akhir: tglAkhir.value,
             filter_field1: filterField1.value,
             filter_value1: filterValue1.value,
-            filter_field2: filterField2.value,
-            filter_value2: filterValue2.value,
         };
     }
 
@@ -1031,8 +1275,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 tgl_akhir: tglAkhir.value,
                 filter_field1: filterField1.value,
                 filter_value1: filterValue1.value,
-                filter_field2: filterField2.value,
-                filter_value2: filterValue2.value,
             })
         })
             .then(r => r.json())
