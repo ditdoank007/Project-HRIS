@@ -655,7 +655,14 @@
 
             var formData = new FormData();
             formData.append('filter_field', field);
-            formData.append('filter_value', value);
+            formData.append(
+                'filter_value',
+                field === 'Nama'
+                    ? value
+                    : units.map(function (check) {
+                        return check.value;
+                    }).join(',')
+            );
 
             if (field === 'UnitKerjaName') {
                 units.forEach(function (check) {
@@ -750,10 +757,18 @@
             var value = filterValue.value.trim();
             var units = selectedChecks();
 
-            if (!field || !value || !tglAwal.value || !tglAkhir.value) {
+            if (!field || !tglAwal.value || !tglAkhir.value) {
                 showAlert(
                     'warning',
                     'Jalankan laporan terlebih dahulu.'
+                );
+                return;
+            }
+
+            if (field === 'Nama' && !value) {
+                showAlert(
+                    'warning',
+                    'Nama pegawai belum dipilih.'
                 );
                 return;
             }
