@@ -88,30 +88,43 @@ def _is_placeholder_time(value):
 
 def _absensi_rekap_priority(absensi):
     """
-    Prioritas ketika satu NIP + TglKerja mempunyai beberapa ABSENSI
-    karena pegawai memiliki lebih dari satu FingerID.
+    Prioritas data Rekap berdasarkan HASIL EXPORT ABSENSI.
 
-    Shift 2/SIAGA harus menang atas record reguler pada tanggal target.
-    Setelah itu prioritaskan record yang mempunyai jam aktual non-00:00.
+    Satu NIP dapat mempunyai lebih dari satu FingerID dan ABSENSI
+    mempunyai primary key FingerID + TglKerja. Karena itu Rekap
+    harus memilih satu hasil final untuk pasangan NIP + TglKerja.
+
+    Aturan universal:
+      1. Shift 2/SIAGA dengan IN aktual -> paling tinggi.
+      2. Shift 2/SIAGA dengan OUT aktual -> berikutnya.
+      3. Record reguler dengan IN/OUT aktual.
+      4. Record Shift 2/SIAGA yang hanya berisi placeholder.
+      5. Record reguler placeholder.
+
+    Dengan aturan ini, Shift 2 tanggal H yang diekspor sebagai
+    TglKerja H+1 selalu dipakai untuk IN H dan OUT H+1.
+    Tidak ada hardcode pegawai atau tanggal.
     """
-    score = 0
+    is_shift2 = _is_shift2_absensi(absensi)
+    has_in = not _is_placeholder_time(absensi.TGL_JAM_IN)
+    has_out = not _is_placeholder_time(absensi.TGL_JAM_OUT)
 
-    if _is_shift2_absensi(absensi):
-        score += 100
+    if is_shift2 and has_in:
+        return (5, 1 if has_out else 0)
 
-    if not _is_placeholder_time(absensi.TGL_JAM_IN):
-        score += 20
+    if is_shift2 and has_out:
+        return (4, 1)
 
-    if not _is_placeholder_time(absensi.TGL_JAM_OUT):
-        score += 10
+    if has_in:
+        return (3, 1 if has_out else 0)
 
-    if str(absensi.HISTORY_TRANSAKSI_IN or '').strip():
-        score += 2
+    if has_out:
+        return (2, 1)
 
-    if str(absensi.TRANSAKSI_IN or '').strip():
-        score += 1
+    if is_shift2:
+        return (1, 0)
 
-    return score
+    return (0, 0)
 
 
 def _jam_in_rekap(absensi):
@@ -223,13 +236,15 @@ def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
         )
         current = absensi_index.get(key)
 
-        # Satu pegawai dapat mempunyai beberapa FingerID. Jangan biarkan
-        # urutan query acak menimpa record Shift 2 yang sudah benar dengan
-        # record reguler/sentinel 00:00 pada NIP + tanggal kerja yang sama.
+        # Satu pegawai dapat mempunyai beberapa FingerID. Rekap
+        # mengambil HASIL EXPORT yang paling relevan untuk NIP + tanggal.
+        # Khusus Shift 2, row target H+1 harus menang selama memiliki
+        # fingerprint IN aktual dari ActivityDate H.
+        candidate_priority = _absensi_rekap_priority(absensi)
+
         if (
             current is None
-            or _absensi_rekap_priority(absensi)
-            > _absensi_rekap_priority(current)
+            or candidate_priority > _absensi_rekap_priority(current)
         ):
             absensi_index[key] = absensi
 
