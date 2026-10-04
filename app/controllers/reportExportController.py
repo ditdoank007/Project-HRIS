@@ -76,8 +76,8 @@ def ket_color_key(code, status_um=None, master_potongan_codes=None):
 REPORT_LEGEND = (
     ("holiday", "HARI LIBUR"),
     ("siaga", "SIAGA"),
-    ("blue", "SPRIN/DL TIDAK MEMOTONG UANG MAKAN"),
-    ("orange", "SPRIN/DL MEMOTONG UANG MAKAN"),
+    ("blue", "TIDAK MEMOTONG UANG MAKAN"),
+    ("orange", "MEMOTONG UANG MAKAN"),
     ("wfh", "ABSEN ONLINE WFH"),
 )
 
