@@ -3223,8 +3223,25 @@ body.hris-sidebar-mini .hris-submenu {
 
 
 /* ============================================================
-   HRIS DATA ABSENSI — FILTER FIELD / VALUE
-   Global reusable filter pattern.
+   HRIS REBORN — GLOBAL FILTER FIELD STANDARD
+   Reusable pattern for all HRIS Reborn search/filter forms.
+
+   Standard desktop layout:
+     Field selector : 180px
+     Value control  : 380px
+
+   Unit multi-select:
+     - appears below the field row
+     - 3-row column flow
+     - unit order must follow Master Unit Kerja / URUT_REPORT
+
+   Standard markup:
+     <div class="hris-form-inline hris-filter-pair">
+       <select class="hris-select">...</select>
+       <div class="hris-filter-value-container">...</div>
+     </div>
+
+   Pages should NOT redefine these filter styles locally.
    ============================================================ */
 .hris-filter-pair {
   display: grid !important;
