@@ -374,17 +374,32 @@ def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
     for key, activity_date in shift2_activity_dates.items():
         candidates = absensi_candidates.get(key, [])
 
+        # Hasil export final Shift-2 pada ABSENSI menggunakan:
+        #   TglKerja = H+1
+        #   TglJamIn = H+1 + jam IN
+        #   TglJamOut = H+1 + jam OUT
+        #   HistoryTransaksiIn = SIAGA
+        #
+        # LOG_ACTIVITIY hanya menentukan bahwa key (NIP, H+1)
+        # memang merupakan Shift-2 HADIR. Jam tetap 100% berasal
+        # dari ABSENSI final.
         shift2_export = [
             candidate
             for candidate in candidates
             if (
                 not _is_placeholder_time(candidate.TGL_JAM_IN)
-                and candidate.TGL_JAM_IN.date() == activity_date
+                and (
+                    str(
+                        candidate.HISTORY_TRANSAKSI_IN or ''
+                    ).strip().upper() == 'SIAGA'
+                    or candidate.TGL_JAM_IN.date() == key[1]
+                    or candidate.TGL_JAM_IN.date() == activity_date
+                )
             )
         ]
 
         if shift2_export:
-            # Utamakan hasil yang juga mempunyai OUT aktual pada H+1.
+            # Utamakan row SIAGA, lalu OUT aktual pada TglKerja H+1.
             selected = max(
                 shift2_export,
                 key=lambda candidate: (
