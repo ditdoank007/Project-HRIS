@@ -3712,9 +3712,31 @@ body.hris-sidebar-mini .hris-submenu {
 }
 
 .hris-unit-selector--report .hris-unit-options {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   max-height: none;
   overflow-y: visible;
+}
+
+.hris-rekap-filter .hris-unit-selector {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.hris-rekap-filter .hris-unit-selector-toolbar {
+  border-top: 1px solid var(--ui-border);
+  border-left: 1px solid var(--ui-border);
+  border-right: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-sm) var(--ui-radius-sm) 0 0;
+}
+
+.hris-rekap-filter .hris-unit-search-row {
+  margin-top: 10px;
+}
+
+.hris-rekap-filter .hris-unit-options {
+  padding-left: 0;
+  padding-right: 0;
 }
 
 .hris-unit-selector--report .hris-unit-option {
