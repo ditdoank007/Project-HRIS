@@ -204,14 +204,14 @@
                         <table class="hris-table-modern">
                             <thead>
                                 <tr>
-                                    <th>No</th><th>Nama</th><th>Fingerid</th><th>Tgl Kerja</th><th>Hari</th>
-                                    <th>Baku (In)</th><th>Baku (Out)</th><th>In</th><th>Out</th>
-                                    <th>Awal TLM</th><th>Total TLM</th><th>Tk TLM</th><th>Pot TLM (%)</th>
-                                    <th>Total PSW</th><th>Tk PSW</th><th>Pot PSW (%)</th>
+                                    <th>No.</th><th>Hari</th><th>Tgl Kerja</th><th>FingerID</th><th>Nama</th>
+                                    <th>Baku (IN)</th><th>Baku (OUT)</th><th>IN</th><th>OUT</th>
+                                    <th>Awal TLM</th><th>Total TLM</th><th>TK TLM</th><th>Pot TLM (%)</th>
+                                    <th>Awal PSW</th><th>Total PSW</th><th>TK PSW</th><th>Pot PSW (%)</th><th>KET</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr><td colspan="16" class="hris-empty">No records to display.</td></tr>
+                                <tr><td colspan="18" class="hris-empty">No records to display.</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -236,6 +236,18 @@
     </div>
 </div>
 {% endblock %}
+
+<style>
+    #export-pane .hris-table-modern tbody tr.absensi-ket-dinas-orange > td { background: #FDE2B3 !important; }
+    #export-pane .hris-table-modern tbody tr.absensi-ket-dinas-blue > td { background: #DCE6F1 !important; }
+    #export-pane .hris-table-modern tbody tr.absensi-ket-siaga > td { background: #E4D7F5 !important; }
+    #export-pane .hris-table-modern tbody tr.absensi-ket-wfh > td { background: #D9F0F2 !important; }
+    #export-pane .hris-table-modern tbody tr.absensi-ket-cuti > td { background: #E8DDF5 !important; }
+    #export-pane .hris-table-modern tbody tr.absensi-ket-sakit > td { background: #F8D7DA !important; }
+    #export-pane .hris-table-modern tbody tr.absensi-ket-ijin > td { background: #FFF0C2 !important; }
+    #export-pane .hris-table-modern tbody tr.absensi-ket-alpa > td { background: #F5C2C7 !important; }
+    #export-pane .hris-table-modern td.absensi-ket-code { font-weight: 700; text-align: center !important; }
+</style>
 
 {% block script %}
 document.addEventListener('DOMContentLoaded', function () {
@@ -525,6 +537,19 @@ document.addEventListener('DOMContentLoaded', function () {
         Thursday: 'Kamis',
         Friday: 'Jumat',
         Saturday: 'Sabtu'
+    };
+
+    // Warna KET mengikuti legenda kategori hasil ABSENSI final.
+    const ketRowClasses = {
+        'dinas-orange': 'absensi-ket-dinas-orange',
+        'dinas-blue': 'absensi-ket-dinas-blue',
+        'siaga': 'absensi-ket-siaga',
+        'wfh': 'absensi-ket-wfh',
+        'cuti': 'absensi-ket-cuti',
+        'sakit': 'absensi-ket-sakit',
+        'ijin': 'absensi-ket-ijin',
+        'alpa': 'absensi-ket-alpa',
+        'normal': ''
     };
 
     function formatHariIndonesia(value) {
@@ -977,15 +1002,15 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!params.tgl_awal || !params.tgl_akhir) {
                 renderEmptyRow(
                     tbodyExport,
-                    16,
+                    18,
                     'Periode tanggal belum diisi.'
                 );
                 return;
             }
 
             renderEmptyRow(
-                tbodyExport,
-                16,
+                    tbodyExport,
+                    18,
                 'Mengambil data ABSENSI...'
             );
 
@@ -998,8 +1023,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     if (res.error) {
                         renderEmptyRow(
-                            tbodyExport,
-                            16,
+                    tbodyExport,
+                    18,
                             res.error
                         );
                         return;
@@ -1019,8 +1044,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     );
 
                     renderEmptyRow(
-                        tbodyExport,
-                        16,
+                    tbodyExport,
+                    18,
                         'Gagal mengambil data ABSENSI.'
                     );
                 });
@@ -1032,53 +1057,37 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!rows || rows.length === 0) {
             renderEmptyRow(
                 tbodyExport,
-                16,
+                18,
                 'Tidak ada data hasil export.'
             );
             return;
         }
 
-        const hariIndonesia = {
-            Sunday: 'Minggu',
-            Monday: 'Senin',
-            Tuesday: 'Selasa',
-            Wednesday: 'Rabu',
-            Thursday: 'Kamis',
-            Friday: 'Jumat',
-            Saturday: 'Sabtu'
-        };
-
-        tbodyExport.innerHTML = rows.map(r => `
-            <tr>
-                <td>${r.no ?? '-'}</td>
-
-                <td style="text-align: left !important;">
-                    ${r.nama || '-'}
-                </td>
-
-                <td>${r.finger_id || '-'}</td>
-
-                <td>${r.tgl_kerja || '-'}</td>
-
-                <td style="text-align: left !important;">
-                    ${hariIndonesia[r.hari] || r.hari || '-'}
-                </td>
-
-                <td>${r.jam_baku_in || '-'}</td>
-                <td>${r.jam_baku_out || '-'}</td>
-                <td>${r.jam_in || '-'}</td>
-                <td>${r.jam_out || '-'}</td>
-
-                <td>${r.awal_tlm ?? '-'}</td>
-                <td>${r.total_tlm ?? '-'}</td>
-                <td>${r.tingkat_tlm ?? '-'}</td>
-                <td>${r.persen_pot_tlm ?? '-'}</td>
-
-                <td>${r.total_psw ?? '-'}</td>
-                <td>${r.tingkat_psw ?? '-'}</td>
-                <td>${r.persen_pot_psw ?? '-'}</td>
-            </tr>
-        `).join('');
+        tbodyExport.innerHTML = rows.map(r => {
+            const rowClass = ketRowClasses[r.ket_class] || '';
+            return `
+                <tr class="${rowClass}">
+                    <td>${r.no ?? '-'}</td>
+                    <td style="text-align: left !important;">${hariIndonesia[r.hari] || r.hari || '-'}</td>
+                    <td>${r.tgl_kerja || '-'}</td>
+                    <td>${r.finger_id || '-'}</td>
+                    <td style="text-align: left !important;">${r.nama || '-'}</td>
+                    <td>${r.jam_baku_in || '-'}</td>
+                    <td>${r.jam_baku_out || '-'}</td>
+                    <td>${r.jam_in || '-'}</td>
+                    <td>${r.jam_out || '-'}</td>
+                    <td>${r.awal_tlm ?? '-'}</td>
+                    <td>${r.total_tlm ?? '-'}</td>
+                    <td>${r.tingkat_tlm ?? '-'}</td>
+                    <td>${r.persen_pot_tlm ?? '-'}</td>
+                    <td>${r.awal_psw ?? '-'}</td>
+                    <td>${r.total_psw ?? '-'}</td>
+                    <td>${r.tingkat_psw ?? '-'}</td>
+                    <td>${r.persen_pot_psw ?? '-'}</td>
+                    <td class="absensi-ket-code">${r.ket || '-'}</td>
+                </tr>
+            `;
+        }).join('');
     }
 
     // ================= TAB 4: Penentuan Tanggal Closing Absensi =================
