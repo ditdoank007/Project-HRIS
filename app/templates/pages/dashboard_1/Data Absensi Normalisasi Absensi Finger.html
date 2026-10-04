@@ -46,20 +46,16 @@
                         <select id="filterField1" class="hris-select">
                             <option value="">- Pilih Field -</option>
                             <option value="Nama">Nama</option>
-                            <option value="NIP">NIP</option>
                             <option value="UnitKerjaName">Unit</option>
-                            <option value="Jabatan">Jabatan</option>
                         </select>
-                        <input type="text" id="filterValue1" class="hris-input" placeholder="Nilai filter...">
+                        <input type="text" id="filterValue1" class="hris-input" placeholder="Pilih field terlebih dahulu...">
                         <span class="hris-form-separator">Dan</span>
                         <select id="filterField2" class="hris-select">
                             <option value="">- Pilih Field -</option>
                             <option value="Nama">Nama</option>
-                            <option value="NIP">NIP</option>
                             <option value="UnitKerjaName">Unit</option>
-                            <option value="Jabatan">Jabatan</option>
                         </select>
-                        <input type="text" id="filterValue2" class="hris-input" placeholder="Nilai filter...">
+                        <input type="text" id="filterValue2" class="hris-input" placeholder="Pilih field terlebih dahulu...">
                     </div>
                 </div>
             </div>
@@ -270,9 +266,211 @@ document.addEventListener('DOMContentLoaded', function () {
     const tglAwal = document.getElementById('tglActivityAwal');
     const tglAkhir = document.getElementById('tglActivityAkhir');
     const filterField1 = document.getElementById('filterField1');
-    const filterValue1 = document.getElementById('filterValue1');
+    let filterValue1 = document.getElementById('filterValue1');
     const filterField2 = document.getElementById('filterField2');
-    const filterValue2 = document.getElementById('filterValue2');
+    let filterValue2 = document.getElementById('filterValue2');
+
+    // ============================================================
+    // FILTER PEGAWAI
+    //
+    // Field yang tersedia:
+    //   Nama -> input + autocomplete pegawai operasional
+    //   Unit -> dropdown unit aktif
+    //
+    // NIP dan Jabatan sengaja tidak disediakan karena operator
+    // lebih sering mencari berdasarkan Nama atau Unit.
+    // ============================================================
+
+    const activeUnitOptions = [];
+
+    function normalizeActiveFlag(value) {
+        return String(value ?? '').trim().toUpperCase();
+    }
+
+    function createNamaAutocomplete(input, datalistId) {
+        input.setAttribute('list', datalistId);
+        input.setAttribute('autocomplete', 'off');
+
+        let timer = null;
+
+        input.addEventListener('input', function () {
+            const keyword = input.value.trim();
+            const datalist = document.getElementById(datalistId);
+
+            if (!datalist) return;
+
+            clearTimeout(timer);
+
+            if (keyword.length < 2) {
+                datalist.innerHTML = '';
+                return;
+            }
+
+            timer = setTimeout(function () {
+                fetch(
+                    '/api/search_pegawai?keyword='
+                    + encodeURIComponent(keyword)
+                )
+                    .then(r => r.json())
+                    .then(res => {
+                        const rows = Array.isArray(res.data)
+                            ? res.data
+                            : [];
+
+                        datalist.innerHTML = rows.map(function (row) {
+                            const nama = String(row.nama || '').replace(/"/g, '&quot;');
+                            const nip = String(row.nip || '').replace(/"/g, '&quot;');
+
+                            return '<option value="' + nama + '" label="' + nip + '"></option>';
+                        }).join('');
+                    })
+                    .catch(function () {
+                        datalist.innerHTML = '';
+                    });
+            }, 200);
+        });
+    }
+
+    function buildFilterValueControl(index, field) {
+        const current =
+            index === 1 ? filterValue1 : filterValue2;
+
+        const oldValue = current
+            ? String(current.value || '')
+            : '';
+
+        const datalistId = 'filterNamaDatalist' + index;
+
+        let replacement;
+
+        if (field === 'UnitKerjaName') {
+            replacement = document.createElement('select');
+            replacement.className = 'hris-select';
+            replacement.id = 'filterValue' + index;
+
+            const placeholder = document.createElement('option');
+            placeholder.value = '';
+            placeholder.textContent = '- Pilih Unit Aktif -';
+            replacement.appendChild(placeholder);
+
+            activeUnitOptions.forEach(function (unit) {
+                const option = document.createElement('option');
+                option.value = unit.value;
+                option.textContent = unit.label;
+                replacement.appendChild(option);
+            });
+
+            if (activeUnitOptions.some(function (unit) {
+                return unit.value === oldValue;
+            })) {
+                replacement.value = oldValue;
+            }
+        } else {
+            replacement = document.createElement('input');
+            replacement.type = 'text';
+            replacement.id = 'filterValue' + index;
+            replacement.className = 'hris-input';
+            replacement.placeholder =
+                field === 'Nama'
+                    ? 'Ketik nama pegawai...'
+                    : 'Pilih field terlebih dahulu...';
+
+            replacement.value = oldValue;
+
+            if (field === 'Nama') {
+                replacement.setAttribute('list', datalistId);
+                createNamaAutocomplete(
+                    replacement,
+                    datalistId
+                );
+            }
+        }
+
+        current.replaceWith(replacement);
+
+        if (field === 'Nama') {
+            const datalist = document.createElement('datalist');
+            datalist.id = datalistId;
+            replacement.insertAdjacentElement('afterend', datalist);
+        }
+
+        if (index === 1) {
+            filterValue1 = replacement;
+        } else {
+            filterValue2 = replacement;
+        }
+    }
+
+    function configureFilterValue(index) {
+        const field =
+            index === 1
+                ? filterField1.value
+                : filterField2.value;
+
+        buildFilterValueControl(index, field);
+    }
+
+    filterField1.addEventListener('change', function () {
+        configureFilterValue(1);
+    });
+
+    filterField2.addEventListener('change', function () {
+        configureFilterValue(2);
+    });
+
+    // Ambil hanya Unit Kerja yang dipakai secara operasional.
+    // Endpoint master tetap dipakai agar daftar selalu mengikuti
+    // data master terbaru, bukan hard-code di halaman.
+    fetch('/api/unit-kerja/list')
+        .then(r => r.json())
+        .then(res => {
+            const rows = Array.isArray(res.data)
+                ? res.data
+                : [];
+
+            rows.forEach(function (row) {
+                const isUse = normalizeActiveFlag(row.is_use);
+
+                if (!['Y', '1'].includes(isUse)) {
+                    return;
+                }
+
+                const value = String(
+                    row.nama_unit_kerja || ''
+                ).trim();
+
+                if (!value) return;
+
+                activeUnitOptions.push({
+                    value: value,
+                    label: value
+                });
+            });
+
+            activeUnitOptions.sort(function (a, b) {
+                return a.label.localeCompare(
+                    b.label,
+                    'id',
+                    { sensitivity: 'base' }
+                );
+            });
+
+            // Jika operator sudah memilih Unit sebelum daftar selesai
+            // dimuat, bangun ulang dropdown-nya.
+            if (filterField1.value === 'UnitKerjaName') {
+                buildFilterValueControl(1, filterField1.value);
+            }
+
+            if (filterField2.value === 'UnitKerjaName') {
+                buildFilterValueControl(2, filterField2.value);
+            }
+        })
+        .catch(function (err) {
+            console.error(
+                'Gagal memuat Unit Kerja aktif:',
+                err
+            );
+        });
 
     // Set default tanggal berdasarkan tanggal lokal operator.
     // Tanggal awal  = hari ini - 8 hari.
@@ -369,11 +567,6 @@ document.addEventListener('DOMContentLoaded', function () {
         tbody.innerHTML = `<tr><td colspan="${colspan}" style="padding:25px;" class="text-start text-muted ps-3">${msg}</td></tr>`;
     }
 
-    // ---------- field filter ----------
-    // Pilihan filter mengikuti workflow AbsensiFP legacy:
-    // Nama, NIP, Unit, Jabatan.
-    // Unit dikirim sebagai UnitKerjaName agar pencarian berdasarkan nama unit
-    // (mis. Surabaya) konsisten dengan endpoint server.
     // Nilai select dikirim langsung ke API melalui getFilterParams().
     
     // ================= IMPORT FILE FINGER (.DAT) =================
