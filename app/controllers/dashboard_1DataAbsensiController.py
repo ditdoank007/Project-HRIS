@@ -1465,7 +1465,6 @@ def api_normalisasi_get_fields():
     Menggantikan dbMf.daMFFieldCari("EntryPeg") di VB.NET.
     """
     fields = [
-        {'field_id': 'NIP', 'field_name': 'NIP'},
         {'field_id': 'Nama', 'field_name': 'Nama'},
         {'field_id': 'UnitKerjaName', 'field_name': 'Unit Kerja'},
     ]
