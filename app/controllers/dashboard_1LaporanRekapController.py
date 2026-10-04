@@ -70,6 +70,7 @@ from app.controllers.reportExportController import (
     excel_font_color,
     pdf_color,
     pdf_legend_text,
+    format_hari_indonesia,
 )
 
 def laporan_cetak_daftar_lembur_umum():
@@ -1778,16 +1779,6 @@ def export_rekap_clock_exception_pdf():
         alignment=1,
     )
 
-    hari_indonesia = {
-        0: 'SEN',
-        1: 'SEL',
-        2: 'RAB',
-        3: 'KAM',
-        4: 'JUM',
-        5: 'SAB',
-        6: 'MIN',
-    }
-
     story = [
         Paragraph('REKAP ABSENSI BULANAN', title_style),
         Paragraph(
@@ -1807,7 +1798,7 @@ def export_rekap_clock_exception_pdf():
     ]
 
     for cal in tanggal_rows:
-        hari = hari_indonesia.get(cal.TGL_KERJA.weekday(), '')
+        hari = format_hari_indonesia(cal.TGL_KERJA)
         if _is_report_holiday(cal):
             header_text = (
                 f'<font color="#{REPORT_COLORS["holiday"]}">'
@@ -2148,7 +2139,7 @@ def export_rekap_clock_exception():
             column=idx,
             value=(
                 f'{cal.TGL_KERJA.day}\n'
-                f'{cal.TGL_KERJA.strftime("%a").upper()}'
+                f'{format_hari_indonesia(cal.TGL_KERJA)}'
             )
         )
         cell.alignment = Alignment(
