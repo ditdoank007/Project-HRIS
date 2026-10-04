@@ -4036,11 +4036,25 @@ def api_normalisasi_export():
             saved += 1
 
             # --------------------------------------------------------
-            # Simpan representasi hasil export untuk langsung
-            # dikirim kembali ke browser.
+            # Metadata presentation dari ABSENSI final.
             #
-            # Tidak perlu query ulang seluruh tabel ABSENSI.
+            # KET dan Awal PSW dihitung dari row ABSENSI yang baru
+            # saja. Tidak ada normalisasi ulang di tahap presentation.
             # --------------------------------------------------------
+            final_absensi = existing if existing else absensi
+            ket, ket_class = _absensi_ket_metadata(final_absensi)
+
+            ket_color = {
+                'dinas-orange': 'FDE2B3',
+                'dinas-blue': 'DCE6F1',
+                'siaga': 'E4D7F5',
+                'wfh': 'D9F0F2',
+                'cuti': 'E8DDF5',
+                'sakit': 'F8D7DA',
+                'ijin': 'FFF0C2',
+                'alpa': 'F5C2C7',
+                'normal': '',
+            }.get(ket_class, '')
 
             exported_rows.append({
                 'no': saved,
@@ -4080,9 +4094,13 @@ def api_normalisasi_export():
                 'total_tlm': r.get('total_tlm'),
                 'tingkat_tlm': r.get('tingkat_tlm'),
                 'persen_pot_tlm': r.get('persen_pot_tlm'),
+                'awal_psw': _absensi_awal_psw(final_absensi),
                 'total_psw': r.get('total_psw'),
                 'tingkat_psw': r.get('tingkat_psw'),
                 'persen_pot_psw': r.get('persen_pot_psw'),
+                'ket': ket,
+                'ket_class': ket_class,
+                'ket_color': ket_color,
                 'transaksi_in': transaksi_in,
                 'transaksi_out': transaksi_out,
                 # Simpan key sorting internal agar response export
