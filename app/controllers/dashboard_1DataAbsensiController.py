@@ -1728,7 +1728,47 @@ def api_normalisasi_process():
             str(value) for value in employee_rows if value is not None
         ]
 
-        if not employee_finger_ids:
+        # ============================================================
+        # OPERATIONAL EMPLOYEE UNIVERSE
+        #
+        # Semua layer normalisasi (finger, Siaga Shift 1/2, WFH,
+        # Dinas Luar) WAJIB memakai populasi pegawai yang sama.
+        #
+        # Sebelumnya filter Unit hanya membatasi source fingerprint.
+        # Layer khusus seperti LOG_ACTIVITIY / Dinas Luar masih dapat
+        # menyuntikkan pegawai dari unit lain (mis. Banyuwangi/Jember)
+        # ke hasil NORMALISASI.
+        #
+        # allowed_nips adalah pagar terakhir berdasarkan:
+        #   - filter user (jika ada)
+        #   - Pegawai aktif
+        #   - Unit Kerja aktif
+        # ============================================================
+        operational_nip_sql = text(f"""
+            SELECT DISTINCT p0.NIP
+            FROM PEGAWAI p0
+            LEFT JOIN MF_UNIT_KERJA uk0
+                ON uk0.IDUnitKerja = p0.UnitKerja
+            WHERE UPPER(TRIM(COALESCE(p0.isKeluar, ''))) IN ('N', '0')
+              AND UPPER(TRIM(COALESCE(uk0.isUse, ''))) IN ('Y', '1')
+              AND p0.NIP IS NOT NULL
+              AND TRIM(p0.NIP) <> ''
+              {' AND ' + ' AND '.join(employee_filter_clauses) if employee_filter_clauses else ''}
+        """)
+
+        # employee_filter_clauses memakai alias p0/uk0 yang sama.
+        operational_nip_rows = db.session.execute(
+            operational_nip_sql,
+            filter_params
+        ).scalars().all()
+
+        allowed_nips = {
+            str(value).strip()
+            for value in operational_nip_rows
+            if value is not None and str(value).strip()
+        }
+
+        if not employee_finger_ids or not allowed_nips:
             return jsonify({
                 'success': True,
                 'data': [],
@@ -2028,6 +2068,11 @@ def api_normalisasi_process():
 
         for sr in shift2_rows:
             nip_siaga = str(sr['NIP'] or '').strip()
+
+            # Shift 2 juga wajib tunduk pada populasi operasional
+            # dan filter Unit/Nama/NIP yang dipilih user.
+            if nip_siaga not in allowed_nips:
+                continue
 
             if not nip_siaga or not sr['ActivityDate']:
                 continue
@@ -2648,10 +2693,27 @@ def api_normalisasi_process():
                     candidate = str(
                         pegawai.FINGER_ID or ''
                     ).strip().lower()
-                elif field in ('UnitKerja', 'Unit Kerja'):
+                elif field in ('UnitKerja', 'Unit', 'Unit Kerja', 'UnitKerjaName'):
                     candidate = str(
-                        pegawai.UNIT_KERJA or ''
+                        getattr(pegawai, 'UNIT_KERJA', '') or ''
                     ).strip().lower()
+
+                    # UNIT_KERJA pada model Pegawai adalah ID unit.
+                    # Untuk filter berdasarkan nama unit (mis. Surabaya),
+                    # ambil nama master unit yang aktif.
+                    if field in ('Unit', 'UnitKerjaName', 'Unit Kerja'):
+                        unit_master = (
+                            MfUnitKerja.query
+                            .filter(
+                                MfUnitKerja.UNIT_KERJA_ID
+                                == getattr(pegawai, 'UNIT_KERJA', None)
+                            )
+                            .first()
+                        )
+                        candidate = str(
+                            getattr(unit_master, 'NAMA_UNIT_KERJA', '')
+                            if unit_master else ''
+                        ).strip().lower()
                 elif field in ('Gol', 'Gol-Pangkat'):
                     candidate = str(
                         pegawai.GOL or ''
@@ -3404,6 +3466,20 @@ def api_normalisasi_process():
                 shift,
                 str(r.get('finger_id') or '').strip(),
             )
+
+        # ============================================================
+        # FINAL OPERATIONAL SAFETY GATE
+        #
+        # Jangan percaya hanya pada filter source. Layer khusus
+        # (Dinas Luar / WFH / Siaga) dapat berasal dari tabel berbeda.
+        # Hasil NORMALISASI final hanya boleh berisi NIP yang berada
+        # dalam allowed_nips.
+        # ============================================================
+        result = [
+            row
+            for row in result
+            if str(row.get('nip') or '').strip() in allowed_nips
+        ]
 
         result.sort(key=_normalisasi_sort_key)
 
