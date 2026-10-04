@@ -11,6 +11,8 @@ from reportlab.lib import colors
 
 
 REPORT_COLORS = {
+    # Header ini adalah warna sumber tunggal untuk PDF, Excel,
+    # dan laporan lain yang memakai standar export global.
     "header": "172033",
     "holiday": "B91C1C",
     "siaga": "15803D",
@@ -54,6 +56,19 @@ def format_hari_indonesia(tanggal):
 def excel_font_color(color_key):
     """Return an OpenPyXL-compatible ARGB font color."""
     return "FF" + REPORT_COLORS.get(color_key, REPORT_COLORS["normal"])
+
+
+def excel_header_fill():
+    """Return the standard report header fill for Excel exports."""
+    return excel_fill("header")
+
+
+def excel_header_font():
+    """Return the standard white header font for Excel exports."""
+    return Font(
+        color="FFFFFFFF",
+        bold=True,
+    )
 
 
 def excel_fill(color_key):
