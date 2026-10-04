@@ -34,6 +34,34 @@ _NORMALISASI_CACHE = {}
 _DAT_IMPORT_CACHE = {}
 
 
+def _parse_absensi_filter_values(field_name, raw_value):
+    """
+    Normalisasi nilai filter dari UI.
+
+    Field Unit dapat memilih lebih dari satu unit.
+    UI mengirim beberapa nama unit dengan pemisah ||.
+    Field lain tetap diperlakukan sebagai satu nilai.
+    """
+    value = str(raw_value or '').strip()
+
+    if not value:
+        return []
+
+    if field_name in {
+        'UnitKerja',
+        'Unit',
+        'Unit Kerja',
+        'UnitKerjaName',
+    }:
+        return [
+            item.strip()
+            for item in value.split('||')
+            if item.strip()
+        ]
+
+    return [value]
+
+
 def api_normalisasi_upload_dat():
     """
     IMPORT FILE .DAT - MULTI FILE.
@@ -1460,9 +1488,6 @@ def api_normalisasi_import_finger():
         tgl_akhir_str = request.args.get('tgl_akhir', '')
         filter_field1 = request.args.get('filter_field1', '')
         filter_value1 = request.args.get('filter_value1', '')
-        filter_field2 = request.args.get('filter_field2', '')
-        filter_value2 = request.args.get('filter_value2', '')
-
         if not tgl_awal_str or not tgl_akhir_str:
             return jsonify({'error': 'Tanggal periode kosong', 'data': []})
 
@@ -1477,20 +1502,6 @@ def api_normalisasi_import_finger():
             'Jabatan': 'p.Jabatan', 'Gol': 'p.Gol', 'Gol-Pangkat': 'p.Gol',
             'Status': 'src.STATUS', 'Transaksi': 'src.TRANSAKSI',
         }
-        conditions = []
-        for idx, (field_name, field_value) in enumerate((
-            (filter_field1, filter_value1),
-            (filter_field2, filter_value2),
-        ), start=1):
-            if not field_name or not field_value:
-                continue
-            field = field_mapping.get(field_name)
-            if not field:
-                continue
-            param_name = f'filter_value{idx}'
-            conditions.append(f"{field} LIKE :{param_name}")
-            params[param_name] = f"%{field_value}%"
-
         # VIEW DATA mengikuti HRIS 2013.
         # TAB 1 hanya membaca TIME_RECORDER. RAW tidak digabung di sini.
         # FINGER_HARVEST_RAW tetap menjadi sumber tambahan untuk TAB 2
@@ -1506,18 +1517,47 @@ def api_normalisasi_import_finger():
         }
 
         conditions = []
-        for idx, (field_name, field_value) in enumerate((
-            (filter_field1, filter_value1),
-            (filter_field2, filter_value2),
-        ), start=1):
+        for idx, (field_name, field_value) in enumerate(
+            ((filter_field1, filter_value1),),
+            start=1
+        ):
             if not field_name or not field_value:
                 continue
+
             field = source_field_map.get(field_name)
             if not field:
                 continue
-            param_name = f'filter_value{idx}'
-            conditions.append(f"{field} LIKE :{param_name}")
-            params[param_name] = f"%{field_value}%"
+
+            values = _parse_absensi_filter_values(
+                field_name,
+                field_value
+            )
+
+            if field_name in {
+                'UnitKerja',
+                'Unit',
+                'Unit Kerja',
+                'UnitKerjaName',
+            }:
+                unit_clauses = []
+
+                for value_index, value in enumerate(values):
+                    param_name = f'filter_value{idx}_{value_index}'
+                    unit_clauses.append(
+                        f"{field} = :{param_name}"
+                    )
+                    params[param_name] = value
+
+                if unit_clauses:
+                    conditions.append(
+                        '(' + ' OR '.join(unit_clauses) + ')'
+                    )
+            else:
+                param_name = f'filter_value{idx}'
+                conditions.append(
+                    f"{field} LIKE :{param_name}"
+                )
+                params[param_name] = f"%{values[0]}%"
 
         filter_sql = ''
         if conditions:
@@ -1612,9 +1652,6 @@ def api_normalisasi_process():
 
         filter_field1 = str(data.get('filter_field1') or '').strip()
         filter_value1 = str(data.get('filter_value1') or '').strip()
-        filter_field2 = str(data.get('filter_field2') or '').strip()
-        filter_value2 = str(data.get('filter_value2') or '').strip()
-
         if not default_tdk_check:
             return jsonify({'error': 'Nilai default TLM/PSW tdk check in/out kosong'})
         if not tgl_awal_str or not tgl_akhir_str:
@@ -1664,15 +1701,8 @@ def api_normalisasi_process():
         # to scan the whole TIME_RECORDER/FINGER_HARVEST_RAW period and then
         # discover that only one employee (e.g. Nama=Nanang Sigit) is needed.
         employee_filter_clauses = []
-        for idx, (field, value) in enumerate(
-            (
-                (filter_field1, filter_value1),
-                (filter_field2, filter_value2),
-            ),
-            start=1
-        ):
-            if not value:
-                continue
+
+        if filter_field1 and filter_value1:
             employee_column = {
                 'NIP': 'p0.NIP',
                 'Nama': 'p0.Nama',
@@ -1685,13 +1715,39 @@ def api_normalisasi_process():
                 'Jabatan': 'p0.Jabatan',
                 'Gol': 'p0.Gol',
                 'Gol-Pangkat': 'p0.Gol',
-            }.get(field)
+            }.get(filter_field1)
+
             if employee_column:
-                param_name = f'filter_value{idx}'
-                employee_filter_clauses.append(
-                    f"{employee_column} LIKE :{param_name}"
+                values = _parse_absensi_filter_values(
+                    filter_field1,
+                    filter_value1
                 )
-                filter_params[param_name] = f'%{value}%'
+
+                if filter_field1 in {
+                    'UnitKerja',
+                    'Unit',
+                    'Unit Kerja',
+                    'UnitKerjaName',
+                }:
+                    unit_clauses = []
+
+                    for value_index, value in enumerate(values):
+                        param_name = f'filter_value1_{value_index}'
+                        unit_clauses.append(
+                            f"{employee_column} = :{param_name}"
+                        )
+                        filter_params[param_name] = value
+
+                    if unit_clauses:
+                        employee_filter_clauses.append(
+                            '(' + ' OR '.join(unit_clauses) + ')'
+                        )
+                else:
+                    param_name = 'filter_value1'
+                    employee_filter_clauses.append(
+                        f"{employee_column} LIKE :{param_name}"
+                    )
+                    filter_params[param_name] = f'%{values[0]}%'
 
         # Resolve the employee universe ONCE for both attendance sources.
         # This is the bulk-processing pattern: the normalization request
@@ -1807,21 +1863,43 @@ def api_normalisasi_process():
             raw_source_filter_clauses = []
 
         for idx, (field, value) in enumerate(
-            (
-                (filter_field1, filter_value1),
-                (filter_field2, filter_value2),
-            ),
+            ((filter_field1, filter_value1),),
             start=1
         ):
             column = filter_column_map.get(field)
             source_column = source_filter_map.get(field)
 
             if column and value:
-                param_name = f'filter_value{idx}'
-                filter_clauses.append(
-                    f"AND {column} LIKE :{param_name}"
+                values = _parse_absensi_filter_values(
+                    field,
+                    value
                 )
-                filter_params[param_name] = f'%{value}%'
+
+                if field in {
+                    'UnitKerja',
+                    'Unit',
+                    'Unit Kerja',
+                    'UnitKerjaName',
+                }:
+                    unit_clauses = []
+
+                    for value_index, item in enumerate(values):
+                        param_name = f'filter_value{idx}_{value_index}'
+                        unit_clauses.append(
+                            f"{column} = :{param_name}"
+                        )
+                        filter_params[param_name] = item
+
+                    if unit_clauses:
+                        filter_clauses.append(
+                            'AND (' + ' OR '.join(unit_clauses) + ')'
+                        )
+                else:
+                    param_name = f'filter_value{idx}'
+                    filter_clauses.append(
+                        f"AND {column} LIKE :{param_name}"
+                    )
+                    filter_params[param_name] = f'%{values[0]}%'
 
             if source_column and value and employee_finger_ids is None:
                 param_name = f'filter_value{idx}'
@@ -2683,7 +2761,6 @@ def api_normalisasi_process():
 
             for field, value in (
                 (filter_field1, filter_value1),
-                (filter_field2, filter_value2),
             ):
                 if not field or not value:
                     continue
