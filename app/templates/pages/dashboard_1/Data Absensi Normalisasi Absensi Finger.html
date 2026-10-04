@@ -47,7 +47,7 @@
                             <option value="">- Pilih Field -</option>
                             <option value="Nama">Nama</option>
                             <option value="NIP">NIP</option>
-                            <option value="UnitKerja">Unit</option>
+                            <option value="UnitKerjaName">Unit</option>
                             <option value="Jabatan">Jabatan</option>
                         </select>
                         <input type="text" id="filterValue1" class="hris-input" placeholder="Nilai filter...">
@@ -56,7 +56,7 @@
                             <option value="">- Pilih Field -</option>
                             <option value="Nama">Nama</option>
                             <option value="NIP">NIP</option>
-                            <option value="UnitKerja">Unit</option>
+                            <option value="UnitKerjaName">Unit</option>
                             <option value="Jabatan">Jabatan</option>
                         </select>
                         <input type="text" id="filterValue2" class="hris-input" placeholder="Nilai filter...">
@@ -369,6 +369,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // ---------- field filter ----------
     // Pilihan filter mengikuti workflow AbsensiFP legacy:
     // Nama, NIP, Unit, Jabatan.
+    // Unit dikirim sebagai UnitKerjaName agar pencarian berdasarkan nama unit
+    // (mis. Surabaya) konsisten dengan endpoint server.
     // Nilai select dikirim langsung ke API melalui getFilterParams().
     
     // ================= IMPORT FILE FINGER (.DAT) =================
