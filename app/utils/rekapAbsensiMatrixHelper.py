@@ -201,7 +201,7 @@ def _warna_absensi(absensi):
         return (
             'orange'
             if int(absensi.STATUS_UM or 0) == 1
-            else 'dark-blue'
+            else 'blue'
         )
 
     if transaction == 'WFH':
