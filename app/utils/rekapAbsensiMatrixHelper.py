@@ -383,43 +383,35 @@ def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
         # LOG_ACTIVITIY hanya menentukan bahwa key (NIP, H+1)
         # memang merupakan Shift-2 HADIR. Jam tetap 100% berasal
         # dari ABSENSI final.
+        # ABSENSI final adalah satu-satunya sumber jam untuk Rekap.
+        # LOG_ACTIVITIY hanya menentukan bahwa (NIP, H+1) adalah
+        # Shift-2 HADIR. Jangan menyaring berdasarkan tanggal TGL_JAM_IN.
+        # Pada hasil export saat ini TglKerja sudah = H+1 dan jam IN/OUT
+        # tersimpan pada row ABSENSI tersebut.
         shift2_export = [
             candidate
             for candidate in candidates
-            if (
-                not _is_placeholder_time(candidate.TGL_JAM_IN)
-                and (
-                    str(
-                        candidate.HISTORY_TRANSAKSI_IN or ''
-                    ).strip().upper() == 'SIAGA'
-                    or candidate.TGL_JAM_IN.date() == key[1]
-                    or candidate.TGL_JAM_IN.date() == activity_date
-                )
+            if not (
+                _is_placeholder_time(candidate.TGL_JAM_IN)
+                and _is_placeholder_time(candidate.TGL_JAM_OUT)
             )
         ]
 
         if shift2_export:
-            # Utamakan row SIAGA, lalu OUT aktual pada TglKerja H+1.
+            # Prioritas absolut: row SIAGA dengan jam aktual.
+            # Jika tidak ada, pilih row dengan IN/OUT aktual terbanyak.
             selected = max(
                 shift2_export,
                 key=lambda candidate: (
-                    1
-                    if (
-                        not _is_placeholder_time(candidate.TGL_JAM_OUT)
-                        and candidate.TGL_JAM_OUT.date() == key[1]
-                    )
-                    else 0,
-                    1
-                    if not _is_placeholder_time(candidate.TGL_JAM_OUT)
-                    else 0,
-                    1
-                    if str(
+                    1 if str(
                         candidate.HISTORY_TRANSAKSI_IN or ''
-                    ).strip().upper() == 'SIAGA'
-                    else 0,
+                    ).strip().upper() == 'SIAGA' else 0,
+                    1 if not _is_placeholder_time(candidate.TGL_JAM_IN) else 0,
+                    1 if not _is_placeholder_time(candidate.TGL_JAM_OUT) else 0,
                 ),
             )
             absensi_index[key] = selected
+
 
     # ============================================================
     # NON-SIAGA: pilih hasil EXPORT reguler dengan prioritas lama.
