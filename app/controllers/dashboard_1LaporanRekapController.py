@@ -1671,8 +1671,8 @@ def preview_rekap_clock_exception():
     if filter_field not in ('Nama', 'UnitKerjaName'):
         return {'error': 'Field filter Rekap Absensi Bulanan tidak valid'}, 400
 
-    if not filter_value:
-        return {'error': 'Nilai filter belum dipilih'}, 400
+    if filter_field == 'Nama' and not filter_value:
+        return {'error': 'Nama pegawai belum dipilih'}, 400
 
     if filter_field == 'UnitKerjaName' and not unit_list:
         return {'error': 'Silakan pilih minimal satu Unit Kerja'}, 400
@@ -1796,8 +1796,8 @@ def export_rekap_clock_exception_pdf():
     if not tgl_awal_str or not tgl_akhir_str:
         return {'error': 'Periode kosong'}, 400
 
-    if not filter_value:
-        return {'error': 'Nilai filter belum dipilih'}, 400
+    if filter_field == 'Nama' and not filter_value:
+        return {'error': 'Nama pegawai belum dipilih'}, 400
 
     try:
         tgl_awal = datetime.strptime(tgl_awal_str, '%Y-%m-%d')
@@ -2082,8 +2082,8 @@ def export_rekap_clock_exception():
     if not tgl_awal_str or not tgl_akhir_str:
         return {'error': 'Periode kosong'}, 400
 
-    if not filter_value:
-        return {'error': 'Nilai filter belum dipilih'}, 400
+    if filter_field == 'Nama' and not filter_value:
+        return {'error': 'Nama pegawai belum dipilih'}, 400
 
     try:
         tgl_awal = datetime.strptime(tgl_awal_str, '%Y-%m-%d')
