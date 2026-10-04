@@ -253,19 +253,24 @@
         color: #FFFFFF !important;
     }
 
+    .hris-filter-pair {
+        display: grid !important;
+        grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
+        align-items: start;
+        gap: 10px;
+        width: 100%;
+    }
+
     .hris-filter-value-container,
     .hris-unit-multiselect {
         position: relative;
-        flex: 1 1 auto;
         min-width: 0;
+        width: 100%;
     }
 
     .hris-autocomplete-menu {
-        position: absolute;
-        z-index: 1050;
-        top: calc(100% + 4px);
-        left: 0;
-        right: 0;
+        position: fixed;
+        z-index: 99999;
         max-height: 280px;
         overflow-y: auto;
         background: #FFFFFF;
@@ -273,6 +278,7 @@
         border-radius: 10px;
         box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18);
         padding: 4px;
+        box-sizing: border-box;
     }
 
     .hris-autocomplete-item {
@@ -307,46 +313,44 @@
         white-space: nowrap;
     }
 
-    .hris-unit-multiselect-trigger {
-        width: 100%;
-        min-height: 38px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
+    .hris-unit-multiselect {
         border: 1px solid #D9E1EA;
-        border-radius: 8px;
+        border-radius: 10px;
         background: #FFFFFF;
-        padding: 0 12px;
-        color: #334155;
-        text-align: left;
-        cursor: pointer;
+        padding: 8px 10px;
+        box-sizing: border-box;
+    }
+
+    .hris-unit-multiselect-label {
+        display: block;
+        margin-bottom: 6px;
+        color: #64748B;
+        font-size: 12px;
+        font-weight: 600;
     }
 
     .hris-unit-multiselect-menu {
-        position: absolute;
-        z-index: 1050;
-        top: calc(100% + 4px);
-        left: 0;
-        right: 0;
-        max-height: 300px;
-        overflow-y: auto;
-        background: #FFFFFF;
-        border: 1px solid #D9E1EA;
-        border-radius: 10px;
-        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18);
-        padding: 7px;
+        display: grid;
+        grid-auto-flow: column;
+        grid-template-rows: repeat(3, minmax(28px, auto));
+        grid-auto-columns: minmax(145px, 1fr);
+        column-gap: 12px;
+        row-gap: 2px;
+        align-items: center;
+        max-width: 100%;
     }
 
     .hris-unit-checkbox {
         display: flex;
         align-items: center;
-        gap: 9px;
-        padding: 8px 9px;
+        gap: 8px;
+        min-width: 0;
+        padding: 4px 6px;
         border-radius: 7px;
         cursor: pointer;
         color: #1E293B;
         margin: 0;
+        font-size: 13px;
     }
 
     .hris-unit-checkbox:hover {
@@ -354,15 +358,29 @@
     }
 
     .hris-unit-checkbox input {
+        flex: 0 0 auto;
         width: 16px;
         height: 16px;
         margin: 0;
     }
 
+    .hris-unit-checkbox span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
     .hris-unit-empty {
-        padding: 10px;
+        padding: 6px;
         color: #64748B;
         font-size: 13px;
+    }
+
+    .hris-unit-selection-summary {
+        display: block;
+        margin-top: 5px;
+        color: #64748B;
+        font-size: 12px;
     }
 
 </style>
@@ -401,7 +419,15 @@ document.addEventListener('DOMContentLoaded', function () {
         dropdown.id = datalistId;
         dropdown.setAttribute('role', 'listbox');
         dropdown.style.display = 'none';
-        container.appendChild(dropdown);
+        document.body.appendChild(dropdown);
+
+        function positionDropdown() {
+            const rect = input.getBoundingClientRect();
+
+            dropdown.style.left = rect.left + 'px';
+            dropdown.style.top = (rect.bottom + 4) + 'px';
+            dropdown.style.width = rect.width + 'px';
+        }
 
         function closeDropdown() {
             dropdown.style.display = 'none';
@@ -450,6 +476,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
 
             if (dropdown.children.length) {
+                positionDropdown();
                 dropdown.style.display = 'block';
             } else {
                 closeDropdown();
@@ -502,12 +529,25 @@ document.addEventListener('DOMContentLoaded', function () {
 
         input.addEventListener('focus', function () {
             if (input.value.trim().length >= 2 && dropdown.children.length) {
+                positionDropdown();
                 dropdown.style.display = 'block';
             }
         });
 
+        window.addEventListener('resize', function () {
+            if (dropdown.style.display === 'block') {
+                positionDropdown();
+            }
+        });
+
+        window.addEventListener('scroll', function () {
+            if (dropdown.style.display === 'block') {
+                positionDropdown();
+            }
+        }, true);
+
         document.addEventListener('click', function (event) {
-            if (!container.contains(event.target)) {
+            if (event.target !== input && !dropdown.contains(event.target)) {
                 closeDropdown();
             }
         });
@@ -540,35 +580,31 @@ document.addEventListener('DOMContentLoaded', function () {
         wrapper.className = 'hris-unit-multiselect';
         wrapper.id = 'filterUnitWrapper' + index;
 
-        const trigger = document.createElement('button');
-        trigger.type = 'button';
-        trigger.className = 'hris-unit-multiselect-trigger';
-        trigger.innerHTML = '<span class="hris-unit-multiselect-label">Pilih Unit Aktif</span><span class="hris-unit-multiselect-chevron">▾</span>';
+        const title = document.createElement('span');
+        title.className = 'hris-unit-multiselect-label';
+        title.textContent = 'Pilih Unit Aktif';
 
         const menu = document.createElement('div');
         menu.className = 'hris-unit-multiselect-menu';
-        menu.style.display = 'none';
 
         const hidden = document.createElement('input');
         hidden.type = 'hidden';
         hidden.id = 'filterValue' + index;
         hidden.value = Array.from(selectedValues).join('||');
 
-        function updateLabel() {
-            const values = Array.from(selectedValues);
-            const label = trigger.querySelector('.hris-unit-multiselect-label');
+        const summary = document.createElement('span');
+        summary.className = 'hris-unit-selection-summary';
 
-            if (!values.length) {
-                label.textContent = 'Pilih Unit Aktif';
-                return;
+        function updateSummary() {
+            const count = selectedValues.size;
+
+            if (!count) {
+                summary.textContent = 'Belum ada Unit dipilih';
+            } else if (count === 1) {
+                summary.textContent = '1 Unit dipilih';
+            } else {
+                summary.textContent = count + ' Unit dipilih';
             }
-
-            if (values.length === 1) {
-                label.textContent = values[0];
-                return;
-            }
-
-            label.textContent = values.length + ' Unit Dipilih';
         }
 
         activeUnitOptions.forEach(function (unit) {
@@ -591,7 +627,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
 
                 hidden.value = Array.from(selectedValues).join('||');
-                updateLabel();
+                updateSummary();
             });
 
             label.appendChild(checkbox);
@@ -606,24 +642,12 @@ document.addEventListener('DOMContentLoaded', function () {
             menu.appendChild(empty);
         }
 
-        trigger.addEventListener('click', function (event) {
-            event.stopPropagation();
-
-            const isOpen = menu.style.display === 'block';
-            menu.style.display = isOpen ? 'none' : 'block';
-        });
-
-        document.addEventListener('click', function (event) {
-            if (!wrapper.contains(event.target)) {
-                menu.style.display = 'none';
-            }
-        });
-
-        wrapper.appendChild(trigger);
+        wrapper.appendChild(title);
         wrapper.appendChild(menu);
+        wrapper.appendChild(summary);
         wrapper.appendChild(hidden);
 
-        updateLabel();
+        updateSummary();
 
         return wrapper;
     }
@@ -668,7 +692,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
             });
 
-        replacement.value = isUnitValue ? '' : oldValue;
+        replacement.value =
+            field === 'UnitKerjaName' || isUnitValue
+                ? ''
+                : oldValue;
 
         container.appendChild(replacement);
 
