@@ -3223,6 +3223,173 @@ body.hris-sidebar-mini .hris-submenu {
 
 
 /* ============================================================
+   HRIS DATA ABSENSI — FILTER FIELD / VALUE
+   Global reusable filter pattern.
+   ============================================================ */
+.hris-filter-pair {
+  display: grid !important;
+  grid-template-columns: 180px 380px !important;
+  align-items: start !important;
+  gap: 10px !important;
+  width: fit-content !important;
+  max-width: 100% !important;
+}
+
+.hris-filter-pair > .hris-select,
+.hris-filter-pair > .hris-filter-value-container {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.hris-filter-value-container {
+  position: relative;
+  min-width: 0;
+  width: 100%;
+}
+
+.hris-filter-pair .hris-unit-multiselect {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
+  margin-top: 2px;
+}
+
+.hris-unit-multiselect {
+  position: relative;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: 10px;
+  background: #fff;
+  padding: 8px 10px;
+  box-sizing: border-box;
+}
+
+.hris-unit-multiselect-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--ui-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.hris-unit-multiselect-menu {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(3, minmax(30px, auto));
+  grid-auto-columns: minmax(150px, 1fr);
+  column-gap: 10px;
+  row-gap: 2px;
+  align-items: center;
+  width: 100%;
+  max-width: 100%;
+}
+
+.hris-unit-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 4px 6px;
+  border-radius: 7px;
+  cursor: pointer;
+  color: var(--ui-ink);
+  margin: 0;
+  font-size: 13px;
+}
+
+.hris-unit-checkbox:hover {
+  background: #f1f5f9;
+}
+
+.hris-unit-checkbox input {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+
+.hris-unit-checkbox span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hris-unit-selection-summary {
+  display: block;
+  margin-top: 5px;
+  color: var(--ui-muted);
+  font-size: 12px;
+}
+
+.hris-unit-empty {
+  padding: 6px;
+  color: var(--ui-muted);
+  font-size: 13px;
+}
+
+.hris-autocomplete-menu {
+  position: fixed;
+  z-index: 99999;
+  max-height: 280px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, .18);
+  padding: 4px;
+  box-sizing: border-box;
+}
+
+.hris-autocomplete-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 0;
+  background: transparent;
+  padding: 9px 10px;
+  border-radius: 7px;
+  text-align: left;
+  cursor: pointer;
+  color: var(--ui-ink);
+}
+
+.hris-autocomplete-item:hover {
+  background: #f1f5f9;
+}
+
+.hris-autocomplete-name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hris-autocomplete-nip {
+  color: var(--ui-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .hris-filter-pair {
+    grid-template-columns: 160px minmax(0, 1fr) !important;
+    width: 100% !important;
+  }
+
+  .hris-filter-pair .hris-unit-multiselect {
+    grid-column: 1 / -1;
+  }
+
+  .hris-unit-multiselect-menu {
+    grid-auto-flow: row;
+    grid-template-rows: none;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-columns: auto;
+  }
+}
+
+/* ============================================================
    HRIS GLOBAL MODAL
    Opaque modal card + blurred page backdrop.
    Use:
