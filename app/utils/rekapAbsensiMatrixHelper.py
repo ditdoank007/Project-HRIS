@@ -80,9 +80,10 @@ def _is_shift2_absensi(absensi):
     Ini berlaku universal untuk semua pegawai, tanpa hardcode NIP
     maupun tanggal.
 
-    TGL_JAM_BAKU_IN >= 18 dipertahankan hanya sebagai fallback
-    kompatibilitas untuk data export lama yang belum mempunyai
-    HISTORY_TRANSAKSI_IN atau timestamp IN H-1.
+    Tidak ada inferensi Shift-2 dari jam baku >= 18.
+    Penentuan Shift-2 harus berasal dari hasil export SIAGA atau
+    timestamp IN H-1 yang memang merupakan bentuk penyimpanan
+    Shift-2 hasil normalisasi.
     """
     rekap_code = str(
         absensi.HISTORY_TRANSAKSI_IN or ''
@@ -101,11 +102,7 @@ def _is_shift2_absensi(absensi):
         except AttributeError:
             pass
 
-    value = absensi.TGL_JAM_BAKU_IN
-    return bool(
-        value
-        and getattr(value, 'hour', 0) >= 18
-    )
+    return False
 
 
 def _is_placeholder_time(value):
