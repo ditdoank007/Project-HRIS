@@ -4054,17 +4054,11 @@ def api_normalisasi_export():
                 _load_master_potongan_meal_cut_codes(),
             )
 
-            ket_color = {
-                'dinas-orange': 'FDE2B3',
-                'dinas-blue': 'DCE6F1',
-                'siaga': 'E4D7F5',
-                'wfh': 'D9F0F2',
-                'cuti': 'E8DDF5',
-                'sakit': 'F8D7DA',
-                'ijin': 'FFF0C2',
-                'alpa': 'F5C2C7',
-                'normal': '',
-            }.get(ket_class, '')
+            ket_color = (
+                REPORT_COLORS.get(ket_class, '')
+                if ket_class != 'normal'
+                else ''
+            )
 
             exported_rows.append({
                 'no': saved,
