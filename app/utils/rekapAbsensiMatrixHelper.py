@@ -58,13 +58,47 @@ def _sprin_code_from_absensi(absensi):
 
 
 def _is_shift2_absensi(absensi):
-    """Deteksi Shift 2 hanya dari metadata final ABSENSI."""
+    """
+    Deteksi Shift 2 dari HASIL EXPORT ABSENSI final.
+
+    Sumber kebenaran utama:
+      1. HISTORY_TRANSAKSI_IN = SIAGA.
+      2. TGL_JAM_IN berada pada tanggal sebelum TglKerja.
+
+    Aturan nomor 2 penting karena hasil export normalisasi Shift 2
+    memang menyimpan:
+        TglKerja  = H+1
+        TglJamIn  = H + jam masuk fingerprint
+
+    Jadi row seperti:
+        TglKerja = 2026-09-05
+        TglJamIn = 2026-09-04 17:52
+        TglJamOut = 2026-09-05 08:27
+
+    harus diperlakukan sebagai satu absensi Shift 2 pada 05-09-2026.
+    Ini berlaku universal untuk semua pegawai, tanpa hardcode NIP
+    maupun tanggal.
+
+    TGL_JAM_BAKU_IN >= 18 dipertahankan hanya sebagai fallback
+    kompatibilitas untuk data export lama yang belum mempunyai
+    HISTORY_TRANSAKSI_IN atau timestamp IN H-1.
+    """
     rekap_code = str(
         absensi.HISTORY_TRANSAKSI_IN or ''
     ).strip().upper()
 
     if rekap_code == 'SIAGA':
         return True
+
+    tgl_kerja = absensi.TGL_KERJA
+    tgl_jam_in = absensi.TGL_JAM_IN
+
+    if tgl_kerja and tgl_jam_in:
+        try:
+            if tgl_jam_in.date() < tgl_kerja.date():
+                return True
+        except AttributeError:
+            pass
 
     value = absensi.TGL_JAM_BAKU_IN
     return bool(
