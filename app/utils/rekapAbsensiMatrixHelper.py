@@ -54,18 +54,11 @@ def _sprin_code_from_absensi(absensi):
     if display_code in ('DL', 'OP', 'SD'):
         return display_code
 
-    # Kompatibilitas untuk data lama yang belum memiliki metadata
-    # HISTORY_TRANSAKSI_IN. Jangan menebak OP/SD dari field lain.
     return 'DL'
 
 
 def _is_shift2_absensi(absensi):
-    """
-    Deteksi Shift 2 hanya dari metadata final ABSENSI.
-
-    Shift-2 IN harus berasal dari fingerprint aktual yang dipilih
-    pada ActivityDate (H), bukan dari OUT Shift-1 pada H.
-    """
+    """Deteksi Shift 2 hanya dari metadata final ABSENSI."""
     rekap_code = str(
         absensi.HISTORY_TRANSAKSI_IN or ''
     ).strip().upper()
@@ -80,16 +73,49 @@ def _is_shift2_absensi(absensi):
     )
 
 
+def _is_placeholder_time(value):
+    """True untuk jam kosong / sentinel 00:00 yang tidak boleh menang dedupe."""
+    if not value:
+        return True
+    if getattr(value, 'year', None) == 1900:
+        return True
+    return (
+        getattr(value, 'hour', None) == 0
+        and getattr(value, 'minute', None) == 0
+        and getattr(value, 'second', 0) == 0
+    )
+
+
+def _absensi_rekap_priority(absensi):
+    """
+    Prioritas ketika satu NIP + TglKerja mempunyai beberapa ABSENSI
+    karena pegawai memiliki lebih dari satu FingerID.
+
+    Shift 2/SIAGA harus menang atas record reguler pada tanggal target.
+    Setelah itu prioritaskan record yang mempunyai jam aktual non-00:00.
+    """
+    score = 0
+
+    if _is_shift2_absensi(absensi):
+        score += 100
+
+    if not _is_placeholder_time(absensi.TGL_JAM_IN):
+        score += 20
+
+    if not _is_placeholder_time(absensi.TGL_JAM_OUT):
+        score += 10
+
+    if str(absensi.HISTORY_TRANSAKSI_IN or '').strip():
+        score += 2
+
+    if str(absensi.TRANSAKSI_IN or '').strip():
+        score += 1
+
+    return score
+
+
 def _jam_in_rekap(absensi):
-    """
-    Rekap menampilkan TGL_JAM_IN final dari ABSENSI apa adanya.
-
-    Untuk Shift 2, EXPORT menyimpan:
-      TGL_JAM_IN  = ActivityDate + fingerprint IN aktual
-      TGL_JAM_OUT = target date + fingerprint OUT aktual
-
-    Tidak ada fallback ke TGL_JAM_OUT hari sebelumnya.
-    """
+    """Rekap menampilkan TGL_JAM_IN final dari ABSENSI apa adanya."""
     return absensi.TGL_JAM_IN
 
 
@@ -116,6 +142,7 @@ def _warna_absensi(absensi):
 
     return 'normal'
 
+
 def _calendar_rows(tgl_awal, tgl_akhir):
     rows = (
         MfKalender.query
@@ -125,8 +152,6 @@ def _calendar_rows(tgl_awal, tgl_akhir):
         .all()
     )
 
-    # Sama seperti RDailyAbsensi: bila Kalender kosong, fallback
-    # Senin-Jumat = kerja, Sabtu-Minggu = libur.
     if rows:
         return rows
 
@@ -171,51 +196,18 @@ def _active_pegawai(unit_ids, tgl_awal, tgl_akhir):
 
 
 def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
-    """
-    Rekap Absensi Bulanan adalah READ-ONLY consumer dari ABSENSI final.
-
-    Pipeline yang dikunci:
-        Data Absensi Finger
-            -> View Data
-            -> Normalisasi
-            -> Export
-            -> ABSENSI
-            -> Rekap Absensi Bulanan
-
-    Karena seluruh penggabungan business source sudah dilakukan pada
-    tahap normalisasi/export, fungsi ini TIDAK membaca:
-        - TIME_RECORDER
-        - FINGER_HARVEST_RAW
-        - LOG_ACTIVITIY
-        - DINAS_LUAR
-        - VIP master untuk mengubah jam
-
-    Rekap hanya mengambil hasil final ABSENSI sesuai:
-        - periode
-        - unit kerja
-        - pegawai aktif pada periode
-    """
-
+    """Rekap Absensi Bulanan adalah READ-ONLY consumer dari ABSENSI final."""
     kalender_rows = _calendar_rows(tgl_awal, tgl_akhir)
-    pegawai_rows = _active_pegawai(
-        unit_ids,
-        tgl_awal,
-        tgl_akhir,
-    )
+    pegawai_rows = _active_pegawai(unit_ids, tgl_awal, tgl_akhir)
 
     absensi_rows = (
         db.session.query(Absensi, Pegawai)
-        .join(
-            Pegawai,
-            Absensi.FINGER_ID == Pegawai.FINGER_ID,
-        )
+        .join(Pegawai, Absensi.FINGER_ID == Pegawai.FINGER_ID)
         .filter(
             Absensi.TGL_KERJA >= tgl_awal,
             Absensi.TGL_KERJA <= tgl_akhir,
         )
-        .filter(
-            Pegawai.UNIT_KERJA_ID.in_(unit_ids)
-        )
+        .filter(Pegawai.UNIT_KERJA_ID.in_(unit_ids))
         .all()
     )
 
@@ -225,18 +217,26 @@ def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
         if not absensi.TGL_KERJA:
             continue
 
-        absensi_index[
-            (
-                str(pegawai.NIP or '').strip(),
-                absensi.TGL_KERJA.date(),
-            )
-        ] = absensi
+        key = (
+            str(pegawai.NIP or '').strip(),
+            absensi.TGL_KERJA.date(),
+        )
+        current = absensi_index.get(key)
+
+        # Satu pegawai dapat mempunyai beberapa FingerID. Jangan biarkan
+        # urutan query acak menimpa record Shift 2 yang sudah benar dengan
+        # record reguler/sentinel 00:00 pada NIP + tanggal kerja yang sama.
+        if (
+            current is None
+            or _absensi_rekap_priority(absensi)
+            > _absensi_rekap_priority(current)
+        ):
+            absensi_index[key] = absensi
 
     matrix = {}
 
     for pegawai in pegawai_rows:
         nip = str(pegawai.NIP or '').strip()
-
         matrix[nip] = {}
 
         for kalender in kalender_rows:
@@ -245,20 +245,12 @@ def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
             key = (nip, tanggal_obj.date())
 
             cell = {
-                'status': (
-                    'LIBUR'
-                    if _is_holiday(kalender)
-                    else ''
-                ),
+                'status': 'LIBUR' if _is_holiday(kalender) else '',
                 'jam_in': None,
                 'jam_out': None,
                 'keterangan': kalender.KET or '',
                 'sumber_absensi': '',
-                'warna': (
-                    'holiday'
-                    if _is_holiday(kalender)
-                    else ''
-                ),
+                'warna': 'holiday' if _is_holiday(kalender) else '',
                 'layer': 'KALENDER',
                 'status_um': None,
                 'siaga_shift': None,
@@ -267,57 +259,33 @@ def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
             absensi = absensi_index.get(key)
 
             if absensi:
-                transaksi_in = str(
-                    absensi.TRANSAKSI_IN or ''
-                ).strip().upper()
-
-                transaksi_out = str(
-                    absensi.TRANSAKSI_OUT or ''
-                ).strip().upper()
-
-                status = format_status_absensi(
-                    transaksi_in
-                )
+                transaksi_in = str(absensi.TRANSAKSI_IN or '').strip().upper()
+                status = format_status_absensi(transaksi_in)
 
                 if transaksi_in == 'DINASLUAR':
                     status = _sprin_code_from_absensi(absensi)
                 elif transaksi_in in ('CUTI', 'SAKIT'):
-                    # HRIS 2013 menampilkan kode tingkat transaksi,
-                    # misalnya CT atau S-1, bukan sekadar label generik.
                     tingkat = str(
-                        absensi.TINGKAT_TLM or
-                        absensi.TINGKAT_PSW or
-                        ''
+                        absensi.TINGKAT_TLM
+                        or absensi.TINGKAT_PSW
+                        or ''
                     ).strip().upper()
                     if tingkat:
                         status = tingkat
-                elif status in (
-                    '',
-                    'LOGFP',
-                    'MANUAL',
-                    'INJECT',
-                ):
+                elif status in ('', 'LOGFP', 'MANUAL', 'INJECT'):
                     status = 'HADIR'
-
-                color = _warna_absensi(absensi)
 
                 cell.update({
                     'status': status,
                     'jam_in': _jam_in_rekap(absensi),
                     'jam_out': absensi.TGL_JAM_OUT,
                     'sumber_absensi': 'ABSENSI',
-                    'warna': color,
+                    'warna': _warna_absensi(absensi),
                     'layer': 'ABSENSI',
                     'status_um': absensi.STATUS_UM,
+                    'siaga_shift': 2 if _is_shift2_absensi(absensi) else None,
                 })
 
-            # Layer presentasi:
-            #   1. DINAS LUAR / SPRIN
-            #   2. SIAGA
-            #   3. HARI LIBUR
-            #
-            # Jadi absensi Siaga pada hari libur tetap hijau,
-            # dan SPRIN tetap berada di atas Siaga.
             if (
                 _is_holiday(kalender)
                 and cell.get('warna') not in (
