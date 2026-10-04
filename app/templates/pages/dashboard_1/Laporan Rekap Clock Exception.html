@@ -746,9 +746,11 @@
         function exportLaporan(endpoint, button, format, loadingLabel) {
             if (!button) return;
 
+            var field = filterField.value;
+            var value = filterValue.value.trim();
             var units = selectedChecks();
 
-            if (!tglAwal.value || !tglAkhir.value || !units.length) {
+            if (!field || !value || !tglAwal.value || !tglAkhir.value) {
                 showAlert(
                     'warning',
                     'Jalankan laporan terlebih dahulu.'
@@ -756,11 +758,23 @@
                 return;
             }
 
-            var formData = new FormData();
+            if (field === 'UnitKerjaName' && !units.length) {
+                showAlert(
+                    'warning',
+                    'Unit Kerja belum dipilih.'
+                );
+                return;
+            }
 
-            units.forEach(function (check) {
-                formData.append('unit_kerja[]', check.value);
-            });
+            var formData = new FormData();
+            formData.append('filter_field', field);
+            formData.append('filter_value', value);
+
+            if (field === 'UnitKerjaName') {
+                units.forEach(function (check) {
+                    formData.append('unit_kerja[]', check.value);
+                });
+            }
 
             formData.append('tgl_awal', tglAwal.value);
             formData.append('tgl_akhir', tglAkhir.value);
