@@ -1,5 +1,6 @@
 from app import db
 from datetime import timedelta
+from sqlalchemy import text
 
 from app.models.pegawaiModel import Pegawai
 from app.models.absensiModel import Absensi
@@ -120,34 +121,63 @@ def _is_placeholder_time(value):
     )
 
 
-def _absensi_rekap_priority(absensi):
+def _absensi_rekap_priority(absensi, shift2_keys=None):
     """
-    Prioritas data Rekap berdasarkan HASIL EXPORT ABSENSI.
+    Prioritas record ABSENSI final untuk Rekap.
 
-    Satu NIP dapat mempunyai lebih dari satu FingerID dan ABSENSI
-    mempunyai primary key FingerID + TglKerja. Karena itu Rekap
-    harus memilih satu hasil final untuk pasangan NIP + TglKerja.
+    StatusID = 3 pada LOG_ACTIVITIY adalah penanda HADIR untuk
+    Piket Siaga Shift 2. Untuk key (NIP, H+1) yang ditandai kode 3,
+    Rekap wajib mengambil hasil EXPORT ABSENSI yang mempunyai:
 
-    Aturan universal:
-      1. Shift 2/SIAGA dengan IN aktual -> paling tinggi.
-      2. Shift 2/SIAGA dengan OUT aktual -> berikutnya.
-      3. Record reguler dengan IN/OUT aktual.
-      4. Record Shift 2/SIAGA yang hanya berisi placeholder.
-      5. Record reguler placeholder.
+        TglKerja = H+1
+        TglJamIn = H + jam IN
 
-    Dengan aturan ini, Shift 2 tanggal H yang diekspor sebagai
-    TglKerja H+1 selalu dipakai untuk IN H dan OUT H+1.
-    Tidak ada hardcode pegawai atau tanggal.
+    Jadi record IN H-1 selalu mengalahkan record reguler 00:00
+    pada tanggal H+1.
+
+    LOG_ACTIVITIY hanya dipakai sebagai penanda bisnis Shift 2.
+    Jam IN/OUT tetap diambil dari ABSENSI hasil EXPORT normalisasi.
     """
-    is_shift2 = _is_shift2_absensi(absensi)
+    shift2_keys = shift2_keys or set()
+    key = None
+
+    if absensi.TGL_KERJA:
+        try:
+            # NIP ditambahkan oleh caller melalui atribut sementara.
+            key = (
+                str(getattr(absensi, '_rekap_nip', '') or '').strip(),
+                absensi.TGL_KERJA.date(),
+            )
+        except AttributeError:
+            key = None
+
+    is_marked_shift2 = key in shift2_keys
+    is_shift2 = is_marked_shift2 or _is_shift2_absensi(absensi)
     has_in = not _is_placeholder_time(absensi.TGL_JAM_IN)
     has_out = not _is_placeholder_time(absensi.TGL_JAM_OUT)
 
+    # Untuk StatusID=3, yang paling penting adalah IN berasal dari H-1.
+    has_h_minus_1_in = (
+        bool(absensi.TGL_KERJA)
+        and bool(absensi.TGL_JAM_IN)
+        and absensi.TGL_JAM_IN.date() < absensi.TGL_KERJA.date()
+        and has_in
+    )
+
+    if is_marked_shift2 and has_h_minus_1_in:
+        return (10, 1 if has_out else 0)
+
+    if is_marked_shift2 and has_in:
+        return (9, 1 if has_out else 0)
+
+    if is_shift2 and has_h_minus_1_in:
+        return (8, 1 if has_out else 0)
+
     if is_shift2 and has_in:
-        return (5, 1 if has_out else 0)
+        return (7, 1 if has_out else 0)
 
     if is_shift2 and has_out:
-        return (4, 1)
+        return (6, 1)
 
     if has_in:
         return (3, 1 if has_out else 0)
@@ -258,6 +288,48 @@ def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
         .all()
     )
 
+    # ============================================================
+    # PENANDA SIAGA SHIFT 2
+    #
+    # LOG_ACTIVITIY adalah sumber penentu bahwa pegawai benar-benar
+    # SIAGA Shift 2 pada H. StatusID = 3 berarti HADIR.
+    #
+    # Target absensi selalu H+1. Ini hanya penanda pemilihan record;
+    # jam IN/OUT tetap diambil dari ABSENSI hasil EXPORT normalisasi.
+    # ============================================================
+    shift2_rows = db.session.execute(
+        text("""
+            SELECT NIP, ActivityDate
+            FROM LOG_ACTIVITIY
+            WHERE Activity = 'Piket Siaga'
+              AND Shift = '2'
+              AND StatusID = 3
+              AND ActivityDate >= :activity_awal
+              AND ActivityDate <= :activity_akhir
+        """),
+        {
+            'activity_awal': (tgl_awal - timedelta(days=1)).date(),
+            'activity_akhir': (tgl_akhir - timedelta(days=1)).date(),
+        }
+    ).mappings().all()
+
+    shift2_keys = set()
+
+    for row in shift2_rows:
+        nip = str(row['NIP'] or '').strip()
+        activity_date = row['ActivityDate']
+
+        if not nip or not activity_date:
+            continue
+
+        if hasattr(activity_date, 'date'):
+            activity_date = activity_date.date()
+
+        target_date = activity_date + timedelta(days=1)
+
+        if tgl_awal.date() <= target_date <= tgl_akhir.date():
+            shift2_keys.add((nip, target_date))
+
     absensi_index = {}
 
     for absensi, pegawai in absensi_rows:
@@ -268,18 +340,29 @@ def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
             str(pegawai.NIP or '').strip(),
             absensi.TGL_KERJA.date(),
         )
+
+        # _absensi_rekap_priority membutuhkan NIP untuk mencocokkan
+        # StatusID=3. Jangan mengubah data database; hanya tempel
+        # metadata sementara pada object SQLAlchemy selama proses request.
+        absensi._rekap_nip = key[0]
+
         current = absensi_index.get(key)
 
-        # Satu pegawai dapat mempunyai beberapa FingerID. Rekap
-        # mengambil HASIL EXPORT yang paling relevan untuk NIP + tanggal.
-        # Khusus Shift 2, row target H+1 harus menang selama memiliki
-        # fingerprint IN aktual dari ActivityDate H.
-        candidate_priority = _absensi_rekap_priority(absensi)
+        candidate_priority = _absensi_rekap_priority(
+            absensi,
+            shift2_keys=shift2_keys,
+        )
 
-        if (
-            current is None
-            or candidate_priority > _absensi_rekap_priority(current)
-        ):
+        current_priority = (
+            _absensi_rekap_priority(
+                current,
+                shift2_keys=shift2_keys,
+            )
+            if current is not None
+            else None
+        )
+
+        if current is None or candidate_priority > current_priority:
             absensi_index[key] = absensi
 
     matrix = {}
