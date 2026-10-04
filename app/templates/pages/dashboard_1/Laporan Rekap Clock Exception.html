@@ -49,16 +49,26 @@
                 <select id="filterFieldRekap"
                         class="hris-select"
                         aria-label="Field filter">
-                    <option value="UnitKerjaName" selected>Unit</option>
+                    <option value="" selected>- Pilih Field -</option>
+                    <option value="Nama">Nama</option>
+                    <option value="UnitKerjaName">Unit</option>
                 </select>
 
-                <div class="hris-filter-value-container">
-                    <div class="hris-display-value is-empty" id="filterValueRekap">
-                        Pilih Unit Kerja di bawah
+                <div class="hris-filter-value-container" id="filterValueRekapContainer">
+                    <div class="hris-display-value is-empty" id="filterDisplayRekap">
+                        Pilih field terlebih dahulu...
                     </div>
+                    <input type="text"
+                           id="filterValueRekap"
+                           class="hris-input"
+                           placeholder="Ketik nama pegawai..."
+                           autocomplete="off"
+                           style="display:none;">
                 </div>
 
-                <div class="hris-unit-multiselect" id="unitKerjaPicker">
+                <div class="hris-unit-multiselect"
+                     id="unitKerjaPicker"
+                     style="display:none;">
                     <div class="hris-unit-multiselect-label">
                         Pilih satu, beberapa, atau seluruh unit kerja.
                     </div>
@@ -304,6 +314,12 @@
         var tglAwal = document.getElementById('tglAwal');
         var tglAkhir = document.getElementById('tglAkhir');
 
+        var filterField = document.getElementById('filterFieldRekap');
+        var filterValue = document.getElementById('filterValueRekap');
+        var filterValueContainer = document.getElementById('filterValueRekapContainer');
+        var filterDisplay = document.getElementById('filterDisplayRekap');
+        var unitPicker = document.getElementById('unitKerjaPicker');
+
         var selectAll = document.getElementById('unitKerjaSelectAll');
         var toggleAll = document.getElementById('unitKerjaToggleAll');
         var search = document.getElementById('unitKerjaSearch');
@@ -313,8 +329,9 @@
             document.querySelectorAll('.unit-kerja-check')
         );
 
-        if (!btnRun || !tglAwal || !tglAkhir ||
-            !selectAll || !toggleAll || !search ||
+        if (!btnRun || !tglAwal || !tglAkhir || !filterField ||
+            !filterValue || !filterValueContainer || !filterDisplay ||
+            !unitPicker || !selectAll || !toggleAll || !search ||
             !countLabel || !emptyLabel) {
             console.error('Rekap Absensi Bulanan: elemen halaman tidak lengkap.');
             return;
@@ -383,6 +400,168 @@
             alertBox.classList.remove('d-none');
         }
 
+        function createNamaAutocomplete(input) {
+            input.setAttribute('autocomplete', 'off');
+
+            var timer = null;
+            var dropdown = document.createElement('div');
+            dropdown.className = 'hris-autocomplete-menu';
+            dropdown.setAttribute('role', 'listbox');
+            dropdown.style.display = 'none';
+            document.body.appendChild(dropdown);
+
+            function positionDropdown() {
+                var rect = input.getBoundingClientRect();
+                dropdown.style.left = rect.left + 'px';
+                dropdown.style.top = (rect.bottom + 4) + 'px';
+                dropdown.style.width = rect.width + 'px';
+            }
+
+            function closeDropdown() {
+                dropdown.style.display = 'none';
+            }
+
+            function renderSuggestions(rows) {
+                dropdown.innerHTML = '';
+
+                if (!rows.length) {
+                    closeDropdown();
+                    return;
+                }
+
+                rows.forEach(function (row) {
+                    var nama = String(row.nama || '').trim();
+                    var nip = String(row.nip || '').trim();
+                    if (!nama) return;
+
+                    var item = document.createElement('button');
+                    item.type = 'button';
+                    item.className = 'hris-autocomplete-item';
+
+                    var nameSpan = document.createElement('span');
+                    nameSpan.className = 'hris-autocomplete-name';
+                    nameSpan.textContent = nama;
+
+                    var nipSpan = document.createElement('span');
+                    nipSpan.className = 'hris-autocomplete-nip';
+                    nipSpan.textContent = nip;
+
+                    item.appendChild(nameSpan);
+                    if (nip) item.appendChild(nipSpan);
+
+                    item.addEventListener('mousedown', function (event) {
+                        event.preventDefault();
+                    });
+
+                    item.addEventListener('click', function () {
+                        input.value = nama;
+                        closeDropdown();
+                    });
+
+                    dropdown.appendChild(item);
+                });
+
+                if (dropdown.children.length) {
+                    positionDropdown();
+                    dropdown.style.display = 'block';
+                } else {
+                    closeDropdown();
+                }
+            }
+
+            input.addEventListener('input', function () {
+                var keyword = input.value.trim();
+                clearTimeout(timer);
+
+                if (keyword.length < 2) {
+                    dropdown.innerHTML = '';
+                    closeDropdown();
+                    return;
+                }
+
+                timer = setTimeout(function () {
+                    fetch(
+                        '/api/search_pegawai?keyword=' +
+                        encodeURIComponent(keyword),
+                        {
+                            credentials: 'same-origin',
+                            headers: {'Accept': 'application/json'}
+                        }
+                    )
+                    .then(function (response) {
+                        if (!response.ok) {
+                            throw new Error('HTTP ' + response.status);
+                        }
+                        return response.json();
+                    })
+                    .then(function (res) {
+                        renderSuggestions(
+                            Array.isArray(res.data) ? res.data : []
+                        );
+                    })
+                    .catch(function (error) {
+                        console.error('Gagal autocomplete pegawai:', error);
+                        dropdown.innerHTML = '';
+                        closeDropdown();
+                    });
+                }, 200);
+            });
+
+            input.addEventListener('focus', function () {
+                if (input.value.trim().length >= 2 && dropdown.children.length) {
+                    positionDropdown();
+                    dropdown.style.display = 'block';
+                }
+            });
+
+            window.addEventListener('resize', function () {
+                if (dropdown.style.display === 'block') positionDropdown();
+            });
+
+            window.addEventListener('scroll', function () {
+                if (dropdown.style.display === 'block') positionDropdown();
+            }, true);
+
+            document.addEventListener('click', function (event) {
+                if (event.target !== input && !dropdown.contains(event.target)) {
+                    closeDropdown();
+                }
+            });
+        }
+
+        createNamaAutocomplete(filterValue);
+
+        function setFilterMode(field) {
+            if (field === 'Nama') {
+                filterDisplay.style.display = 'none';
+                filterValue.style.display = '';
+                unitPicker.style.display = 'none';
+                filterValue.placeholder = 'Ketik nama pegawai...';
+                return;
+            }
+
+            if (field === 'UnitKerjaName') {
+                filterValue.value = '';
+                filterValue.style.display = 'none';
+                filterDisplay.style.display = '';
+                filterDisplay.textContent = 'Pilih Unit Kerja di bawah';
+                filterDisplay.classList.add('is-empty');
+                unitPicker.style.display = '';
+                return;
+            }
+
+            filterValue.value = '';
+            filterValue.style.display = 'none';
+            filterDisplay.style.display = '';
+            filterDisplay.textContent = 'Pilih field terlebih dahulu...';
+            filterDisplay.classList.add('is-empty');
+            unitPicker.style.display = 'none';
+        }
+
+        filterField.addEventListener('change', function () {
+            setFilterMode(filterField.value);
+        });
+
         selectAll.addEventListener('change', function () {
             setAll(selectAll.checked);
         });
@@ -408,6 +587,8 @@
         btnReset.addEventListener('click', function () {
             tglAwal.value = '';
             tglAkhir.value = '';
+            filterField.value = '';
+            filterValue.value = '';
 
             checks.forEach(function (check) {
                 check.checked = false;
@@ -416,6 +597,7 @@
             search.value = '';
             filterUnits();
             updateSelection();
+            setFilterMode('');
 
             document.getElementById('previewClockExceptionContainer').innerHTML =
                 '<div class="hris-empty">Preview akan tampil setelah laporan dijalankan.</div>';
@@ -430,7 +612,14 @@
         btnRun.addEventListener('click', function (event) {
             event.preventDefault();
 
+            var field = filterField.value;
+            var value = filterValue.value.trim();
             var units = selectedChecks();
+
+            if (!field) {
+                showAlert('warning', 'Silakan pilih Field filter: Nama atau Unit.');
+                return;
+            }
 
             if (!tglAwal.value || !tglAkhir.value) {
                 showAlert(
@@ -448,7 +637,15 @@
                 return;
             }
 
-            if (!units.length) {
+            if (field === 'Nama' && !value) {
+                showAlert(
+                    'warning',
+                    'Silakan pilih atau ketik Nama pegawai.'
+                );
+                return;
+            }
+
+            if (field === 'UnitKerjaName' && !units.length) {
                 showAlert(
                     'warning',
                     'Silakan pilih minimal satu Unit Kerja.'
@@ -457,10 +654,14 @@
             }
 
             var formData = new FormData();
+            formData.append('filter_field', field);
+            formData.append('filter_value', value);
 
-            units.forEach(function (check) {
-                formData.append('unit_kerja[]', check.value);
-            });
+            if (field === 'UnitKerjaName') {
+                units.forEach(function (check) {
+                    formData.append('unit_kerja[]', check.value);
+                });
+            }
 
             formData.append('tgl_awal', tglAwal.value);
             formData.append('tgl_akhir', tglAkhir.value);
