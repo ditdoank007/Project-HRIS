@@ -1539,6 +1539,10 @@ def api_normalisasi_import_finger():
                 ON uk.IDUnitKerja = p.UnitKerja
             WHERE tr.Waktu >= :tgl_awal
               AND tr.Waktu < :tgl_akhir
+              AND NOT (
+                  UPPER(TRIM(COALESCE(p.isKeluar, ''))) = 'Y'
+                  AND UPPER(TRIM(COALESCE(uk.isUse, ''))) <> 'Y'
+              )
               AND tr.FingerID IS NOT NULL
               AND TRIM(CAST(tr.FingerID AS CHAR)) <> ''
               AND p.NIP IS NOT NULL
@@ -1692,7 +1696,13 @@ def api_normalisasi_process():
             employee_sql = text(f"""
                 SELECT DISTINCT p0.FingerID
                 FROM PEGAWAI p0
+                LEFT JOIN MF_UNIT_KERJA uk0
+                    ON uk0.IDUnitKerja = p0.UnitKerja
                 WHERE {' AND '.join(employee_filter_clauses)}
+                  AND NOT (
+                      UPPER(TRIM(COALESCE(p0.isKeluar, ''))) = 'Y'
+                      AND UPPER(TRIM(COALESCE(uk0.isUse, ''))) <> 'Y'
+                  )
                   AND p0.FingerID IS NOT NULL
             """)
             employee_rows = db.session.execute(
@@ -1703,7 +1713,13 @@ def api_normalisasi_process():
             employee_sql = text("""
                 SELECT DISTINCT p0.FingerID
                 FROM PEGAWAI p0
-                WHERE p0.FingerID IS NOT NULL
+                LEFT JOIN MF_UNIT_KERJA uk0
+                    ON uk0.IDUnitKerja = p0.UnitKerja
+                WHERE NOT (
+                    UPPER(TRIM(COALESCE(p0.isKeluar, ''))) = 'Y'
+                    AND UPPER(TRIM(COALESCE(uk0.isUse, ''))) <> 'Y'
+                )
+                  AND p0.FingerID IS NOT NULL
             """)
             employee_rows = db.session.execute(
                 employee_sql
@@ -2260,6 +2276,21 @@ def api_normalisasi_process():
             if not pegawai_siaga:
                 continue
 
+            unit_siaga = (
+                MfUnitKerja.query
+                .filter(
+                    MfUnitKerja.UNIT_KERJA_ID
+                    == pegawai_siaga.UNIT_KERJA_ID
+                )
+                .first()
+            )
+
+            if (
+                str(pegawai_siaga.IS_KELUAR or '').strip().upper() == 'Y'
+                and str(unit_siaga.IS_USE or '').strip().upper() != 'Y'
+            ):
+                continue
+
             jam_in_dt, jam_out_dt = (
                 normalization_service.pair_shift2(
                     raw_person=raw_person,
@@ -2547,6 +2578,10 @@ def api_normalisasi_process():
                 ]),
                 DinasLuar.TGL_AWAL_DINAS_LUAR <= tgl_akhir,
                 DinasLuar.TGL_AKHIR_DINAS_LUAR >= tgl_awal,
+                ~db.and_(
+                    db.func.upper(db.func.trim(db.func.coalesce(Pegawai.IS_KELUAR, ''))) == 'Y',
+                    db.func.upper(db.func.trim(db.func.coalesce(MfUnitKerja.IS_USE, ''))) != 'Y',
+                ),
             )
             .all()
         )
@@ -4099,31 +4134,128 @@ def api_normalisasi_export():
         })
 
 
+def _absensi_ket_metadata(absensi):
+    """
+    KET presentation dari ABSENSI final.
+
+    Tidak melakukan normalisasi ulang. Semua kode diambil dari metadata
+    yang sudah dipersist saat EXPORT, dengan fallback dari transaksi final.
+    """
+    history = str(
+        absensi.HISTORY_TRANSAKSI_IN
+        or absensi.HISTORY_TRANSAKSI_OUT
+        or ''
+    ).strip().upper()
+
+    transaksi = str(absensi.TRANSAKSI_IN or '').strip().upper()
+
+    if history == 'SIAGA':
+        tgl_kerja = absensi.TGL_KERJA
+        tgl_in = absensi.TGL_JAM_IN
+        try:
+            if tgl_kerja and tgl_in and tgl_in.date() < tgl_kerja.date():
+                return 'S-2', 'siaga'
+        except AttributeError:
+            pass
+        return 'S-1', 'siaga'
+
+    if history:
+        code = history
+    elif transaksi == 'DINASLUAR':
+        code = 'DL'
+    elif transaksi == 'CUTI':
+        code = 'CT'
+    elif transaksi == 'SAKIT':
+        code = 'S'
+    elif transaksi in ('IJIN', 'IZIN'):
+        code = 'I'
+    elif transaksi == 'ALPA':
+        code = 'A'
+    elif transaksi == 'WFH':
+        code = 'WFH'
+    else:
+        code = ''
+
+    code = code.strip().upper()
+
+    if code in ('DL', 'OP', 'SD'):
+        # Warna mengikuti kategori Dinas Luar yang sudah dipakai Rekap:
+        # StatusUM 1 = orange, selain itu = dark-blue.
+        return code, 'dinas-orange' if int(absensi.STATUS_UM or 0) == 1 else 'dinas-blue'
+    if code in ('S-1', 'S-2'):
+        return code, 'siaga'
+    if code == 'WFH':
+        return code, 'wfh'
+    if code in ('CT', 'CAP'):
+        return code, 'cuti'
+    if code in ('S',):
+        return code, 'sakit'
+    if code in ('I',):
+        return code, 'ijin'
+    if code in ('A',):
+        return code, 'alpa'
+
+    return code, 'normal'
+
+
+def _absensi_awal_psw(absensi):
+    """
+    Awal PSW = selisih mentah actual OUT terhadap jam baku OUT.
+
+    Ini adalah nilai sebelum clamp PSW menjadi hanya nilai negatif.
+    Jika data final tidak memiliki pasangan waktu, gunakan TotalPSW
+    sebagai fallback agar hasil yang sudah dinormalisasi tetap terlihat.
+    """
+    if absensi.TGL_JAM_OUT and absensi.TGL_JAM_BAKU_OUT:
+        try:
+            return round(
+                (
+                    absensi.TGL_JAM_OUT
+                    - absensi.TGL_JAM_BAKU_OUT
+                ).total_seconds() / 60,
+                2,
+            )
+        except Exception:
+            pass
+
+    return (
+        round(float(absensi.TOTAL_PSW or 0), 2)
+        if absensi.TOTAL_PSW is not None
+        else 0
+    )
+
+
 def _data_absensi_export_rows_from_request():
-    """Ambil dataset final ABSENSI yang dipakai oleh download Excel/PDF."""
+    """Ambil dataset final ABSENSI periode laporan dari ABSENSI."""
     tgl_awal_str = str(request.args.get('tgl_awal') or '').strip()
     tgl_akhir_str = str(request.args.get('tgl_akhir') or '').strip()
 
     if not tgl_awal_str or not tgl_akhir_str:
         raise ValueError('Tanggal periode kosong.')
 
-    activity_awal = datetime.strptime(tgl_awal_str, '%Y-%m-%d')
-    activity_akhir = datetime.strptime(tgl_akhir_str, '%Y-%m-%d')
-
-    # Hasil export Shift-2 dapat berada pada H+1.
-    kerja_awal = activity_awal
-    kerja_akhir_exclusive = activity_akhir + timedelta(days=2)
+    tgl_awal = datetime.strptime(tgl_awal_str, '%Y-%m-%d')
+    tgl_akhir_exclusive = datetime.strptime(
+        tgl_akhir_str, '%Y-%m-%d'
+    ) + timedelta(days=1)
 
     query = (
-        db.session.query(Absensi, Pegawai)
+        db.session.query(Absensi, Pegawai, MfUnitKerja)
         .join(Pegawai, Absensi.FINGER_ID == Pegawai.FINGER_ID)
+        .outerjoin(
+            MfUnitKerja,
+            Pegawai.UNIT_KERJA_ID == MfUnitKerja.UNIT_KERJA_ID
+        )
         .filter(
-            Absensi.TGL_KERJA >= kerja_awal,
-            Absensi.TGL_KERJA < kerja_akhir_exclusive,
+            Absensi.TGL_KERJA >= tgl_awal,
+            Absensi.TGL_KERJA < tgl_akhir_exclusive,
             Pegawai.NIP.isnot(None),
-            Pegawai.NIP != '',
+            db.func.trim(Pegawai.NIP) != '',
             Absensi.FINGER_ID.isnot(None),
-            Absensi.FINGER_ID != '',
+            db.func.trim(Absensi.FINGER_ID) != '',
+            ~db.and_(
+                db.func.upper(db.func.trim(db.func.coalesce(Pegawai.IS_KELUAR, ''))) == 'Y',
+                db.func.upper(db.func.trim(db.func.coalesce(MfUnitKerja.IS_USE, ''))) != 'Y',
+            ),
         )
     )
 
@@ -4163,7 +4295,8 @@ def _data_absensi_export_rows_from_request():
     }
 
     rows = []
-    for no, (a, peg) in enumerate(results, 1):
+    for no, (a, peg, _unit) in enumerate(results, 1):
+        ket, ket_class = _absensi_ket_metadata(a)
         rows.append({
             'no': no,
             'nip': str(peg.NIP or ''),
@@ -4179,13 +4312,26 @@ def _data_absensi_export_rows_from_request():
             'total_tlm': a.TOTAL_TLM,
             'tingkat_tlm': a.TINGKAT_TLM,
             'persen_pot_tlm': a.PERSEN_POT_TLM,
+            'awal_psw': _absensi_awal_psw(a),
             'total_psw': a.TOTAL_PSW,
             'tingkat_psw': a.TINGKAT_PSW,
             'persen_pot_psw': a.PERSEN_POT_PSW,
+            'ket': ket,
+            'ket_class': ket_class,
+            'ket_color': {
+                'dinas-orange': 'FDE2B3',
+                'dinas-blue': 'DCE6F1',
+                'siaga': 'E4D7F5',
+                'wfh': 'D9F0F2',
+                'cuti': 'E8DDF5',
+                'sakit': 'F8D7DA',
+                'ijin': 'FFF0C2',
+                'alpa': 'F5C2C7',
+                'normal': '',
+            }.get(ket_class, ''),
         })
 
     return rows, f'{tgl_awal_str} s/d {tgl_akhir_str}'
-
 
 def api_normalisasi_download_excel():
     try:
@@ -4303,7 +4449,15 @@ def api_normalisasi_absensi_view():
             )
             .filter(
                 Absensi.TGL_KERJA >= tgl_awal,
-                Absensi.TGL_KERJA < tgl_akhir
+                Absensi.TGL_KERJA < tgl_akhir,
+                Absensi.FINGER_ID.isnot(None),
+                db.func.trim(Absensi.FINGER_ID) != '',
+                Pegawai.NIP.isnot(None),
+                db.func.trim(Pegawai.NIP) != '',
+                ~db.and_(
+                    db.func.upper(db.func.trim(db.func.coalesce(Pegawai.IS_KELUAR, ''))) == 'Y',
+                    db.func.upper(db.func.trim(db.func.coalesce(MfUnitKerja.IS_USE, ''))) != 'Y',
+                ),
             )
         )
 
@@ -4367,6 +4521,8 @@ def api_normalisasi_absensi_view():
             results,
             1
         ):
+
+            ket, ket_class = _absensi_ket_metadata(a)
 
             data.append({
                 'no': i,
@@ -4448,9 +4604,13 @@ def api_normalisasi_absensi_view():
                 'tingkat_tlm': a.TINGKAT_TLM,
                 'persen_pot_tlm': a.PERSEN_POT_TLM,
 
+                'awal_psw': _absensi_awal_psw(a),
                 'total_psw': a.TOTAL_PSW,
                 'tingkat_psw': a.TINGKAT_PSW,
                 'persen_pot_psw': a.PERSEN_POT_PSW,
+
+                'ket': ket,
+                'ket_class': ket_class,
 
                 'is_invalid': a.IS_INVALID,
                 'is_outvalid': a.IS_OUTVALID,
