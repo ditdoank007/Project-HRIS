@@ -4608,8 +4608,16 @@ def _data_absensi_export_rows_from_request():
             'hari': hari_map.get(a.TGL_KERJA.strftime('%A'), '') if a.TGL_KERJA else '',
             'jam_baku_in': a.TGL_JAM_BAKU_IN.strftime('%H:%M') if a.TGL_JAM_BAKU_IN else '',
             'jam_baku_out': a.TGL_JAM_BAKU_OUT.strftime('%H:%M') if a.TGL_JAM_BAKU_OUT else '',
-            'jam_in': a.TGL_JAM_IN.strftime('%H:%M') if a.TGL_JAM_IN else '',
-            'jam_out': a.TGL_JAM_OUT.strftime('%H:%M') if a.TGL_JAM_OUT else '',
+            'jam_in': (
+                a.TGL_JAM_IN.strftime('%H:%M')
+                if a.TGL_JAM_IN and a.TGL_JAM_IN.year > 1900
+                else '-'
+            ),
+            'jam_out': (
+                a.TGL_JAM_OUT.strftime('%H:%M')
+                if a.TGL_JAM_OUT and a.TGL_JAM_OUT.year > 1900
+                else '-'
+            ),
             'awal_tlm': a.AWAL_TLM,
             'total_tlm': a.TOTAL_TLM,
             'tingkat_tlm': a.TINGKAT_TLM,
