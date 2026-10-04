@@ -4399,10 +4399,8 @@ def _data_absensi_export_rows_from_request():
             db.func.trim(Pegawai.NIP) != '',
             Absensi.FINGER_ID.isnot(None),
             db.func.trim(Absensi.FINGER_ID) != '',
-            ~db.and_(
-                db.func.upper(db.func.trim(db.func.coalesce(Pegawai.IS_KELUAR, ''))) == 'Y',
-                db.func.upper(db.func.trim(db.func.coalesce(MfUnitKerja.IS_USE, ''))) != 'Y',
-            ),
+            db.func.upper(db.func.trim(db.func.coalesce(Pegawai.IS_KELUAR, ''))).in_(['N', '0']),
+            db.func.upper(db.func.trim(db.func.coalesce(MfUnitKerja.IS_USE, ''))).in_(['Y', '1']),,
         )
     )
 
@@ -4410,8 +4408,9 @@ def _data_absensi_export_rows_from_request():
         'NIP': Pegawai.NIP,
         'Nama': Pegawai.NAMA,
         'NAMA': Pegawai.NAMA,
-        'UnitKerja': Pegawai.UNIT_KERJA,
-        'Unit': Pegawai.UNIT_KERJA,
+        'UnitKerja': MfUnitKerja.NAMA_UNIT_KERJA,
+        'Unit': MfUnitKerja.NAMA_UNIT_KERJA,
+        'Unit Kerja': MfUnitKerja.NAMA_UNIT_KERJA,
         'Jabatan': Pegawai.JABATAN,
         'FingerID': Absensi.FINGER_ID,
         'Finger ID': Absensi.FINGER_ID,
@@ -4773,6 +4772,11 @@ def api_normalisasi_absensi_view():
 
                 'ket': ket,
                 'ket_class': ket_class,
+                'ket_color': (
+                    REPORT_COLORS.get(ket_class, '')
+                    if ket_class != 'normal'
+                    else ''
+                ),
 
                 'is_invalid': a.IS_INVALID,
                 'is_outvalid': a.IS_OUTVALID,
