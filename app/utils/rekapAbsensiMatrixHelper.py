@@ -252,16 +252,20 @@ def _is_holiday(row):
     return False
 
 
-def _active_pegawai(unit_ids, tgl_awal, tgl_akhir):
-    rows = (
+def _active_pegawai(unit_ids, tgl_awal, tgl_akhir, pegawai_nips=None):
+    query = (
         Pegawai.query
         .outerjoin(MfJabatan, Pegawai.JABATAN_ID == MfJabatan.JABATAN_ID)
         .outerjoin(MfEselon, Pegawai.ESELON == MfEselon.ESELON)
         .outerjoin(MfGolongan, Pegawai.GOL == MfGolongan.GOL)
         .filter(Pegawai.UNIT_KERJA_ID.in_(unit_ids))
         .filter(Pegawai.TGL_MASUK <= tgl_akhir)
-        .all()
     )
+
+    if pegawai_nips:
+        query = query.filter(Pegawai.NIP.in_(pegawai_nips))
+
+    rows = query.all()
     rows = [
         p for p in rows
         if is_pegawai_aktif_periode(p, tgl_awal, tgl_akhir)
@@ -269,12 +273,17 @@ def _active_pegawai(unit_ids, tgl_awal, tgl_akhir):
     return sort_pegawai_rows(rows)
 
 
-def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
+def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir, pegawai_nips=None):
     """Rekap Absensi Bulanan adalah READ-ONLY consumer dari ABSENSI final."""
     kalender_rows = _calendar_rows(tgl_awal, tgl_akhir)
-    pegawai_rows = _active_pegawai(unit_ids, tgl_awal, tgl_akhir)
+    pegawai_rows = _active_pegawai(
+        unit_ids,
+        tgl_awal,
+        tgl_akhir,
+        pegawai_nips=pegawai_nips,
+    )
 
-    absensi_rows = (
+    absensi_query = (
         db.session.query(Absensi, Pegawai)
         .join(Pegawai, Absensi.FINGER_ID == Pegawai.FINGER_ID)
         .filter(
@@ -282,8 +291,14 @@ def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir):
             Absensi.TGL_KERJA <= tgl_akhir,
         )
         .filter(Pegawai.UNIT_KERJA_ID.in_(unit_ids))
-        .all()
     )
+
+    if pegawai_nips:
+        absensi_query = absensi_query.filter(
+            Pegawai.NIP.in_(pegawai_nips)
+        )
+
+    absensi_rows = absensi_query.all()
 
     # ============================================================
     # PENANDA SIAGA SHIFT 2
