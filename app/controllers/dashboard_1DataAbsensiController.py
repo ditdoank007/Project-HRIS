@@ -2699,10 +2699,9 @@ def api_normalisasi_process():
                         pegawai.FINGER_ID or ''
                     ).strip().lower()
                 elif field in ('UnitKerja', 'Unit', 'Unit Kerja', 'UnitKerjaName'):
-                    # Universe allowed_nips sudah menyaring berdasarkan
-                    # nama unit melalui uk0.UnitKerjaName. Jangan
-                    # membandingkan nama unit dengan ID unit di sini.
-                    candidate = value_text
+                    # Filter Unit sudah diterapkan pada allowed_nips
+                    # menggunakan uk0.UnitKerjaName.
+                    continue
                 elif field in ('Gol', 'Gol-Pangkat'):
                     candidate = str(
                         pegawai.GOL or ''
