@@ -1878,6 +1878,8 @@ def api_normalisasi_process():
             ) src
             INNER JOIN PEGAWAI p
                 ON src.USER_ID = p.FingerID
+            INNER JOIN MF_UNIT_KERJA uk
+                ON uk.IDUnitKerja = p.UnitKerja
             WHERE 1=1
               {filter_sql}
             ORDER BY CAST(p.UnitKerja AS UNSIGNED), src.FINGER_ID, src.WAKTU
