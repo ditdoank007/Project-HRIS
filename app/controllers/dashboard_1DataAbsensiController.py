@@ -2567,6 +2567,11 @@ def api_normalisasi_process():
                 db.func.trim(DinasLuar.FINGER_ID)
                 == db.func.trim(Pegawai.FINGER_ID)
             )
+            .outerjoin(
+                MfUnitKerja,
+                Pegawai.UNIT_KERJA_ID
+                == MfUnitKerja.UNIT_KERJA_ID
+            )
             .filter(
                 DinasLuar.TRANSAKSI.in_([
                     'DinasLuar',
