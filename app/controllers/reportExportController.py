@@ -53,6 +53,15 @@ def format_hari_indonesia(tanggal):
     return HARI_INDONESIA.get(tanggal.weekday(), "")
 
 
+def report_header_day_color(tanggal):
+    """Return warna teks nama hari pada header PDF laporan."""
+    if not tanggal:
+        return REPORT_COLORS["header_text"]
+    if tanggal.weekday() >= 5:
+        return REPORT_COLORS["holiday"]
+    return REPORT_COLORS["header_text"]
+
+
 def excel_font_color(color_key):
     """Return an OpenPyXL-compatible ARGB font color."""
     return "FF" + REPORT_COLORS.get(color_key, REPORT_COLORS["normal"])
