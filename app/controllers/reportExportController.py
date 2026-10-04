@@ -14,6 +14,7 @@ REPORT_COLORS = {
     # Header ini adalah warna sumber tunggal untuk PDF, Excel,
     # dan laporan lain yang memakai standar export global.
     "header": "172033",
+    "header_text": "FFFFFF",
     "holiday": "B91C1C",
     "siaga": "15803D",
     "blue": "2563EB",
