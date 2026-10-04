@@ -4400,7 +4400,7 @@ def _data_absensi_export_rows_from_request():
             Absensi.FINGER_ID.isnot(None),
             db.func.trim(Absensi.FINGER_ID) != '',
             db.func.upper(db.func.trim(db.func.coalesce(Pegawai.IS_KELUAR, ''))).in_(['N', '0']),
-            db.func.upper(db.func.trim(db.func.coalesce(MfUnitKerja.IS_USE, ''))).in_(['Y', '1']),,
+            db.func.upper(db.func.trim(db.func.coalesce(MfUnitKerja.IS_USE, ''))).in_(['Y', '1']),
         )
     )
 
