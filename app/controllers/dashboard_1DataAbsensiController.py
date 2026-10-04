@@ -20,6 +20,7 @@ from app.models.jabatanModel import MfJabatan
 from app.models.timeRecorderModel import TimeRecorder
 from app.models.jamKerjaModel import MfJamKerja
 from app.models.loadFingerModel import MfLoadFinger
+from app.models.logActivityModel import LogActivity
 from app.models.dinasLuarModel import DinasLuar
 from app.models.mediaInformasiModel import MediaInformasi
 import random
@@ -4114,6 +4115,39 @@ def api_normalisasi_export():
                 ).strip(),
             })
 
+        if exported_rows:
+            export_dates = [
+                row.get('_sort_tgl')
+                for row in exported_rows
+                if row.get('_sort_tgl')
+            ]
+            if export_dates:
+                export_start = datetime.strptime(
+                    min(export_dates),
+                    '%Y-%m-%d'
+                )
+                export_end = datetime.strptime(
+                    max(export_dates),
+                    '%Y-%m-%d'
+                )
+                export_siaga_map = _load_siaga_ket_map(
+                    export_start,
+                    export_end,
+                )
+                for row in exported_rows:
+                    row_nip = str(row.get('_sort_nip') or '').strip()
+                    row_date = row.get('_sort_tgl')
+                    if row_nip and row_date:
+                        siaga_code = export_siaga_map.get(
+                            (row_nip, datetime.strptime(
+                                row_date, '%Y-%m-%d'
+                            ).date())
+                        )
+                        if siaga_code:
+                            row['ket'] = siaga_code
+                            row['ket_class'] = 'siaga'
+                            row['ket_color'] = 'E4D7F5'
+
         exported_rows.sort(
             key=lambda row: (
                 row.get('_sort_nip') or '999999999999999999',
@@ -4157,7 +4191,64 @@ def api_normalisasi_export():
         })
 
 
-def _absensi_ket_metadata(absensi):
+def _load_siaga_ket_map(tgl_awal, tgl_akhir):
+    """
+    Ambil hasil kehadiran Piket Siaga dari LOG_ACTIVITIY.
+
+    Source HRIS 2013:
+      - StatusID = 3 berarti pegawai sudah HADIR/diabsen petugas.
+      - shift1 = 1  -> KET = 'shift1' pada tanggal ActivityDate.
+      - shift2 = 1  -> KET = 'shift2' pada tanggal ActivityDate + 1 hari.
+
+    Hanya flag kehadiran petugas yang dipakai. Fingerprint tidak
+    dipasangkan ulang di layer presentation.
+    """
+    if not tgl_awal or not tgl_akhir:
+        return {}
+
+    source_awal = tgl_awal - timedelta(days=1)
+    source_akhir = tgl_akhir
+
+    rows = (
+        db.session.query(
+            LogActivity.NIP,
+            LogActivity.ACTIVITY_DATE,
+            LogActivity.STATUS_ID,
+            LogActivity.SHIFT_1,
+            LogActivity.SHIFT_2,
+        )
+        .filter(
+            LogActivity.ACTIVITY == 'Piket Siaga',
+            LogActivity.STATUS_ID == 3,
+            LogActivity.ACTIVITY_DATE >= source_awal,
+            LogActivity.ACTIVITY_DATE <= source_akhir,
+        )
+        .all()
+    )
+
+    result = {}
+
+    for nip, activity_date, status_id, shift1, shift2 in rows:
+        if not nip or not activity_date or status_id != 3:
+            continue
+
+        nip_key = str(nip).strip()
+
+        if int(shift1 or 0) == 1:
+            target_date = activity_date
+            if tgl_awal.date() <= target_date <= tgl_akhir.date():
+                result[(nip_key, target_date)] = 'shift1'
+
+        if int(shift2 or 0) == 1:
+            target_date = activity_date + timedelta(days=1)
+            if tgl_awal.date() <= target_date <= tgl_akhir.date():
+                result[(nip_key, target_date)] = 'shift2'
+
+    return result
+
+
+def _absensi_ket_metadata(absensi, siaga_ket_map=None, nip=None):
+
     """
     KET presentation dari ABSENSI final.
 
@@ -4172,22 +4263,17 @@ def _absensi_ket_metadata(absensi):
 
     transaksi = str(absensi.TRANSAKSI_IN or '').strip().upper()
 
+    if siaga_ket_map and nip and absensi.TGL_KERJA:
+        siaga_code = siaga_ket_map.get(
+            (str(nip).strip(), absensi.TGL_KERJA.date())
+        )
+        if siaga_code:
+            return siaga_code, 'siaga'
+
     if history == 'SIAGA':
-        tgl_kerja = absensi.TGL_KERJA
-        tgl_in = absensi.TGL_JAM_IN
-        try:
-            if tgl_kerja:
-                if tgl_in and tgl_in.date() < tgl_kerja.date():
-                    return 'S-2', 'siaga'
-                if (
-                    absensi.TGL_JAM_BAKU_IN
-                    and absensi.TGL_JAM_BAKU_IN.date()
-                    < tgl_kerja.date()
-                ):
-                    return 'S-2', 'siaga'
-        except AttributeError:
-            pass
-        return 'S-1', 'siaga'
+        # Fallback hanya bila metadata LOG_ACTIVITIY tidak ditemukan.
+        # Jangan gunakan S-1/S-2 karena keduanya adalah kode sakit.
+        return 'SIAGA', 'siaga'
 
     if history:
         code = history
@@ -4318,6 +4404,11 @@ def _data_absensi_export_rows_from_request():
         Absensi.FINGER_ID.asc(),
     ).all()
 
+    siaga_ket_map = _load_siaga_ket_map(
+        tgl_awal,
+        tgl_akhir_exclusive - timedelta(days=1),
+    )
+
     hari_map = {
         'Monday': 'Senin', 'Tuesday': 'Selasa', 'Wednesday': 'Rabu',
         'Thursday': 'Kamis', 'Friday': 'Jumat', 'Saturday': 'Sabtu',
@@ -4326,7 +4417,11 @@ def _data_absensi_export_rows_from_request():
 
     rows = []
     for no, (a, peg, _unit) in enumerate(results, 1):
-        ket, ket_class = _absensi_ket_metadata(a)
+        ket, ket_class = _absensi_ket_metadata(
+            a,
+            siaga_ket_map,
+            peg.NIP,
+        )
         rows.append({
             'no': no,
             'nip': str(peg.NIP or ''),
@@ -4547,12 +4642,21 @@ def api_normalisasi_absensi_view():
 
         data = []
 
+        siaga_ket_map = _load_siaga_ket_map(
+            tgl_awal,
+            tgl_akhir,
+        )
+
         for i, (a, peg, unit) in enumerate(
             results,
             1
         ):
 
-            ket, ket_class = _absensi_ket_metadata(a)
+            ket, ket_class = _absensi_ket_metadata(
+                a,
+                siaga_ket_map,
+                peg.NIP,
+            )
 
             data.append({
                 'no': i,
