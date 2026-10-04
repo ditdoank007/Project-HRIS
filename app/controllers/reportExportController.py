@@ -73,10 +73,15 @@ def add_excel_legend(ws, start_row, label_column=3, color_column=2):
 
 
 def pdf_legend_text():
-    """Return the standard legend as plain text for PDF rendering."""
-    return (
-        "Keterangan: merah = hari libur, hijau = Siaga, "
-        "biru = SPRIN/DL tidak memotong Uang Makan, "
-        "oranye = SPRIN/DL memotong Uang Makan, "
-        "abu-abu = Absen Online WFH."
-    )
+    """Return the standard legend as colored HTML for ReportLab."""
+    parts = []
+
+    for color_key, label in REPORT_LEGEND:
+        parts.append(
+            '<font color="#{color}"><b>{label}</b></font>'.format(
+                color=REPORT_COLORS[color_key],
+                label=label,
+            )
+        )
+
+    return "Keterangan: " + " &nbsp;&nbsp; ".join(parts) + "."
