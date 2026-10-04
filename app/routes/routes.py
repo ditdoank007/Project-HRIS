@@ -189,6 +189,8 @@ from app.controllers.dashboard_1DataAbsensiController import (
     api_normalisasi_upload_dat as data_absensi_api_normalisasi_upload_dat,
     api_normalisasi_commit_dat as data_absensi_api_normalisasi_commit_dat,
     api_normalisasi_export as data_absensi_api_normalisasi_export,
+    api_normalisasi_download_excel as data_absensi_api_normalisasi_download_excel,
+    api_normalisasi_download_pdf as data_absensi_api_normalisasi_download_pdf,
     api_normalisasi_absensi_view as data_absensi_api_normalisasi_absensi_view,
     api_closing_get as data_absensi_api_closing_get,
     api_closing_save as data_absensi_api_closing_save,
