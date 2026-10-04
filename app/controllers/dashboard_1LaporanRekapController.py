@@ -63,6 +63,15 @@ from app.utils.absensiNormalisasiHelper import (
     merge_absensi_dinas_luar
 )
 
+from app.controllers.reportExportController import (
+    REPORT_COLORS,
+    REPORT_LEGEND,
+    add_excel_legend,
+    excel_font_color,
+    pdf_color,
+    pdf_legend_text,
+)
+
 def laporan_cetak_daftar_lembur_umum():
     """Render halaman Cetak Daftar Lembur Umum."""
     unit_kerja_list = MfUnitKerja.query.order_by(
@@ -1668,8 +1677,35 @@ def preview_rekap_clock_exception():
             )
         }, 500
 
+def _is_report_holiday(cal):
+    return (
+        cal.TGL_KERJA.weekday() in (5, 6)
+        or str(cal.IS_LIBUR or 'N').upper() == 'Y'
+        or cal.TGL_KERJA.strftime('%m-%d') in ('01-01', '08-17', '12-25')
+    )
+
+
+def _report_cell_values(cell):
+    status = cell.get('status') or ''
+    jam_in = format_jam_absensi(cell.get('jam_in'))
+    jam_out = format_jam_absensi(cell.get('jam_out'))
+
+    if status == 'LIBUR':
+        return '', ''
+    if status and status != 'HADIR':
+        return status, ''
+    return jam_in, jam_out
+
+
+def _report_cell_color_key(cell, is_holiday):
+    color_key = cell.get('warna')
+    if color_key in REPORT_COLORS:
+        return color_key
+    return 'holiday' if is_holiday else 'normal'
+
+
 def export_rekap_clock_exception_pdf():
-    """Export Rekap Absensi Bulanan ke PDF dengan format dua baris per pegawai."""
+    """Export Rekap Absensi Bulanan ke PDF."""
     unit_list = request.form.getlist('unit_kerja[]')
     tgl_awal_str = request.form.get('tgl_awal')
     tgl_akhir_str = request.form.get('tgl_akhir')
@@ -1687,17 +1723,15 @@ def export_rekap_clock_exception_pdf():
     if tgl_awal > tgl_akhir:
         return {'error': 'Tanggal awal tidak boleh lebih besar dari tanggal akhir'}, 400
 
-    data = generate_rekap_absensi_matrix(
-        unit_ids,
-        tgl_awal,
-        tgl_akhir
-    )
-
+    data = generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir)
     unit_names = ', '.join(
         u.NAMA_UNIT_KERJA
         for u in MfUnitKerja.query
         .filter(MfUnitKerja.UNIT_KERJA_ID.in_(unit_ids))
-        .order_by(MfUnitKerja.URUT_REPORT.asc(), MfUnitKerja.NAMA_UNIT_KERJA.asc())
+        .order_by(
+            MfUnitKerja.URUT_REPORT.asc(),
+            MfUnitKerja.NAMA_UNIT_KERJA.asc()
+        )
         .all()
     )
 
@@ -1739,8 +1773,14 @@ def export_rekap_clock_exception_pdf():
 
     story = [
         Paragraph('REKAP ABSENSI BULANAN', title_style),
-        Paragraph(f'Periode {tgl_awal:%d.%m.%Y} s/d {tgl_akhir:%d.%m.%Y}', subtitle_style),
-        Paragraph(f'Unit : {xml_escape(unit_names)}', subtitle_style),
+        Paragraph(
+            f'Periode {tgl_awal:%d.%m.%Y} s/d {tgl_akhir:%d.%m.%Y}',
+            subtitle_style
+        ),
+        Paragraph(
+            f'Unit : {xml_escape(unit_names)}',
+            subtitle_style
+        ),
         Spacer(1, 5),
     ]
 
@@ -1750,23 +1790,15 @@ def export_rekap_clock_exception_pdf():
     ]
 
     for cal in tanggal_rows:
-        day = cal.TGL_KERJA.day
-        short_day = cal.TGL_KERJA.strftime('%a').upper()
         header.append(
-            Paragraph(f'<b>{day}<br/>{xml_escape(short_day)}</b>', cell_style)
+            Paragraph(
+                f'<b>{cal.TGL_KERJA.day}<br/>'
+                f'{xml_escape(cal.TGL_KERJA.strftime("%a").upper())}</b>',
+                cell_style
+            )
         )
 
     table_data = [header]
-
-    color_map = {
-        'holiday': colors.HexColor('#b91c1c'),
-        'siaga': colors.HexColor('#15803d'),
-        'blue': colors.HexColor('#2563eb'),
-        'dark-blue': colors.HexColor('#2563eb'),
-        'orange': colors.HexColor('#b45309'),
-        'wfh': colors.HexColor('#475569'),
-        'normal': colors.HexColor('#172033'),
-    }
 
     for index, peg in enumerate(pegawai_rows, start=1):
         row_in = [
@@ -1778,39 +1810,17 @@ def export_rekap_clock_exception_pdf():
         for cal in tanggal_rows:
             key = cal.TGL_KERJA.strftime('%Y-%m-%d')
             cell = matrix.get(peg.NIP, {}).get(key, {})
-            status = cell.get('status') or ''
-            jam_in = format_jam_absensi(cell.get('jam_in'))
-            jam_out = format_jam_absensi(cell.get('jam_out'))
-
-            if status == 'LIBUR':
-                in_text = ''
-                out_text = ''
-            elif status and status != 'HADIR':
-                in_text = status
-                out_text = ''
-            else:
-                in_text = jam_in
-                out_text = jam_out
-
-            # Warna harus diberikan ke Paragraph, bukan hanya TableStyle,
-            # karena isi cell berupa ReportLab Paragraph.
-            is_holiday = (
-                cal.TGL_KERJA.weekday() in (5, 6)
-                or str(cal.IS_LIBUR or 'N').upper() == 'Y'
-                or cal.TGL_KERJA.strftime('%m-%d') in ('01-01', '08-17', '12-25')
+            in_text, out_text = _report_cell_values(cell)
+            color_key = _report_cell_color_key(
+                cell,
+                _is_report_holiday(cal)
             )
-            # Hari libur tidak boleh menimpa warna Siaga/DL.
-            # Jika cell sudah punya warna business-rule, gunakan itu.
-            # Merah hanya menjadi fallback untuk hari libur tanpa status
-            # berwarna khusus.
-            cell_color = color_map.get(cell.get('warna'))
-            if not cell_color:
-                cell_color = '#b91c1c' if is_holiday else '#172033'
+            cell_color = pdf_color(color_key)
 
             def colored_paragraph(text_value):
                 safe = xml_escape(text_value or '')
                 return Paragraph(
-                    f'<font color="{cell_color}">{safe}</font>',
+                    f'<font color="#{REPORT_COLORS[color_key]}">{safe}</font>',
                     cell_style
                 )
 
@@ -1821,7 +1831,13 @@ def export_rekap_clock_exception_pdf():
         table_data.append(row_out)
 
     available_width = landscape(A4)[0] - 36
-    date_width = max(16, min(24, (available_width - 150) / max(len(tanggal_rows), 1)))
+    date_width = max(
+        16,
+        min(
+            24,
+            (available_width - 150) / max(len(tanggal_rows), 1)
+        )
+    )
     col_widths = [20, 130] + [date_width] * len(tanggal_rows)
 
     table = Table(
@@ -1832,10 +1848,10 @@ def export_rekap_clock_exception_pdf():
     )
 
     style_commands = [
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#172033')),
+        ('BACKGROUND', (0, 0), (-1, 0), pdf_color('header')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('GRID', (0, 0), (-1, -1), 0.25, colors.HexColor('#d5dbe3')),
+        ('GRID', (0, 0), (-1, -1), 0.25, pdf_color('grid')),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
         ('LEFTPADDING', (0, 0), (-1, -1), 2),
@@ -1844,66 +1860,81 @@ def export_rekap_clock_exception_pdf():
         ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
     ]
 
-    # Warna header hari libur.
     for idx, cal in enumerate(tanggal_rows, start=2):
-        if (
-            cal.TGL_KERJA.weekday() in (5, 6)
-            or str(cal.IS_LIBUR or 'N').upper() == 'Y'
-            or cal.TGL_KERJA.strftime('%m-%d') in ('01-01', '08-17', '12-25')
-        ):
+        if _is_report_holiday(cal):
             style_commands.append(
-                ('TEXTCOLOR', (idx, 0), (idx, 0), colors.HexColor('#b91c1c'))
+                (
+                    'TEXTCOLOR',
+                    (idx, 0),
+                    (idx, 0),
+                    pdf_color('holiday')
+                )
             )
 
-    # Nama dan nomor di-merge vertikal; warna mengikuti matrix.
-    # Setiap pegawai terdiri dari dua baris (IN/OUT), sehingga zebra
-    # diterapkan per blok pegawai agar IN dan OUT tetap satu kelompok.
     for employee_index, peg in enumerate(pegawai_rows, start=1):
         row_index = 1 + (employee_index - 1) * 2
+
         if employee_index % 2 == 0:
             style_commands.append(
                 (
                     'BACKGROUND',
                     (0, row_index),
                     (-1, row_index + 1),
-                    colors.HexColor('#eef2f7'),
+                    pdf_color('zebra')
                 )
             )
 
-        style_commands.append(('SPAN', (0, row_index), (0, row_index + 1)))
-        style_commands.append(('SPAN', (1, row_index), (1, row_index + 1)))
+        style_commands.append(
+            ('SPAN', (0, row_index), (0, row_index + 1))
+        )
+        style_commands.append(
+            ('SPAN', (1, row_index), (1, row_index + 1))
+        )
+
         for col_index, cal in enumerate(tanggal_rows, start=2):
-            key = cal.TGL_KERJA.strftime('%Y-%m-%d')
-            cell = matrix.get(peg.NIP, {}).get(key, {})
-            color = color_map.get(cell.get('warna'))
-            if not color and (
-                cal.TGL_KERJA.weekday() in (5, 6)
-                or str(cal.IS_LIBUR or 'N').upper() == 'Y'
-                or cal.TGL_KERJA.strftime('%m-%d') in ('01-01', '08-17', '12-25')
-            ):
-                color = colors.HexColor('#b91c1c')
-            if color:
-                # Preview HRIS Reborn tidak memberi background khusus
-                # pada cell weekend/libur; hanya warna teks yang berubah.
-                # PDF harus mengikuti Preview 1:1.
-                style_commands.append(
-                    ('BACKGROUND', (col_index, row_index), (col_index, row_index + 1), colors.white)
+            cell = matrix.get(peg.NIP, {}).get(
+                cal.TGL_KERJA.strftime('%Y-%m-%d'),
+                {}
+            )
+            color_key = _report_cell_color_key(
+                cell,
+                _is_report_holiday(cal)
+            )
+
+            style_commands.append(
+                (
+                    'BACKGROUND',
+                    (col_index, row_index),
+                    (col_index, row_index + 1),
+                    colors.white
                 )
-                style_commands.append(
-                    ('TEXTCOLOR', (col_index, row_index), (col_index, row_index + 1), color)
+            )
+            style_commands.append(
+                (
+                    'TEXTCOLOR',
+                    (col_index, row_index),
+                    (col_index, row_index + 1),
+                    pdf_color(color_key)
                 )
+            )
 
     table.setStyle(TableStyle(style_commands))
     story.append(table)
 
-    story.extend([
-        Spacer(1, 7),
+    story.append(
+        Spacer(1, 7)
+    )
+    story.append(
         Paragraph(
-            'Keterangan: merah = hari libur, hijau = Siaga, biru = SPRIN/DL tidak memotong Uang Makan, '
-            'oranye = SPRIN/DL memotong Uang Makan, abu-abu = Absen Online WFH.',
-            ParagraphStyle('ClockLegend', parent=styles['Normal'], fontSize=6.5, leading=8)
-        ),
-    ])
+            pdf_legend_text(),
+            ParagraphStyle(
+                'ClockLegend',
+                parent=styles['Normal'],
+                fontSize=6.5,
+                leading=8
+            )
+        )
+    )
 
     buffer = BytesIO()
     doc = SimpleDocTemplate(
@@ -1920,510 +1951,312 @@ def export_rekap_clock_exception_pdf():
     return send_file(
         buffer,
         as_attachment=True,
-        download_name=f'Rekap_Absensi_Bulanan_{tgl_awal:%Y%m%d}_{tgl_akhir:%Y%m%d}.pdf',
+        download_name=(
+            f'Rekap_Absensi_Bulanan_{tgl_awal:%Y%m%d}_{tgl_akhir:%Y%m%d}.pdf'
+        ),
         mimetype='application/pdf',
     )
 
+
 def export_rekap_clock_exception():
-    """Export Rekap Exception Clock (matriks pegawai x tanggal)."""
+    """Export Rekap Absensi Bulanan ke Excel dari matrix yang sama dengan PDF."""
     unit_list = request.form.getlist('unit_kerja[]')
     tgl_awal_str = request.form.get('tgl_awal')
     tgl_akhir_str = request.form.get('tgl_akhir')
-    
+
     if not unit_list or not tgl_awal_str or not tgl_akhir_str:
         return {'error': 'Unit kosong atau format tanggal salah'}, 400
-    
+
     try:
         unit_ids = [int(u) for u in unit_list]
-    except ValueError:
-        return {'error': 'Unit Kerja ID harus berupa angka'}, 400
-    
-    tgl_awal = datetime.strptime(tgl_awal_str, '%Y-%m-%d')
-    tgl_akhir = datetime.strptime(tgl_akhir_str, '%Y-%m-%d')
-    
-    # 1. Ambil kalender (semua, termasuk libur)
-    kalender_rows = (
-        MfKalender.query
-        .filter(MfKalender.TGL_KERJA.between(tgl_awal, tgl_akhir))
-        .order_by(MfKalender.TGL_KERJA.asc())
-        .all()
-    )
-    
-    if not kalender_rows:
-        # Fallback: generate dari rentang tanggal
-        kalender_rows = []
-        d = tgl_awal
-        while d <= tgl_akhir:
-            kalender_rows.append(type('obj', (object,), {
-                'TGL_KERJA': datetime.combine(d, datetime.min.time()),
-                'IS_LIBUR': 'N',
-                'KET': None
-            })())
-            d += timedelta(days=1)
-    
-    n_tgl = len(kalender_rows)
-    
-    # 2. Ambil data absensi
-    absensi_rows = (
-        db.session.query(Absensi, Pegawai, MfUnitKerja)
-        .join(Pegawai, Absensi.FINGER_ID == Pegawai.FINGER_ID)
-        .join(MfUnitKerja, Pegawai.UNIT_KERJA_ID == MfUnitKerja.UNIT_KERJA_ID)
-        .filter(Absensi.TGL_KERJA.between(tgl_awal, tgl_akhir + timedelta(days=1)))
-        .filter(Pegawai.UNIT_KERJA_ID.in_(unit_ids))
-        .all()
-    )
-    
-    # ============================================================
-    # 2B. Ambil DINAS LUAR untuk normalisasi absensi
-    #
-    # Prioritas normalisasi:
-    #
-    # DINAS_LUAR
-    #       >
-    # ABSENSI FINGER
-    #
-    # Digunakan oleh:
-    # merge_absensi_dinas_luar()
-    #
-    # ============================================================
+        tgl_awal = datetime.strptime(tgl_awal_str, '%Y-%m-%d')
+        tgl_akhir = datetime.strptime(tgl_akhir_str, '%Y-%m-%d')
+    except (TypeError, ValueError) as exc:
+        return {'error': f'Parameter laporan tidak valid: {exc}'}, 400
 
-    dinas_luar_rows = (
-        db.session.query(
-            DinasLuar,
-            Pegawai
-        )
-        .join(
-            Pegawai,
-            DinasLuar.FINGER_ID == Pegawai.FINGER_ID
-        )
-        .filter(
-            DinasLuar.TGL_AKHIR_DINAS_LUAR >= tgl_awal
-        )
-        .filter(
-            DinasLuar.TGL_AWAL_DINAS_LUAR <= tgl_akhir
-        )
-        .filter(
-            Pegawai.UNIT_KERJA_ID.in_(unit_ids)
+    if tgl_awal > tgl_akhir:
+        return {'error': 'Tanggal awal tidak boleh lebih besar dari tanggal akhir'}, 400
+
+    from openpyxl.utils import get_column_letter
+
+    data = generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir)
+    tanggal_rows = data['kalender']
+    pegawai_rows = data['pegawai']
+    matrix = data['matrix']
+
+    unit_names = ', '.join(
+        u.NAMA_UNIT_KERJA
+        for u in MfUnitKerja.query
+        .filter(MfUnitKerja.UNIT_KERJA_ID.in_(unit_ids))
+        .order_by(
+            MfUnitKerja.URUT_REPORT.asc(),
+            MfUnitKerja.NAMA_UNIT_KERJA.asc()
         )
         .all()
     )
 
-
-
-    # 3. Ambil data pegawai distinct
-    pegawai_list = (
-        Pegawai.query
-        .join(
-            MfUnitKerja,
-            Pegawai.UNIT_KERJA_ID == MfUnitKerja.UNIT_KERJA_ID
-        )
-        .outerjoin(
-            MfJabatan,
-            Pegawai.JABATAN_ID == MfJabatan.JABATAN_ID
-        )
-        .outerjoin(
-            MfEselon,
-            Pegawai.ESELON == MfEselon.ESELON
-        )
-        .outerjoin(
-            MfGolongan,
-            Pegawai.GOL == MfGolongan.GOL
-        )
-        .filter(Pegawai.UNIT_KERJA_ID.in_(unit_ids))
-        .filter(
-            Pegawai.TGL_MASUK <= tgl_akhir
-        )
-        .all()
-    )
-
-    # ============================================================
-    # HRIS REBORN BUSINESS RULE
-    #
-    # Hanya pegawai aktif pada periode laporan yang ditampilkan.
-    #
-    # Mendukung:
-    #   0 / N  = aktif
-    #   1 / Y  = keluar
-    #
-    # Pegawai yang keluar setelah periode laporan masih dihitung.
-    # ============================================================
-
-    pegawai_list = [
-        p for p in pegawai_list
-        if is_pegawai_aktif_periode(
-            p,
-            tgl_awal,
-            tgl_akhir
-        )
-    ]
-    
-
-    # ============================================================
-    # SORTING TERPUSAT HRIS REBORN
-    #
-    # Single Source of Sorting:
-    #
-    # 1. Eselon
-    # 2. Urut Jabatan
-    # 3. Class Jabatan descending
-    # 4. NIP ascending
-    #
-    # Rule:
-    # app/utils/pegawaiSortHelper.py
-    # ============================================================
-
-    pegawai_list = sort_pegawai_rows(
-        pegawai_list
-    )
-
-
-    print("===== DEBUG EXPORT EXCEPTION CLOCK SORT =====")
-    print("TOTAL PEGAWAI =", len(pegawai_list))
-
-    for x in pegawai_list[:10]:
-        print(
-            "NAMA=",
-            x.NAMA,
-            "| JABATAN_ID=",
-            x.JABATAN_ID,
-            "| CLASS_ID=",
-            x.CLASS_ID
-        )
-
-    print("===== END DEBUG EXPORT EXCEPTION CLOCK SORT =====")
-
-    if not pegawai_list:
-        return {'error': 'Pegawai tidak ditemukan'}, 400
-    
-    # ============================================================
-    # 3B. Generate ABSENSI NORMALISASI FINAL
-    #
-    # Sumber:
-    #
-    # PEGAWAI
-    # ABSENSI
-    # DINAS_LUAR
-    #
-    # Prioritas:
-    #
-    # DINAS_LUAR
-    #       >
-    # ABSENSI FINGER
-    #
-    # ============================================================
-
-    normalisasi_rows = merge_absensi_dinas_luar(
-        pegawai_list,
-        absensi_rows,
-        dinas_luar_rows,
-        tgl_awal,
-        tgl_akhir
-    )
-
-
-    # ============================================================
-    # INDEX NORMALISASI
-    #
-    # key:
-    #   (NIP, tanggal)
-    #
-    # value:
-    #   hasil merge:
-    #   ABSENSI + DINAS_LUAR
-    #
-    # ============================================================
-
-    normalisasi_dict = {}
-
-    for item in normalisasi_rows:
-
-        key = (
-            item["nip"],
-            item["tanggal"].date()
-        )
-
-        normalisasi_dict[key] = item
-
-
-
-    # 4. Build dict absensi: {nip: {tgl_str: absensi_obj}}
-    absensi_dict = {}
-    for a, p, uk in absensi_rows:
-        tgl_key = a.TGL_KERJA.strftime('%Y-%m-%d') if a.TGL_KERJA else None
-        if p.NIP not in absensi_dict:
-            absensi_dict[p.NIP] = {}
-        absensi_dict[p.NIP][tgl_key] = a
-    
-    # 5. Nama unit
-    unit_names = ', '.join([u.NAMA_UNIT_KERJA for u in MfUnitKerja.query.filter(MfUnitKerja.UNIT_KERJA_ID.in_(unit_ids)).all()])
-    
-    # 6. Build Excel
-    from openpyxl.styles import PatternFill, Font as OpFont
-    
     wb = Workbook()
     ws = wb.active
-    ws.title = "Exception Clock"
-    ws.sheet_properties.tabColor = "FF7B00"
+    ws.title = 'Rekap Absensi'
+    ws.sheet_properties.tabColor = REPORT_COLORS['orange']
     ws.page_setup.orientation = 'landscape'
     ws.page_setup.paperSize = ws.PAPERSIZE_A4
-    
-    col_paraf = 4 + n_tgl  # Kolom terakhir
-    
-    # Logo
+    ws.freeze_panes = 'D7'
+
     try:
         img = XLImage('static/img/LogoSAR.png')
         img.width, img.height = 50, 50
         ws.add_image(img, 'A1')
-    except:
+    except FileNotFoundError:
         pass
-    
-    # Judul
-    ws.merge_cells(start_row=2, start_column=4, end_row=2, end_column=col_paraf)
-    ws.cell(row=2, column=4, value='Rekap Exception Clock').font = Font(bold=True, size=12)
+
+    last_col = 3 + len(tanggal_rows)
+
+    ws.merge_cells(
+        start_row=2,
+        start_column=4,
+        end_row=2,
+        end_column=max(last_col, 4)
+    )
+    ws.cell(
+        row=2,
+        column=4,
+        value='REKAP ABSENSI BULANAN'
+    ).font = Font(
+        bold=True,
+        size=12,
+        color=excel_font_color('header')
+    )
     ws.cell(row=2, column=4).alignment = Alignment(horizontal='center')
-    
-    ws.merge_cells(start_row=3, start_column=4, end_row=3, end_column=col_paraf)
-    ws.cell(row=3, column=4, value=f"Periode {tgl_awal:%d.%m.%Y} s/d {tgl_akhir:%d.%m.%Y}")
-    ws.cell(row=3, column=4).alignment = Alignment(horizontal='center')
-    
-    ws.merge_cells(start_row=4, start_column=4, end_row=4, end_column=col_paraf)
-    ws.cell(row=4, column=4, value=f"Unit : {unit_names}").font = Font(bold=True)
-    ws.cell(row=4, column=4).alignment = Alignment(horizontal='center')
-    
-    thin = Side(style='thin')
-    border = Border(top=thin, left=thin, right=thin, bottom=thin)
-    
-    # Header: No, Nama
-    ws.merge_cells(start_row=5, start_column=2, end_row=6, end_column=2)
-    ws.cell(row=5, column=2, value='No').border = border
-    ws.cell(row=5, column=2).alignment = Alignment(horizontal='center', vertical='center')
-    
-    ws.merge_cells(start_row=5, start_column=3, end_row=6, end_column=3)
-    ws.cell(row=5, column=3, value='Nama').border = border
-    ws.cell(row=5, column=3).alignment = Alignment(horizontal='center', vertical='center')
-    
-    # Header: Tanggal (merge row 5)
-    ws.merge_cells(start_row=5, start_column=4, end_row=5, end_column=col_paraf)
-    ws.cell(row=5, column=4, value='Tanggal').border = border
-    ws.cell(row=5, column=4).alignment = Alignment(horizontal='center')
-    
-    # Isi tanggal per kolom
-    red_font = Font(color='FF0000')
-    for i, kl in enumerate(kalender_rows):
-        col = 4 + i
-        tgl_val = kl.TGL_KERJA
-        hari = tgl_val.strftime('%a').lower() if hasattr(kl, 'TGL_KERJA') else ''
-        is_libur = kl.IS_LIBUR == 'Y' if hasattr(kl, 'IS_LIBUR') else (tgl_val.weekday() >= 5)
-        
-        cell = ws.cell(row=6, column=col, value=f"{tgl_val.day}\n{hari}")
-        cell.border = border
-        cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
-        if is_libur:
-            cell.font = Font(color='FF0000')
-    
-    # Lebar kolom
-    ws.column_dimensions['B'].width = 5
-    ws.column_dimensions['C'].width = 30
-    for i in range(4, col_paraf + 1):
-        ws.column_dimensions[chr(64 + i) if i <= 26 else 'A'].width = 6
-    
-    # Isi data
-    row = 7
-    no = 0
-    fill_red = PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')
-    fill_green = PatternFill(start_color='00FF00', end_color='00FF00', fill_type='solid')
-    fill_blue = PatternFill(start_color='0000FF', end_color='0000FF', fill_type='solid')
-    fill_orange = PatternFill(start_color='FFA500', end_color='FFA500', fill_type='solid')
-    
-    print("========== DEBUG EXPORT SORT ==========")
-    for idx, x in enumerate(pegawai_list[:10], start=1):
-        print(idx, x.NAMA, x.JABATAN_ID, x.CLASS_ID)
 
-    for peg in pegawai_list:
-        for c in range(2, col_paraf + 1):
-            ws.cell(row=row, column=c).border = border
-        
-        ws.cell(row=row, column=2, value=no + 1).alignment = Alignment(horizontal='center')
-        ws.cell(row=row, column=3, value=peg.NAMA)
-        
-        for i, kl in enumerate(kalender_rows):
-            col = 4 + i
-            tgl_str = kl.TGL_KERJA.strftime('%Y-%m-%d') if hasattr(kl, 'TGL_KERJA') else ''
-            is_libur = kl.IS_LIBUR == 'Y' if hasattr(kl, 'IS_LIBUR') else (kl.TGL_KERJA.weekday() >= 5)
-            
-            normalisasi = normalisasi_dict.get(
-                (
-                    peg.NIP,
-                    kl.TGL_KERJA.date()
-                )
-            )
+    ws.merge_cells(
+        start_row=3,
+        start_column=4,
+        end_row=3,
+        end_column=max(last_col, 4)
+    )
+    ws.cell(
+        row=3,
+        column=4,
+        value=f'Periode {tgl_awal:%d.%m.%Y} s/d {tgl_akhir:%d.%m.%Y}'
+    ).alignment = Alignment(horizontal='center')
 
-            cell = ws.cell(row=row, column=col)
+    ws.merge_cells(
+        start_row=4,
+        start_column=4,
+        end_row=4,
+        end_column=max(last_col, 4)
+    )
+    ws.cell(
+        row=4,
+        column=4,
+        value=f'Unit : {unit_names}'
+    ).alignment = Alignment(horizontal='center')
 
-            # Format cell harian:
-            # - IN dan OUT ditampilkan dalam SATU cell
-            # - Jika keduanya ada, tampil dua baris
-            # - Jika hanya salah satu yang ada, tampil satu baris
-            # - wrap_text diperlukan agar \n benar-benar dirender Excel
-            cell.alignment = Alignment(
-                horizontal='center',
-                vertical='center',
-                wrap_text=True
-            )
-            
-            if normalisasi and normalisasi.get("sumber") == "DINAS_LUAR":
-
-                cell.value = normalisasi.get(
-                    "label",
-                    "DL"
-                )
-
-
-                if normalisasi.get("warna") == "orange":
-
-                    cell.font = Font(
-                        color='FFA500'
-                    )
-
-
-                elif normalisasi.get("warna") == "blue":
-
-                    cell.font = Font(
-                        color='0000FF'
-                    )
-
-
-            elif normalisasi and normalisasi.get("sumber") == "ABSENSI":
-
-                absensi = absensi_dict.get(
-                    peg.NIP,
-                    {}
-                ).get(
-                    tgl_str
-                )
-
-
-                transaksi = (absensi.TRANSAKSI_IN or '').upper()
-                # HRIS legacy menggunakan 1900-01-01 00:00:00
-                # sebagai sentinel "tidak ada jam".
-                # Jangan tampilkan sentinel tersebut sebagai 00:00.
-                def format_jam_aktual(value):
-                    if not value:
-                        return ''
-                    if value.year == 1900 and value.month == 1 and value.day == 1:
-                        return ''
-                    return value.strftime('%H:%M')
-
-                jam_in = format_jam_aktual(absensi.TGL_JAM_IN)
-                jam_out = format_jam_aktual(absensi.TGL_JAM_OUT)
-                
-                if transaksi == 'WFH':
-                    cell.value = 'WFH'
-                elif transaksi == 'DINASLUAR':
-                    cell.value = f"{jam_in}\n{jam_out}"
-                    if absensi.STATUS_UM in [1, 2]:
-                        cell.font = Font(color='FFA500')  # Orange
-                    else:
-                        cell.font = Font(color='0000FF')  # Blue
-                elif transaksi == 'CUTI':
-                    cell.value = '- CT -'
-                    cell.font = Font(color='FFA500')
-                elif transaksi == 'SAKIT':
-                    cell.value = '- S -'
-                    cell.font = Font(color='FFA500')
-                elif transaksi == 'ALPA':
-                    cell.value = 'i'
-                    cell.font = Font(color='FFA500')
-                else:
-                    # Absensi normal:
-                    # IN dan OUT ditampilkan dua baris.
-                    # Warna exception ditentukan dari jam aktual
-                    # dibandingkan dengan jam baku, bukan IS_INVALID.
-                    if jam_in and jam_out:
-                        cell.value = f"{jam_in}\n{jam_out}"
-                    elif jam_in:
-                        cell.value = jam_in
-                    elif jam_out:
-                        cell.value = jam_out
-
-                    # ------------------------------------------------
-                    # STATUS ABSENSI NORMAL / EXCEPTION
-                    #
-                    # Database legacy menunjukkan:
-                    #   LogFP / LogFP       = fingerprint normal
-                    #   LogFP / OUT NonFP   = OUT tidak fingerprint
-                    #   IN NonFP / LogFP   = IN tidak fingerprint
-                    #
-                    # IsInValid/isOutValid TIDAK dipakai sebagai
-                    # penentu warna karena record LogFP/LogFP normal
-                    # juga mempunyai flag Y/Y.
-                    #
-                    # Jam aktual TIDAK dibandingkan secara exact dengan
-                    # jam baku di sini. Contoh 07:31 vs 07:30 tidak
-                    # otomatis menjadi merah.
-                    # ------------------------------------------------
-
-                    transaksi_out = (
-                        getattr(absensi, 'TRANSAKSI_OUT', '') or ''
-                    ).upper()
-
-                    is_exception = False
-
-                    # Pasangan fingerprint lengkap = NORMAL.
-                    if transaksi == 'LOGFP' and transaksi_out == 'LOGFP':
-                        if not jam_in or not jam_out:
-                            is_exception = True
-
-                    # Salah satu sisi bukan fingerprint = EXCEPTION.
-                    elif transaksi == 'LOGFP' and transaksi_out == 'OUT NONFP':
-                        is_exception = True
-
-                    elif transaksi == 'IN NONFP' and transaksi_out == 'LOGFP':
-                        is_exception = True
-
-                    else:
-                        # Kombinasi transaksi lain yang bukan transaksi
-                        # khusus di atas dianggap exception.
-                        is_exception = True
-
-                    if is_exception:
-                        cell.font = Font(color='FF0000')
-            else:
-                cell.value = ''
-            
-            if is_libur:
-                cell.font = Font(color='FF0000')
-        
-        # Beri ruang untuk dua baris IN / OUT.
-        # Tetap satu baris secara visual jika hanya ada satu nilai.
-        ws.row_dimensions[row].height = 30
-
-        no += 1
-        row += 1
-    
-    # Legend
-    row += 2
-    ws.cell(row=row, column=2).fill = fill_red
-    ws.cell(row=row, column=3, value='HARI LIBUR')
-    row += 1
-    ws.cell(row=row, column=2).fill = fill_green
-    ws.cell(row=row, column=3, value='SIAGA')
-    row += 1
-    ws.cell(row=row, column=2).fill = fill_blue
-    ws.cell(row=row, column=3, value='DL TIDAK TERPOTONG UANG MAKAN')
-    row += 1
-    ws.cell(row=row, column=2).fill = fill_orange
-    ws.cell(row=row, column=3, value='TERPOTONG UANG MAKAN')
-    
-    buf = BytesIO()
-    wb.save(buf)
-    buf.seek(0)
-    return send_file(
-        buf, as_attachment=True,
-        download_name=f"Rekap_Exception_Clock_{tgl_awal:%Y%m%d}_{tgl_akhir:%Y%m%d}.xlsx",
-        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    thin = Side(style='thin', color=REPORT_COLORS['grid'])
+    border = Border(
+        top=thin,
+        left=thin,
+        right=thin,
+        bottom=thin
     )
 
+    header_fill = PatternFill(
+        start_color=REPORT_COLORS['header'],
+        end_color=REPORT_COLORS['header'],
+        fill_type='solid'
+    )
+
+    for row_idx in (5, 6):
+        for col_idx in range(2, last_col + 1):
+            ws.cell(
+                row=row_idx,
+                column=col_idx
+            ).border = border
+            ws.cell(
+                row=row_idx,
+                column=col_idx
+            ).fill = header_fill
+            ws.cell(
+                row=row_idx,
+                column=col_idx
+            ).font = Font(
+                bold=True,
+                color='FFFFFFFF'
+            )
+
+    ws.merge_cells(
+        start_row=5,
+        start_column=2,
+        end_row=6,
+        end_column=2
+    )
+    ws.cell(row=5, column=2, value='No')
+    ws.cell(row=5, column=2).alignment = Alignment(
+        horizontal='center',
+        vertical='center'
+    )
+
+    ws.merge_cells(
+        start_row=5,
+        start_column=3,
+        end_row=6,
+        end_column=3
+    )
+    ws.cell(row=5, column=3, value='Nama')
+    ws.cell(row=5, column=3).alignment = Alignment(
+        horizontal='center',
+        vertical='center'
+    )
+
+    if tanggal_rows:
+        ws.merge_cells(
+            start_row=5,
+            start_column=4,
+            end_row=5,
+            end_column=last_col
+        )
+    ws.cell(row=5, column=4, value='Tanggal')
+    ws.cell(row=5, column=4).alignment = Alignment(horizontal='center')
+
+    for idx, cal in enumerate(tanggal_rows, start=4):
+        cell = ws.cell(
+            row=6,
+            column=idx,
+            value=(
+                f'{cal.TGL_KERJA.day}\n'
+                f'{cal.TGL_KERJA.strftime("%a").upper()}'
+            )
+        )
+        cell.alignment = Alignment(
+            horizontal='center',
+            vertical='center',
+            wrap_text=True
+        )
+
+        if _is_report_holiday(cal):
+            cell.font = Font(
+                bold=True,
+                color=excel_font_color('holiday')
+            )
+
+    ws.column_dimensions['B'].width = 5
+    ws.column_dimensions['C'].width = 30
+
+    for col_idx in range(4, last_col + 1):
+        ws.column_dimensions[get_column_letter(col_idx)].width = 8
+
+    row = 7
+
+    for employee_index, peg in enumerate(pegawai_rows, start=1):
+        row_in = row
+        row_out = row + 1
+
+        for col_idx in range(2, last_col + 1):
+            ws.cell(row=row_in, column=col_idx).border = border
+            ws.cell(row=row_out, column=col_idx).border = border
+
+        ws.merge_cells(
+            start_row=row_in,
+            start_column=2,
+            end_row=row_out,
+            end_column=2
+        )
+        ws.cell(row=row_in, column=2, value=employee_index)
+        ws.cell(row=row_in, column=2).alignment = Alignment(
+            horizontal='center',
+            vertical='center'
+        )
+
+        ws.merge_cells(
+            start_row=row_in,
+            start_column=3,
+            end_row=row_out,
+            end_column=3
+        )
+        ws.cell(row=row_in, column=3, value=peg.NAMA or '')
+        ws.cell(row=row_in, column=3).alignment = Alignment(
+            vertical='center',
+            wrap_text=True
+        )
+
+        if employee_index % 2 == 0:
+            zebra_fill = PatternFill(
+                start_color=REPORT_COLORS['zebra'],
+                end_color=REPORT_COLORS['zebra'],
+                fill_type='solid'
+            )
+            for col_idx in range(2, last_col + 1):
+                ws.cell(
+                    row=row_in,
+                    column=col_idx
+                ).fill = zebra_fill
+                ws.cell(
+                    row=row_out,
+                    column=col_idx
+                ).fill = zebra_fill
+
+        for col_idx, cal in enumerate(tanggal_rows, start=4):
+            key = cal.TGL_KERJA.strftime('%Y-%m-%d')
+            cell_data = matrix.get(peg.NIP, {}).get(key, {})
+            in_text, out_text = _report_cell_values(cell_data)
+            color_key = _report_cell_color_key(
+                cell_data,
+                _is_report_holiday(cal)
+            )
+
+            in_cell = ws.cell(row=row_in, column=col_idx, value=in_text)
+            out_cell = ws.cell(row=row_out, column=col_idx, value=out_text)
+
+            for export_cell in (in_cell, out_cell):
+                export_cell.alignment = Alignment(
+                    horizontal='center',
+                    vertical='center',
+                    wrap_text=True
+                )
+                export_cell.font = Font(
+                    color=excel_font_color(color_key)
+                )
+
+            # Match PDF/preview: colored business-rule cells stay white
+            # instead of inheriting the zebra background.
+            white_fill = PatternFill(
+                start_color='FFFFFFFF',
+                end_color='FFFFFFFF',
+                fill_type='solid'
+            )
+            if color_key != 'normal':
+                in_cell.fill = white_fill
+                out_cell.fill = white_fill
+
+        ws.row_dimensions[row_in].height = 22
+        ws.row_dimensions[row_out].height = 22
+        row += 2
+
+    row += 2
+    add_excel_legend(
+        ws,
+        start_row=row,
+        label_column=3,
+        color_column=2
+    )
+
+    ws.column_dimensions['B'].width = 8
+
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name=(
+            f'Rekap_Absensi_Bulanan_{tgl_awal:%Y%m%d}_{tgl_akhir:%Y%m%d}.xlsx'
+        ),
+        mimetype=(
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+    )
 
 def laporan_rekap_ketidakhadiran_pegawai():
     """Render halaman Laporan Rekap Ketidakhadiran Pegawai."""
