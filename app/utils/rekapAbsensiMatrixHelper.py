@@ -14,15 +14,16 @@ from app.utils.pegawaiSortHelper import sort_pegawai_rows
 
 
 def format_jam_absensi(value):
+    """Format jam absensi; '-' berarti tidak ada record IN/OUT."""
     if not value:
-        return ""
+        return "-"
     if (
         hasattr(value, "year")
         and value.year == 1900
         and value.month == 1
         and value.day == 1
     ):
-        return ""
+        return "-"
     return value.strftime("%H.%M")
 
 
@@ -206,6 +207,10 @@ def _warna_absensi(absensi):
 
     if transaction == 'WFH':
         return 'wfh'
+
+    # Cuti (CT) dan Sakit (S-1/S-2/S) memotong Uang Makan.
+    if transaction in ('CUTI', 'SAKIT'):
+        return 'orange'
 
     rekap_code = str(
         absensi.HISTORY_TRANSAKSI_IN or ''
@@ -515,7 +520,6 @@ def generate_rekap_absensi_matrix(unit_ids, tgl_awal, tgl_akhir, pegawai_nips=No
                 and cell.get('warna') not in (
                     'siaga',
                     'blue',
-                    'dark-blue',
                     'orange',
                 )
             ):
