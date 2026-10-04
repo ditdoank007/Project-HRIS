@@ -1440,6 +1440,16 @@ def api_normalisasi_legacy_test():
 def api_normalisasi_export():
     return data_absensi_api_normalisasi_export()
 
+@main.route('/api/normalisasi/download-excel', methods=['GET'])
+@form_access_required('AbsensiFP.aspx')
+def api_normalisasi_download_excel():
+    return data_absensi_api_normalisasi_download_excel()
+
+@main.route('/api/normalisasi/download-pdf', methods=['GET'])
+@form_access_required('AbsensiFP.aspx')
+def api_normalisasi_download_pdf():
+    return data_absensi_api_normalisasi_download_pdf()
+
 @main.route('/api/normalisasi/absensi-view', methods=['GET'])
 @form_access_required('AbsensiFP.aspx')
 def api_normalisasi_absensi_view():
