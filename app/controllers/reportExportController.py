@@ -26,6 +26,53 @@ REPORT_COLORS = {
 }
 
 
+def ket_color_key(code, status_um=None, master_potongan_codes=None):
+    """
+    Global color controller untuk KET pada seluruh report HRIS Reborn.
+
+    Semantik:
+      - DL/OP/SD + StatusUM=1  -> orange (potong Uang Makan)
+      - DL/OP/SD + StatusUM!=1 -> blue (tidak potong Uang Makan)
+      - shift1/shift2          -> siaga (hijau)
+      - WFH                    -> wfh (abu-abu gelap)
+      - kode Master Potongan ketidakhadiran yang memotong UM -> orange
+
+    Return value adalah key REPORT_COLORS agar UI/Excel/PDF memakai
+    satu palette global.
+    """
+    normalized = str(code or '').strip().upper()
+    if not normalized:
+        return 'normal'
+
+    if normalized in ('SHIFT1', 'SHIFT2'):
+        return 'siaga'
+
+    if normalized == 'WFH':
+        return 'wfh'
+
+    if normalized in ('DL', 'OP', 'SD'):
+        try:
+            return 'orange' if int(status_um or 0) == 1 else 'blue'
+        except (TypeError, ValueError):
+            return 'blue'
+
+    # Kode ketidakhadiran yang memang memotong Uang Makan.
+    # Termasuk seluruh kode yang berasal dari Master Potongan.
+    fixed_cut_codes = {
+        'CT', 'CAP', 'S', 'S-1', 'S-2', 'I', 'IJIN', 'IZIN', 'ALPA'
+    }
+    master_codes = {
+        str(value or '').strip().upper()
+        for value in (master_potongan_codes or set())
+        if str(value or '').strip()
+    }
+
+    if normalized in fixed_cut_codes or normalized in master_codes:
+        return 'orange'
+
+    return 'normal'
+
+
 REPORT_LEGEND = (
     ("holiday", "HARI LIBUR"),
     ("siaga", "SIAGA"),
