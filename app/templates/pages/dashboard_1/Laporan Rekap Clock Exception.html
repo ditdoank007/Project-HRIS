@@ -45,21 +45,24 @@
                 </div>
             </div>
 
-            <div class="hris-field hris-rekap-unit-field">
-                <div class="hris-rekap-unit-heading">
-                    <div>
-                        <label class="hris-label mb-0">Unit Kerja</label>
-                        <div class="hris-field-help">
-                            Pilih satu, beberapa, atau seluruh unit kerja.
-                        </div>
-                    </div>
+            <div class="hris-form-inline hris-filter-pair hris-rekap-filter">
+                <select id="filterFieldRekap"
+                        class="hris-select"
+                        aria-label="Field filter">
+                    <option value="UnitKerjaName" selected>Unit</option>
+                </select>
 
-                    <span class="hris-unit-selected-count" id="unitKerjaCount">
-                        Belum ada unit dipilih
-                    </span>
+                <div class="hris-filter-value-container">
+                    <div class="hris-display-value is-empty" id="filterValueRekap">
+                        Pilih Unit Kerja di bawah
+                    </div>
                 </div>
 
-                <div class="hris-unit-selector hris-unit-selector--report" id="unitKerjaPicker">
+                <div class="hris-unit-multiselect" id="unitKerjaPicker">
+                    <div class="hris-unit-multiselect-label">
+                        Pilih satu, beberapa, atau seluruh unit kerja.
+                    </div>
+
                     <div class="hris-unit-selector-toolbar">
                         <label class="hris-unit-select-all">
                             <input type="checkbox" id="unitKerjaSelectAll">
@@ -98,6 +101,10 @@
                             Unit kerja tidak ditemukan.
                         </div>
                     </div>
+
+                    <span class="hris-unit-selection-summary" id="unitKerjaCount">
+                        Belum ada unit dipilih
+                    </span>
                 </div>
             </div>
 
