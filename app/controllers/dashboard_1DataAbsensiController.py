@@ -1693,10 +1693,7 @@ def api_normalisasi_process():
                 SELECT DISTINCT p0.FingerID
                 FROM PEGAWAI p0
                 WHERE {' AND '.join(employee_filter_clauses)}
-                  AND p0.NIP IS NOT NULL
-                  AND TRIM(p0.NIP) <> ''
                   AND p0.FingerID IS NOT NULL
-                  AND TRIM(CAST(p0.FingerID AS CHAR)) <> ''
             """)
             employee_rows = db.session.execute(
                 employee_sql,
@@ -1706,10 +1703,7 @@ def api_normalisasi_process():
             employee_sql = text("""
                 SELECT DISTINCT p0.FingerID
                 FROM PEGAWAI p0
-                WHERE p0.NIP IS NOT NULL
-                  AND TRIM(p0.NIP) <> ''
-                  AND p0.FingerID IS NOT NULL
-                  AND TRIM(CAST(p0.FingerID AS CHAR)) <> ''
+                WHERE p0.FingerID IS NOT NULL
             """)
             employee_rows = db.session.execute(
                 employee_sql
@@ -1869,11 +1863,7 @@ def api_normalisasi_process():
             ) src
             INNER JOIN PEGAWAI p
                 ON src.USER_ID = p.FingerID
-            WHERE p.NIP IS NOT NULL
-              AND TRIM(p.NIP) <> ''
-              AND p.FingerID IS NOT NULL
-              AND TRIM(CAST(p.FingerID AS CHAR)) <> ''
-              AND 1=1
+            WHERE 1=1
               {filter_sql}
             ORDER BY CAST(p.UnitKerja AS UNSIGNED), src.FINGER_ID, src.WAKTU
         """)
