@@ -4,6 +4,7 @@ import os
 import re
 import tempfile
 import unicodedata
+from datetime import date, datetime
 
 from flask import current_app
 from werkzeug.datastructures import FileStorage
@@ -48,7 +49,24 @@ def dinas_luar_folder(jenis):
     return JENIS_FOLDER.get(str(jenis or "").strip().upper(), "UMUM")
 
 
+def _normalize_tanggal_surat(tanggal_surat):
+    """Normalize DB/API date values before building Dinas Luar paths."""
+    if isinstance(tanggal_surat, datetime):
+        return tanggal_surat.date()
+    if isinstance(tanggal_surat, date):
+        return tanggal_surat
+    if isinstance(tanggal_surat, str):
+        value = tanggal_surat.strip()
+        for fmt in ("%Y-%m-%d", "%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S"):
+            try:
+                return datetime.strptime(value, fmt).date()
+            except ValueError:
+                continue
+    raise ValueError("Tanggal surat Dinas Luar tidak valid.")
+
+
 def dinas_luar_relative_path(tanggal_surat, jenis, keterangan):
+    tanggal_surat = _normalize_tanggal_surat(tanggal_surat)
     folder = dinas_luar_folder(jenis)
     filename = (
         f"{tanggal_surat:%Y-%m}-"
@@ -74,6 +92,7 @@ def dinas_luar_absolute_path(tanggal_surat, jenis, keterangan):
 
 
 def dinas_luar_absolute_path_by_filename(tanggal_surat, jenis, filename):
+    tanggal_surat = _normalize_tanggal_surat(tanggal_surat)
     folder = dinas_luar_folder(jenis)
     safe_name = os.path.basename(str(filename or "").strip())
     return _ensure_under_root(
