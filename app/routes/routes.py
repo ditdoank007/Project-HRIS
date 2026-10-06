@@ -174,7 +174,7 @@ from app.controllers.rekamMedisKegiatanController import (
     api_rekam_medis_kegiatan_pegawai_qr, api_rekam_medis_kegiatan_non_pegawai_qr,
     api_rekam_medis_scan, api_rekam_medis_petugas_search,
     api_calendar_rekam_medis_info, api_calendar_rekam_medis_employee,
-    api_calendar_rekam_medis_guest,
+    api_calendar_rekam_medis_guest, api_calendar_rekam_medis_history,
     api_rekam_medis_kegiatan_pegawai_peserta_detail,
     api_rekam_medis_kegiatan_non_pegawai_peserta_detail,
     api_rekam_medis_kegiatan_pegawai_peserta_save,
