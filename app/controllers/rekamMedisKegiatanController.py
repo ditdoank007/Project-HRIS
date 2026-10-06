@@ -1,4 +1,5 @@
 from datetime import datetime
+import re
 from io import BytesIO
 
 import qrcode
@@ -6,6 +7,7 @@ from qrcode.image.svg import SvgPathImage
 from flask import jsonify, render_template, request, session, Response, send_file
 
 from app import db
+from config import Config
 from app.models.pegawaiModel import Pegawai
 from app.models.rekamMedisKegiatanModel import RekamMedisKegiatan
 from app.models.rekamMedisModel import RekamMedis
@@ -320,8 +322,8 @@ def api_rekam_medis_kegiatan_non_pegawai_complete(kegiatan_id):
 
 
 def _build_medical_qr(kegiatan):
-    base_url = request.host_url.rstrip("/")
-    scan_url = f"{base_url}/rekam-medis/scan/{kegiatan.QR_TOKEN}"
+    base_url = str(Config.CALENDAR_PUBLIC_BASE_URL or "https://calendar.sarsurabaya.id").rstrip("/")
+    scan_url = f"{base_url}/rekam-medis-qrcode?token={kegiatan.QR_TOKEN}"
 
     qr = qrcode.QRCode(
         version=None,
@@ -359,6 +361,185 @@ def api_rekam_medis_kegiatan_pegawai_qr(kegiatan_id):
 
 def api_rekam_medis_kegiatan_non_pegawai_qr(kegiatan_id):
     return _qr(kegiatan_id, "NON_PEGAWAI")
+
+
+def _calendar_authorized():
+    supplied = request.headers.get("X-Calendar-Internal-Key")
+    expected = Config.CALENDAR_INTERNAL_API_KEY
+    return bool(supplied and expected and supplied == expected)
+
+
+def _medical_kegiatan_from_token(token):
+    return RekamMedisKegiatan.query.filter(
+        RekamMedisKegiatan.QR_TOKEN == str(token or "").strip()
+    ).first()
+
+
+def api_calendar_rekam_medis_info():
+    if not _calendar_authorized():
+        return jsonify({"status": "error", "message": "Unauthorized"}), 401
+
+    token = str(request.args.get("token") or "").strip()
+    if not token or len(token) > 150:
+        return jsonify({"status": "error", "message": "Token QR tidak valid."}), 400
+
+    kegiatan = _medical_kegiatan_from_token(token)
+    if not kegiatan:
+        return jsonify({"status": "error", "message": "QR Rekam Medis tidak ditemukan."}), 404
+
+    nip = str(request.headers.get("X-Calendar-NIP") or "").strip() or None
+    employee = (
+        operational_pegawai_query()
+        .filter(Pegawai.NIP == nip)
+        .first()
+    ) if nip else None
+
+    existing_employee = RekamMedisPeserta.query.filter(
+        RekamMedisPeserta.KEGIATAN_ID == kegiatan.KEGIATAN_ID,
+        RekamMedisPeserta.JENIS_PESERTA == "PEGAWAI",
+        RekamMedisPeserta.NIP == nip,
+    ).first() if nip else None
+
+    return jsonify({
+        "status": "success",
+        "data": {
+            "activity_type": "REKAM_MEDIS",
+            "participant_mode": kegiatan.JENIS,
+            "event_id": kegiatan.KEGIATAN_ID,
+            "title": kegiatan.JUDUL,
+            "start": f"{kegiatan.TANGGAL.isoformat()}T{kegiatan.JAM.strftime('%H:%M')}:00",
+            "end": f"{kegiatan.TANGGAL.isoformat()}T{kegiatan.JAM.strftime('%H:%M')}:00",
+            "location": kegiatan.LOKASI or "Kantor SAR Surabaya",
+            "status": kegiatan.STATUS,
+            "qr_active": kegiatan.QR_ACTIVE == "Y",
+            "employee_eligible": bool(employee),
+            "employee_attended": bool(existing_employee),
+            "employee_attendance_at": existing_employee.SCANNED_AT.isoformat() if existing_employee else None,
+        },
+    })
+
+
+def api_calendar_rekam_medis_employee():
+    if not _calendar_authorized():
+        return jsonify({"status": "error", "message": "Unauthorized"}), 401
+
+    payload = request.get_json(silent=True) or {}
+    token = str(payload.get("token") or "").strip()
+    nip = str(request.headers.get("X-Calendar-NIP") or "").strip()
+    if not token or not nip:
+        return jsonify({"status": "error", "message": "Token QR dan NIP pegawai wajib diisi."}), 400
+
+    kegiatan = _medical_kegiatan_from_token(token)
+    if not kegiatan:
+        return jsonify({"status": "error", "message": "QR Rekam Medis tidak ditemukan."}), 404
+    if kegiatan.STATUS in ("SELESAI", "BATAL") or kegiatan.QR_ACTIVE != "Y":
+        return jsonify({"status": "error", "message": "Pendaftaran pemeriksaan sudah ditutup."}), 409
+    if kegiatan.JENIS != "PEGAWAI":
+        return jsonify({"status": "error", "message": "QR ini diperuntukkan bagi peserta non pegawai."}), 400
+
+    pegawai = operational_pegawai_query().filter(Pegawai.NIP == nip).first()
+    if not pegawai:
+        return jsonify({"status": "error", "message": "Akun bukan Pegawai Operasional HRIS atau unit kerja sudah tidak aktif."}), 403
+
+    peserta = RekamMedisPeserta.query.filter(
+        RekamMedisPeserta.KEGIATAN_ID == kegiatan.KEGIATAN_ID,
+        RekamMedisPeserta.JENIS_PESERTA == "PEGAWAI",
+        RekamMedisPeserta.NIP == pegawai.NIP,
+    ).first()
+
+    created = False
+    if not peserta:
+        peserta = RekamMedisPeserta(
+            KEGIATAN_ID=kegiatan.KEGIATAN_ID,
+            JENIS_PESERTA="PEGAWAI",
+            NIP=pegawai.NIP,
+            NAMA=pegawai.NAMA,
+            UNIT_KERJA=pegawai.UNIT_KERJA,
+            EMAIL=pegawai.MAIL,
+            NO_HANDPHONE=pegawai.NO_TELP,
+            STATUS_PEMERIKSAAN="MENUNGGU",
+        )
+        db.session.add(peserta)
+        db.session.commit()
+        created = True
+
+    return jsonify({
+        "status": "success",
+        "created": created,
+        "data": peserta.to_dict(),
+        "message": "Scan QR berhasil. Anda sudah masuk daftar peserta pemeriksaan." if created else "Anda sudah terdaftar dalam daftar peserta pemeriksaan.",
+    })
+
+
+def api_calendar_rekam_medis_guest():
+    if not _calendar_authorized():
+        return jsonify({"status": "error", "message": "Unauthorized"}), 401
+
+    payload = request.get_json(silent=True) or {}
+    token = str(payload.get("token") or "").strip()
+    nik = str(payload.get("nik") or "").strip()
+    nama = str(payload.get("nama") or "").strip()
+    jenis_kelamin = str(payload.get("jenis_kelamin") or "").strip().upper()
+    instansi = str(payload.get("instansi") or "").strip()
+    email = str(payload.get("email") or "").strip()
+    no_handphone = str(payload.get("no_handphone") or "").strip()
+    tanda_tangan = str(payload.get("tanda_tangan") or "").strip()
+
+    if not token:
+        return jsonify({"status": "error", "message": "Token QR wajib diisi."}), 400
+    if not re.fullmatch(r"\\d{16}", nik):
+        return jsonify({"status": "error", "message": "NIK wajib 16 digit angka."}), 400
+    if not nama:
+        return jsonify({"status": "error", "message": "Nama Lengkap wajib diisi."}), 400
+    if jenis_kelamin not in ("L", "P"):
+        return jsonify({"status": "error", "message": "Jenis kelamin wajib dipilih L atau P."}), 400
+    if not instansi:
+        return jsonify({"status": "error", "message": "Instansi / Organisasi wajib diisi."}), 400
+    if not email:
+        return jsonify({"status": "error", "message": "Email wajib diisi."}), 400
+    if not no_handphone:
+        return jsonify({"status": "error", "message": "No. Handphone wajib diisi."}), 400
+    if not tanda_tangan or len(tanda_tangan) > 750000:
+        return jsonify({"status": "error", "message": "Tanda tangan wajib diisi dan ukurannya tidak valid."}), 400
+
+    kegiatan = _medical_kegiatan_from_token(token)
+    if not kegiatan:
+        return jsonify({"status": "error", "message": "QR Rekam Medis tidak ditemukan."}), 404
+    if kegiatan.STATUS in ("SELESAI", "BATAL") or kegiatan.QR_ACTIVE != "Y":
+        return jsonify({"status": "error", "message": "Pendaftaran pemeriksaan sudah ditutup."}), 409
+    if kegiatan.JENIS != "NON_PEGAWAI":
+        return jsonify({"status": "error", "message": "QR ini diperuntukkan bagi pegawai Kantor SAR Surabaya."}), 400
+
+    peserta = RekamMedisPeserta.query.filter(
+        RekamMedisPeserta.KEGIATAN_ID == kegiatan.KEGIATAN_ID,
+        RekamMedisPeserta.JENIS_PESERTA == "NON_PEGAWAI",
+        RekamMedisPeserta.NIK == nik,
+    ).first()
+
+    created = False
+    if not peserta:
+        peserta = RekamMedisPeserta(
+            KEGIATAN_ID=kegiatan.KEGIATAN_ID,
+            JENIS_PESERTA="NON_PEGAWAI",
+            NIK=nik,
+            JENIS_KELAMIN=jenis_kelamin,
+            NAMA=nama,
+            INSTANSI=instansi,
+            EMAIL=email,
+            NO_HANDPHONE=no_handphone,
+            TANDA_TANGAN=tanda_tangan,
+            STATUS_PEMERIKSAAN="MENUNGGU",
+        )
+        db.session.add(peserta)
+        db.session.commit()
+        created = True
+
+    return jsonify({
+        "status": "success",
+        "created": created,
+        "data": peserta.to_dict(),
+        "message": "Pendaftaran peserta berhasil. Anda sudah masuk daftar pemeriksaan." if created else "Peserta dengan NIK tersebut sudah terdaftar pada pemeriksaan ini.",
+    })
 
 
 def api_rekam_medis_scan(token):
