@@ -1,0 +1,262 @@
+{% extends "layout/baseDashboard1.html" %}
+
+{% block title %}- Rekam Medis{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/hris-ui.css') }}">
+
+<div class="hris-modern hris-page">
+    <div class="hris-page-header">
+        <div>
+            <h1 class="hris-page-title">Rekam Medis</h1>
+            <p class="hris-page-subtitle">Pemeriksaan medis pegawai Kantor SAR Surabaya dan peserta non pegawai.</p>
+        </div>
+    </div>
+
+    <div class="hris-hero">
+        <div>
+            <h2 class="hris-hero-title">PEMERIKSAAN MEDIS</h2>
+            <p class="hris-hero-text">Pencatatan hasil pemeriksaan medis terintegrasi dalam HRIS Reborn.</p>
+        </div>
+    </div>
+
+    <div class="hris-grid hris-grid-2">
+        <section class="hris-card">
+            <div class="hris-card-header">
+                <h2 class="hris-card-title">Pemeriksaan Medis Pegawai</h2>
+            </div>
+            <div class="hris-card-body">
+                <p class="hris-page-subtitle mb-3">Nama hanya berasal dari pegawai aktif pada unit kerja yang aktif.</p>
+                <form id="formMedisPegawai" data-jenis="PEGAWAI">
+                    <div class="hris-form-grid">
+                        <div class="hris-field" style="grid-column:1/-1;position:relative;">
+                            <label class="hris-label" for="pegawaiKeyword">Nama Pegawai *</label>
+                            <input id="pegawaiKeyword" class="hris-input" autocomplete="off" placeholder="Ketik nama pegawai...">
+                            <input id="pegawaiNip" type="hidden">
+                            <div id="pegawaiResults" style="position:absolute;z-index:20;left:0;right:0;top:72px;background:#fff;border:1px solid #d5dbe3;border-radius:8px;box-shadow:0 14px 35px rgba(23,32,51,.14);display:none;"></div>
+                        </div>
+                        <div class="hris-field">
+                            <label class="hris-label">Unit Kerja</label>
+                            <input id="pegawaiUnit" class="hris-input" readonly>
+                        </div>
+                        <div class="hris-field">
+                            <label class="hris-label">Tekanan Darah</label>
+                            <input name="tekanan_darah" class="hris-input" placeholder="Contoh: 120/80">
+                        </div>
+                        <div class="hris-field">
+                            <label class="hris-label">Nadi (x/menit)</label>
+                            <input name="nadi" type="number" min="30" max="220" class="hris-input">
+                        </div>
+                        <div class="hris-field">
+                            <label class="hris-label">Frekuensi Nafas (x/menit)</label>
+                            <input name="frekuensi_nafas" type="number" min="5" max="60" class="hris-input">
+                        </div>
+                        <div class="hris-field">
+                            <label class="hris-label">Suhu (°C)</label>
+                            <input name="suhu" type="number" step="0.1" min="30" max="45" class="hris-input">
+                        </div>
+                        <div class="hris-field">
+                            <label class="hris-label">SpO₂ (%)</label>
+                            <input name="spo2" type="number" min="0" max="100" class="hris-input">
+                        </div>
+                        <div class="hris-field">
+                            <label class="hris-label">Hasil Kebugaran</label>
+                            <select name="hasil_kebugaran" class="hris-select">
+                                <option value="">Pilih hasil</option>
+                                <option value="FIT">FIT</option>
+                                <option value="UNFIT">UNFIT</option>
+                            </select>
+                        </div>
+                        <div class="hris-field" style="grid-column:1/-1;">
+                            <label class="hris-label">Keluhan *</label>
+                            <textarea name="keluhan" class="hris-textarea" required></textarea>
+                        </div>
+                        <div class="hris-field" style="grid-column:1/-1;">
+                            <label class="hris-label">Tindakan / Catatan</label>
+                            <textarea name="tindakan" class="hris-textarea"></textarea>
+                        </div>
+                        <div class="hris-field">
+                            <label class="hris-label">Pemeriksa</label>
+                            <input name="pemeriksa" class="hris-input">
+                        </div>
+                    </div>
+                    <div class="mt-4 d-flex justify-content-end">
+                        <button type="submit" class="hris-btn hris-btn-primary"><i class="bi bi-save"></i> Simpan Pemeriksaan</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <section class="hris-card">
+            <div class="hris-card-header">
+                <h2 class="hris-card-title">Pemeriksaan Medis Non Pegawai</h2>
+            </div>
+            <div class="hris-card-body">
+                <p class="hris-page-subtitle mb-3">Untuk kegiatan Potensi atau kegiatan lain yang membutuhkan pemeriksaan medis.</p>
+                <form id="formMedisNonPegawai" data-jenis="NON_PEGAWAI">
+                    <div class="hris-form-grid">
+                        <div class="hris-field">
+                            <label class="hris-label">NIK *</label>
+                            <input name="nik" class="hris-input" required>
+                        </div>
+                        <div class="hris-field">
+                            <label class="hris-label">Nama *</label>
+                            <input name="nama" class="hris-input" required>
+                        </div>
+                        <div class="hris-field" style="grid-column:1/-1;">
+                            <label class="hris-label">Instansi / Organisasi *</label>
+                            <input name="instansi" class="hris-input" required>
+                        </div>
+                        <div class="hris-field">
+                            <label class="hris-label">Email *</label>
+                            <input name="email" type="email" class="hris-input" required>
+                        </div>
+                        <div class="hris-field">
+                            <label class="hris-label">No. Handphone *</label>
+                            <input name="no_handphone" class="hris-input" required>
+                        </div>
+                        <div class="hris-field">
+                            <label class="hris-label">Tekanan Darah</label>
+                            <input name="tekanan_darah" class="hris-input" placeholder="Contoh: 120/80">
+                        </div>
+                        <div class="hris-field">
+                            <label class="hris-label">Nadi (x/menit)</label>
+                            <input name="nadi" type="number" min="30" max="220" class="hris-input">
+                        </div>
+                        <div class="hris-field">
+                            <label class="hris-label">Frekuensi Nafas (x/menit)</label>
+                            <input name="frekuensi_nafas" type="number" min="5" max="60" class="hris-input">
+                        </div>
+                        <div class="hris-field">
+                            <label class="hris-label">Suhu (°C)</label>
+                            <input name="suhu" type="number" step="0.1" min="30" max="45" class="hris-input">
+                        </div>
+                        <div class="hris-field">
+                            <label class="hris-label">SpO₂ (%)</label>
+                            <input name="spo2" type="number" min="0" max="100" class="hris-input">
+                        </div>
+                        <div class="hris-field">
+                            <label class="hris-label">Hasil Kebugaran</label>
+                            <select name="hasil_kebugaran" class="hris-select">
+                                <option value="">Pilih hasil</option>
+                                <option value="FIT">FIT</option>
+                                <option value="UNFIT">UNFIT</option>
+                            </select>
+                        </div>
+                        <div class="hris-field" style="grid-column:1/-1;">
+                            <label class="hris-label">Keluhan *</label>
+                            <textarea name="keluhan" class="hris-textarea" required></textarea>
+                        </div>
+                        <div class="hris-field" style="grid-column:1/-1;">
+                            <label class="hris-label">Tindakan / Catatan</label>
+                            <textarea name="tindakan" class="hris-textarea"></textarea>
+                        </div>
+                        <div class="hris-field">
+                            <label class="hris-label">Pemeriksa</label>
+                            <input name="pemeriksa" class="hris-input">
+                        </div>
+                    </div>
+                    <div class="mt-4 d-flex justify-content-end">
+                        <button type="submit" class="hris-btn hris-btn-primary"><i class="bi bi-save"></i> Simpan Pemeriksaan</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </div>
+</div>
+
+<script>
+(function () {
+    const keyword = document.getElementById('pegawaiKeyword');
+    const nip = document.getElementById('pegawaiNip');
+    const unit = document.getElementById('pegawaiUnit');
+    const results = document.getElementById('pegawaiResults');
+
+    function showResults(rows) {
+        if (!rows.length) {
+            results.innerHTML = '<div style="padding:12px;color:#94a3b8;font-size:12px;">Pegawai aktif tidak ditemukan.</div>';
+            results.style.display = 'block';
+            return;
+        }
+        results.innerHTML = rows.map(row => (
+            '<button type="button" data-nip="' + row.nip + '" data-nama="' + row.nama.replace(/"/g, '&quot;') + '" data-unit="' + (row.unit_kerja || '').replace(/"/g, '&quot;') + '" style="display:block;width:100%;border:0;background:#fff;text-align:left;padding:10px 12px;border-bottom:1px solid #eef2f7;">' +
+            '<strong style="display:block;color:#172033;">' + row.nama + '</strong>' +
+            '<span style="font-size:11px;color:#94a3b8;">' + row.nip + ' · ' + (row.unit_kerja || '-') + '</span>' +
+            '</button>'
+        )).join('');
+        results.style.display = 'block';
+        results.querySelectorAll('button').forEach(btn => btn.addEventListener('click', () => {
+            keyword.value = btn.dataset.nama;
+            nip.value = btn.dataset.nip;
+            unit.value = btn.dataset.unit;
+            results.style.display = 'none';
+        }));
+    }
+
+    let timer;
+    keyword.addEventListener('input', () => {
+        nip.value = '';
+        unit.value = '';
+        clearTimeout(timer);
+        const q = keyword.value.trim();
+        if (q.length < 1) {
+            results.style.display = 'none';
+            return;
+        }
+        timer = setTimeout(async () => {
+            try {
+                const res = await fetch('/api/rekam-medis/search-pegawai?keyword=' + encodeURIComponent(q), { cache: 'no-store' });
+                const json = await res.json();
+                showResults(json.data || []);
+            } catch (err) {
+                results.innerHTML = '<div style="padding:12px;color:#b91c1c;font-size:12px;">Gagal mengambil data pegawai.</div>';
+                results.style.display = 'block';
+            }
+        }, 180);
+    });
+
+    document.addEventListener('click', (event) => {
+        if (!event.target.closest('#pegawaiKeyword') && !event.target.closest('#pegawaiResults')) {
+            results.style.display = 'none';
+        }
+    });
+
+    async function submitForm(form) {
+        const data = Object.fromEntries(new FormData(form).entries());
+        data.jenis_pasien = form.dataset.jenis;
+        if (data.jenis_pasien === 'PEGAWAI') {
+            data.nip = nip.value;
+            data.nama = keyword.value;
+            if (!data.nip) {
+                alert('Pilih pegawai dari daftar pencarian terlebih dahulu.');
+                return;
+            }
+        }
+
+        const res = await fetch('/api/rekam-medis', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        const json = await res.json();
+        if (!res.ok || !json.success) {
+            alert(json.message || 'Gagal menyimpan pemeriksaan.');
+            return;
+        }
+        alert('Pemeriksaan medis berhasil disimpan.');
+        form.reset();
+        if (form.dataset.jenis === 'PEGAWAI') {
+            nip.value = '';
+            unit.value = '';
+        }
+    }
+
+    document.querySelectorAll('form[data-jenis]').forEach(form => {
+        form.addEventListener('submit', event => {
+            event.preventDefault();
+            submitForm(form);
+        });
+    });
+})();
+</script>
+{% endblock %}
