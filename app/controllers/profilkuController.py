@@ -10,6 +10,7 @@ from flask import current_app, jsonify, render_template, request, send_file, ses
 
 from app import db
 from app.models.pegawaiModel import Pegawai
+from app.models.jabatanModel import MfJabatan
 from config import Config
 
 
@@ -57,6 +58,16 @@ def _photo_path(nip):
 def _profile_payload(pegawai):
     photo = _photo_path(pegawai.NIP)
     ttd = os.path.join(_ttd_root(), f"{pegawai.NIP}.png")
+
+    jabatan_master = None
+    if pegawai.JABATAN_ID not in (None, 0):
+        jabatan_master = (
+            MfJabatan.query
+            .filter(MfJabatan.JABATAN_ID == pegawai.JABATAN_ID)
+            .first()
+        )
+    jabatan_nama = (jabatan_master.NAMA_JABATAN if jabatan_master else None) or pegawai.JABATAN
+
     return {
         "success": True,
         "data": {
@@ -65,7 +76,7 @@ def _profile_payload(pegawai):
             "finger_id": pegawai.FINGER_ID,
             "pangkat": pegawai.PANGKAT,
             "gol": pegawai.GOL,
-            "jabatan": pegawai.JABATAN,
+            "jabatan": jabatan_nama,
             "unit_kerja": pegawai.UNIT_KERJA,
             "eselon": pegawai.ESELON,
             "tgl_masuk": pegawai.TGL_MASUK.strftime("%Y-%m-%d") if pegawai.TGL_MASUK else None,
@@ -253,6 +264,17 @@ def api_profilku_password():
     return jsonify({"success": True, "message": "Password berhasil diubah."})
 
 
+def api_profilku_signature_file():
+    pegawai = _current_pegawai()
+    if not pegawai:
+        return jsonify({"success": False, "message": "Data pegawai tidak ditemukan."}), 404
+
+    target = os.path.join(_ttd_root(), f"{pegawai.NIP}.png")
+    if not os.path.isfile(target):
+        return ("", 404)
+    return send_file(target, mimetype="image/png", conditional=True)
+
+
 def api_profilku_signature():
     pegawai = _current_pegawai()
     if not pegawai:
@@ -415,6 +437,17 @@ def api_internal_profile_password():
         pegawai.UPDATE_DATE = datetime.now()
         db.session.commit()
     return jsonify({"success": True, "message": "Password berhasil diubah."})
+
+
+def api_internal_profile_signature_file():
+    pegawai, error = _internal_nip()
+    if error:
+        return error
+
+    target = os.path.join(_ttd_root(), f"{pegawai.NIP}.png")
+    if not os.path.isfile(target):
+        return ("", 404)
+    return send_file(target, mimetype="image/png", conditional=True)
 
 
 def api_internal_profile_signature():
