@@ -3974,11 +3974,26 @@ body.hris-sidebar-mini .hris-submenu {
    Data tables use a consistent left alignment across all columns.
    ============================================================ */
 
-.hris-table-modern th,
-.hris-table-modern td {
+.hris-table-modern tbody td {
   text-align: left !important;
+}
+
+.hris-table-modern th {
+  text-align: left;
 }
 
 .hris-table-modern .hris-table-action-group {
   justify-content: flex-start;
+}
+
+/* Header mengikuti karakter kolom, bukan dipaksa rata kiri semuanya. */
+.hris-table-modern th:nth-child(4),
+.hris-table-modern th:nth-child(5),
+.hris-table-modern th:nth-child(6),
+.hris-table-modern th:nth-child(7) {
+  text-align: center;
+}
+
+.hris-table-modern th:nth-child(8) {
+  text-align: left;
 }
