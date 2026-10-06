@@ -28,10 +28,10 @@ CREATE TABLE IF NOT EXISTS REKAM_MEDIS (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO MF_FORM
-    (FormID, Formname, FormType, Nourut, Berkas, PanelPage, ImgUrl, NoUrutPanel, Modul, parentForm, Model, IconFA, HirarkiLvl)
+    (FormID, Formname, FormType, Nourut, Berkas, PanelPage, ImgUrl, NoUrutPanel, Modul, parentForm, Model, IconFA, HirarkiLvl, TransacID)
 SELECT
-    'REKAM_MEDIS', 'Rekam Medis', 'MENU', 0, 'Rekam Medis', '/rekam-medis',
-    NULL, 0, 'AGENDA', NULL, 1, 'fa-heartbeat', 2
+    'REKAM_MEDIS', 'AGENDA - Rekam Medis', 'Transaksi', 4, 'input', 'Agenda',
+    NULL, 4, 'HRIS', NULL, 2, 'fa fa-heartbeat', 1, 90
 WHERE NOT EXISTS (
     SELECT 1 FROM MF_FORM WHERE FormID = 'REKAM_MEDIS'
 );
