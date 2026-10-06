@@ -7,6 +7,7 @@ from app import db
 from app.models.pegawaiModel import Pegawai
 from app.models.rekamMedisModel import RekamMedis
 from app.utils.pegawaiHelper import search_operational_pegawai
+from app.utils.hrisOperationalController import is_operational_pegawai
 
 
 def rekam_medis():
@@ -46,8 +47,8 @@ def _validate(payload):
             raise ValueError("Pegawai wajib dipilih dari pencarian nama.")
 
         pegawai = Pegawai.query.filter(Pegawai.NIP == nip).first()
-        if not pegawai or pegawai.IS_KELUAR == "Y":
-            raise ValueError("Pegawai tidak aktif atau tidak ditemukan.")
+        if not is_operational_pegawai(pegawai):
+            raise ValueError("Pegawai tidak aktif atau unit kerjanya tidak aktif.")
         return jenis, nama, pegawai
 
     nik = (payload.get("nik") or "").strip()
