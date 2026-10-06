@@ -128,9 +128,17 @@
                     </div>
                     <div class="col-12">
                         <label class="form-label">Petugas Medis <span class="text-danger">*</span></label>
-                        <div class="input-group">
-                            <input id="tPetugasInput" class="form-control" placeholder="Ketik nama petugas medis">
-                            <button class="btn btn-outline-primary" type="button" id="btnTambahPetugas">Tambah</button>
+                        <div class="position-relative">
+                            <div class="input-group">
+                                <input id="tPetugasInput" class="form-control" autocomplete="off"
+                                       placeholder="Ketik nama pegawai untuk mencari Petugas Medis">
+                                <button class="btn btn-outline-primary" type="button" id="btnTambahPetugas">Tambah Manual</button>
+                            </div>
+                            <div id="tPetugasSuggest" class="list-group position-absolute w-100 shadow-sm"
+                                 style="z-index:1080;display:none;max-height:220px;overflow:auto;"></div>
+                        </div>
+                        <div id="tPetugasManualHelp" class="small text-muted mt-2">
+                            Ketik nama pegawai. Sistem akan mencari dari database Pegawai aktif. Jika tidak ditemukan, gunakan <strong>Tambah Manual</strong>.
                         </div>
                         <div id="tPetugasChips" class="d-flex flex-wrap gap-2 mt-2"></div>
                         <small class="text-muted">Petugas Medis dapat lebih dari satu orang.</small>
@@ -281,6 +289,8 @@ document.addEventListener("DOMContentLoaded", function () {
     let currentExpandedId = null;
     let currentExamParticipant = null;
     let petugasDraft = [];
+    let petugasSearchTimer = null;
+    let petugasSearchRequest = 0;
 
     function esc(v) {
         return String(v ?? "").replace(/[&<>'"]/g, x => ({
@@ -346,12 +356,31 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function renderPetugasDraft() {
         const el = document.getElementById("tPetugasChips");
-        el.innerHTML = petugasDraft.map((nama, i) =>
-            '<span class="badge rounded-pill text-bg-light border px-3 py-2">' +
-            esc(nama) +
-            ' <button type="button" class="btn btn-sm p-0 ms-1 text-danger" onclick="hapusPetugas(' + i + ')">×</button>' +
-            '</span>'
-        ).join("");
+        el.innerHTML = petugasDraft.map((item, i) => {
+            const label = item.nip ? item.nama + " · " + item.nip : item.nama + " · Manual";
+            return '<span class="badge rounded-pill text-bg-light border px-3 py-2">' +
+                esc(label) +
+                ' <button type="button" class="btn btn-sm p-0 ms-1 text-danger" onclick="hapusPetugas(' + i + ')">×</button>' +
+                '</span>';
+        }).join("");
+    }
+
+    function hidePetugasSuggest() {
+        document.getElementById("tPetugasSuggest").style.display = "none";
+    }
+
+    function addPetugas(item) {
+        const nama = String(item.nama || "").trim();
+        const nip = String(item.nip || "").trim() || null;
+        if (!nama) return;
+        const exists = petugasDraft.some(x =>
+            (nip && x.nip === nip) || (!nip && !x.nip && x.nama.toLowerCase() === nama.toLowerCase())
+        );
+        if (exists) return;
+        petugasDraft.push({nama, nip});
+        document.getElementById("tPetugasInput").value = "";
+        hidePetugasSuggest();
+        renderPetugasDraft();
     }
 
     window.hapusPetugas = function(i) {
@@ -359,20 +388,80 @@ document.addEventListener("DOMContentLoaded", function () {
         renderPetugasDraft();
     };
 
+    async function searchPetugas(keyword) {
+        const requestId = ++petugasSearchRequest;
+        const box = document.getElementById("tPetugasSuggest");
+        if (!keyword.trim()) {
+            hidePetugasSuggest();
+            return;
+        }
+
+        box.style.display = "block";
+        box.innerHTML = '<div class="list-group-item small text-muted">Mencari pegawai...</div>';
+
+        try {
+            const r = await fetch("/api/rekam-medis/petugas/search?q=" + encodeURIComponent(keyword.trim()));
+            const j = await r.json();
+            if (requestId !== petugasSearchRequest) return;
+
+            const data = j.data || [];
+            if (!data.length) {
+                box.innerHTML =
+                    '<div class="list-group-item">' +
+                        '<div class="fw-semibold">Pegawai tidak ditemukan</div>' +
+                        '<div class="small text-muted">Jika petugas bukan pegawai HRIS, klik <strong>Tambah Manual</strong>.</div>' +
+                    '</div>';
+                return;
+            }
+
+            box.innerHTML = data.map(item =>
+                '<button type="button" class="list-group-item list-group-item-action text-start" data-nip="' + esc(item.nip) + '" data-nama="' + esc(item.nama) + '">' +
+                    '<div class="fw-semibold">' + esc(item.nama) + '</div>' +
+                    '<div class="small text-muted">NIP: ' + esc(item.nip || "-") + '</div>' +
+                '</button>'
+            ).join("");
+
+            box.querySelectorAll("button[data-nip]").forEach(btn => {
+                btn.addEventListener("click", function() {
+                    addPetugas({nip: btn.dataset.nip, nama: btn.dataset.nama});
+                });
+            });
+        } catch (e) {
+            if (requestId !== petugasSearchRequest) return;
+            box.innerHTML = '<div class="list-group-item text-danger small">Pencarian pegawai gagal.</div>';
+        }
+    }
+
+    document.getElementById("tPetugasInput").addEventListener("input", function() {
+        clearTimeout(petugasSearchTimer);
+        const keyword = this.value;
+        petugasSearchTimer = setTimeout(() => searchPetugas(keyword), 220);
+    });
+
     document.getElementById("btnTambahPetugas").addEventListener("click", function() {
         const input = document.getElementById("tPetugasInput");
         const nama = input.value.trim();
         if (!nama) return;
-        if (!petugasDraft.includes(nama)) petugasDraft.push(nama);
-        input.value = "";
-        renderPetugasDraft();
-        input.focus();
+
+        const suggestion = document.querySelector("#tPetugasSuggest button[data-nama]");
+        if (suggestion) {
+            addPetugas({nip: suggestion.dataset.nip, nama: suggestion.dataset.nama});
+            return;
+        }
+
+        addPetugas({nama, nip: null});
     });
 
     document.getElementById("tPetugasInput").addEventListener("keydown", function(e) {
         if (e.key === "Enter") {
             e.preventDefault();
             document.getElementById("btnTambahPetugas").click();
+        }
+    });
+
+    document.addEventListener("click", function(e) {
+        if (!e.target.closest("#tPetugasInput") && !e.target.closest("#tPetugasSuggest")) {
+            hidePetugasSuggest();
         }
     });
 
@@ -571,7 +660,7 @@ document.addEventListener("DOMContentLoaded", function () {
             lokasi: currentDetail.lokasi || "",
             tanggal: document.getElementById("jTanggal").value,
             jam: document.getElementById("jJam").value,
-            petugas_medis: (currentDetail.petugas_medis || []).map(x => x.nama)
+            petugas_medis: (currentDetail.petugas_medis || []).map(x => ({nama: x.nama, nip: x.nip || null}))
         };
         const r = await fetch("/api/rekam-medis/kegiatan/pegawai/" + Number(currentDetail.kegiatan_id), {
             method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload)
