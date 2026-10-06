@@ -291,6 +291,7 @@ from app.controllers.dashboard_3KirimController import (
     kirim_kritik_saran,
     kirim_forum_media_informasi,
 )
+from app.controllers.dashboard4HomeController import dashboard4, has_any_agenda_access
 from app.controllers.dashboard_3PengajuanController import (
     pengajuan_skp,
     pengajuan_absensi,
@@ -2110,6 +2111,18 @@ def view_kirim_kritik_saran():
 @login_required
 def view_kirim_forum_media_informasi():
     return kirim_forum_media_informasi()
+
+
+# ============================================================
+# DASHBOARD 4 - AGENDA
+# ============================================================
+
+@main.route('/dashboard4')
+@login_required
+def dashboard4_home():
+    if not has_any_agenda_access():
+        return ('Forbidden', 403)
+    return dashboard4()
 
 # ============================================================
 # AGENDA RAPAT
