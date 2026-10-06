@@ -2200,7 +2200,7 @@ def api_rekam_medis_kegiatan_non_pegawai_qr_route(kegiatan_id):
 @login_required
 @form_access_required('REKAM_MEDIS')
 def view_rekam_medis():
-    return rekam_medis()
+    return redirect(url_for('main.view_rekam_medis_pegawai'))
 
 
 @main.route('/api/rekam-medis/search-pegawai', methods=['GET'])
