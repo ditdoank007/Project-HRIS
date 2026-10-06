@@ -307,6 +307,16 @@ from app.controllers.dashboard_3ApprovalController import (
 from app.controllers.dashboard_3ProfileController import (
     profile,
 )
+from app.controllers.profilkuController import (
+    profilku,
+    api_profilku,
+    api_profilku_update,
+    api_profilku_photo,
+    api_profilku_photo_upload,
+    api_profilku_password,
+    api_profilku_signature,
+    api_internal_profile_photo,
+)
 from app.controllers.dashboard_3KirimController import (
     kirim_kritik_saran,
     kirim_forum_media_informasi,
@@ -2125,6 +2135,50 @@ def view_approval_approved():
 @login_required
 def view_profile():
     return profile()
+
+
+# ============================================================
+# PROFILKU - profil pribadi pegawai
+# ============================================================
+
+@main.route('/profilku')
+@login_required
+def view_profilku():
+    return profilku()
+
+@main.route('/api/profilku', methods=['GET'])
+@login_required
+def api_profilku_route():
+    return api_profilku()
+
+@main.route('/api/profilku', methods=['PUT'])
+@login_required
+def api_profilku_update_route():
+    return api_profilku_update()
+
+@main.route('/api/profilku/photo', methods=['GET'])
+@login_required
+def api_profilku_photo_route():
+    return api_profilku_photo()
+
+@main.route('/api/profilku/photo', methods=['POST'])
+@login_required
+def api_profilku_photo_upload_route():
+    return api_profilku_photo_upload()
+
+@main.route('/api/profilku/password', methods=['POST'])
+@login_required
+def api_profilku_password_route():
+    return api_profilku_password()
+
+@main.route('/api/profilku/signature', methods=['POST'])
+@login_required
+def api_profilku_signature_route():
+    return api_profilku_signature()
+
+@main.route('/api/internal/calendar/profile-photo', methods=['GET'])
+def api_internal_calendar_profile_photo_route():
+    return api_internal_profile_photo()
 
 # Kirim:
 @main.route('/kinerja/kirim/kritik-saran')
