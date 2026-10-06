@@ -38,6 +38,7 @@ from app.models.agendaRapatAttendanceModel import AgendaRapatAttendance
 from app.models.kesamaptaanKegiatanModel import KesamaptaanKegiatan
 from app.models.kesamaptaanKehadiranModel import KesamaptaanKehadiran
 from app.models.kesamaptaanDokumentasiModel import KesamaptaanDokumentasi
+from app.models.rekamMedisModel import RekamMedis
 
 
 def create_app():
