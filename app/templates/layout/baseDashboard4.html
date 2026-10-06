@@ -24,20 +24,20 @@
 
     <style>
         /* AGENDA uses the same NEXL shell dimensions as Dashboard UMUM. */
-        .agenda-shell .nxl-hasmenu > .nxl-link {
+        .nxl-hasmenu > .nxl-link {
             cursor: pointer;
         }
 
-        .agenda-shell .nxl-hasmenu.menu-open > .nxl-submenu,
-        .agenda-shell .nxl-hasmenu.hris-active > .nxl-submenu {
+        .nxl-hasmenu.menu-open > .nxl-submenu,
+        .nxl-hasmenu.hris-active > .nxl-submenu {
             display: block;
         }
 
-        .agenda-shell .nxl-hasmenu.menu-open > .nxl-link .nxl-arrow,
-        .agenda-shell .nxl-hasmenu.hris-active > .nxl-link .nxl-arrow {
+        .nxl-hasmenu.menu-open > .nxl-link .nxl-arrow,
+        .nxl-hasmenu.hris-active > .nxl-link .nxl-arrow {
             transform: rotate(90deg);
         }
-    </style>yle>
+    </style>
 
     {% block head %}{% endblock %}
 </head>
@@ -145,7 +145,7 @@
 <script src="{{ url_for('static', filename='static_dashboard_1/assets/js/common-init.min.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('.agenda-shell .nxl-hasmenu > .nxl-link').forEach(function (link) {
+    document.querySelectorAll('.nxl-hasmenu > .nxl-link').forEach(function (link) {
         link.addEventListener('click', function (event) {
             event.preventDefault();
             link.closest('.nxl-hasmenu')?.classList.toggle('menu-open');
