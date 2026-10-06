@@ -2689,6 +2689,14 @@ def api_calendar_personal_internal_route():
 
 
 @main.route(
+    '/api/internal/calendar/rekam-medis/history',
+    methods=['GET']
+)
+def api_calendar_rekam_medis_history_route():
+    return api_calendar_rekam_medis_history()
+
+
+@main.route(
     '/api/internal/calendar/agenda/rekam-medis/attendance-info',
     methods=['GET']
 )
