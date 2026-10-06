@@ -918,6 +918,129 @@ def api_rekam_medis_kegiatan_pegawai_export_excel(kegiatan_id):
     except ValueError as exc:
         return jsonify({"status": "error", "message": str(exc)}), 400
 
+def api_rekam_medis_kegiatan_non_pegawai_export_excel(kegiatan_id):
+    try:
+        kegiatan, rows = _export_rows(kegiatan_id, "NON_PEGAWAI")
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, Alignment, Border, Side
+        from openpyxl.utils import get_column_letter
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Hasil Pemeriksaan"
+
+        ws.merge_cells("A1:M1")
+        ws["A1"] = "HASIL PEMERIKSAAN REKAM MEDIS NON PEGAWAI"
+        ws["A1"].font = Font(bold=True, size=14)
+        ws["A1"].alignment = Alignment(horizontal="center", vertical="center")
+        ws.row_dimensions[1].height = 24
+
+        ws.merge_cells("A3:M3")
+        ws["A3"] = f"Nama Judul Kegiatan : {kegiatan.JUDUL}"
+        ws["A4"] = "Lokasi pemeriksaan :"
+        ws["B4"] = kegiatan.LOKASI or "-"
+        ws["A5"] = "Hari / Tanggal :"
+        ws["B5"] = _hari_tanggal_id(kegiatan.TANGGAL)
+
+        headers = [
+            "No", "Nama", "NIK", "Instansi / Organisasi", "Jenis Kelamin",
+            "Tekanan Darah", "Nadi / menit", "Frekuensi Nafas / menit",
+            "Suhu", "SpO2", "Keluhan", "Tindakan / Catatan",
+            "Hasil Pemeriksaan (Fit/UnFit)"
+        ]
+        header_row = 7
+        for col, value in enumerate(headers, 1):
+            cell = ws.cell(header_row, col, value)
+            cell.font = Font(bold=True)
+            cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+
+        thin = Side(style="thin", color="B7B7B7")
+        border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+        for i, (peserta, rekam) in enumerate(rows, 1):
+            gender = {"L": "Laki-laki", "P": "Perempuan"}.get(
+                (peserta.JENIS_KELAMIN or "").upper(), "-"
+            )
+            values = [
+                i,
+                peserta.NAMA or "-",
+                peserta.NIK or "-",
+                peserta.INSTANSI or "-",
+                gender,
+                rekam.TEKANAN_DARAH if rekam else "-",
+                rekam.NADI if rekam else "-",
+                rekam.FREKUENSI_NAFAS if rekam else "-",
+                float(rekam.SUHU) if rekam and rekam.SUHU is not None else "-",
+                rekam.SPO2 if rekam else "-",
+                rekam.KELUHAN if rekam and rekam.KELUHAN else "-",
+                rekam.TINDAKAN if rekam and rekam.TINDAKAN else "-",
+                (
+                    "Fit" if rekam and str(rekam.HASIL_KEBUGARAN).upper() == "FIT"
+                    else "UnFit" if rekam and str(rekam.HASIL_KEBUGARAN).upper() == "UNFIT"
+                    else "-"
+                ),
+            ]
+            for col, value in enumerate(values, 1):
+                cell = ws.cell(header_row + i, col, value)
+                cell.alignment = Alignment(vertical="top", wrap_text=True)
+                cell.border = border
+
+        for row in ws.iter_rows(
+            min_row=header_row,
+            max_row=header_row + len(rows),
+            min_col=1,
+            max_col=len(headers)
+        ):
+            for cell in row:
+                cell.border = border
+
+        signature_start = header_row + len(rows) + 4
+        ws.merge_cells(start_row=signature_start, start_column=10, end_row=signature_start, end_column=13)
+        ws.cell(signature_start, 10, "Surabaya, " + _hari_tanggal_id(kegiatan.TANGGAL).split(", ", 1)[1])
+        ws.cell(signature_start, 10).alignment = Alignment(horizontal="center")
+
+        petugas = _petugas(kegiatan.KEGIATAN_ID)
+        signature_row = signature_start + 7
+        if petugas:
+            if len(petugas) == 1:
+                positions = [11]
+            elif len(petugas) == 2:
+                positions = [10, 12]
+            else:
+                positions = [10, 11, 12, 13]
+            for idx, pet in enumerate(petugas[:4]):
+                col_start = positions[idx]
+                ws.merge_cells(
+                    start_row=signature_row,
+                    start_column=col_start,
+                    end_row=signature_row,
+                    end_column=min(col_start + 1, 13)
+                )
+                ws.cell(signature_row, col_start, pet["nama"])
+                ws.cell(signature_row, col_start).alignment = Alignment(horizontal="center")
+        else:
+            ws.cell(signature_row, 11, "-")
+            ws.cell(signature_row, 11).alignment = Alignment(horizontal="center")
+
+        widths = [6, 30, 22, 30, 15, 18, 14, 20, 10, 10, 30, 34, 25]
+        for idx, width in enumerate(widths, 1):
+            ws.column_dimensions[get_column_letter(idx)].width = width
+
+        ws.freeze_panes = "A8"
+        ws.auto_filter.ref = f"A{header_row}:M{header_row + len(rows)}"
+
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+        return send_file(
+            output,
+            as_attachment=True,
+            download_name=f"hasil-pemeriksaan-rekam-medis-non-pegawai-{kegiatan.KEGIATAN_ID}.xlsx",
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+    except ValueError as exc:
+        return jsonify({"status": "error", "message": str(exc)}), 400
+
 def api_rekam_medis_kegiatan_pegawai_export_pdf(kegiatan_id):
     try:
         kegiatan, rows = _export_rows(kegiatan_id, "PEGAWAI")
