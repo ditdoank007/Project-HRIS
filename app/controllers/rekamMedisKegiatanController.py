@@ -221,6 +221,16 @@ def api_rekam_medis_kegiatan_non_pegawai_save():
     return _save("NON_PEGAWAI")
 
 
+def _peserta_dict_with_jabatan(peserta):
+    data = peserta.to_dict()
+    if peserta.NIP:
+        pegawai = Pegawai.query.filter(Pegawai.NIP == peserta.NIP).first()
+        data["jabatan"] = (pegawai.JABATAN if pegawai else None) or "-"
+    else:
+        data["jabatan"] = "-"
+    return data
+
+
 def _detail(kegiatan_id, jenis):
     kegiatan = _find_kegiatan(kegiatan_id, jenis)
     if not kegiatan:
@@ -229,7 +239,7 @@ def _detail(kegiatan_id, jenis):
         "status": "success",
         "data": {
             **_serialize(kegiatan),
-            "peserta": [x.to_dict() for x in _peserta(kegiatan_id)],
+            "peserta": [_peserta_dict_with_jabatan(x) for x in _peserta(kegiatan_id)],
         },
     })
 
