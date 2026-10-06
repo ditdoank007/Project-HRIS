@@ -1,0 +1,43 @@
+{% extends "layout/baseDashboard4.html" %}
+{% block title %}- Scan Rekam Medis{% endblock %}
+{% block content %}
+<div class="nxl-content">
+    <div class="main-content">
+        <div class="container-fluid py-5">
+            <div class="row justify-content-center">
+                <div class="col-12 col-md-7 col-lg-5">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-body text-center p-4 p-lg-5">
+                            {% if success %}
+                                <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width:72px;height:72px;background:#e7f8ee;color:#159447;">
+                                    <i class="feather-check" style="font-size:34px;"></i>
+                                </div>
+                                <h4 class="mb-2">Scan QR Berhasil</h4>
+                                <p class="text-muted mb-4">{{ message }}</p>
+                                <div class="text-start border rounded p-3 mb-3">
+                                    <div class="small text-muted">Kegiatan Rekam Medis</div>
+                                    <div class="fw-semibold">{{ kegiatan.JUDUL }}</div>
+                                    <div class="small text-muted mt-2">{{ kegiatan.TANGGAL.strftime('%d-%m-%Y') }} · {{ kegiatan.JAM.strftime('%H:%M') }} WIB</div>
+                                    <div class="small text-muted">{{ kegiatan.LOKASI or '-' }}</div>
+                                </div>
+                                <div class="text-start border rounded p-3">
+                                    <div class="small text-muted">Pegawai</div>
+                                    <div class="fw-semibold">{{ peserta.NAMA }}</div>
+                                    <div class="small text-muted">NIP: {{ peserta.NIP }}</div>
+                                    <div class="mt-2"><span class="rapat-badge rapat-badge-terjadwal">{{ peserta.STATUS_PEMERIKSAAN }}</span></div>
+                                </div>
+                            {% else %}
+                                <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width:72px;height:72px;background:#fdebec;color:#d92d3b;">
+                                    <i class="feather-x" style="font-size:34px;"></i>
+                                </div>
+                                <h4 class="mb-2">QR Tidak Dapat Diproses</h4>
+                                <p class="text-muted mb-0">{{ message }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
