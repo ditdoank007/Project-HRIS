@@ -10,6 +10,7 @@ from flask import jsonify, render_template, request, session, Response, send_fil
 from app import db
 from config import Config
 from app.models.pegawaiModel import Pegawai
+from app.models.jabatanModel import MfJabatan
 from app.models.rekamMedisKegiatanModel import RekamMedisKegiatan
 from app.models.rekamMedisModel import RekamMedis
 from app.models.rekamMedisPesertaModel import RekamMedisPeserta
@@ -225,7 +226,14 @@ def _peserta_dict_with_jabatan(peserta):
     data = peserta.to_dict()
     if peserta.NIP:
         pegawai = Pegawai.query.filter(Pegawai.NIP == peserta.NIP).first()
-        data["jabatan"] = (pegawai.JABATAN if pegawai else None) or "-"
+        jabatan = (
+            MfJabatan.query
+            .filter(MfJabatan.JABATAN_ID == pegawai.JABATAN_ID)
+            .first()
+            if pegawai and pegawai.JABATAN_ID not in (None, 0)
+            else None
+        )
+        data["jabatan"] = (jabatan.NAMA_JABATAN if jabatan else None) or "-"
     else:
         data["jabatan"] = "-"
     return data
@@ -832,11 +840,18 @@ def api_rekam_medis_kegiatan_pegawai_export_excel(kegiatan_id):
                 .first()
                 if peserta.NIP else None
             )
+            jabatan = (
+                MfJabatan.query
+                .filter(MfJabatan.JABATAN_ID == pegawai.JABATAN_ID)
+                .first()
+                if pegawai and pegawai.JABATAN_ID not in (None, 0)
+                else None
+            )
             values = [
                 i,
                 peserta.NAMA or "-",
                 peserta.NIP or "-",
-                (pegawai.JABATAN if pegawai else None) or "-",
+                (jabatan.NAMA_JABATAN if jabatan else None) or "-",
                 (pegawai.JENIS_KEL if pegawai else None) or "-",
                 rekam.TEKANAN_DARAH if rekam else "-",
                 rekam.NADI if rekam else "-",
@@ -867,7 +882,8 @@ def api_rekam_medis_kegiatan_pegawai_export_excel(kegiatan_id):
         ws.merge_cells(start_row=signature_start, start_column=10, end_row=signature_start, end_column=13)
 
         petugas = _petugas(kegiatan.KEGIATAN_ID)
-        signature_row = signature_start + 1
+        # Sisakan 6 baris kosong untuk area tanda tangan.
+        signature_row = signature_start + 7
         if petugas:
             for idx, pet in enumerate(petugas[:4]):
                 col_start = 10 + (idx * 2 if len(petugas) == 2 else 0)
