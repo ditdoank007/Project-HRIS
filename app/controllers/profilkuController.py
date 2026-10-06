@@ -296,6 +296,156 @@ def api_profilku_signature():
     })
 
 
+def _internal_nip():
+    expected = str(Config.CALENDAR_INTERNAL_API_KEY or "").strip()
+    supplied = str(request.headers.get("X-Calendar-Internal-Key") or "").strip()
+    nip = str(request.headers.get("X-Calendar-NIP") or "").strip()
+    if not expected or not secrets.compare_digest(expected, supplied):
+        return None, ("Forbidden", 403)
+    if not nip:
+        return None, ("NIP wajib", 400)
+    pegawai = Pegawai.query.filter(Pegawai.NIP == nip).first()
+    if not pegawai:
+        return None, ("Not Found", 404)
+    return pegawai, None
+
+
+def api_internal_profile():
+    pegawai, error = _internal_nip()
+    if error:
+        return error
+    return jsonify(_profile_payload(pegawai))
+
+
+def api_internal_profile_update():
+    pegawai, error = _internal_nip()
+    if error:
+        return error
+    payload = request.get_json(silent=True) or {}
+    allowed = {
+        "no_telp": "NO_TELP",
+        "email": "MAIL",
+        "alamat": "ALAMAT",
+        "kelurahan": "KELURAHAN",
+        "kecamatan": "KECAMATAN",
+        "kota": "KOTA",
+    }
+    try:
+        for key, attr in allowed.items():
+            if key in payload:
+                value = str(payload.get(key) or "").strip()
+                setattr(pegawai, attr, value[:100] if key == "email" else value[:50])
+        pegawai.UPDATE_BY = f"CALENDAR:{pegawai.NIP}"[:50]
+        pegawai.UPDATE_DATE = datetime.now()
+        db.session.commit()
+        return jsonify(_profile_payload(pegawai))
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception("Gagal menyimpan Profilku dari Calendar")
+        return jsonify({"success": False, "message": "Gagal menyimpan profil."}), 500
+
+
+def api_internal_profile_photo_upload():
+    # Reuse the same validation/storage rules, but take NIP from the trusted
+    # Calendar internal headers rather than the browser session.
+    pegawai, error = _internal_nip()
+    if error:
+        return error
+    file = request.files.get("photo")
+    if not file or not file.filename:
+        return jsonify({"success": False, "message": "Foto wajib dipilih."}), 400
+    ext = os.path.splitext(file.filename.lower())[1]
+    if ext not in ALLOWED_IMAGE_EXTENSIONS:
+        return jsonify({"success": False, "message": "Format foto harus JPG, JPEG, PNG, atau WEBP."}), 400
+    content = file.read(MAX_PROFILE_PHOTO_BYTES + 1)
+    if len(content) > MAX_PROFILE_PHOTO_BYTES or not content:
+        return jsonify({"success": False, "message": "Ukuran foto tidak valid. Maksimal 5 MB."}), 400
+
+    root = _profile_root()
+    os.makedirs(root, mode=0o750, exist_ok=True)
+    for old_ext in ALLOWED_IMAGE_EXTENSIONS:
+        old = _ensure_under(root, os.path.join(root, f"{pegawai.NIP}{old_ext}"))
+        if os.path.isfile(old):
+            os.unlink(old)
+    target = _ensure_under(root, os.path.join(root, f"{pegawai.NIP}{ext}"))
+    temp = target + f".{secrets.token_hex(8)}.tmp"
+    try:
+        with open(temp, "wb") as fh:
+            fh.write(content)
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.replace(temp, target)
+    finally:
+        if os.path.exists(temp):
+            os.unlink(temp)
+    return jsonify({"success": True, "message": "Foto profil berhasil disimpan."})
+
+
+def api_internal_profile_password():
+    pegawai, error = _internal_nip()
+    if error:
+        return error
+    payload = request.get_json(silent=True) or {}
+    new_password = str(payload.get("new_password") or "")
+    confirm = str(payload.get("confirm_password") or "")
+    if len(new_password) < 8 or new_password != confirm:
+        return jsonify({"success": False, "message": "Password minimal 8 karakter dan konfirmasi harus sama."}), 400
+
+    if str(Config.AUTH_MODE or "").upper() == "SSO":
+        username = str(payload.get("username") or "").strip()
+        if not username:
+            return jsonify({"success": False, "message": "Username SSO tidak ditemukan."}), 400
+        try:
+            response = requests.post(
+                f"{Config.BDIP_SSO_URL.rstrip('/')}/api/users/{requests.utils.quote(username, safe='')}/reset-password",
+                json={"newPassword": new_password},
+                timeout=15,
+            )
+            data = response.json() if response.content else {}
+            if response.status_code != 200 or not data.get("success", False):
+                return jsonify({"success": False, "message": data.get("message") or "Gagal mereset password BDIP."}), response.status_code or 502
+        except requests.RequestException:
+            current_app.logger.exception("BDIP password reset unavailable")
+            return jsonify({"success": False, "message": "Server BDIP tidak dapat dihubungi."}), 502
+    else:
+        pegawai.PASS = new_password
+        pegawai.UPDATE_BY = f"CALENDAR:{pegawai.NIP}"[:50]
+        pegawai.UPDATE_DATE = datetime.now()
+        db.session.commit()
+    return jsonify({"success": True, "message": "Password berhasil diubah."})
+
+
+def api_internal_profile_signature():
+    pegawai, error = _internal_nip()
+    if error:
+        return error
+    payload = request.get_json(silent=True) or {}
+    data_url = str(payload.get("signature") or "")
+    match = re.fullmatch(r"data:image/png;base64,([A-Za-z0-9+/=\\s]+)", data_url)
+    if not match:
+        return jsonify({"success": False, "message": "Format tanda tangan tidak valid."}), 400
+    try:
+        raw = base64.b64decode(match.group(1), validate=True)
+    except Exception:
+        return jsonify({"success": False, "message": "Data tanda tangan tidak valid."}), 400
+    if len(raw) > 2 * 1024 * 1024 or not raw.startswith(b"\\x89PNG\\r\\n\\x1a\\n"):
+        return jsonify({"success": False, "message": "File tanda tangan PNG tidak valid."}), 400
+    root = _ttd_root()
+    os.makedirs(root, mode=0o750, exist_ok=True)
+    target = _ensure_under(root, os.path.join(root, f"{pegawai.NIP}.png"))
+    temp = target + f".{secrets.token_hex(8)}.tmp"
+    try:
+        with open(temp, "wb") as fh:
+            fh.write(raw)
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.replace(temp, target)
+    finally:
+        if os.path.exists(temp):
+            os.unlink(temp)
+    return jsonify({"success": True, "message": "Tanda tangan berhasil disimpan."})
+
+
 def api_internal_profile_photo():
     expected = str(Config.CALENDAR_INTERNAL_API_KEY or "").strip()
     supplied = str(request.headers.get("X-Calendar-Internal-Key") or "").strip()
