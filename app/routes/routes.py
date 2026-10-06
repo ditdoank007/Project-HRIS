@@ -29,7 +29,7 @@ from app.controllers.dashboard_1MasterFileController import (
     cari_user_account, create_kalender, save_jabatan, save_jam_kerja, save_joblist, save_potongan, save_tunkin_class, save_uang_makan, save_unit_kerja, save_user_account,
     toggle_pegawai_vip, save_pegawai_vip, save_jam_finger, update_potongan, delete_potongan, update_unit_kerja,
     get_jam_kerja_by_id, update_jam_kerja, delete_jam_kerja,
-    get_auth_config, save_auth_config,
+    get_auth_config, save_auth_config, api_user_account_pegawai_search,
     get_jam_finger_by_id, update_jam_finger, delete_jam_finger,
     get_jabatan_by_id, get_jabatan_structure, update_jabatan, delete_jabatan,
 )
@@ -1018,6 +1018,11 @@ def api_auth_config():
 @admin_required
 def api_auth_config_save():
     return save_auth_config()
+
+@main.route('/api/user-account/pegawai-search', methods=['GET'])
+@login_required
+def api_user_account_pegawai_search_route():
+    return api_user_account_pegawai_search()
 
 @main.route('/api/user-account/detail', methods=['GET'])
 @login_required
