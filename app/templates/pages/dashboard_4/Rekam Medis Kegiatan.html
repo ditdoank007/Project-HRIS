@@ -63,10 +63,10 @@
             <div class="hris-card">
                 <div class="hris-card-body d-flex align-items-center justify-content-between">
                     <div>
-                        <div class="text-muted small">Batal</div>
-                        <div class="fs-4 fw-bold mt-1" id="statBatal">0</div>
+                        <div class="text-muted small">Total Aktif</div>
+                        <div class="fs-4 fw-bold mt-1" id="statAktif">0</div>
                     </div>
-                    <div class="hris-stat-icon"><i class="feather-x-circle"></i></div>
+                    <div class="hris-stat-icon"><i class="feather-activity"></i></div>
                 </div>
             </div>
         </div>
@@ -84,7 +84,6 @@
                         <option value="">Semua Status</option>
                         <option value="TERJADWAL">Terjadwal</option>
                         <option value="SELESAI">Selesai</option>
-                        <option value="BATAL">Batal</option>
                     </select>
                     <input id="searchKegiatan" type="search" class="hris-input hris-filter-field hris-filter-field-md"
                            placeholder="Cari kegiatan..." aria-label="Cari kegiatan">
@@ -334,7 +333,7 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById("statHariIni").textContent = rows.filter(x => x.tanggal === today).length;
         document.getElementById("statTerjadwal").textContent = rows.filter(x => x.status === "TERJADWAL").length;
         document.getElementById("statSelesai").textContent = rows.filter(x => x.status === "SELESAI").length;
-        document.getElementById("statBatal").textContent = rows.filter(x => x.status === "BATAL").length;
+        document.getElementById("statAktif").textContent = rows.length;
     }
 
     function render() {
@@ -363,7 +362,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     '<td><span class="fw-semibold">' + Number(x.sudah_diperiksa) + '</span></td>' +
                     '<td>' + badge(x.status) + '</td>' +
                     '<td>' +
-                        '<div class="d-flex gap-2 flex-wrap">' +
+                        '<div class="hris-table-action-group">' +
                             '<button class="hris-btn hris-btn-secondary" type="button" title="Edit / Detail" onclick="lihatKegiatan(' + Number(x.kegiatan_id) + ')">' +
                                 '<i class="feather-edit-2"></i><span>Edit</span>' +
                             '</button>' +
@@ -383,7 +382,9 @@ document.addEventListener("DOMContentLoaded", function () {
         const r = await fetch(apiList);
         const j = await r.json();
         if (!r.ok) throw new Error(j.message || "Gagal memuat kegiatan.");
-        rows = j.data || [];
+        // Kegiatan BATAL tidak ditampilkan di daftar aktif.
+        // Data tetap tersimpan di database untuk histori/audit.
+        rows = (j.data || []).filter(x => String(x.status || "").toUpperCase() !== "BATAL");
         render();
     }
 
@@ -615,13 +616,14 @@ document.addEventListener("DOMContentLoaded", function () {
         await toggleKegiatan(id, true);
     }
 
+    // Tombol PERIKSA tetap konsisten; klik hanya membuka/menutup detail peserta di bawah baris.
     window.toggleKegiatan = async function(id, forceOpen) {
         const existing = document.getElementById("expand-row-" + Number(id));
         if (existing && !forceOpen) {
             existing.remove();
             currentExpandedId = null;
             const btn = document.getElementById("btnAksi-" + Number(id));
-            if (btn) btn.innerHTML = '<i class="feather-chevron-down"></i>';
+            if (btn) btn.innerHTML = '<i class="feather-clipboard"></i><span>Periksa</span>';
             return;
         }
         if (existing) existing.remove();
@@ -665,7 +667,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 '</td>';
             row.after(detailRow);
             const btn = document.getElementById("btnAksi-" + Number(id));
-            if (btn) btn.innerHTML = '<i class="feather-chevron-up"></i>';
+            if (btn) btn.innerHTML = '<i class="feather-clipboard"></i><span>Periksa</span>';
         } catch (e) {
             alert(e.message);
         }
