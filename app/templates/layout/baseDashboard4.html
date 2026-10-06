@@ -16,6 +16,35 @@
           href="{{ url_for('static', filename='css/hris-global.css') }}">
     <link rel="stylesheet"
           href="{{ url_for('static', filename='css/hris-ui.css') }}">
+    <style>
+        .hris-shell .nxl-hasmenu > .nxl-submenu {
+            display: none;
+            list-style: none;
+            margin: 0;
+            padding: 4px 0 6px 42px;
+        }
+        .hris-shell .nxl-hasmenu.hris-active > .nxl-submenu,
+        .hris-shell .nxl-hasmenu.menu-open > .nxl-submenu {
+            display: block;
+        }
+        .hris-shell .nxl-hasmenu > .nxl-link .nxl-arrow {
+            transition: transform .18s ease;
+        }
+        .hris-shell .nxl-hasmenu.menu-open > .nxl-link .nxl-arrow,
+        .hris-shell .nxl-hasmenu.hris-active > .nxl-link .nxl-arrow {
+            transform: rotate(180deg);
+        }
+        .hris-shell .nxl-submenu .nxl-link {
+            min-height: 34px;
+            padding: 7px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+        .hris-shell .nxl-submenu .nxl-link.hris-active {
+            background: rgba(255,255,255,.14);
+            color: #fff;
+        }
+    </style>
     {% block head %}{% endblock %}
 </head>
 
@@ -141,9 +170,17 @@ document.addEventListener('DOMContentLoaded', function () {
         document.body.classList.remove('hris-sidebar-open');
     });
 
+    document.querySelectorAll('.hris-shell .nxl-hasmenu > .nxl-link').forEach(function (link) {
+        link.addEventListener('click', function (event) {
+            event.preventDefault();
+            const parent = link.closest('.nxl-hasmenu');
+            parent?.classList.toggle('menu-open');
+        });
+    });
+
     document.querySelectorAll('.hris-shell .nxl-link').forEach(function (link) {
         link.addEventListener('click', function () {
-            if (window.innerWidth <= 900) {
+            if (window.innerWidth <= 900 && !link.closest('.nxl-hasmenu')) {
                 document.body.classList.remove('hris-sidebar-open');
             }
         });
