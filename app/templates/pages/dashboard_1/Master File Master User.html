@@ -143,14 +143,15 @@ document.addEventListener('DOMContentLoaded', function () {
         autocompleteTimer = setTimeout(async () => {
             try {
                 const res = await fetch(
-                    `/api/search_pegawai?keyword=${encodeURIComponent(keyword)}`
+                    `/api/rekam-medis/petugas/search?q=${encodeURIComponent(keyword)}`
                 );
 
                 const json = await res.json();
 
                 pegawaiSuggestion.innerHTML = '';
 
-                if (!json.data || json.data.length === 0) {
+                if (!res.ok || !json.data || json.data.length === 0) {
+                    pegawaiSuggestion.innerHTML = '';
                     pegawaiSuggestion.hidden = true;
                     return;
                 }
@@ -183,10 +184,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
 
             } catch (err) {
-                console.error(
-                    'Autocomplete pegawai error:',
-                    err
-                );
+                console.error('Autocomplete pegawai error:', err);
+                pegawaiSuggestion.innerHTML = '';
+                pegawaiSuggestion.hidden = true;
             }
 
         }, 300);
