@@ -3,97 +3,115 @@
 
 {% block content %}
 <div class="nxl-content">
-    <div class="page-header">
-        <div class="page-header-left d-flex align-items-center">
-            <div class="page-header-title"><h5 class="m-b-10">AGENDA</h5></div>
-            <ul class="breadcrumb"><li class="breadcrumb-item active">{{ title }}</li></ul>
-        </div>
-    </div>
+    <div class="hris-page">
 
-    <div class="main-content">
-        <div class="container-fluid">
-            <div class="rapat-hero">
-                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="hero-icon"><i class="feather-heart"></i></div>
-                        <div>
-                            <div class="small text-white-50 mb-1">HRIS Reborn</div>
-                            <h4 class="mb-1 text-white">{{ title }}</h4>
-                            <div class="small text-white-50">Kelola jadwal, QR pendaftaran, peserta, dan pemeriksaan medis {{ 'pegawai' if jenis == 'PEGAWAI' else 'non pegawai' }}.</div>
-                        </div>
-                    </div>
-                    <button class="btn btn-light" type="button" data-bs-toggle="modal" data-bs-target="#modalTambah">
-                        <i class="feather-plus me-1"></i> Tambah Rekam Medis
-                    </button>
+        <div class="hris-page-header">
+            <div>
+                <h1 class="hris-page-title">{{ title }}</h1>
+                <p class="hris-page-subtitle">
+                    Kelola jadwal pemeriksaan, petugas medis, peserta, dan hasil pemeriksaan {{ 'pegawai' if jenis == 'PEGAWAI' else 'non pegawai' }}.
+                </p>
+            </div>
+            <button class="hris-btn hris-btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#modalTambah">
+                <i class="feather-plus"></i>
+                <span>Tambah Rekam Medis</span>
+            </button>
+        </div>
+
+        <div class="hris-hero">
+            <div>
+                <div class="hris-hero-title">{{ title }}</div>
+                <div class="hris-hero-text">
+                    Daftar kegiatan pemeriksaan medis yang dikelola melalui HRIS Reborn.
                 </div>
             </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="hris-badge-modern hris-badge-info">
+                    {{ 'PEGAWAI' if jenis == 'PEGAWAI' else 'NON PEGAWAI' }}
+                </span>
+            </div>
+        </div>
 
-            <div class="row g-3 mb-4">
-                <div class="col-12 col-md-6 col-xl-3">
-                    <div class="card rapat-stat"><div class="card-body">
+        <div class="hris-grid hris-grid-4 mb-4">
+            <div class="hris-card">
+                <div class="hris-card-body d-flex align-items-center justify-content-between">
+                    <div>
                         <div class="text-muted small">Hari Ini</div>
                         <div class="fs-4 fw-bold mt-1" id="statHariIni">0</div>
-                    </div></div>
-                </div>
-                <div class="col-12 col-md-6 col-xl-3">
-                    <div class="card rapat-stat"><div class="card-body">
-                        <div class="text-muted small">Terjadwal</div>
-                        <div class="fs-4 fw-bold mt-1" id="statTerjadwal">0</div>
-                    </div></div>
-                </div>
-                <div class="col-12 col-md-6 col-xl-3">
-                    <div class="card rapat-stat"><div class="card-body">
-                        <div class="text-muted small">Selesai</div>
-                        <div class="fs-4 fw-bold mt-1" id="statSelesai">0</div>
-                    </div></div>
-                </div>
-                <div class="col-12 col-md-6 col-xl-3">
-                    <div class="card rapat-stat"><div class="card-body">
-                        <div class="text-muted small">Batal</div>
-                        <div class="fs-4 fw-bold mt-1" id="statBatal">0</div>
-                    </div></div>
+                    </div>
+                    <div class="hris-stat-icon"><i class="feather-calendar"></i></div>
                 </div>
             </div>
-
-            <div class="card">
-                <div class="card-header rapat-toolbar d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div class="hris-card">
+                <div class="hris-card-body d-flex align-items-center justify-content-between">
                     <div>
-                        <h6 class="mb-1">Daftar {{ title }}</h6>
-                        <small class="text-muted">Kegiatan pemeriksaan medis yang sudah dibuat.</small>
+                        <div class="text-muted small">Terjadwal</div>
+                        <div class="fs-4 fw-bold mt-1" id="statTerjadwal">0</div>
                     </div>
-                    <div class="d-flex gap-2">
-                        <select id="filterStatus" class="form-select form-select-sm" style="width:150px;">
-                            <option value="">Semua Status</option>
-                            <option value="TERJADWAL">Terjadwal</option>
-                            <option value="SELESAI">Selesai</option>
-                            <option value="BATAL">Batal</option>
-                        </select>
-                        <input id="searchKegiatan" type="search" class="form-control form-control-sm" placeholder="Cari kegiatan..." style="width:200px;">
-                    </div>
+                    <div class="hris-stat-icon"><i class="feather-clock"></i></div>
                 </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0 rapat-table">
-                            <thead>
-                                <tr>
-                                    <th class="ps-3">TANGGAL / WAKTU</th>
-                                    <th>KEGIATAN</th>
-                                    <th>PETUGAS MEDIS</th>
-                                    <th>PESERTA</th>
-                                    <th>BELUM DIPERIKSA</th>
-                                    <th>SUDAH DIPERIKSA</th>
-                                    <th>STATUS</th>
-                                    <th class="text-end pe-3">AKSI</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabelBody">
-                                <tr><td colspan="8" class="text-center py-4 text-muted">Memuat kegiatan...</td></tr>
-                            </tbody>
-                        </table>
+            </div>
+            <div class="hris-card">
+                <div class="hris-card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted small">Selesai</div>
+                        <div class="fs-4 fw-bold mt-1" id="statSelesai">0</div>
                     </div>
+                    <div class="hris-stat-icon"><i class="feather-check-circle"></i></div>
+                </div>
+            </div>
+            <div class="hris-card">
+                <div class="hris-card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted small">Batal</div>
+                        <div class="fs-4 fw-bold mt-1" id="statBatal">0</div>
+                    </div>
+                    <div class="hris-stat-icon"><i class="feather-x-circle"></i></div>
                 </div>
             </div>
         </div>
+
+        <div class="hris-card">
+            <div class="hris-toolbar">
+                <div class="hris-toolbar-left">
+                    <div>
+                        <h2 class="hris-card-title">Daftar {{ title }}</h2>
+                        <div class="hris-page-subtitle">Kegiatan pemeriksaan medis yang sudah dibuat.</div>
+                    </div>
+                </div>
+                <div class="hris-toolbar-right">
+                    <select id="filterStatus" class="hris-select hris-filter-field hris-filter-field-sm" aria-label="Filter status">
+                        <option value="">Semua Status</option>
+                        <option value="TERJADWAL">Terjadwal</option>
+                        <option value="SELESAI">Selesai</option>
+                        <option value="BATAL">Batal</option>
+                    </select>
+                    <input id="searchKegiatan" type="search" class="hris-input hris-filter-field hris-filter-field-md"
+                           placeholder="Cari kegiatan..." aria-label="Cari kegiatan">
+                </div>
+            </div>
+
+            <div class="hris-table-wrap">
+                <table class="hris-table-modern" id="tabelKegiatan">
+                    <thead>
+                        <tr>
+                            <th>Tanggal / Waktu</th>
+                            <th>Kegiatan</th>
+                            <th>Petugas Medis</th>
+                            <th>Peserta</th>
+                            <th>Belum Diperiksa</th>
+                            <th>Sudah Diperiksa</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelBody">
+                        <tr><td colspan="8" class="hris-loading">Memuat kegiatan...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -307,8 +325,9 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     function badge(s) {
         const x = (s || "").toUpperCase();
-        const cls = x === "SELESAI" ? "rapat-badge-selesai" : x === "BATAL" ? "rapat-badge-batal" : "rapat-badge-terjadwal";
-        return '<span class="rapat-badge ' + cls + '">' + esc(x) + '</span>';
+        const cls = x === "SELESAI" ? "hris-badge-success" : x === "BATAL" ? "hris-badge-danger" : "hris-badge-warning";
+        const label = x === "SELESAI" ? "SELESAI" : x === "BATAL" ? "BATAL" : "TERJADWAL";
+        return '<span class="hris-badge-modern ' + cls + '">' + esc(label) + '</span>';
     }
     function statRefresh() {
         const today = new Date().toISOString().slice(0,10);
@@ -330,22 +349,32 @@ document.addEventListener("DOMContentLoaded", function () {
             ? filtered.map(x => {
                 const petugas = (x.petugas_medis || []).map(p => esc(p.nama)).join(", ") || "-";
                 return '<tr id="kegiatan-row-' + Number(x.kegiatan_id) + '">' +
-                    '<td class="ps-3"><strong>' + fmtDate(x.tanggal) + '</strong><div class="rapat-meta">' + esc(x.jam) + ' WIB</div></td>' +
-                    '<td><div class="rapat-title">' + esc(x.judul) + '</div><div class="rapat-meta"><i class="feather-map-pin me-1"></i>' + esc(x.lokasi || "-") + '</div></td>' +
+                    '<td>' +
+                        '<strong>' + fmtDate(x.tanggal) + '</strong>' +
+                        '<div class="text-muted small mt-1">' + esc(x.jam) + ' WIB</div>' +
+                    '</td>' +
+                    '<td>' +
+                        '<div class="fw-semibold" style="color:var(--ui-ink);">' + esc(x.judul) + '</div>' +
+                        '<div class="text-muted small mt-1"><i class="feather-map-pin me-1"></i>' + esc(x.lokasi || "-") + '</div>' +
+                    '</td>' +
                     '<td><div class="small">' + petugas + '</div></td>' +
                     '<td><strong>' + Number(x.total_peserta) + '</strong> orang</td>' +
                     '<td><span class="fw-semibold">' + Number(x.belum_diperiksa) + '</span></td>' +
                     '<td><span class="fw-semibold">' + Number(x.sudah_diperiksa) + '</span></td>' +
                     '<td>' + badge(x.status) + '</td>' +
-                    '<td class="text-end pe-3">' +
-                        '<div class="d-inline-flex gap-2 flex-wrap justify-content-end">' +
-                            '<button class="btn hris-action-btn hris-action-edit" title="Edit / Detail" onclick="lihatKegiatan(' + Number(x.kegiatan_id) + ')"><i class="feather-edit-2"></i><span>EDIT</span></button>' +
-                            '<button class="btn hris-action-btn hris-action-check" id="btnAksi-' + Number(x.kegiatan_id) + '" title="Buka daftar peserta untuk diperiksa" onclick="toggleKegiatan(' + Number(x.kegiatan_id) + ')"><i class="feather-clipboard"></i><span>PERIKSA</span></button>' +
+                    '<td>' +
+                        '<div class="d-flex gap-2 flex-wrap">' +
+                            '<button class="hris-btn hris-btn-secondary" type="button" title="Edit / Detail" onclick="lihatKegiatan(' + Number(x.kegiatan_id) + ')">' +
+                                '<i class="feather-edit-2"></i><span>Edit</span>' +
+                            '</button>' +
+                            '<button class="hris-btn hris-btn-primary" type="button" id="btnAksi-' + Number(x.kegiatan_id) + '" title="Buka daftar peserta untuk diperiksa" onclick="toggleKegiatan(' + Number(x.kegiatan_id) + ')">' +
+                                '<i class="feather-clipboard"></i><span>Periksa</span>' +
+                            '</button>' +
                         '</div>' +
                     '</td>' +
                 '</tr>';
             }).join("")
-            : '<tr><td colspan="8" class="text-center py-4 text-muted">Belum ada kegiatan Rekam Medis.</td></tr>';
+            : '<tr><td colspan="8" class="hris-empty">Belum ada kegiatan Rekam Medis.</td></tr>';
 
         statRefresh();
     }
@@ -362,9 +391,9 @@ document.addEventListener("DOMContentLoaded", function () {
         const el = document.getElementById("tPetugasChips");
         el.innerHTML = petugasDraft.map((item, i) => {
             const label = item.nip ? item.nama + " · " + item.nip : item.nama + " · Manual";
-            return '<span class="badge rounded-pill text-bg-light border px-3 py-2">' +
+            return '<span class="hris-badge-modern hris-badge-info">' +
                 esc(label) +
-                ' <button type="button" class="btn btn-sm p-0 ms-1 text-danger" onclick="hapusPetugas(' + i + ')">×</button>' +
+                ' <button type="button" class="btn btn-sm p-0 ms-1 text-danger" aria-label="Hapus petugas" onclick="hapusPetugas(' + i + ')">×</button>' +
                 '</span>';
         }).join("");
     }
