@@ -315,6 +315,8 @@ from app.controllers.profilkuController import (
     api_profilku_photo_upload,
     api_profilku_password,
     api_profilku_signature,
+    api_profilku_signature_file,
+    api_internal_profile_signature_file,
     api_internal_profile,
     api_internal_profile_update,
     api_internal_profile_photo,
@@ -2176,6 +2178,11 @@ def api_profilku_photo_upload_route():
 def api_profilku_password_route():
     return api_profilku_password()
 
+@main.route('/api/profilku/signature', methods=['GET'])
+@login_required
+def api_profilku_signature_file_route():
+    return api_profilku_signature_file()
+
 @main.route('/api/profilku/signature', methods=['POST'])
 @login_required
 def api_profilku_signature_route():
@@ -2200,6 +2207,10 @@ def api_internal_calendar_profile_photo_upload_route():
 @main.route('/api/internal/calendar/profile-password', methods=['POST'])
 def api_internal_calendar_profile_password_route():
     return api_internal_profile_password()
+
+@main.route('/api/internal/calendar/profile-signature', methods=['GET'])
+def api_internal_calendar_profile_signature_file_route():
+    return api_internal_profile_signature_file()
 
 @main.route('/api/internal/calendar/profile-signature', methods=['POST'])
 def api_internal_calendar_profile_signature_route():
