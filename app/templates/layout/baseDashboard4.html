@@ -8,134 +8,214 @@
 
     <link rel="shortcut icon" type="image/x-icon"
           href="{{ url_for('static', filename='static_dashboard_1/assets/images/logo-full.png') }}">
-    <link rel="stylesheet"
+
+    <link rel="stylesheet" type="text/css"
           href="{{ url_for('static', filename='static_dashboard_1/assets/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" type="text/css"
+          href="{{ url_for('static', filename='static_dashboard_1/assets/vendors/css/vendors.min.css') }}">
+    <link rel="stylesheet" type="text/css"
+          href="{{ url_for('static', filename='static_dashboard_1/assets/css/theme.min.css') }}">
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='css/hris-global.css') }}">
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='css/hris-ui.css') }}">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/hris-global.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/hris-ui.css') }}">
+
     <style>
-        /* AGENDA shell follows Dashboard UMUM visual standard */
-        .nxl-header {
+        /* ============================================================
+           AGENDA = Dashboard UMUM shell
+           Gunakan struktur nxl-header / nxl-navigation / nxl-container
+           yang sama dengan baseDashboard1.
+           ============================================================ */
+
+        body.hris-modern {
+            background: #f5f7fa;
+        }
+
+        .agenda-shell .nxl-navigation {
+            top: 0 !important;
+            left: 0 !important;
+            bottom: 0 !important;
+            width: 250px !important;
+            background: #eb6831 !important;
+        }
+
+        .agenda-shell .nxl-header {
+            top: 0 !important;
+            right: 0 !important;
+            left: 250px !important;
             min-height: 72px !important;
             height: 72px !important;
             background: #fff !important;
-            border-bottom: 1px solid #e5e7eb !important;
             color: #1f2937 !important;
+            border-bottom: 1px solid #e5e7eb !important;
             box-shadow: 0 1px 8px rgba(15,23,42,.04);
         }
-        .nxl-header .header-wrapper {
+
+        .agenda-shell .nxl-header .header-wrapper {
             min-height: 72px !important;
             height: 72px !important;
+            padding: 0 22px !important;
         }
-        .nxl-header .dropdown > a,
-        .nxl-header .dropdown > a span {
+
+        .agenda-shell .nxl-header .header-left {
+            visibility: hidden;
+        }
+
+        .agenda-shell .nxl-header .dropdown > a,
+        .agenda-shell .nxl-header .dropdown > a span {
             color: #1f2937 !important;
         }
-        .nxl-header .dropdown-toggle::after {
-            color: #6b7280 !important;
-        }
-        .nxl-header .nxl-head-mobile-toggler {
-            color: #374151 !important;
+
+        .agenda-shell .nxl-header .dropdown-toggle::after {
+            color: #64748b !important;
         }
 
-        .hris-shell .nxl-navigation {
-            top: 72px !important;
-            background: #f1662a !important;
+        .agenda-shell .nxl-navigation .navbar-content {
+            height: 100%;
+            padding-top: 0 !important;
         }
 
-        .hris-shell .custom-nav-header.agenda-brand-header {
-            display: block !important;
-            padding: 16px 14px 12px !important;
-        }
-        .hris-shell .custom-nav-header.agenda-brand-header .header-container,
-        .hris-shell .custom-nav-header.agenda-brand-header .header-container:first-child {
-            display: flex !important;
+        .agenda-shell .agenda-nav-brand {
+            display: flex;
             align-items: center;
             gap: 10px;
-            min-height: 44px;
+            min-height: 72px;
+            padding: 14px 16px;
+            background: #eb6831;
+            border-bottom: 1px solid rgba(255,255,255,.18);
         }
-        .hris-shell .custom-nav-header.agenda-brand-header img {
-            display: block !important;
-            width: 38px !important;
-            height: 38px !important;
+
+        .agenda-shell .agenda-nav-brand img {
+            width: 38px;
+            height: 38px;
             object-fit: contain;
             flex: 0 0 38px;
         }
-        .hris-shell .agenda-brand-title,
-        .hris-shell .agenda-brand-subtitle {
-            display: block;
-        }
-        .hris-shell .agenda-brand-title {
-            color: #fff !important;
-            font-size: 14px !important;
-            font-weight: 800 !important;
-            line-height: 1.2;
-        }
-        .hris-shell .agenda-brand-subtitle {
-            margin-top: 2px;
-            color: rgba(255,255,255,.78) !important;
-            font-size: 9px;
-            line-height: 1.2;
+
+        .agenda-shell .agenda-nav-brand-text {
+            min-width: 0;
         }
 
-        .hris-shell .nxl-hasmenu > .nxl-submenu {
-            display: none;
-            list-style: none;
-            margin: 0;
-            padding: 4px 0 6px 42px;
-        }
-        .hris-shell .nxl-hasmenu.hris-active > .nxl-submenu,
-        .hris-shell .nxl-hasmenu.menu-open > .nxl-submenu {
+        .agenda-shell .agenda-nav-brand-text strong,
+        .agenda-shell .agenda-nav-brand-text small {
             display: block;
         }
-        .hris-shell .nxl-hasmenu > .nxl-link .nxl-arrow {
-            transition: transform .18s ease;
+
+        .agenda-shell .agenda-nav-brand-text strong {
+            color: #fff;
+            font-size: 14px;
+            line-height: 1.2;
+            font-weight: 800;
         }
-        .hris-shell .nxl-hasmenu.menu-open > .nxl-link .nxl-arrow,
-        .hris-shell .nxl-hasmenu.hris-active > .nxl-link .nxl-arrow {
+
+        .agenda-shell .agenda-nav-brand-text small {
+            margin-top: 2px;
+            color: rgba(255,255,255,.78);
+            font-size: 9px;
+        }
+
+        .agenda-shell .nxl-navbar {
+            margin: 0;
+            padding: 12px 10px 20px;
+            list-style: none;
+        }
+
+        .agenda-shell .nxl-link {
+            color: rgba(255,255,255,.94);
+            border-radius: 8px;
+        }
+
+        .agenda-shell .nxl-link:hover {
+            color: #fff;
+            background: rgba(255,255,255,.12);
+        }
+
+        .agenda-shell .nxl-link.hris-active {
+            color: #fff !important;
+            background: rgba(255,255,255,.16);
+        }
+
+        .agenda-shell .nxl-submenu {
+            display: none;
+            margin: 2px 0 5px;
+            padding: 2px 0 2px 27px;
+            list-style: none;
+        }
+
+        .agenda-shell .nxl-hasmenu.menu-open > .nxl-submenu,
+        .agenda-shell .nxl-hasmenu.hris-active > .nxl-submenu {
+            display: block;
+        }
+
+        .agenda-shell .nxl-hasmenu.menu-open > .nxl-link .nxl-arrow,
+        .agenda-shell .nxl-hasmenu.hris-active > .nxl-link .nxl-arrow {
             transform: rotate(180deg);
         }
-        .hris-shell .nxl-submenu .nxl-link {
-            min-height: 34px;
-            padding: 7px 10px;
-            border-radius: 8px;
-            font-size: 12px;
+
+        .agenda-shell .nxl-container {
+            top: 72px !important;
+            margin-left: 250px !important;
+            min-height: calc(100vh - 72px);
         }
-        .hris-shell .nxl-submenu .nxl-link.hris-active {
-            background: rgba(255,255,255,.14);
-            color: #fff;
+
+        .agenda-shell .nxl-container .nxl-content {
+            min-height: calc(100vh - 72px);
+            padding: 0 !important;
+        }
+
+        .agenda-shell .nxl-container .nxl-content .main-content {
+            padding: 0 !important;
+        }
+
+        @media (max-width: 900px) {
+            .agenda-shell .nxl-header {
+                left: 0 !important;
+            }
+
+            .agenda-shell .nxl-navigation {
+                width: 250px !important;
+                transform: translateX(-100%);
+                transition: transform .18s ease;
+            }
+
+            body.agenda-sidebar-open .agenda-shell .nxl-navigation {
+                transform: translateX(0);
+            }
+
+            .agenda-shell .nxl-container {
+                margin-left: 0 !important;
+            }
         }
     </style>
+
     {% block head %}{% endblock %}
 </head>
 
 <body class="hris-modern">
 
+<div class="agenda-shell">
+
     {% include 'partials/header.html' %}
 
-
-<div class="hris-shell" id="agendaShell">
-    <aside class="nxl-navigation" aria-label="Menu AGENDA">
+    <nav class="nxl-navigation" aria-label="Menu AGENDA">
         <div class="navbar-wrapper">
             <div class="navbar-content">
                 <ul class="nxl-navbar">
-                    <li class="custom-nav-header agenda-brand-header">
-                        <div class="header-container">
-                            <img src="{{ url_for('static', filename='static_dashboard_1/assets/images/logo-full.png') }}" alt="Basarnas Surabaya">
-                            <div>
-                                <strong class="agenda-brand-title">HRIS Kansar</strong>
-                                <small class="agenda-brand-subtitle">Basarnas Surabaya</small>
-                            </div>
+
+                    <li class="agenda-nav-brand">
+                        <img src="{{ url_for('static', filename='static_dashboard_1/assets/images/logo-full.png') }}"
+                             alt="Basarnas Surabaya">
+                        <div class="agenda-nav-brand-text">
+                            <strong>HRIS Kansar</strong>
+                            <small>Basarnas Surabaya</small>
                         </div>
-                        <div class="nav-separator"></div>
                     </li>
 
                     {% if is_administrator() or has_form_access('AGENDA_RAPAT') %}
                     <li class="nxl-item">
-                        <a href="{{ url_for('main.view_agenda_rapat') }}" class="nxl-link{% if request.endpoint == 'main.view_agenda_rapat' %} hris-active{% endif %}">
+                        <a href="{{ url_for('main.view_agenda_rapat') }}"
+                           class="nxl-link{% if request.endpoint == 'main.view_agenda_rapat' %} hris-active{% endif %}">
                             <span class="nxl-micon"><i class="ti ti-calendar-event"></i></span>
                             <span class="nxl-mtext">Rapat</span>
                         </a>
@@ -144,7 +224,8 @@
 
                     {% if is_administrator() or has_form_access('AGENDA_DISPOSISI') %}
                     <li class="nxl-item">
-                        <a href="{{ url_for('main.view_agenda_disposisi') }}" class="nxl-link{% if request.endpoint == 'main.view_agenda_disposisi' %} hris-active{% endif %}">
+                        <a href="{{ url_for('main.view_agenda_disposisi') }}"
+                           class="nxl-link{% if request.endpoint == 'main.view_agenda_disposisi' %} hris-active{% endif %}">
                             <span class="nxl-micon"><i class="ti ti-send"></i></span>
                             <span class="nxl-mtext">Disposisi</span>
                         </a>
@@ -153,7 +234,8 @@
 
                     {% if is_administrator() or has_form_access('SUMDA_KESAMAPTAAN') %}
                     <li class="nxl-item">
-                        <a href="{{ url_for('main.view_kesamaptaan') }}" class="nxl-link{% if request.endpoint == 'main.view_kesamaptaan' %} hris-active{% endif %}">
+                        <a href="{{ url_for('main.view_kesamaptaan') }}"
+                           class="nxl-link{% if request.endpoint == 'main.view_kesamaptaan' %} hris-active{% endif %}">
                             <span class="nxl-micon"><i class="ti ti-run"></i></span>
                             <span class="nxl-mtext">Kesamaptaan</span>
                         </a>
@@ -169,12 +251,14 @@
                         </a>
                         <ul class="nxl-submenu">
                             <li class="nxl-item">
-                                <a href="{{ url_for('main.view_rekam_medis_pegawai') }}" class="nxl-link{% if request.endpoint == 'main.view_rekam_medis_pegawai' %} hris-active{% endif %}">
+                                <a href="{{ url_for('main.view_rekam_medis_pegawai') }}"
+                                   class="nxl-link{% if request.endpoint == 'main.view_rekam_medis_pegawai' %} hris-active{% endif %}">
                                     <span class="nxl-mtext">Rekam Medis Pegawai</span>
                                 </a>
                             </li>
                             <li class="nxl-item">
-                                <a href="{{ url_for('main.view_rekam_medis_non_pegawai') }}" class="nxl-link{% if request.endpoint == 'main.view_rekam_medis_non_pegawai' %} hris-active{% endif %}">
+                                <a href="{{ url_for('main.view_rekam_medis_non_pegawai') }}"
+                                   class="nxl-link{% if request.endpoint == 'main.view_rekam_medis_non_pegawai' %} hris-active{% endif %}">
                                     <span class="nxl-mtext">Rekam Medis Non Pegawai</span>
                                 </a>
                             </li>
@@ -182,52 +266,36 @@
                     </li>
                     {% endif %}
 
-                    <li class="custom-nav-header" style="margin-top:14px;">
-                        <div class="nav-separator"></div>
-                        <a href="{{ url_for('main.index') }}" class="nxl-link" style="margin-top:10px;">
+                    <li class="nxl-item" style="margin-top:14px;padding-top:10px;border-top:1px solid rgba(255,255,255,.18);">
+                        <a href="{{ url_for('main.index') }}" class="nxl-link">
                             <span class="nxl-micon"><i class="ti ti-arrow-left"></i></span>
                             <span class="nxl-mtext">Kembali ke Portal</span>
                         </a>
                     </li>
+
                 </ul>
             </div>
         </div>
-    </aside>
+    </nav>
 
-    <div class="hris-sidebar-backdrop" id="agendaSidebarBackdrop"></div>
-
-    <main class="hris-main">
-        {% block content %}{% endblock %}
+    <main class="nxl-container">
+        <div class="nxl-content">
+            <div class="main-content">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
     </main>
+
 </div>
 
 <script src="{{ url_for('static', filename='static_dashboard_1/assets/vendors/js/vendors.min.js') }}"></script>
 <script src="{{ url_for('static', filename='static_dashboard_1/assets/js/common-init.min.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const toggle = document.getElementById('agendaSidebarToggle');
-    const backdrop = document.getElementById('agendaSidebarBackdrop');
-
-    toggle?.addEventListener('click', function () {
-        document.body.classList.toggle('hris-sidebar-open');
-    });
-    backdrop?.addEventListener('click', function () {
-        document.body.classList.remove('hris-sidebar-open');
-    });
-
-    document.querySelectorAll('.hris-shell .nxl-hasmenu > .nxl-link').forEach(function (link) {
+    document.querySelectorAll('.agenda-shell .nxl-hasmenu > .nxl-link').forEach(function (link) {
         link.addEventListener('click', function (event) {
             event.preventDefault();
-            const parent = link.closest('.nxl-hasmenu');
-            parent?.classList.toggle('menu-open');
-        });
-    });
-
-    document.querySelectorAll('.hris-shell .nxl-link').forEach(function (link) {
-        link.addEventListener('click', function () {
-            if (window.innerWidth <= 900 && !link.closest('.nxl-hasmenu')) {
-                document.body.classList.remove('hris-sidebar-open');
-            }
+            link.closest('.nxl-hasmenu')?.classList.toggle('menu-open');
         });
     });
 
