@@ -3938,3 +3938,32 @@ body.hris-sidebar-mini .hris-submenu {
     flex-basis: 34px;
   }
 }
+
+
+/* ============================================================
+   HRIS STANDARD — TABLE ACTION GROUP
+   Keep row actions compact and consistently side-by-side.
+   ============================================================ */
+
+.hris-table-action-group {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.hris-table-action-group .hris-btn {
+  min-height: 34px;
+  padding: 7px 10px;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.hris-table-modern th:last-child,
+.hris-table-modern td:last-child {
+  min-width: 155px;
+  white-space: nowrap;
+}
+
