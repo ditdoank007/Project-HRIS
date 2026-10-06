@@ -487,7 +487,7 @@ def api_calendar_rekam_medis_guest():
 
     if not token:
         return jsonify({"status": "error", "message": "Token QR wajib diisi."}), 400
-    if not re.fullmatch(r"\\d{16}", nik):
+    if not re.fullmatch(r"\d{16}", nik):
         return jsonify({"status": "error", "message": "NIK wajib 16 digit angka."}), 400
     if not nama:
         return jsonify({"status": "error", "message": "Nama Lengkap wajib diisi."}), 400
