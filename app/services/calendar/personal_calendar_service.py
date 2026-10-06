@@ -26,6 +26,8 @@ from app.models.agendaRapatAttendanceModel import AgendaRapatAttendance
 from app.models.calendarEventModel import CalendarEvent
 from app.models.kesamaptaanKegiatanModel import KesamaptaanKegiatan
 from app.models.kesamaptaanKehadiranModel import KesamaptaanKehadiran
+from app.models.rekamMedisKegiatanModel import RekamMedisKegiatan
+from app.models.rekamMedisPesertaModel import RekamMedisPeserta
 from app.models.hrisDocumentModel import HrisDocument
 from app.services.dinas_luar_storage import dinas_luar_absolute_path_by_filename
 
@@ -273,6 +275,64 @@ def build_personal_calendar_events(
             "pdf_url": (
                 f"/api/agenda/piket-siaga/pdf?key={document_key}"
                 if document else None
+            ),
+        })
+
+    # ============================================================
+    # 5. REKAM MEDIS
+    #
+    # Hanya kegiatan yang pegawai benar-benar terdaftar sebagai
+    # peserta yang masuk ke Personal Calendar.
+    # ============================================================
+
+    rekam_medis_rows = (
+        db.session.query(RekamMedisKegiatan, RekamMedisPeserta)
+        .join(
+            RekamMedisPeserta,
+            RekamMedisPeserta.KEGIATAN_ID == RekamMedisKegiatan.KEGIATAN_ID,
+        )
+        .filter(
+            RekamMedisPeserta.NIP == nip,
+            RekamMedisPeserta.JENIS_PESERTA == "PEGAWAI",
+            RekamMedisKegiatan.TANGGAL >= tanggal_awal,
+            RekamMedisKegiatan.TANGGAL < tanggal_akhir,
+        )
+        .order_by(
+            RekamMedisKegiatan.TANGGAL.asc(),
+            RekamMedisKegiatan.JAM.asc(),
+        )
+        .all()
+    )
+
+    for kegiatan, peserta in rekam_medis_rows:
+        if not kegiatan.TANGGAL or not kegiatan.JAM:
+            continue
+
+        start = (
+            f"{kegiatan.TANGGAL.isoformat()}"
+            f"T{kegiatan.JAM.strftime('%H:%M:%S')}"
+        )
+
+        events.append({
+            "id": f"REKAM-MEDIS-{kegiatan.KEGIATAN_ID}-{nip}",
+            "title": kegiatan.JUDUL,
+            "type": "REKAM_MEDIS",
+            "source": "REKAM_MEDIS",
+            "start": start,
+            "end": start,
+            "all_day": False,
+            "description": (
+                "Rekam Medis"
+                + (" - Sudah diperiksa" if peserta.REKAM_ID else " - Terdaftar")
+            ),
+            "location": kegiatan.LOKASI,
+            "event_id": kegiatan.KEGIATAN_ID,
+            "status": kegiatan.STATUS,
+            "participant_status": peserta.STATUS_PEMERIKSAAN,
+            "rekam_id": peserta.REKAM_ID,
+            "attendance_at": (
+                peserta.SCANNED_AT.isoformat()
+                if peserta.SCANNED_AT else None
             ),
         })
 
