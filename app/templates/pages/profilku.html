@@ -142,12 +142,14 @@
             <section class="profilku-card">
                 <div class="profilku-card-head"><h2>Data Pribadi</h2><span class="hris-badge-modern hris-badge-info">MASTER PEGAWAI</span></div>
                 <div class="profilku-card-body">
+                    <div class="profilku-field"><div class="profilku-label">Tempat Lahir</div><div class="profilku-value profilku-readonly" id="vTempatLahir">-</div></div>
                     <div class="profilku-field"><div class="profilku-label">Tanggal Lahir</div><div class="profilku-value profilku-readonly" id="vTglLahir">-</div></div>
                     <div class="profilku-field"><div class="profilku-label">Jenis Kelamin</div><div class="profilku-value profilku-readonly" id="vJenisKel">-</div></div>
                     <div class="profilku-field"><div class="profilku-label">Status Perkawinan</div><div class="profilku-value profilku-readonly" id="vStatusKawin">-</div></div>
                     <div class="profilku-field"><div class="profilku-label">Agama</div><div class="profilku-value profilku-readonly" id="vAgama">-</div></div>
                     <div class="profilku-field"><div class="profilku-label">No. KTP</div><div class="profilku-value profilku-readonly" id="vKtp">-</div></div>
                     <div class="profilku-field"><div class="profilku-label">No. NPWP</div><div class="profilku-value profilku-readonly" id="vNpwp">-</div></div>
+                    <div class="profilku-field"><div class="profilku-label">Hobi</div><div class="profilku-value profilku-readonly" id="vHobi">-</div></div>
                 </div>
             </section>
 
@@ -173,6 +175,12 @@
                     <div class="profilku-field"><div class="profilku-label">TMT Class</div><div class="profilku-value profilku-readonly" id="vTmtClass">-</div></div>
                     <div class="profilku-field"><div class="profilku-label">TMT CPNS</div><div class="profilku-value profilku-readonly" id="vTmtCpns">-</div></div>
                     <div class="profilku-field"><div class="profilku-label">TMT PNS</div><div class="profilku-value profilku-readonly" id="vTmtPns">-</div></div>
+                    <div class="profilku-field"><div class="profilku-label">Gol. Rekrut</div><div class="profilku-value profilku-readonly" id="vGolRecruit">-</div></div>
+                    <div class="profilku-field"><div class="profilku-label">Status Pegawai</div><div class="profilku-value profilku-readonly" id="vStatusPeg">-</div></div>
+                    <div class="profilku-field"><div class="profilku-label">Status Keluar</div><div class="profilku-value profilku-readonly" id="vIsKeluar">-</div></div>
+                    <div class="profilku-field"><div class="profilku-label">Tanggal Keluar</div><div class="profilku-value profilku-readonly" id="vTglKeluar">-</div></div>
+                    <div class="profilku-field"><div class="profilku-label">Alasan Keluar</div><div class="profilku-value profilku-readonly" id="vAlasanKeluar">-</div></div>
+                    <div class="profilku-field"><div class="profilku-label">VIP</div><div class="profilku-value profilku-readonly" id="vIsVip">-</div></div>
                 </div>
             </section>
         </div>
@@ -278,10 +286,10 @@
         setText("vFinger", profileData.finger_id); setText("vPangkat", profileData.pangkat);
         setText("vGol", profileData.gol); setText("vJabatan", profileData.jabatan);
         setText("vUnit", profileData.unit_kerja); setText("vEselon", profileData.eselon);
-        setText("vTglLahir", profileData.tgl_lahir); setText("vJenisKel", profileData.jenis_kel);
+        setText("vTempatLahir", profileData.tempat_lahir); setText("vTglLahir", profileData.tgl_lahir); setText("vJenisKel", profileData.jenis_kel);
         setText("vStatusKawin", profileData.status_perkawinan); setText("vAgama", profileData.agama);
-        setText("vKtp", profileData.no_ktp); setText("vNpwp", profileData.no_npwp);
-        setText("vTglMasuk", profileData.tgl_masuk); setText("vTmtPangkat", profileData.tmt_pangkat);
+        setText("vKtp", profileData.no_ktp); setText("vNpwp", profileData.no_npwp); setText("vHobi", profileData.hobi);
+        setText("vTglMasuk", profileData.tgl_masuk); setText("vTmtPangkat", profileData.tmt_pangkat); setText("vGolRecruit", profileData.gol_recruit); setText("vStatusPeg", profileData.status_peg); setText("vIsKeluar", profileData.is_keluar); setText("vTglKeluar", profileData.tgl_keluar); setText("vAlasanKeluar", profileData.alasan_keluar); setText("vIsVip", profileData.is_vip);
         setText("vTmtJabatan", profileData.tmt_jabatan); setText("vTmtClass", profileData.tmt_class);
         setText("vTmtCpns", profileData.tmt_cpns); setText("vTmtPns", profileData.tmt_pns);
 
