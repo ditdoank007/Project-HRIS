@@ -143,7 +143,7 @@ document.addEventListener('DOMContentLoaded', function () {
         autocompleteTimer = setTimeout(async () => {
             try {
                 const res = await fetch(
-                    `/api/search_pegawai?keyword=${encodeURIComponent(keyword)}`
+                    `/api/user-account/pegawai-search?q=${encodeURIComponent(keyword)}`
                 );
 
                 const json = await res.json();
