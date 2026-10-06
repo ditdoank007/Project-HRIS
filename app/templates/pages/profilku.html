@@ -1,0 +1,394 @@
+{% extends "layout/baseHRIS.html" %}
+
+{% block title %}- Profilku{% endblock %}
+{% block header_kicker %}HRIS REBORN{% endblock %}
+{% block header_title %}Profilku{% endblock %}
+
+{% block styles %}
+<style>
+.profilku-page { max-width: 1180px; margin: 0 auto; }
+.profilku-hero {
+    display:flex; align-items:center; justify-content:space-between; gap:24px;
+    padding:24px 26px; margin-bottom:18px; background:#fff;
+    border:1px solid #e5e7eb; border-radius:12px;
+}
+.profilku-identity { display:flex; align-items:center; gap:16px; min-width:0; }
+.profilku-avatar {
+    width:72px; height:72px; flex:0 0 72px; border-radius:50%;
+    object-fit:cover; background:#f3f4f6; border:1px solid #e5e7eb;
+}
+.profilku-avatar-fallback {
+    display:flex; align-items:center; justify-content:center;
+    color:#fff; background:#eb6831; font-size:25px; font-weight:800;
+}
+.profilku-name { margin:0; color:#111827; font-size:20px; font-weight:800; }
+.profilku-meta { margin-top:5px; color:#6b7280; font-size:12px; }
+.profilku-actions { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+.profilku-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.profilku-card {
+    background:#fff; border:1px solid #e5e7eb; border-radius:12px; overflow:hidden;
+}
+.profilku-card-head {
+    padding:14px 18px; border-bottom:1px solid #e5e7eb;
+    display:flex; align-items:center; justify-content:space-between;
+}
+.profilku-card-head h2 { margin:0; color:#1f2937; font-size:14px; font-weight:800; }
+.profilku-card-body { padding:18px; }
+.profilku-field {
+    display:grid; grid-template-columns:150px minmax(0,1fr); align-items:center;
+    gap:14px; margin-bottom:12px;
+}
+.profilku-field:last-child { margin-bottom:0; }
+.profilku-label { color:#6b7280; font-size:11px; font-weight:700; }
+.profilku-value, .profilku-input {
+    width:100%; min-height:38px; padding:8px 11px; border:1px solid #e5e7eb;
+    border-radius:7px; background:#f9fafb; color:#374151; font-size:12px;
+}
+.profilku-input { background:#fff; outline:none; }
+.profilku-input:focus { border-color:#eb6831; box-shadow:0 0 0 3px rgba(235,104,49,.08); }
+.profilku-readonly { color:#6b7280; }
+.profilku-editable { border-color:#d1d5db; }
+.profilku-footer { display:flex; justify-content:flex-end; margin-top:16px; }
+.profilku-note { margin:0 0 15px; color:#6b7280; font-size:11px; line-height:1.6; }
+.profilku-tool-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+.profilku-tool {
+    padding:16px; border:1px solid #e5e7eb; border-radius:10px; background:#fff;
+}
+.profilku-tool h3 { margin:0 0 6px; color:#1f2937; font-size:13px; font-weight:800; }
+.profilku-tool p { margin:0 0 12px; color:#6b7280; font-size:10px; line-height:1.5; }
+.profilku-photo-preview {
+    width:110px; height:110px; border-radius:50%; object-fit:cover;
+    border:1px solid #e5e7eb; display:block; margin:0 auto 15px; background:#f3f4f6;
+}
+.profilku-photo-buttons { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+.profilku-modal-backdrop {
+    position:fixed; inset:0; display:none; align-items:center; justify-content:center;
+    padding:20px; background:rgba(15,23,42,.52); backdrop-filter:blur(4px); z-index:3000;
+}
+.profilku-modal-backdrop.is-open { display:flex; }
+.profilku-modal {
+    width:min(560px,100%); max-height:90vh; overflow:auto; background:#fff;
+    border-radius:14px; box-shadow:0 24px 70px rgba(15,23,42,.28);
+}
+.profilku-modal-head {
+    padding:16px 18px; border-bottom:1px solid #e5e7eb;
+    display:flex; align-items:center; justify-content:space-between;
+}
+.profilku-modal-head h3 { margin:0; font-size:15px; font-weight:800; color:#111827; }
+.profilku-modal-body { padding:18px; }
+.profilku-modal-foot { padding:14px 18px; border-top:1px solid #e5e7eb; display:flex; justify-content:flex-end; gap:8px; }
+.profilku-close { width:32px; height:32px; border:1px solid #e5e7eb; border-radius:7px; background:#fff; cursor:pointer; }
+#signatureCanvas {
+    width:100%; height:250px; display:block; border:1px dashed #cbd5e1;
+    border-radius:9px; background:#fff; touch-action:none;
+}
+#cameraPreview {
+    width:100%; max-height:420px; object-fit:cover; border-radius:10px; background:#111827;
+}
+.profilku-alert { display:none; margin-bottom:15px; padding:10px 12px; border-radius:7px; font-size:11px; }
+.profilku-alert.show { display:block; }
+.profilku-alert.success { background:#ecfdf5; color:#047857; }
+.profilku-alert.error { background:#fef2f2; color:#b91c1c; }
+@media (max-width:900px) {
+    .profilku-grid, .profilku-tool-grid { grid-template-columns:1fr; }
+    .profilku-hero { align-items:flex-start; flex-direction:column; }
+    .profilku-actions { justify-content:flex-start; }
+}
+@media (max-width:620px) {
+    .profilku-field { grid-template-columns:1fr; gap:6px; }
+    .profilku-name { font-size:17px; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="nxl-content">
+    <div class="profilku-page">
+        <div class="profilku-hero">
+            <div class="profilku-identity">
+                <div id="profileAvatarFallback" class="profilku-avatar profilku-avatar-fallback">
+                    {{ (pegawai.NAMA or 'P')[:1]|upper }}
+                </div>
+                <img id="profileAvatar" class="profilku-avatar" alt="Foto profil" style="display:none;">
+                <div>
+                    <h2 class="profilku-name">{{ pegawai.NAMA }}</h2>
+                    <div class="profilku-meta">{{ pegawai.NIP }} · {{ pegawai.JABATAN or '-' }} · {{ pegawai.UNIT_KERJA or '-' }}</div>
+                </div>
+            </div>
+            <div class="profilku-actions">
+                <button type="button" class="hris-btn hris-btn-secondary" id="btnChangePhoto"><i class="feather-camera"></i><span>Ganti Foto Profil</span></button>
+                <button type="button" class="hris-btn hris-btn-secondary" id="btnChangePassword"><i class="feather-lock"></i><span>Reset Password</span></button>
+                <button type="button" class="hris-btn hris-btn-secondary" id="btnSignature"><i class="feather-edit-3"></i><span>Ganti Tanda Tangan</span></button>
+            </div>
+        </div>
+
+        <div id="profileAlert" class="profilku-alert"></div>
+
+        <div class="profilku-grid">
+            <section class="profilku-card">
+                <div class="profilku-card-head"><h2>Identitas Pegawai</h2></div>
+                <div class="profilku-card-body">
+                    <div class="profilku-field"><div class="profilku-label">Nama Lengkap</div><div class="profilku-value profilku-readonly" id="vNama">-</div></div>
+                    <div class="profilku-field"><div class="profilku-label">NIP</div><div class="profilku-value profilku-readonly" id="vNip">-</div></div>
+                    <div class="profilku-field"><div class="profilku-label">Finger ID</div><div class="profilku-value profilku-readonly" id="vFinger">-</div></div>
+                    <div class="profilku-field"><div class="profilku-label">Pangkat</div><div class="profilku-value profilku-readonly" id="vPangkat">-</div></div>
+                    <div class="profilku-field"><div class="profilku-label">Golongan</div><div class="profilku-value profilku-readonly" id="vGol">-</div></div>
+                    <div class="profilku-field"><div class="profilku-label">Jabatan</div><div class="profilku-value profilku-readonly" id="vJabatan">-</div></div>
+                    <div class="profilku-field"><div class="profilku-label">Unit Kerja</div><div class="profilku-value profilku-readonly" id="vUnit">-</div></div>
+                    <div class="profilku-field"><div class="profilku-label">Eselon</div><div class="profilku-value profilku-readonly" id="vEselon">-</div></div>
+                </div>
+            </section>
+
+            <section class="profilku-card">
+                <div class="profilku-card-head"><h2>Data Pribadi</h2><span class="hris-badge-modern hris-badge-info">MASTER PEGAWAI</span></div>
+                <div class="profilku-card-body">
+                    <div class="profilku-field"><div class="profilku-label">Tanggal Lahir</div><div class="profilku-value profilku-readonly" id="vTglLahir">-</div></div>
+                    <div class="profilku-field"><div class="profilku-label">Jenis Kelamin</div><div class="profilku-value profilku-readonly" id="vJenisKel">-</div></div>
+                    <div class="profilku-field"><div class="profilku-label">Status Perkawinan</div><div class="profilku-value profilku-readonly" id="vStatusKawin">-</div></div>
+                    <div class="profilku-field"><div class="profilku-label">Agama</div><div class="profilku-value profilku-readonly" id="vAgama">-</div></div>
+                    <div class="profilku-field"><div class="profilku-label">No. KTP</div><div class="profilku-value profilku-readonly" id="vKtp">-</div></div>
+                    <div class="profilku-field"><div class="profilku-label">No. NPWP</div><div class="profilku-value profilku-readonly" id="vNpwp">-</div></div>
+                </div>
+            </section>
+
+            <section class="profilku-card">
+                <div class="profilku-card-head"><h2>Kontak & Alamat</h2><span class="hris-badge-modern hris-badge-success">DAPAT DIUBAH</span></div>
+                <div class="profilku-card-body">
+                    <div class="profilku-field"><div class="profilku-label">No. Telp</div><input id="fNoTelp" class="profilku-input profilku-editable" type="tel"></div>
+                    <div class="profilku-field"><div class="profilku-label">e-Mail</div><input id="fEmail" class="profilku-input profilku-editable" type="email"></div>
+                    <div class="profilku-field"><div class="profilku-label">Alamat</div><input id="fAlamat" class="profilku-input profilku-editable"></div>
+                    <div class="profilku-field"><div class="profilku-label">Kelurahan</div><input id="fKelurahan" class="profilku-input profilku-editable"></div>
+                    <div class="profilku-field"><div class="profilku-label">Kecamatan</div><input id="fKecamatan" class="profilku-input profilku-editable"></div>
+                    <div class="profilku-field"><div class="profilku-label">Kota</div><input id="fKota" class="profilku-input profilku-editable"></div>
+                    <div class="profilku-footer"><button type="button" id="btnSaveProfile" class="hris-btn hris-btn-primary"><i class="feather-save"></i><span>Simpan Profil</span></button></div>
+                </div>
+            </section>
+
+            <section class="profilku-card">
+                <div class="profilku-card-head"><h2>Data Kepegawaian</h2></div>
+                <div class="profilku-card-body">
+                    <div class="profilku-field"><div class="profilku-label">Tanggal Masuk</div><div class="profilku-value profilku-readonly" id="vTglMasuk">-</div></div>
+                    <div class="profilku-field"><div class="profilku-label">TMT Pangkat</div><div class="profilku-value profilku-readonly" id="vTmtPangkat">-</div></div>
+                    <div class="profilku-field"><div class="profilku-label">TMT Jabatan</div><div class="profilku-value profilku-readonly" id="vTmtJabatan">-</div></div>
+                    <div class="profilku-field"><div class="profilku-label">TMT Class</div><div class="profilku-value profilku-readonly" id="vTmtClass">-</div></div>
+                    <div class="profilku-field"><div class="profilku-label">TMT CPNS</div><div class="profilku-value profilku-readonly" id="vTmtCpns">-</div></div>
+                    <div class="profilku-field"><div class="profilku-label">TMT PNS</div><div class="profilku-value profilku-readonly" id="vTmtPns">-</div></div>
+                </div>
+            </section>
+        </div>
+
+        <section class="profilku-card" style="margin-top:16px;">
+            <div class="profilku-card-head"><h2>Keamanan & Identitas Digital</h2></div>
+            <div class="profilku-card-body">
+                <p class="profilku-note">Gunakan tiga fitur di bawah untuk mengelola foto profil, password akun, dan tanda tangan digital pegawai.</p>
+                <div class="profilku-tool-grid">
+                    <div class="profilku-tool">
+                        <h3><i class="feather-camera"></i> Foto Profil</h3>
+                        <p>Upload dari gallery/file atau ambil foto selfie menggunakan kamera handphone.</p>
+                        <button type="button" class="hris-btn hris-btn-secondary" onclick="openPhotoModal()">Kelola Foto</button>
+                    </div>
+                    <div class="profilku-tool">
+                        <h3><i class="feather-lock"></i> Password</h3>
+                        <p>Atur password baru dan konfirmasi password sebelum disimpan.</p>
+                        <button type="button" class="hris-btn hris-btn-secondary" onclick="openPasswordModal()">Reset Password</button>
+                    </div>
+                    <div class="profilku-tool">
+                        <h3><i class="feather-edit-3"></i> Tanda Tangan</h3>
+                        <p>Tanda tangan dengan jari atau stylus. File disimpan sebagai NIP.png di NFS.</p>
+                        <button type="button" class="hris-btn hris-btn-secondary" onclick="openSignatureModal()">Ganti Tanda Tangan</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+
+<div class="profilku-modal-backdrop" id="photoModal">
+  <div class="profilku-modal">
+    <div class="profilku-modal-head"><h3>Ganti Foto Profil</h3><button class="profilku-close" onclick="closeModal('photoModal')">×</button></div>
+    <div class="profilku-modal-body">
+      <img id="photoPreview" class="profilku-photo-preview" alt="Preview foto">
+      <div class="profilku-photo-buttons">
+        <button class="hris-btn hris-btn-secondary" onclick="document.getElementById('photoGalleryInput').click()"><i class="feather-image"></i><span>Gallery / File</span></button>
+        <button class="hris-btn hris-btn-primary" onclick="document.getElementById('photoCameraInput').click()"><i class="feather-camera"></i><span>Kamera Selfie</span></button>
+      </div>
+      <input id="photoGalleryInput" type="file" accept="image/*" hidden>
+      <input id="photoCameraInput" type="file" accept="image/*" capture="user" hidden>
+    </div>
+  </div>
+</div>
+
+<div class="profilku-modal-backdrop" id="passwordModal">
+  <div class="profilku-modal">
+    <div class="profilku-modal-head"><h3>Reset Password</h3><button class="profilku-close" onclick="closeModal('passwordModal')">×</button></div>
+    <div class="profilku-modal-body">
+      <div class="profilku-field"><div class="profilku-label">Password Baru</div><input id="newPassword" type="password" class="profilku-input" autocomplete="new-password"></div>
+      <div class="profilku-field"><div class="profilku-label">Konfirmasi Password</div><input id="confirmPassword" type="password" class="profilku-input" autocomplete="new-password"></div>
+      <p class="profilku-note">Minimal 8 karakter.</p>
+    </div>
+    <div class="profilku-modal-foot"><button class="hris-btn hris-btn-secondary" onclick="closeModal('passwordModal')">Batal</button><button class="hris-btn hris-btn-primary" onclick="savePassword()">Simpan</button></div>
+  </div>
+</div>
+
+<div class="profilku-modal-backdrop" id="signatureModal">
+  <div class="profilku-modal">
+    <div class="profilku-modal-head"><h3>Ganti Tanda Tangan</h3><button class="profilku-close" onclick="closeModal('signatureModal')">×</button></div>
+    <div class="profilku-modal-body">
+      <p class="profilku-note">Tanda tangan dengan jari atau stylus pada area di bawah. Background akan tetap transparan.</p>
+      <canvas id="signatureCanvas" width="1000" height="500"></canvas>
+    </div>
+    <div class="profilku-modal-foot"><button class="hris-btn hris-btn-secondary" onclick="clearSignature()">Hapus</button><button class="hris-btn hris-btn-primary" onclick="saveSignature()">Simpan</button></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+(function () {
+    const $ = id => document.getElementById(id);
+    const alertBox = $("profileAlert");
+    let profileData = null;
+    let signatureDrawing = false;
+    let ctx = null;
+
+    function showAlert(message, type) {
+        alertBox.textContent = message;
+        alertBox.className = "profilku-alert show " + (type || "success");
+        window.clearTimeout(showAlert.timer);
+        showAlert.timer = window.setTimeout(() => alertBox.className = "profilku-alert", 4000);
+    }
+
+    function setText(id, value) { $(id).textContent = value || "-"; }
+    function openModal(id) { $(id).classList.add("is-open"); }
+    window.openPhotoModal = () => openModal("photoModal");
+    window.openPasswordModal = () => openModal("passwordModal");
+    window.openSignatureModal = () => {
+        openModal("signatureModal");
+        initSignature();
+    };
+    window.closeModal = id => $(id).classList.remove("is-open");
+
+    async function loadProfile() {
+        const response = await fetch("/api/profilku");
+        const payload = await response.json();
+        if (!response.ok || !payload.success) throw new Error(payload.message || "Gagal memuat profil.");
+        profileData = payload.data;
+
+        setText("vNama", profileData.nama); setText("vNip", profileData.nip);
+        setText("vFinger", profileData.finger_id); setText("vPangkat", profileData.pangkat);
+        setText("vGol", profileData.gol); setText("vJabatan", profileData.jabatan);
+        setText("vUnit", profileData.unit_kerja); setText("vEselon", profileData.eselon);
+        setText("vTglLahir", profileData.tgl_lahir); setText("vJenisKel", profileData.jenis_kel);
+        setText("vStatusKawin", profileData.status_perkawinan); setText("vAgama", profileData.agama);
+        setText("vKtp", profileData.no_ktp); setText("vNpwp", profileData.no_npwp);
+        setText("vTglMasuk", profileData.tgl_masuk); setText("vTmtPangkat", profileData.tmt_pangkat);
+        setText("vTmtJabatan", profileData.tmt_jabatan); setText("vTmtClass", profileData.tmt_class);
+        setText("vTmtCpns", profileData.tmt_cpns); setText("vTmtPns", profileData.tmt_pns);
+
+        $("fNoTelp").value = profileData.no_telp || "";
+        $("fEmail").value = profileData.email || "";
+        $("fAlamat").value = profileData.alamat || "";
+        $("fKelurahan").value = profileData.kelurahan || "";
+        $("fKecamatan").value = profileData.kecamatan || "";
+        $("fKota").value = profileData.kota || "";
+
+        if (profileData.photo_url) {
+            $("profileAvatar").src = profileData.photo_url + "?v=" + Date.now();
+            $("profileAvatar").style.display = "block";
+            $("profileAvatarFallback").style.display = "none";
+            $("photoPreview").src = profileData.photo_url + "?v=" + Date.now();
+        } else {
+            $("photoPreview").src = "";
+        }
+    }
+
+    $("btnSaveProfile").addEventListener("click", async function () {
+        const payload = {
+            no_telp: $("fNoTelp").value,
+            email: $("fEmail").value,
+            alamat: $("fAlamat").value,
+            kelurahan: $("fKelurahan").value,
+            kecamatan: $("fKecamatan").value,
+            kota: $("fKota").value
+        };
+        const response = await fetch("/api/profilku", {
+            method: "PUT",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) return showAlert(result.message || "Gagal menyimpan profil.", "error");
+        showAlert("Profil berhasil disimpan.", "success");
+    });
+
+    async function uploadPhoto(file) {
+        if (!file) return;
+        const form = new FormData();
+        form.append("photo", file);
+        const response = await fetch("/api/profilku/photo", {method:"POST", body:form});
+        const result = await response.json();
+        if (!response.ok || !result.success) return showAlert(result.message || "Gagal menyimpan foto.", "error");
+        showAlert("Foto profil berhasil disimpan.", "success");
+        closeModal("photoModal");
+        await loadProfile();
+    }
+    $("photoGalleryInput").addEventListener("change", e => uploadPhoto(e.target.files[0]));
+    $("photoCameraInput").addEventListener("change", e => uploadPhoto(e.target.files[0]));
+    $("btnChangePhoto").addEventListener("click", openPhotoModal);
+    $("btnChangePassword").addEventListener("click", openPasswordModal);
+    $("btnSignature").addEventListener("click", openSignatureModal);
+
+    window.savePassword = async function () {
+        const response = await fetch("/api/profilku/password", {
+            method:"POST", headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({new_password:$("newPassword").value, confirm_password:$("confirmPassword").value})
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) return showAlert(result.message || "Gagal mengubah password.", "error");
+        $("newPassword").value = ""; $("confirmPassword").value = "";
+        closeModal("passwordModal");
+        showAlert("Password berhasil diubah.", "success");
+    };
+
+    function initSignature() {
+        const canvas = $("signatureCanvas");
+        if (!ctx) {
+            ctx = canvas.getContext("2d");
+            ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.lineJoin = "round";
+            const point = e => {
+                const rect = canvas.getBoundingClientRect();
+                const src = e.touches ? e.touches[0] : e;
+                return {x:(src.clientX-rect.left)*(canvas.width/rect.width), y:(src.clientY-rect.top)*(canvas.height/rect.height)};
+            };
+            const start = e => { e.preventDefault(); signatureDrawing=true; const p=point(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); };
+            const move = e => { if(!signatureDrawing) return; e.preventDefault(); const p=point(e); ctx.lineTo(p.x,p.y); ctx.stroke(); };
+            const stop = e => { signatureDrawing=false; };
+            canvas.addEventListener("pointerdown", start); canvas.addEventListener("pointermove", move);
+            window.addEventListener("pointerup", stop);
+        }
+    }
+    window.clearSignature = function () {
+        const canvas = $("signatureCanvas");
+        canvas.getContext("2d").clearRect(0,0,canvas.width,canvas.height);
+    };
+    window.saveSignature = async function () {
+        const canvas = $("signatureCanvas");
+        const data = canvas.toDataURL("image/png");
+        const response = await fetch("/api/profilku/signature", {
+            method:"POST", headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({signature:data})
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) return showAlert(result.message || "Gagal menyimpan tanda tangan.", "error");
+        closeModal("signatureModal");
+        showAlert("Tanda tangan berhasil disimpan sebagai NIP.png.", "success");
+    };
+
+    document.querySelectorAll(".profilku-modal-backdrop").forEach(backdrop => {
+        backdrop.addEventListener("click", e => { if (e.target === backdrop) backdrop.classList.remove("is-open"); });
+    });
+
+    loadProfile().catch(err => showAlert(err.message, "error"));
+})();
+</script>
+{% endblock %}
