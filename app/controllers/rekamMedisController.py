@@ -7,7 +7,7 @@ from app import db
 from app.models.pegawaiModel import Pegawai
 from app.models.rekamMedisModel import RekamMedis
 from app.utils.pegawaiHelper import search_operational_pegawai
-from app.utils.hrisOperationalController import is_operational_pegawai
+from app.controllers.hrisOperationalController import is_operational_pegawai
 
 
 def rekam_medis():
