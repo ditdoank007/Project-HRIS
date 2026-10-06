@@ -1014,22 +1014,13 @@ def api_rekam_medis_kegiatan_non_pegawai_export_excel(kegiatan_id):
         petugas = _petugas(kegiatan.KEGIATAN_ID)
         signature_row = signature_start + 7
         if petugas:
-            if len(petugas) == 1:
-                positions = [11]
-            elif len(petugas) == 2:
-                positions = [10, 12]
-            else:
-                positions = [10, 11, 12, 13]
+            # Hindari merged-cell overlap saat jumlah petugas 3-4 orang.
+            # Gunakan satu kolom per petugas agar workbook selalu valid.
+            positions = [10, 11, 12, 13]
             for idx, pet in enumerate(petugas[:4]):
                 col_start = positions[idx]
-                ws.merge_cells(
-                    start_row=signature_row,
-                    start_column=col_start,
-                    end_row=signature_row,
-                    end_column=min(col_start + 1, 13)
-                )
-                ws.cell(signature_row, col_start, pet["nama"])
-                ws.cell(signature_row, col_start).alignment = Alignment(horizontal="center")
+                cell = ws.cell(signature_row, col_start, pet["nama"])
+                cell.alignment = Alignment(horizontal="center", vertical="top", wrap_text=True)
         else:
             ws.cell(signature_row, 11, "-")
             ws.cell(signature_row, 11).alignment = Alignment(horizontal="center")
@@ -1052,6 +1043,9 @@ def api_rekam_medis_kegiatan_non_pegawai_export_excel(kegiatan_id):
         )
     except ValueError as exc:
         return jsonify({"status": "error", "message": str(exc)}), 400
+    except Exception as exc:
+        db.session.rollback()
+        return jsonify({"status": "error", "message": f"Gagal membuat file Excel: {exc}"}), 500
 
 def api_rekam_medis_kegiatan_pegawai_export_pdf(kegiatan_id):
     try:
