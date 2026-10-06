@@ -163,6 +163,13 @@ from app.controllers.dashboard_1DisposisiController import (
     agenda_disposisi, api_agenda_disposisi_list, api_agenda_disposisi_save,
     api_agenda_disposisi_detail, api_agenda_disposisi_cancel,
 )
+from app.controllers.rekamMedisKegiatanController import (
+    rekam_medis_pegawai, rekam_medis_non_pegawai,
+    api_rekam_medis_kegiatan_pegawai_list, api_rekam_medis_kegiatan_non_pegawai_list,
+    api_rekam_medis_kegiatan_pegawai_save, api_rekam_medis_kegiatan_non_pegawai_save,
+    api_rekam_medis_kegiatan_pegawai_detail, api_rekam_medis_kegiatan_non_pegawai_detail,
+    api_rekam_medis_kegiatan_pegawai_qr, api_rekam_medis_kegiatan_non_pegawai_qr,
+)
 from app.controllers.rekamMedisController import (
     rekam_medis, api_rekam_medis_search_pegawai, api_rekam_medis_save,
 )
@@ -2128,6 +2135,66 @@ def dashboard4_home():
 # AGENDA RAPAT
 # UI prototype — backend akan disambungkan pada tahap berikutnya.
 # ============================================================
+
+@main.route('/rekam-medis/pegawai')
+@login_required
+@form_access_required('REKAM_MEDIS')
+def view_rekam_medis_pegawai():
+    return rekam_medis_pegawai()
+
+@main.route('/rekam-medis/non-pegawai')
+@login_required
+@form_access_required('REKAM_MEDIS')
+def view_rekam_medis_non_pegawai():
+    return rekam_medis_non_pegawai()
+
+@main.route('/api/rekam-medis/kegiatan/pegawai')
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_kegiatan_pegawai_list_route():
+    return api_rekam_medis_kegiatan_pegawai_list()
+
+@main.route('/api/rekam-medis/kegiatan/non-pegawai')
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_kegiatan_non_pegawai_list_route():
+    return api_rekam_medis_kegiatan_non_pegawai_list()
+
+@main.route('/api/rekam-medis/kegiatan/pegawai/save', methods=['POST'])
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_kegiatan_pegawai_save_route():
+    return api_rekam_medis_kegiatan_pegawai_save()
+
+@main.route('/api/rekam-medis/kegiatan/non-pegawai/save', methods=['POST'])
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_kegiatan_non_pegawai_save_route():
+    return api_rekam_medis_kegiatan_non_pegawai_save()
+
+@main.route('/api/rekam-medis/kegiatan/pegawai/<int:kegiatan_id>')
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_kegiatan_pegawai_detail_route(kegiatan_id):
+    return api_rekam_medis_kegiatan_pegawai_detail(kegiatan_id)
+
+@main.route('/api/rekam-medis/kegiatan/non-pegawai/<int:kegiatan_id>')
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_kegiatan_non_pegawai_detail_route(kegiatan_id):
+    return api_rekam_medis_kegiatan_non_pegawai_detail(kegiatan_id)
+
+@main.route('/api/rekam-medis/kegiatan/pegawai/<int:kegiatan_id>/qr')
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_kegiatan_pegawai_qr_route(kegiatan_id):
+    return api_rekam_medis_kegiatan_pegawai_qr(kegiatan_id)
+
+@main.route('/api/rekam-medis/kegiatan/non-pegawai/<int:kegiatan_id>/qr')
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_kegiatan_non_pegawai_qr_route(kegiatan_id):
+    return api_rekam_medis_kegiatan_non_pegawai_qr(kegiatan_id)
 
 @main.route('/rekam-medis')
 @login_required
