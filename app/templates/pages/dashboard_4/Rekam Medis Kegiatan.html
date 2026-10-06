@@ -2,6 +2,18 @@
 {% block title %}- {{ title }}{% endblock %}
 
 {% block content %}
+<style>
+/* Rekam Medis: seluruh data tabel rata kiri, termasuk angka/status/aksi. */
+.hris-table-modern th,
+.hris-table-modern td {
+    text-align: left !important;
+}
+.hris-table-modern .hris-table-action-group {
+    justify-content: flex-start;
+}
+</style>
+
+
 <div class="nxl-content">
     <div class="hris-page">
 
@@ -304,6 +316,15 @@ document.addEventListener("DOMContentLoaded", function () {
     const jadwalModalEl = document.getElementById("modalJadwal");
     const examModalEl = document.getElementById("modalPemeriksaan");
     const tambahModalEl = document.getElementById("modalTambah");
+
+    // Bootstrap modal harus berada langsung di <body>.
+    // Jika dibiarkan di dalam .nxl-container, stacking context NEXL dapat
+    // menempatkan backdrop di atas modal sehingga seluruh halaman terlihat blur.
+    [tambahModalEl, detailModalEl, jadwalModalEl, examModalEl].forEach(function (modalEl) {
+        if (modalEl && modalEl.parentElement !== document.body) {
+            document.body.appendChild(modalEl);
+        }
+    });
 
     let rows = [];
     let currentDetail = null;
@@ -659,7 +680,7 @@ document.addEventListener("DOMContentLoaded", function () {
                                 '<div><div class="fw-semibold">Daftar Peserta yang Scan QR Code</div><small class="text-muted">Klik tombol PERIKSA untuk mengisi pemeriksaan medis.</small></div>' +
                                 (Number(x.total_peserta) > 0 ? '<a class="btn btn-success" href="' + apiBase + Number(x.kegiatan_id) + '/export/excel" target="_blank"><i class="feather-file-text me-1"></i> HASIL PEMERIKSAAN</a>' : '') +
                             '</div>' +
-                            '<div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>' + participantLabel.toUpperCase() + '</th><th>' + secondaryLabel.toUpperCase() + '</th><th>SCAN</th><th>STATUS PEMERIKSAAN</th><th class="text-end">AKSI</th></tr></thead><tbody>' +
+                            '<div class="table-responsive"><table class="table table-hover mb-0 hris-table-modern"><thead><tr><th>' + participantLabel.toUpperCase() + '</th><th>' + secondaryLabel.toUpperCase() + '</th><th>SCAN</th><th>STATUS PEMERIKSAAN</th><th class="text-end">AKSI</th></tr></thead><tbody>' +
                             (participantRows || '<tr><td colspan="5" class="text-center py-4 text-muted">Belum ada peserta yang scan QR Code.</td></tr>') +
                             '</tbody></table></div>' +
                         '</div>' +
