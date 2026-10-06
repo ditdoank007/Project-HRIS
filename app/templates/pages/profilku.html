@@ -218,10 +218,13 @@
       <img id="photoPreview" class="profilku-photo-preview" alt="Preview foto">
       <div class="profilku-photo-buttons">
         <button class="hris-btn hris-btn-secondary" onclick="document.getElementById('photoGalleryInput').click()"><i class="feather-image"></i><span>Gallery / File</span></button>
-        <button class="hris-btn hris-btn-primary" onclick="document.getElementById('photoCameraInput').click()"><i class="feather-camera"></i><span>Kamera Selfie</span></button>
+        <label for="photoCameraInput" class="hris-btn hris-btn-primary"><i class="feather-camera"></i><span>Kamera Selfie</span></label>
       </div>
       <input id="photoGalleryInput" type="file" accept="image/*" hidden>
       <input id="photoCameraInput" type="file" accept="image/*" capture="user" hidden>
+      <div class="profilku-photo-save">
+        <button type="button" id="btnSavePhoto" class="hris-btn hris-btn-primary" onclick="saveSelectedPhoto()"><i class="feather-save"></i><span>Simpan Foto</span></button>
+      </div>
     </div>
   </div>
 </div>
@@ -329,19 +332,36 @@
         showAlert("Profil berhasil disimpan.", "success");
     });
 
-    async function uploadPhoto(file) {
+    let selectedPhotoFile = null;
+
+    function showPhotoPreview(file) {
         if (!file) return;
+        selectedPhotoFile = file;
+        const url = URL.createObjectURL(file);
+        $("photoPreview").src = url;
+        $("photoPreview").style.display = "block";
+        $("photoPreviewEmpty").style.display = "none";
+    }
+
+    async function saveSelectedPhoto() {
+        if (!selectedPhotoFile) return showAlert("Pilih foto terlebih dahulu.", "error");
         const form = new FormData();
-        form.append("photo", file);
+        form.append("photo", selectedPhotoFile);
         const response = await fetch("/api/profilku/photo", {method:"POST", body:form});
         const result = await response.json();
         if (!response.ok || !result.success) return showAlert(result.message || "Gagal menyimpan foto.", "error");
         showAlert("Foto profil berhasil disimpan.", "success");
+        selectedPhotoFile = null;
         closeModal("photoModal");
         await loadProfile();
     }
-    $("photoGalleryInput").addEventListener("change", e => uploadPhoto(e.target.files[0]));
-    $("photoCameraInput").addEventListener("change", e => uploadPhoto(e.target.files[0]));
+
+    $("photoGalleryInput").addEventListener("change", e => {
+        showPhotoPreview(e.target.files && e.target.files[0]);
+    });
+    $("photoCameraInput").addEventListener("change", e => {
+        showPhotoPreview(e.target.files && e.target.files[0]);
+    });
     $("btnChangePhoto").addEventListener("click", openPhotoModal);
     $("btnChangePassword").addEventListener("click", openPasswordModal);
     $("btnSignature").addEventListener("click", openSignatureModal);
