@@ -10,6 +10,7 @@ class RekamMedisKegiatan(db.Model):
     KEGIATAN_ID = db.Column(db.BigInteger, primary_key=True, autoincrement=True)
     JENIS = db.Column(db.String(20), nullable=False)
     JUDUL = db.Column(db.String(250), nullable=False)
+    LOKASI = db.Column(db.String(250), nullable=True)
     TANGGAL = db.Column(db.Date, nullable=False)
     JAM = db.Column(db.Time, nullable=False)
     STATUS = db.Column(db.String(20), nullable=False, default="TERJADWAL")
@@ -24,11 +25,12 @@ class RekamMedisKegiatan(db.Model):
     def new_token():
         return secrets.token_urlsafe(48)
 
-    def to_dict(self, total=0, selesai=0, menunggu=0):
+    def to_dict(self, total=0, selesai=0, menunggu=0, petugas=None):
         return {
             "kegiatan_id": self.KEGIATAN_ID,
             "jenis": self.JENIS,
             "judul": self.JUDUL,
+            "lokasi": self.LOKASI,
             "tanggal": self.TANGGAL.isoformat() if self.TANGGAL else None,
             "jam": self.JAM.strftime("%H:%M") if self.JAM else None,
             "status": self.STATUS,
@@ -36,4 +38,5 @@ class RekamMedisKegiatan(db.Model):
             "total_peserta": total,
             "sudah_diperiksa": selesai,
             "belum_diperiksa": menunggu,
+            "petugas_medis": petugas or [],
         }
