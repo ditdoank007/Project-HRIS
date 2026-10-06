@@ -839,7 +839,11 @@ def api_rekam_medis_kegiatan_pegawai_export_excel(kegiatan_id):
                 rekam.SPO2 if rekam else "-",
                 rekam.KELUHAN if rekam and rekam.KELUHAN else "-",
                 rekam.TINDAKAN if rekam and rekam.TINDAKAN else "-",
-                rekam.HASIL_KEBUGARAN if rekam and rekam.HASIL_KEBUGARAN else "-",
+                (
+                    "Fit" if rekam and str(rekam.HASIL_KEBUGARAN).upper() == "FIT"
+                    else "UnFit" if rekam and str(rekam.HASIL_KEBUGARAN).upper() == "UNFIT"
+                    else "-"
+                ),
             ]
             for col, value in enumerate(values, 1):
                 cell = ws.cell(header_row + i, col, value)
