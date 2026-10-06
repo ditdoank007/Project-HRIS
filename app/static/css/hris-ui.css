@@ -1733,6 +1733,56 @@ body.hris-sidebar-mini .hris-submenu {
   border-radius: 7px;
 }
 
+.hris-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 82px;
+  min-height: 36px;
+  padding: 7px 11px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.hris-action-btn i {
+  font-size: 14px;
+}
+
+.hris-action-btn.hris-action-edit {
+  color: var(--ui-brand-dark);
+  background: #fff7f2;
+  border-color: rgba(235, 104, 49, .35);
+}
+
+.hris-action-btn.hris-action-edit:hover {
+  color: #fff;
+  background: var(--ui-brand);
+  border-color: var(--ui-brand);
+}
+
+.hris-action-btn.hris-action-check {
+  color: #166534;
+  background: #f0fdf4;
+  border-color: rgba(22, 101, 52, .25);
+}
+
+.hris-action-btn.hris-action-check:hover {
+  color: #fff;
+  background: #15803d;
+  border-color: #15803d;
+}
+
+@media (max-width: 720px) {
+  .hris-action-btn {
+    min-width: 74px;
+    padding-inline: 9px;
+  }
+}
+
 .hris-btn-ghost {
   color: var(--ui-text);
   background: #fff;
