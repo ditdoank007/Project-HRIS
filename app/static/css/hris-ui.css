@@ -3967,3 +3967,18 @@ body.hris-sidebar-mini .hris-submenu {
   white-space: nowrap;
 }
 
+
+
+/* ============================================================
+   HRIS STANDARD — LEFT ALIGNED DATA TABLE
+   Data tables use a consistent left alignment across all columns.
+   ============================================================ */
+
+.hris-table-modern th,
+.hris-table-modern td {
+  text-align: left !important;
+}
+
+.hris-table-modern .hris-table-action-group {
+  justify-content: flex-start;
+}
