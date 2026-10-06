@@ -12,6 +12,7 @@ from app.models.rekamMedisModel import RekamMedis
 from app.models.rekamMedisPesertaModel import RekamMedisPeserta
 from app.models.rekamMedisPetugasModel import RekamMedisPetugas
 from app.controllers.hrisOperationalController import operational_pegawai_query
+from app.utils.pegawaiHelper import search_operational_pegawai
 from app.utils.authorization import has_form_access, is_administrator
 
 
@@ -91,11 +92,41 @@ def _clean_petugas(payload):
     if not isinstance(raw, list):
         raw = [raw]
     result = []
+    seen = set()
     for item in raw:
-        value = str(item or "").strip()
-        if value and value not in result:
-            result.append(value)
+        if isinstance(item, dict):
+            nama = str(item.get("nama") or "").strip()
+            nip = str(item.get("nip") or "").strip() or None
+        else:
+            nama = str(item or "").strip()
+            nip = None
+        if not nama:
+            continue
+        key = (nip or "", nama.casefold())
+        if key in seen:
+            continue
+        seen.add(key)
+        result.append({"nama": nama, "nip": nip})
     return result
+
+
+def api_rekam_medis_petugas_search():
+    keyword = str(request.args.get("q") or "").strip()
+    if len(keyword) < 1:
+        return jsonify({"status": "success", "data": []})
+
+    rows = search_operational_pegawai(keyword, limit=15)
+    return jsonify({
+        "status": "success",
+        "data": [
+            {
+                "nip": row.NIP,
+                "nama": row.NAMA or "",
+                "sumber": "PEGAWAI",
+            }
+            for row in rows
+        ],
+    })
 
 
 def _parse_schedule(payload):
@@ -137,10 +168,11 @@ def _save(jenis):
         db.session.add(kegiatan)
         db.session.flush()
 
-        for nama in petugas:
+        for petugas_item in petugas:
             db.session.add(RekamMedisPetugas(
                 KEGIATAN_ID=kegiatan.KEGIATAN_ID,
-                NAMA_PETUGAS=nama,
+                NAMA_PETUGAS=petugas_item["nama"],
+                NIP=petugas_item["nip"],
             ))
 
         db.session.commit()
@@ -207,10 +239,11 @@ def _update(kegiatan_id, jenis):
             RekamMedisPetugas.KEGIATAN_ID == kegiatan_id
         ).delete(synchronize_session=False)
 
-        for nama in petugas:
+        for petugas_item in petugas:
             db.session.add(RekamMedisPetugas(
                 KEGIATAN_ID=kegiatan_id,
-                NAMA_PETUGAS=nama,
+                NAMA_PETUGAS=petugas_item["nama"],
+                NIP=petugas_item["nip"],
             ))
 
         db.session.commit()
