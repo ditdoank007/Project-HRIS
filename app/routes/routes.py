@@ -172,7 +172,7 @@ from app.controllers.rekamMedisKegiatanController import (
     api_rekam_medis_kegiatan_pegawai_cancel, api_rekam_medis_kegiatan_non_pegawai_cancel,
     api_rekam_medis_kegiatan_pegawai_complete, api_rekam_medis_kegiatan_non_pegawai_complete,
     api_rekam_medis_kegiatan_pegawai_qr, api_rekam_medis_kegiatan_non_pegawai_qr,
-    api_rekam_medis_scan,
+    api_rekam_medis_scan, api_rekam_medis_petugas_search,
     api_rekam_medis_kegiatan_pegawai_peserta_detail,
     api_rekam_medis_kegiatan_non_pegawai_peserta_detail,
     api_rekam_medis_kegiatan_pegawai_peserta_save,
@@ -2152,6 +2152,12 @@ def dashboard4_home():
 def view_rekam_medis_pegawai():
     return rekam_medis_pegawai()
 
+
+@main.route('/api/rekam-medis/petugas/search')
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_petugas_search_route():
+    return api_rekam_medis_petugas_search()
 
 @main.route('/rekam-medis/scan/<token>')
 @login_required
