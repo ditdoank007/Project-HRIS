@@ -181,6 +181,7 @@ from app.controllers.rekamMedisKegiatanController import (
     api_rekam_medis_kegiatan_non_pegawai_peserta_save,
     api_rekam_medis_kegiatan_pegawai_export_excel,
     api_rekam_medis_kegiatan_pegawai_export_pdf,
+    api_rekam_medis_kegiatan_non_pegawai_export_excel,
 )
 from app.controllers.rekamMedisController import (
     rekam_medis, api_rekam_medis_search_pegawai, api_rekam_medis_save,
@@ -2280,6 +2281,24 @@ def api_rekam_medis_kegiatan_pegawai_export_excel_route(kegiatan_id):
 @form_access_required('REKAM_MEDIS')
 def api_rekam_medis_kegiatan_pegawai_export_pdf_route(kegiatan_id):
     return api_rekam_medis_kegiatan_pegawai_export_pdf(kegiatan_id)
+
+@main.route('/api/rekam-medis/kegiatan/non-pegawai/<int:kegiatan_id>/peserta/<int:peserta_id>')
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_kegiatan_non_pegawai_peserta_detail_route(kegiatan_id, peserta_id):
+    return api_rekam_medis_kegiatan_non_pegawai_peserta_detail(kegiatan_id, peserta_id)
+
+@main.route('/api/rekam-medis/kegiatan/non-pegawai/<int:kegiatan_id>/peserta/<int:peserta_id>/save', methods=['POST'])
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_kegiatan_non_pegawai_peserta_save_route(kegiatan_id, peserta_id):
+    return api_rekam_medis_kegiatan_non_pegawai_peserta_save(kegiatan_id, peserta_id)
+
+@main.route('/api/rekam-medis/kegiatan/non-pegawai/<int:kegiatan_id>/export/excel')
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_kegiatan_non_pegawai_export_excel_route(kegiatan_id):
+    return api_rekam_medis_kegiatan_non_pegawai_export_excel(kegiatan_id)
 
 @main.route('/api/rekam-medis/kegiatan/non-pegawai/<int:kegiatan_id>/qr')
 @login_required
