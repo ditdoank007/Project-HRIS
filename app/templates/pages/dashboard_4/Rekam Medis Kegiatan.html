@@ -620,16 +620,16 @@ document.addEventListener("DOMContentLoaded", function () {
                 '<td colspan="8" class="p-0">' +
                     '<div class="p-4" style="background:#f8fafc;border-top:1px solid #e7edf4;">' +
                         '<div class="row g-3 mb-3">' +
-                            '<div class="col-md-4"><div class="card border h-100"><div class="card-body"><div class="text-muted small">Total Pegawai Scan QR</div><div class="fs-3 fw-bold mt-1">' + Number(x.total_peserta) + '</div></div></div></div>' +
+                            '<div class="col-md-4"><div class="card border h-100"><div class="card-body"><div class="text-muted small">Total ' + participantLabel + ' Scan QR</div><div class="fs-3 fw-bold mt-1">' + Number(x.total_peserta) + '</div></div></div></div>' +
                             '<div class="col-md-4"><div class="card border h-100"><div class="card-body"><div class="text-muted small">Sudah Diperiksa</div><div class="fs-3 fw-bold mt-1 text-success">' + Number(x.sudah_diperiksa) + '</div></div></div></div>' +
                             '<div class="col-md-4"><div class="card border h-100"><div class="card-body"><div class="text-muted small">Belum Diperiksa</div><div class="fs-3 fw-bold mt-1 text-warning">' + Number(x.belum_diperiksa) + '</div></div></div></div>' +
                         '</div>' +
                         '<div class="card border"><div class="card-header bg-white d-flex justify-content-between align-items-center gap-3">' +
-                                '<div><div class="fw-semibold">Daftar Peserta yang Scan QR Code</div><small class="text-muted">Klik tombol edit untuk mengisi pemeriksaan medis.</small></div>' +
-                                '<a class="btn btn-success" href="/api/rekam-medis/kegiatan/pegawai/' + Number(x.kegiatan_id) + '/export/excel" target="_blank"><i class="feather-file-text me-1"></i> HASIL PEMERIKSAAN</a>' +
+                                '<div><div class="fw-semibold">Daftar Peserta yang Scan QR Code</div><small class="text-muted">Klik tombol PERIKSA untuk mengisi pemeriksaan medis.</small></div>' +
+                                '<a class="btn btn-success" href="' + apiBase + Number(x.kegiatan_id) + '/export/excel" target="_blank"><i class="feather-file-text me-1"></i> HASIL PEMERIKSAAN</a>' +
                             '</div>' +
                             '<div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>' + participantLabel.toUpperCase() + '</th><th>' + secondaryLabel.toUpperCase() + '</th><th>SCAN</th><th>STATUS PEMERIKSAAN</th><th class="text-end">AKSI</th></tr></thead><tbody>' +
-                            (participantRows || '<tr><td colspan="5" class="text-center py-4 text-muted">Belum ada pegawai yang scan QR Code.</td></tr>') +
+                            (participantRows || '<tr><td colspan="5" class="text-center py-4 text-muted">Belum ada peserta yang scan QR Code.</td></tr>') +
                             '</tbody></table></div>' +
                         '</div>' +
                     '</div>' +
