@@ -605,7 +605,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const participantRows = (x.peserta || []).map(p =>
                 '<tr>' +
                     '<td><strong>' + esc(p.nama) + '</strong><div class="small text-muted">' + esc(p.nip || "-") + '</div></td>' +
-                    '<td>' + esc(p.unit_kerja || "-") + '</td>' +
+                    '<td>' + esc(p.jabatan || "-") + '</td>' +
                     '<td>' + fmtScan(p.scanned_at) + '</td>' +
                     '<td>' + (p.status_pemeriksaan === "SELESAI" ? '<span class="rapat-badge rapat-badge-selesai">SUDAH DIPERIKSA</span>' : '<span class="rapat-badge rapat-badge-terjadwal">BELUM DIPERIKSA</span>') + '</td>' +
                     '<td class="text-end">' +
@@ -624,8 +624,11 @@ document.addEventListener("DOMContentLoaded", function () {
                             '<div class="col-md-4"><div class="card border h-100"><div class="card-body"><div class="text-muted small">Sudah Diperiksa</div><div class="fs-3 fw-bold mt-1 text-success">' + Number(x.sudah_diperiksa) + '</div></div></div></div>' +
                             '<div class="col-md-4"><div class="card border h-100"><div class="card-body"><div class="text-muted small">Belum Diperiksa</div><div class="fs-3 fw-bold mt-1 text-warning">' + Number(x.belum_diperiksa) + '</div></div></div></div>' +
                         '</div>' +
-                        '<div class="card border"><div class="card-header bg-white"><div class="fw-semibold">Daftar Pegawai yang Scan QR Code</div><small class="text-muted">Klik tombol edit untuk mengisi pemeriksaan medis.</small></div>' +
-                            '<div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>PEGAWAI</th><th>UNIT KERJA</th><th>SCAN</th><th>STATUS PEMERIKSAAN</th><th class="text-end">AKSI</th></tr></thead><tbody>' +
+                        '<div class="card border"><div class="card-header bg-white d-flex justify-content-between align-items-center gap-3">' +
+                                '<div><div class="fw-semibold">Daftar Pegawai yang Scan QR Code</div><small class="text-muted">Klik tombol edit untuk mengisi pemeriksaan medis.</small></div>' +
+                                '<a class="btn btn-success" href="/api/rekam-medis/kegiatan/pegawai/' + Number(x.kegiatan_id) + '/export/excel" target="_blank"><i class="feather-file-text me-1"></i> HASIL PEMERIKSAAN</a>' +
+                            '</div>' +
+                            '<div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>PEGAWAI</th><th>JABATAN</th><th>SCAN</th><th>STATUS PEMERIKSAAN</th><th class="text-end">AKSI</th></tr></thead><tbody>' +
                             (participantRows || '<tr><td colspan="5" class="text-center py-4 text-muted">Belum ada pegawai yang scan QR Code.</td></tr>') +
                             '</tbody></table></div>' +
                         '</div>' +
