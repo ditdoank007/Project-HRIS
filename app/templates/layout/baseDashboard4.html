@@ -1,76 +1,151 @@
 <!DOCTYPE html>
-<html lang="zxx">
-
+<html lang="id">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description"
-        content="Portal Internal Basarnas Surabaya untuk mendukung administrasi, kepegawaian, operasional, dan layanan internal pegawai.">
-    <meta name="keywords" content="Basarnas, Basarnas Surabaya, Portal Internal, Kepegawaian, Operasional SAR">
-    <title>BHRIS Dashboard {% block title %}{% endblock %}</title>
+    <meta name="description" content="AGENDA HRIS Reborn - Basarnas Surabaya">
+    <title>BHRIS AGENDA {% block title %}{% endblock %}</title>
 
-    <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='static_dashboard_2/assets/images/logo1.png') }}">
-
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='static_dashboard_2/assets/css/bootstrap.min.css') }}">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='static_dashboard_2/assets/vendors/css/vendors.min.css') }}">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='static_dashboard_2/assets/vendors/css/select2.min.css') }}">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='static_dashboard_2/assets/vendors/css/select2-theme.min.css') }}">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='static_dashboard_2/assets/css/theme.min.css') }}">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='static_dashboard_1/assets/vendors/css/daterangepicker.min.css') }}">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='static_dashboard_1/assets/vendors/css/jquery-jvectormap.min.css') }}">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='static_dashboard_1/assets/vendors/css/jquery.time-to.min.css') }}">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='static_dashboard_1/assets/css/theme.min.css') }}">
-    <!-- HRIS REBORN GLOBAL UI -->
+    <link rel="shortcut icon" type="image/x-icon"
+          href="{{ url_for('static', filename='static_dashboard_1/assets/images/logo-full.png') }}">
     <link rel="stylesheet"
-          type="text/css"
+          href="{{ url_for('static', filename='static_dashboard_1/assets/css/bootstrap.min.css') }}">
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <link rel="stylesheet"
           href="{{ url_for('static', filename='css/hris-global.css') }}">
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/hris-ui.css') }}">
+    {% block head %}{% endblock %}
 </head>
 
-<body>
-    <!-- Header Start -->
-    {% include 'partials/header.html' %}
-    <!-- Header End -->
+<body class="hris-modern">
 
-    <!-- Sidebar Start -->
-    {% include 'partials/nav_dashboard4.html' %}
-    <!-- Sidebar End -->
+<header class="hris-topbar">
+    <button type="button" class="hris-menu-toggle" id="agendaSidebarToggle" aria-label="Buka menu">
+        <span></span><span></span><span></span>
+    </button>
 
-    <!-- Main Start -->
-    <main class="nxl-container">
-        {% block content %}
-        {% endblock %}
+    <a href="{{ url_for('main.dashboard4') }}" class="hris-brand">
+        <img src="{{ url_for('static', filename='static_dashboard_1/assets/images/logo-full.png') }}" alt="Basarnas Surabaya">
+        <span>
+            <strong>HRIS AGENDA</strong>
+            <small>Basarnas Surabaya</small>
+        </span>
+    </a>
+
+    <div class="hris-user">
+        <div class="hris-user-meta">
+            <strong>{{ session.get('nama') or 'Pengguna HRIS' }}</strong>
+            <small>{{ session.get('nip') or '' }}</small>
+        </div>
+        <button type="button" class="hris-btn hris-btn-secondary hris-signout" id="agendaSignOutBtn">Keluar</button>
+    </div>
+</header>
+
+<div class="hris-shell" id="agendaShell">
+    <aside class="nxl-navigation" aria-label="Menu AGENDA">
+        <div class="navbar-wrapper">
+            <div class="navbar-content">
+                <ul class="nxl-navbar">
+                    <li class="custom-nav-header">
+                        <div class="header-container">
+                            <img src="{{ url_for('static', filename='static_dashboard_1/assets/images/logo-full.png') }}" alt="Basarnas">
+                            <div>
+                                <div class="nav-text-label">Modul</div>
+                                <strong style="color:#fff;font-size:13px;">AGENDA</strong>
+                            </div>
+                        </div>
+                        <div class="nav-separator"></div>
+                    </li>
+
+                    {% if is_administrator() or has_form_access('AGENDA_RAPAT') %}
+                    <li class="nxl-item">
+                        <a href="{{ url_for('main.view_agenda_rapat') }}" class="nxl-link{% if request.endpoint == 'main.view_agenda_rapat' %} hris-active{% endif %}">
+                            <span class="nxl-micon"><i class="ti ti-calendar-event"></i></span>
+                            <span class="nxl-mtext">Rapat</span>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% if is_administrator() or has_form_access('AGENDA_DISPOSISI') %}
+                    <li class="nxl-item">
+                        <a href="{{ url_for('main.view_agenda_disposisi') }}" class="nxl-link{% if request.endpoint == 'main.view_agenda_disposisi' %} hris-active{% endif %}">
+                            <span class="nxl-micon"><i class="ti ti-send"></i></span>
+                            <span class="nxl-mtext">Disposisi</span>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% if is_administrator() or has_form_access('SUMDA_KESAMAPTAAN') %}
+                    <li class="nxl-item">
+                        <a href="{{ url_for('main.view_kesamaptaan') }}" class="nxl-link{% if request.endpoint == 'main.view_kesamaptaan' %} hris-active{% endif %}">
+                            <span class="nxl-micon"><i class="ti ti-run"></i></span>
+                            <span class="nxl-mtext">Kesamaptaan</span>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% if is_administrator() or has_form_access('REKAM_MEDIS') %}
+                    <li class="nxl-item">
+                        <a href="{{ url_for('main.view_rekam_medis') }}" class="nxl-link{% if request.endpoint == 'main.view_rekam_medis' %} hris-active{% endif %}">
+                            <span class="nxl-micon"><i class="ti ti-heartbeat"></i></span>
+                            <span class="nxl-mtext">Rekam Medis</span>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    <li class="custom-nav-header" style="margin-top:14px;">
+                        <div class="nav-separator"></div>
+                        <a href="{{ url_for('main.index') }}" class="nxl-link" style="margin-top:10px;">
+                            <span class="nxl-micon"><i class="ti ti-arrow-left"></i></span>
+                            <span class="nxl-mtext">Kembali ke Portal</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </aside>
+
+    <div class="hris-sidebar-backdrop" id="agendaSidebarBackdrop"></div>
+
+    <main class="hris-main">
+        {% block content %}{% endblock %}
     </main>
-    <!-- Main End -->
+</div>
 
-    <script src="{{ url_for('static', filename='static_dashboard_2/assets/vendors/js/vendors.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='static_dashboard_2/assets/vendors/js/select2.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='static_dashboard_2/assets/vendors/js/select2-active.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='static_dashboard_2/assets/js/common-init.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='static_dashboard_2/assets/js/theme-customizer-init.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='static_dashboard_1/assets/vendors/js/daterangepicker.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='static_dashboard_1/assets/vendors/js/apexcharts.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='static_dashboard_1/assets/vendors/js/jquery.time-to.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='static_dashboard_1/assets/vendors/js/circle-progress.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='static_dashboard_1/assets/js/analytics-init.min.js') }}"></script>
-    {% block script %}
-    {% endblock %}
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const signOutBtn = document.getElementById('headerSignOutBtn');
-            if (signOutBtn) {
-                signOutBtn.addEventListener('click', async function () {
-                    try {
-                        await fetch('/api/logout', { method: 'POST' });
-                    } catch (err) {
-                        console.error('Gagal logout:', err);
-                    } finally {
-                        window.location.href = "{{ url_for('main.index') }}";
-                    }
-                });
+<script src="{{ url_for('static', filename='static_dashboard_1/assets/vendors/js/vendors.min.js') }}"></script>
+<script src="{{ url_for('static', filename='static_dashboard_1/assets/js/common-init.min.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const toggle = document.getElementById('agendaSidebarToggle');
+    const backdrop = document.getElementById('agendaSidebarBackdrop');
+
+    toggle?.addEventListener('click', function () {
+        document.body.classList.toggle('hris-sidebar-open');
+    });
+    backdrop?.addEventListener('click', function () {
+        document.body.classList.remove('hris-sidebar-open');
+    });
+
+    document.querySelectorAll('.hris-shell .nxl-link').forEach(function (link) {
+        link.addEventListener('click', function () {
+            if (window.innerWidth <= 900) {
+                document.body.classList.remove('hris-sidebar-open');
             }
         });
-    </script>
-</body>
+    });
 
+    document.getElementById('agendaSignOutBtn')?.addEventListener('click', async function () {
+        try {
+            await fetch('/api/logout', { method: 'POST' });
+        } finally {
+            window.location.href = "{{ url_for('main.index') }}";
+        }
+    });
+});
+</script>
+
+{% block script %}{% endblock %}
+</body>
 </html>
