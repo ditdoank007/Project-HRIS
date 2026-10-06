@@ -1,0 +1,123 @@
+{% extends "layout/baseDashboard4.html" %}
+{% block title %}- {{ title }}{% endblock %}
+{% block content %}
+<div class="nxl-content">
+    <div class="page-header"><div class="page-header-left d-flex align-items-center">
+        <div class="page-header-title"><h5 class="m-b-10">AGENDA</h5></div>
+        <ul class="breadcrumb"><li class="breadcrumb-item active">{{ title }}</li></ul>
+    </div></div>
+    <div class="main-content"><div class="container-fluid">
+        <div class="rapat-hero">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="hero-icon"><i class="feather-heart"></i></div>
+                    <div><div class="small text-white-50 mb-1">HRIS Reborn</div>
+                        <h4 class="mb-1 text-white">{{ title }}</h4>
+                        <div class="small text-white-50">Kelola jadwal pemeriksaan medis, QR peserta, dan hasil pemeriksaan.</div>
+                    </div>
+                </div>
+                <button class="btn btn-light" data-bs-toggle="modal" data-bs-target="#modalRekamMedis">
+                    <i class="feather-plus me-1"></i> Tambah Rekam Medis
+                </button>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-md-6 col-xl-3"><div class="card rapat-stat"><div class="card-body">
+                <div class="text-muted small">Hari Ini</div><div class="fs-4 fw-bold mt-1" id="statHariIni">0</div>
+            </div></div></div>
+            <div class="col-12 col-md-6 col-xl-3"><div class="card rapat-stat"><div class="card-body">
+                <div class="text-muted small">Terjadwal</div><div class="fs-4 fw-bold mt-1" id="statTerjadwal">0</div>
+            </div></div></div>
+            <div class="col-12 col-md-6 col-xl-3"><div class="card rapat-stat"><div class="card-body">
+                <div class="text-muted small">Selesai</div><div class="fs-4 fw-bold mt-1" id="statSelesai">0</div>
+            </div></div></div>
+            <div class="col-12 col-md-6 col-xl-3"><div class="card rapat-stat"><div class="card-body">
+                <div class="text-muted small">Batal</div><div class="fs-4 fw-bold mt-1" id="statBatal">0</div>
+            </div></div></div>
+        </div>
+
+        <div class="card">
+            <div class="card-header rapat-toolbar d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <div><h6 class="mb-1">Daftar {{ title }}</h6><small class="text-muted">Kegiatan pemeriksaan medis yang dibuat melalui HRIS Reborn.</small></div>
+                <div class="d-flex gap-2">
+                    <select id="filterStatus" class="form-select form-select-sm" style="width:150px;">
+                        <option value="">Semua Status</option><option value="TERJADWAL">Terjadwal</option>
+                        <option value="SELESAI">Selesai</option><option value="BATAL">Batal</option>
+                    </select>
+                    <input id="searchKegiatan" type="search" class="form-control form-control-sm" placeholder="Cari kegiatan..." style="width:190px;">
+                </div>
+            </div>
+            <div class="card-body p-0"><div class="table-responsive">
+                <table class="table table-hover mb-0 rapat-table"><thead><tr>
+                    <th class="ps-3">Tanggal / Waktu</th><th>Kegiatan</th><th>Peserta</th><th>Belum Diperiksa</th><th>Sudah Diperiksa</th><th>Status</th><th class="text-end pe-3">Aksi</th>
+                </tr></thead><tbody id="tabelBody"><tr><td colspan="7" class="text-center py-4 text-muted">Memuat kegiatan...</td></tr></tbody></table>
+            </div></div>
+        </div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="modalRekamMedis" tabindex="-1" aria-hidden="true">
+ <div class="modal-dialog modal-lg"><div class="modal-content">
+  <div class="modal-header"><div><h5 class="modal-title"><i class="feather-heart me-2"></i>Tambah {{ title }}</h5>
+  <small class="text-muted">Judul kegiatan, hari/tanggal dan jam wajib diisi.</small></div><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body">
+   <div class="row g-3">
+    <div class="col-12"><label class="form-label">Judul Kegiatan <span class="text-danger">*</span></label><input id="judul" class="form-control" placeholder="Contoh: Pemeriksaan Kesehatan Pegawai Oktober 2026"></div>
+    <div class="col-12 col-md-7"><label class="form-label">Hari / Tanggal <span class="text-danger">*</span></label><input id="tanggal" type="date" class="form-control"></div>
+    <div class="col-12 col-md-5"><label class="form-label">Jam <span class="text-danger">*</span></label><input id="jam" type="time" class="form-control" value="08:00"></div>
+   </div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-light" data-bs-dismiss="modal">Tutup</button>
+   <button class="btn btn-primary" id="btnSimpan"><i class="feather-save me-1"></i> Simpan</button>
+  </div>
+ </div></div>
+</div>
+
+<div class="modal fade" id="modalQr" tabindex="-1" aria-hidden="true">
+ <div class="modal-dialog modal-sm modal-dialog-centered"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title">QR Code Pemeriksaan</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body text-center"><div id="qrBox" class="p-2"></div><div class="small text-muted" id="qrInfo"></div></div>
+ </div></div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+ const jenis="{{ jenis }}";
+ const apiList=jenis==="PEGAWAI"?"/api/rekam-medis/kegiatan/pegawai":"/api/rekam-medis/kegiatan/non-pegawai";
+ const apiSave=jenis==="PEGAWAI"?"/api/rekam-medis/kegiatan/pegawai/save":"/api/rekam-medis/kegiatan/non-pegawai/save";
+ const rowsEl=document.getElementById("tabelBody"), search=document.getElementById("searchKegiatan"), status=document.getElementById("filterStatus");
+ let rows=[];
+ function esc(v){return String(v??"").replace(/[&<>'"]/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[x]));}
+ function badge(s){const x=(s||"").toUpperCase();const c=x==="SELESAI"?"rapat-badge-selesai":x==="BATAL"?"rapat-badge-batal":"rapat-badge-terjadwal";return '<span class="rapat-badge '+c+'">'+esc(x)+'</span>';}
+ function render(){
+   const q=(search.value||"").toLowerCase().trim(), st=status.value||"";
+   const f=rows.filter(x=>(!q||JSON.stringify(x).toLowerCase().includes(q))&&(!st||x.status===st));
+   rowsEl.innerHTML=f.length?f.map(x=>'<tr><td class="ps-3"><strong>'+new Date(x.tanggal+"T00:00:00").toLocaleDateString("id-ID",{day:"2-digit",month:"short",year:"numeric"})+'</strong><div class="rapat-meta">'+esc(x.jam)+' WIB</div></td><td><div class="rapat-title">'+esc(x.judul)+'</div></td><td>'+Number(x.total_peserta)+'</td><td>'+Number(x.belum_diperiksa)+'</td><td>'+Number(x.sudah_diperiksa)+'</td><td>'+badge(x.status)+'</td><td class="text-end pe-3"><button class="btn btn-sm btn-light" onclick="showQr('+Number(x.kegiatan_id)+')"><i class="feather-grid"></i></button></td></tr>').join(""):'<tr><td colspan="7" class="text-center py-4 text-muted">Belum ada kegiatan.</td></tr>';
+   document.getElementById("statHariIni").textContent=rows.filter(x=>x.tanggal===new Date().toISOString().slice(0,10)).length;
+   document.getElementById("statTerjadwal").textContent=rows.filter(x=>x.status==="TERJADWAL").length;
+   document.getElementById("statSelesai").textContent=rows.filter(x=>x.status==="SELESAI").length;
+   document.getElementById("statBatal").textContent=rows.filter(x=>x.status==="BATAL").length;
+ }
+ async function load(){const r=await fetch(apiList);const j=await r.json();if(!r.ok)throw new Error(j.message||"Gagal memuat kegiatan.");rows=j.data||[];render();}
+ search.addEventListener("input",render);status.addEventListener("change",render);
+ document.getElementById("btnSimpan").addEventListener("click",async function(){
+   const payload={judul:document.getElementById("judul").value.trim(),tanggal:document.getElementById("tanggal").value,jam:document.getElementById("jam").value};
+   if(!payload.judul||!payload.tanggal||!payload.jam){alert("Judul kegiatan, tanggal, dan jam wajib diisi.");return;}
+   const r=await fetch(apiSave,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+   const j=await r.json();if(!r.ok){alert(j.message||"Gagal menyimpan.");return;}
+   bootstrap.Modal.getOrCreateInstance(document.getElementById("modalRekamMedis")).hide();
+   document.getElementById("judul").value="";
+   await load(); showQr(j.data.kegiatan_id);
+ });
+ window.showQr=async function(id){
+   const url=(jenis==="PEGAWAI"?"/api/rekam-medis/kegiatan/pegawai/":" /api/rekam-medis/kegiatan/non-pegawai/").replace(" ","")+id+"/qr";
+   const r=await fetch(url); if(!r.ok){alert("QR Code belum dapat ditampilkan.");return;}
+   const svg=await r.text();document.getElementById("qrBox").innerHTML=svg;
+   document.getElementById("qrInfo").textContent="Silakan scan QR Code untuk pendaftaran pemeriksaan.";
+   bootstrap.Modal.getOrCreateInstance(document.getElementById("modalQr")).show();
+ };
+ load().catch(e=>{rowsEl.innerHTML='<tr><td colspan="7" class="text-center text-danger py-4">'+esc(e.message)+'</td></tr>';});
+});
+</script>
+{% endblock %}
