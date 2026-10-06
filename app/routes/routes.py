@@ -163,6 +163,9 @@ from app.controllers.dashboard_1DisposisiController import (
     agenda_disposisi, api_agenda_disposisi_list, api_agenda_disposisi_save,
     api_agenda_disposisi_detail, api_agenda_disposisi_cancel,
 )
+from app.controllers.rekamMedisController import (
+    rekam_medis, api_rekam_medis_search_pegawai, api_rekam_medis_save,
+)
 
 from app.controllers.dashboard_1DataAbsensiController import (
     data_absensi_non_finger, data_absensi_normalisasi_finger, data_absensi_impor_file, data_absensi_pegawai_manual,
@@ -2112,6 +2115,27 @@ def view_kirim_forum_media_informasi():
 # AGENDA RAPAT
 # UI prototype — backend akan disambungkan pada tahap berikutnya.
 # ============================================================
+
+@main.route('/rekam-medis')
+@login_required
+@form_access_required('REKAM_MEDIS')
+def view_rekam_medis():
+    return rekam_medis()
+
+
+@main.route('/api/rekam-medis/search-pegawai', methods=['GET'])
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_search_pegawai_route():
+    return api_rekam_medis_search_pegawai()
+
+
+@main.route('/api/rekam-medis', methods=['POST'])
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_save_route():
+    return api_rekam_medis_save()
+
 
 @main.route('/agenda/rapat')
 @login_required
