@@ -209,7 +209,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <div>
-                    <h5 class="modal-title">Pemeriksaan Medis Pegawai</h5>
+                    <h5 class="modal-title" id="examModalTitle">Pemeriksaan Medis Pegawai</h5>
                     <small class="text-muted" id="examIdentity">-</small>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -609,7 +609,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     '<td>' + fmtScan(p.scanned_at) + '</td>' +
                     '<td>' + (p.status_pemeriksaan === "SELESAI" ? '<span class="rapat-badge rapat-badge-selesai">SUDAH DIPERIKSA</span>' : '<span class="rapat-badge rapat-badge-terjadwal">BELUM DIPERIKSA</span>') + '</td>' +
                     '<td class="text-end">' +
-                        (p.status_pemeriksaan === "SELESAI" ? '<button class="btn btn-sm btn-outline-secondary" disabled><i class="feather-check"></i></button>' : '<button class="btn btn-sm btn-primary" title="Input Pemeriksaan" onclick="bukaPemeriksaan(' + Number(x.kegiatan_id) + ',' + Number(p.peserta_id) + ')"><i class="feather-edit-2"></i></button>') +
+                        (p.status_pemeriksaan === "SELESAI" ? '<button class="btn hris-action-btn hris-action-edit" title="Edit Pemeriksaan" onclick="bukaPemeriksaan(' + Number(x.kegiatan_id) + ',' + Number(p.peserta_id) + ')"><i class="feather-edit-2"></i><span>EDIT</span></button>' : '<button class="btn hris-action-btn hris-action-check" title="Input Pemeriksaan" onclick="bukaPemeriksaan(' + Number(x.kegiatan_id) + ',' + Number(p.peserta_id) + ')"><i class="feather-clipboard"></i><span>PERIKSA</span></button>') +
                     '</td>' +
                 '</tr>'
             ).join("");
@@ -717,6 +717,12 @@ document.addEventListener("DOMContentLoaded", function () {
             sel.innerHTML = '<option value="">Pilih Petugas Medis</option>' +
                 (j.petugas_medis || []).map(pet => '<option value="' + esc(pet.nama) + '">' + esc(pet.nama) + '</option>').join("");
             sel.value = p.pemeriksa || "";
+            document.getElementById("examModalTitle").textContent =
+                x.status_pemeriksaan === "SELESAI" ? "Edit Pemeriksaan Medis Pegawai" : "Pemeriksaan Medis Pegawai";
+            document.getElementById("btnSimpanPemeriksaan").innerHTML =
+                x.status_pemeriksaan === "SELESAI"
+                    ? '<i class="feather-save me-1"></i> SIMPAN PERUBAHAN'
+                    : '<i class="feather-save me-1"></i> SIMPAN PEMERIKSAAN';
 
             bootstrap.Modal.getOrCreateInstance(examModalEl).show();
         } catch (e) {
