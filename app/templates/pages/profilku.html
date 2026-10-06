@@ -215,7 +215,10 @@
   <div class="profilku-modal">
     <div class="profilku-modal-head"><h3>Ganti Foto Profil</h3><button class="profilku-close" onclick="closeModal('photoModal')">×</button></div>
     <div class="profilku-modal-body">
-      <img id="photoPreview" class="profilku-photo-preview" alt="Preview foto">
+      <div class="profilku-photo-preview-wrap">
+        <img id="photoPreview" class="profilku-photo-preview" alt="Preview foto">
+        <div id="photoPreviewEmpty" class="profilku-photo-preview-empty">Belum ada foto yang dipilih</div>
+      </div>
       <div class="profilku-photo-buttons">
         <button class="hris-btn hris-btn-secondary" onclick="document.getElementById('photoGalleryInput').click()"><i class="feather-image"></i><span>Gallery / File</span></button>
         <label for="photoCameraInput" class="hris-btn hris-btn-primary"><i class="feather-camera"></i><span>Kamera Selfie</span></label>
