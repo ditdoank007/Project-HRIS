@@ -264,6 +264,27 @@ def api_profilku_password():
     return jsonify({"success": True, "message": "Password berhasil diubah."})
 
 
+def _decode_signature_data_url(data_url):
+    data_url = str(data_url or "").strip()
+    match = re.fullmatch(r"data:image/png;base64,([A-Za-z0-9+/=\s]+)", data_url)
+    if not match:
+        raise ValueError("Format tanda tangan tidak valid.")
+
+    encoded = re.sub(r"\s+", "", match.group(1))
+    try:
+        raw = base64.b64decode(encoded, validate=True)
+    except Exception as exc:
+        raise ValueError("Data tanda tangan tidak valid.") from exc
+
+    if len(raw) > 2 * 1024 * 1024:
+        raise ValueError("Ukuran tanda tangan maksimal 2 MB.")
+
+    if not raw.startswith(b"\x89PNG\r\n\x1a\n"):
+        raise ValueError("File tanda tangan bukan PNG valid.")
+
+    return raw
+
+
 def api_profilku_signature_file():
     pegawai = _current_pegawai()
     if not pegawai:
@@ -281,22 +302,10 @@ def api_profilku_signature():
         return jsonify({"success": False, "message": "Data pegawai tidak ditemukan."}), 404
 
     payload = request.get_json(silent=True) or {}
-    data_url = str(payload.get("signature") or "")
-    match = re.fullmatch(r"data:image/png;base64,([A-Za-z0-9+/=\s]+)", data_url)
-    if not match:
-        return jsonify({"success": False, "message": "Format tanda tangan tidak valid."}), 400
-
     try:
-        raw = base64.b64decode(match.group(1), validate=True)
-    except Exception:
-        return jsonify({"success": False, "message": "Data tanda tangan tidak valid."}), 400
-
-    if len(raw) > 2 * 1024 * 1024:
-        return jsonify({"success": False, "message": "Ukuran tanda tangan maksimal 2 MB."}), 400
-
-    # PNG signature magic bytes.
-    if not raw.startswith(b"\x89PNG\r\n\x1a\n"):
-        return jsonify({"success": False, "message": "File tanda tangan bukan PNG valid."}), 400
+        raw = _decode_signature_data_url(payload.get("signature"))
+    except ValueError as exc:
+        return jsonify({"success": False, "message": str(exc)}), 400
 
     root = _ttd_root()
     os.makedirs(root, mode=0o750, exist_ok=True)
@@ -315,7 +324,7 @@ def api_profilku_signature():
 
     return jsonify({
         "success": True,
-        "message": "Tanda tangan berhasil disimpan.",
+        "message": "Perubahan tanda tangan berhasil disimpan.",
         "filename": f"{pegawai.NIP}.png",
     })
 
@@ -454,21 +463,18 @@ def api_internal_profile_signature():
     pegawai, error = _internal_nip()
     if error:
         return error
+
     payload = request.get_json(silent=True) or {}
-    data_url = str(payload.get("signature") or "")
-    match = re.fullmatch(r"data:image/png;base64,([A-Za-z0-9+/=\\s]+)", data_url)
-    if not match:
-        return jsonify({"success": False, "message": "Format tanda tangan tidak valid."}), 400
     try:
-        raw = base64.b64decode(match.group(1), validate=True)
-    except Exception:
-        return jsonify({"success": False, "message": "Data tanda tangan tidak valid."}), 400
-    if len(raw) > 2 * 1024 * 1024 or not raw.startswith(b"\\x89PNG\\r\\n\\x1a\\n"):
-        return jsonify({"success": False, "message": "File tanda tangan PNG tidak valid."}), 400
+        raw = _decode_signature_data_url(payload.get("signature"))
+    except ValueError as exc:
+        return jsonify({"success": False, "message": str(exc)}), 400
+
     root = _ttd_root()
     os.makedirs(root, mode=0o750, exist_ok=True)
     target = _ensure_under(root, os.path.join(root, f"{pegawai.NIP}.png"))
     temp = target + f".{secrets.token_hex(8)}.tmp"
+
     try:
         with open(temp, "wb") as fh:
             fh.write(raw)
@@ -478,7 +484,12 @@ def api_internal_profile_signature():
     finally:
         if os.path.exists(temp):
             os.unlink(temp)
-    return jsonify({"success": True, "message": "Tanda tangan berhasil disimpan."})
+
+    return jsonify({
+        "success": True,
+        "message": "Perubahan tanda tangan berhasil disimpan.",
+        "filename": f"{pegawai.NIP}.png",
+    })
 
 
 def api_internal_profile_photo():
