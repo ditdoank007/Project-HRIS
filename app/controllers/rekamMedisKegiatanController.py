@@ -768,10 +768,6 @@ def _export_rows(kegiatan_id, jenis):
     rows = _peserta(kegiatan_id)
     if not rows:
         raise ValueError("Belum ada peserta yang scan QR.")
-    pending = [x for x in rows if x.STATUS_PEMERIKSAAN != "SELESAI"]
-    if pending:
-        raise ValueError("Ekspor hanya tersedia setelah seluruh pegawai yang scan selesai diperiksa.")
-
     result = []
     for peserta in rows:
         rekam = RekamMedis.query.filter(RekamMedis.REKAM_ID == peserta.REKAM_ID).first()
