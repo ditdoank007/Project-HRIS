@@ -34,6 +34,7 @@ from app.utils.pegawaiSortHelper import sort_pegawai_rows
 from app.helpers.masterJamKerjaHelper import (
     get_shift_kerja_definition,
 )
+from app.utils.pegawaiHelper import search_operational_pegawai
 
 GOOGLE_ID_HOLIDAY_CALENDAR_ID = 'id.indonesian#holiday@group.v.calendar.google.com'
 
@@ -2484,6 +2485,32 @@ def toggle_unit_kerja():
 def master_user():
     """Render halaman Master File Master User."""
     return render_template('pages/dashboard_1/Master File Master User.html')
+
+
+def api_user_account_pegawai_search():
+    """
+    Autocomplete khusus Master User Account.
+
+    Tidak bergantung pada hak akses menu tertentu karena fungsi halaman
+    ini adalah memberikan/mencabut privilege operator.
+    """
+    keyword = (request.args.get('q') or request.args.get('keyword') or '').strip()
+
+    if not keyword:
+        return jsonify({'status': 'success', 'data': []})
+
+    rows = search_operational_pegawai(keyword, limit=15)
+
+    return jsonify({
+        'status': 'success',
+        'data': [
+            {
+                'nip': row.NIP,
+                'nama': row.NAMA or ''
+            }
+            for row in rows
+        ]
+    })
 
 def _get_operator_forms(nip):
     """
