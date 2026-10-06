@@ -334,9 +334,9 @@ document.addEventListener("DOMContentLoaded", function () {
                     '<td><span class="fw-semibold">' + Number(x.sudah_diperiksa) + '</span></td>' +
                     '<td>' + badge(x.status) + '</td>' +
                     '<td class="text-end pe-3">' +
-                        '<div class="d-inline-flex gap-1">' +
-                            '<button class="btn btn-sm btn-light" title="Edit / Detail" onclick="lihatKegiatan(' + Number(x.kegiatan_id) + ')"><i class="feather-edit-2"></i></button>' +
-                            '<button class="btn btn-sm btn-light" id="btnAksi-' + Number(x.kegiatan_id) + '" title="Buka daftar peserta" onclick="toggleKegiatan(' + Number(x.kegiatan_id) + ')"><i class="feather-chevron-down"></i></button>' +
+                        '<div class="d-inline-flex gap-2 flex-wrap justify-content-end">' +
+                            '<button class="btn hris-action-btn hris-action-edit" title="Edit / Detail" onclick="lihatKegiatan(' + Number(x.kegiatan_id) + ')"><i class="feather-edit-2"></i><span>EDIT</span></button>' +
+                            '<button class="btn hris-action-btn hris-action-check" id="btnAksi-' + Number(x.kegiatan_id) + '" title="Buka daftar peserta untuk diperiksa" onclick="toggleKegiatan(' + Number(x.kegiatan_id) + ')"><i class="feather-clipboard"></i><span>PERIKSA</span></button>' +
                         '</div>' +
                     '</td>' +
                 '</tr>';
