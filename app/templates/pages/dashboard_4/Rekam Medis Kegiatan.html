@@ -521,7 +521,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!peserta.length) return '<div class="text-muted small">Belum ada peserta yang melakukan scan QR Code.</div>';
         return '<div class="small">' + peserta.map((p, i) =>
             '<div class="d-flex align-items-center justify-content-between border-bottom py-2 gap-2">' +
-                '<div><div class="fw-semibold">' + esc(p.nama) + '</div><div class="text-muted">' + esc(p.nip || "-") + ' · ' + esc(p.unit_kerja || "-") + '</div></div>' +
+                '<div><div class="fw-semibold">' + esc(p.nama) + '</div><div class="text-muted">' + esc(jenis === "PEGAWAI" ? (p.nip || "-") : (p.nik || "-")) + ' · ' + esc(jenis === "PEGAWAI" ? (p.jabatan || "-") : (p.instansi || "-")) + '</div></div>' +
                 '<span class="rapat-badge ' + (p.status_pemeriksaan === "SELESAI" ? "rapat-badge-selesai" : "rapat-badge-terjadwal") + '">' + esc(p.status_pemeriksaan) + '</span>' +
             '</div>'
         ).join("") + '</div>';
@@ -540,18 +540,18 @@ document.addEventListener("DOMContentLoaded", function () {
                     '<div class="rapat-detail-item"><div class="rapat-detail-label">Tanggal / Waktu</div><div class="rapat-detail-value">' + fmtDate(x.tanggal) + ' · ' + esc(x.jam) + ' WIB</div></div>' +
                     '<div class="rapat-detail-item"><div class="rapat-detail-label">Lokasi</div><div class="rapat-detail-value">' + esc(x.lokasi || "-") + '</div></div>' +
                     '<div class="rapat-detail-item"><div class="rapat-detail-label">Petugas Medis</div><div class="rapat-detail-value">' + petugas + '</div></div>' +
-                    '<div class="card border mt-4"><div class="card-body"><h6 class="mb-2"><i class="feather-users me-1"></i> Pegawai/Peserta yang Sudah Scan QR Code</h6>' + participantListHtml(x) + '</div></div>' +
+                    '<div class="card border mt-4"><div class="card-body"><h6 class="mb-2"><i class="feather-users me-1"></i> ' + participantLabel + ' yang Sudah Scan QR Code</h6>' + participantListHtml(x) + '</div></div>' +
                 '</div>' +
                 '<div class="col-12 col-lg-5">' +
                     '<div class="card border"><div class="card-body">' +
                         '<div class="d-flex justify-content-between align-items-center mb-3"><h6 class="mb-0"><i class="feather-grid me-1"></i> QR Code Pemeriksaan</h6>' + badge(x.status) + '</div>' +
                         '<div class="rapat-qr-box p-3">' +
-                            '<img src="/api/rekam-medis/kegiatan/pegawai/' + Number(x.kegiatan_id) + '/qr?ts=' + Date.now() + '" class="rapat-qr-image" alt="QR Code Rekam Medis">' +
+                            '<img src="' + apiBase + Number(x.kegiatan_id) + '/qr?ts=' + Date.now() + '" class="rapat-qr-image" alt="QR Code Rekam Medis">' +
                             '<div class="rapat-qr-help mt-3"><div class="fw-semibold">Scan untuk mendaftarkan pemeriksaan</div><div class="text-muted small mt-1">Peserta yang scan akan otomatis masuk ke daftar pemeriksaan.</div></div>' +
                         '</div>' +
                         '<div class="d-grid gap-2 mt-3">' +
                             '<button class="btn btn-outline-primary" type="button" onclick="fullscreenQR(' + Number(x.kegiatan_id) + ')"><i class="feather-maximize me-1"></i> Tampilkan QR Fullscreen</button>' +
-                            (exportReady ? '<div class="d-grid gap-2"><a class="btn btn-success w-100" href="/api/rekam-medis/kegiatan/pegawai/' + Number(x.kegiatan_id) + '/export/excel"><i class="feather-file-text me-1"></i> HASIL PEMERIKSAAN</a><a class="btn btn-outline-danger w-100" href="/api/rekam-medis/kegiatan/pegawai/' + Number(x.kegiatan_id) + '/export/pdf"><i class="feather-file-text me-1"></i> PDF</a></div>' : '') +
+                            (exportReady ? '<div class="d-grid gap-2"><a class="btn btn-success w-100" href="' + apiBase + Number(x.kegiatan_id) + '/export/excel"><i class="feather-file-text me-1"></i> HASIL PEMERIKSAAN</a><a class="btn btn-outline-danger w-100" href="' + apiBase + Number(x.kegiatan_id) + '/export/pdf"><i class="feather-file-text me-1"></i> PDF</a></div>' : '') +
                         '</div>' +
                     '</div></div>' +
                 '</div>' +
@@ -576,8 +576,8 @@ document.addEventListener("DOMContentLoaded", function () {
     window.fullscreenQR = function(id) {
         const w = window.open("", "_blank", "width=800,height=900");
         if (!w) { alert("Popup diblokir browser. Izinkan popup untuk HRIS."); return; }
-        const src = "/api/rekam-medis/kegiatan/pegawai/" + Number(id) + "/qr?ts=" + Date.now();
-        w.document.write('<!doctype html><html><head><title>QR Rekam Medis ' + (jenis === "PEGAWAI" ? "Pegawai" : "Non Pegawai") + '</title><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#fff;display:flex;min-height:100vh;align-items:center;justify-content:center;flex-direction:column;font-family:Arial,sans-serif"><h2>QR Rekam Medis Pegawai</h2><img src="' + src + '" style="width:min(80vw,650px);height:auto"><p>Scan QR menggunakan HP peserta. Pendaftaran dilanjutkan melalui Calendar.</p></body></html>');
+        const src = apiBase + Number(id) + "/qr?ts=" + Date.now();
+        w.document.write('<!doctype html><html><head><title>QR Rekam Medis ' + (jenis === "PEGAWAI" ? "Pegawai" : "Non Pegawai") + '</title><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#fff;display:flex;min-height:100vh;align-items:center;justify-content:center;flex-direction:column;font-family:Arial,sans-serif"><h2>QR Rekam Medis ' + (jenis === "PEGAWAI" ? "Pegawai" : "Non Pegawai") + '</h2><img src="' + src + '" style="width:min(80vw,650px);height:auto"><p>Scan QR menggunakan HP peserta. Pendaftaran dilanjutkan melalui Calendar.</p></body></html>');
         w.document.close();
     };
 
