@@ -315,7 +315,12 @@ from app.controllers.profilkuController import (
     api_profilku_photo_upload,
     api_profilku_password,
     api_profilku_signature,
+    api_internal_profile,
+    api_internal_profile_update,
     api_internal_profile_photo,
+    api_internal_profile_photo_upload,
+    api_internal_profile_password,
+    api_internal_profile_signature,
 )
 from app.controllers.dashboard_3KirimController import (
     kirim_kritik_saran,
@@ -2176,9 +2181,29 @@ def api_profilku_password_route():
 def api_profilku_signature_route():
     return api_profilku_signature()
 
+@main.route('/api/internal/calendar/profile', methods=['GET'])
+def api_internal_calendar_profile_route():
+    return api_internal_profile()
+
+@main.route('/api/internal/calendar/profile', methods=['PUT'])
+def api_internal_calendar_profile_update_route():
+    return api_internal_profile_update()
+
 @main.route('/api/internal/calendar/profile-photo', methods=['GET'])
 def api_internal_calendar_profile_photo_route():
     return api_internal_profile_photo()
+
+@main.route('/api/internal/calendar/profile-photo', methods=['POST'])
+def api_internal_calendar_profile_photo_upload_route():
+    return api_internal_profile_photo_upload()
+
+@main.route('/api/internal/calendar/profile-password', methods=['POST'])
+def api_internal_calendar_profile_password_route():
+    return api_internal_profile_password()
+
+@main.route('/api/internal/calendar/profile-signature', methods=['POST'])
+def api_internal_calendar_profile_signature_route():
+    return api_internal_profile_signature()
 
 # Kirim:
 @main.route('/kinerja/kirim/kritik-saran')
