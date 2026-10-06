@@ -3404,7 +3404,10 @@ body.hris-sidebar-mini .hris-submenu {
 }
 
 .hris-autocomplete-menu {
-  position: fixed;
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  right: 0;
   z-index: 99999;
   max-height: 280px;
   overflow-y: auto;
