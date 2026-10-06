@@ -515,6 +515,15 @@ def api_calendar_rekam_medis_employee():
     })
 
 
+def _medical_guest_title_case(value):
+    value = re.sub(r"\s+", " ", str(value or "").strip())
+    return " ".join(part[:1].upper() + part[1:].lower() for part in value.split(" ") if part)
+
+
+def _medical_guest_email_valid(value):
+    return bool(re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", str(value or "").strip()))
+
+
 def api_calendar_rekam_medis_guest():
     if not _calendar_authorized():
         return jsonify({"status": "error", "message": "Unauthorized"}), 401
@@ -539,10 +548,13 @@ def api_calendar_rekam_medis_guest():
         return jsonify({"status": "error", "message": "Jenis kelamin wajib dipilih L atau P."}), 400
     if not instansi:
         return jsonify({"status": "error", "message": "Instansi / Organisasi wajib diisi."}), 400
-    if not email:
-        return jsonify({"status": "error", "message": "Email wajib diisi."}), 400
+    if not _medical_guest_email_valid(email):
+        return jsonify({"status": "error", "message": "Format Email aktif tidak valid."}), 400
     if not no_handphone:
         return jsonify({"status": "error", "message": "No. Handphone wajib diisi."}), 400
+
+    nama = _medical_guest_title_case(nama)
+    instansi = _medical_guest_title_case(instansi)
     if not tanda_tangan or len(tanda_tangan) > 750000:
         return jsonify({"status": "error", "message": "Tanda tangan wajib diisi dan ukurannya tidak valid."}), 400
 
