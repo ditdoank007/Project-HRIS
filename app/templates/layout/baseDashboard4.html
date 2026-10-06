@@ -17,6 +17,69 @@
     <link rel="stylesheet"
           href="{{ url_for('static', filename='css/hris-ui.css') }}">
     <style>
+        /* AGENDA shell follows Dashboard UMUM visual standard */
+        .nxl-header {
+            min-height: 72px !important;
+            height: 72px !important;
+            background: #fff !important;
+            border-bottom: 1px solid #e5e7eb !important;
+            color: #1f2937 !important;
+            box-shadow: 0 1px 8px rgba(15,23,42,.04);
+        }
+        .nxl-header .header-wrapper {
+            min-height: 72px !important;
+            height: 72px !important;
+        }
+        .nxl-header .dropdown > a,
+        .nxl-header .dropdown > a span {
+            color: #1f2937 !important;
+        }
+        .nxl-header .dropdown-toggle::after {
+            color: #6b7280 !important;
+        }
+        .nxl-header .nxl-head-mobile-toggler {
+            color: #374151 !important;
+        }
+
+        .hris-shell .nxl-navigation {
+            top: 72px !important;
+            background: #f1662a !important;
+        }
+
+        .hris-shell .custom-nav-header.agenda-brand-header {
+            display: block !important;
+            padding: 16px 14px 12px !important;
+        }
+        .hris-shell .custom-nav-header.agenda-brand-header .header-container {
+            display: flex !important;
+            align-items: center;
+            gap: 10px;
+            min-height: 44px;
+        }
+        .hris-shell .custom-nav-header.agenda-brand-header img {
+            display: block !important;
+            width: 38px !important;
+            height: 38px !important;
+            object-fit: contain;
+            flex: 0 0 38px;
+        }
+        .hris-shell .agenda-brand-title,
+        .hris-shell .agenda-brand-subtitle {
+            display: block;
+        }
+        .hris-shell .agenda-brand-title {
+            color: #fff !important;
+            font-size: 14px !important;
+            font-weight: 800 !important;
+            line-height: 1.2;
+        }
+        .hris-shell .agenda-brand-subtitle {
+            margin-top: 2px;
+            color: rgba(255,255,255,.78) !important;
+            font-size: 9px;
+            line-height: 1.2;
+        }
+
         .hris-shell .nxl-hasmenu > .nxl-submenu {
             display: none;
             list-style: none;
@@ -58,12 +121,12 @@
         <div class="navbar-wrapper">
             <div class="navbar-content">
                 <ul class="nxl-navbar">
-                    <li class="custom-nav-header">
+                    <li class="custom-nav-header agenda-brand-header">
                         <div class="header-container">
-                            <img src="{{ url_for('static', filename='static_dashboard_1/assets/images/logo-full.png') }}" alt="Basarnas">
+                            <img src="{{ url_for('static', filename='static_dashboard_1/assets/images/logo-full.png') }}" alt="Basarnas Surabaya">
                             <div>
-                                <div class="nav-text-label">Modul</div>
-                                <strong style="color:#fff;font-size:13px;">AGENDA</strong>
+                                <strong class="agenda-brand-title">HRIS Kansar</strong>
+                                <small class="agenda-brand-subtitle">Basarnas Surabaya</small>
                             </div>
                         </div>
                         <div class="nav-separator"></div>
