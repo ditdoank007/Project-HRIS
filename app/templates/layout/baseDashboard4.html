@@ -50,27 +50,8 @@
 
 <body class="hris-modern">
 
-<header class="hris-topbar">
-    <button type="button" class="hris-menu-toggle" id="agendaSidebarToggle" aria-label="Buka menu">
-        <span></span><span></span><span></span>
-    </button>
+    {% include 'partials/header.html' %}
 
-    <a href="{{ url_for('main.dashboard4_home') }}" class="hris-brand">
-        <img src="{{ url_for('static', filename='static_dashboard_1/assets/images/logo-full.png') }}" alt="Basarnas Surabaya">
-        <span>
-            <strong>HRIS AGENDA</strong>
-            <small>Basarnas Surabaya</small>
-        </span>
-    </a>
-
-    <div class="hris-user">
-        <div class="hris-user-meta">
-            <strong>{{ session.get('nama') or 'Pengguna HRIS' }}</strong>
-            <small>{{ session.get('nip') or '' }}</small>
-        </div>
-        <button type="button" class="hris-btn hris-btn-secondary hris-signout" id="agendaSignOutBtn">Keluar</button>
-    </div>
-</header>
 
 <div class="hris-shell" id="agendaShell">
     <aside class="nxl-navigation" aria-label="Menu AGENDA">
@@ -186,7 +167,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    document.getElementById('agendaSignOutBtn')?.addEventListener('click', async function () {
+    document.getElementById('headerSignOutBtn')?.addEventListener('click', async function () {
         try {
             await fetch('/api/logout', { method: 'POST' });
         } finally {
