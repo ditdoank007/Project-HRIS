@@ -463,6 +463,83 @@ def api_calendar_rekam_medis_info():
     })
 
 
+def api_calendar_rekam_medis_history():
+    """Return completed personal medical-record history for Calendar Portal."""
+    if not _calendar_authorized():
+        return jsonify({"status": "error", "message": "Unauthorized"}), 401
+
+    nip = str(request.headers.get("X-Calendar-NIP") or "").strip()
+    if not nip:
+        return jsonify({"status": "error", "message": "NIP wajib diisi."}), 400
+
+    rows = (
+        db.session.query(
+            RekamMedisPeserta,
+            RekamMedisKegiatan,
+            RekamMedis,
+        )
+        .join(
+            RekamMedisKegiatan,
+            RekamMedisKegiatan.KEGIATAN_ID == RekamMedisPeserta.KEGIATAN_ID,
+        )
+        .join(
+            RekamMedis,
+            RekamMedis.REKAM_ID == RekamMedisPeserta.REKAM_ID,
+        )
+        .filter(
+            RekamMedisPeserta.NIP == nip,
+            RekamMedisPeserta.JENIS_PESERTA == "PEGAWAI",
+            RekamMedisPeserta.REKAM_ID.isnot(None),
+        )
+        .order_by(
+            RekamMedis.CREATED_AT.desc(),
+            RekamMedisKegiatan.TANGGAL.desc(),
+            RekamMedisKegiatan.JAM.desc(),
+        )
+        .all()
+    )
+
+    def iso_wib(value):
+        if not value:
+            return None
+        return (value + timedelta(hours=7)).isoformat()
+
+    data = []
+    for peserta, kegiatan, rekam in rows:
+        data.append({
+            "rekam_id": rekam.REKAM_ID,
+            "peserta_id": peserta.PESERTA_ID,
+            "kegiatan_id": kegiatan.KEGIATAN_ID,
+            "judul": kegiatan.JUDUL,
+            "lokasi": kegiatan.LOKASI,
+            "tanggal": kegiatan.TANGGAL.isoformat() if kegiatan.TANGGAL else None,
+            "jam": kegiatan.JAM.strftime("%H:%M") if kegiatan.JAM else None,
+            "status_kegiatan": kegiatan.STATUS,
+            "status_pemeriksaan": peserta.STATUS_PEMERIKSAAN,
+            "scanned_at": iso_wib(peserta.SCANNED_AT),
+            "pemeriksaan_at": iso_wib(rekam.CREATED_AT),
+            "nama": rekam.NAMA or peserta.NAMA,
+            "nip": rekam.NIP or peserta.NIP,
+            "unit_kerja": rekam.UNIT_KERJA or peserta.UNIT_KERJA,
+            "tekanan_darah": rekam.TEKANAN_DARAH,
+            "nadi": rekam.NADI,
+            "frekuensi_nafas": rekam.FREKUENSI_NAFAS,
+            "suhu": float(rekam.SUHU) if rekam.SUHU is not None else None,
+            "spo2": rekam.SPO2,
+            "keluhan": rekam.KELUHAN,
+            "tindakan": rekam.TINDAKAN,
+            "hasil_kebugaran": rekam.HASIL_KEBUGARAN,
+            "pemeriksa": rekam.PEMERIKSA,
+        })
+
+    return jsonify({
+        "status": "success",
+        "nip": nip,
+        "total": len(data),
+        "data": data,
+    })
+
+
 def api_calendar_rekam_medis_employee():
     if not _calendar_authorized():
         return jsonify({"status": "error", "message": "Unauthorized"}), 401
