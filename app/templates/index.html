@@ -213,42 +213,18 @@
                         </div>
 
                         <!-- AGENDA -->
-                        <div class="nav-item dropdown{% if not session.get('logged_in') %} d-none{% endif %}">
-
-                            <a
-                                href="#"
-                                class="nav-link dropdown-toggle hris-nav-link"
-                                data-bs-toggle="dropdown"
-                                role="button">
-
-                                <span>AGENDA</span>
-
-                            </a>
-
-                            <div class="dropdown-menu hris-dropdown-menu">
-
-                                {% set rapat_access = is_administrator() or has_form_access('AGENDA_RAPAT') %}
-                                <a href="{{ url_for('main.view_agenda_rapat') }}" class="dropdown-item{% if not rapat_access %} hris-access-hidden{% endif %}">
-                                    Rapat
-                                </a>
-
-                                {% set disposisi_access = is_administrator() or has_form_access('AGENDA_DISPOSISI') %}
-                                <a href="{{ url_for('main.view_agenda_disposisi') }}" class="dropdown-item{% if not disposisi_access %} hris-access-hidden{% endif %}">
-                                    Disposisi
-                                </a>
-
-                                {% set kes_access = is_administrator() or has_form_access('SUMDA_KESAMAPTAAN') %}
-                                <a href="{{ url_for('main.view_kesamaptaan') }}" class="dropdown-item{% if not kes_access %} hris-access-hidden{% endif %}">
-                                    Kesamaptaan
-                                </a>
-
-                                {% set medis_access = is_administrator() or has_form_access('REKAM_MEDIS') %}
-                                <a href="{{ url_for('main.view_rekam_medis') }}" class="dropdown-item{% if not medis_access %} hris-access-hidden{% endif %}">
-                                    Rekam Medis
-                                </a>
-
-                            </div>
-                        </div>
+                        {% set agenda_access = is_administrator()
+                            or has_form_access('AGENDA_RAPAT')
+                            or has_form_access('AGENDA_DISPOSISI')
+                            or has_form_access('SUMDA_KESAMAPTAAN')
+                            or has_form_access('REKAM_MEDIS') %}
+                        {% if agenda_access %}
+                        <a
+                            href="{{ url_for('main.dashboard4') }}"
+                            class="nav-link hris-nav-link">
+                            <span>AGENDA</span>
+                        </a>
+                        {% endif %}
 
                         <!-- DATA PRIBADI -->
                         <a
