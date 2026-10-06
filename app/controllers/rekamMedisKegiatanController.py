@@ -1014,16 +1014,22 @@ def api_rekam_medis_kegiatan_non_pegawai_export_excel(kegiatan_id):
         petugas = _petugas(kegiatan.KEGIATAN_ID)
         signature_row = signature_start + 7
         if petugas:
-            # Hindari merged-cell overlap saat jumlah petugas 3-4 orang.
-            # Gunakan satu kolom per petugas agar workbook selalu valid.
-            positions = [10, 11, 12, 13]
+            # Tanda tangan selalu diratakan dari sisi paling kanan.
+            # 1 petugas = M, 2 = L-M, 3 = K-L-M, 4 = J-K-L-M.
+            positions_by_count = {
+                1: [13],
+                2: [12, 13],
+                3: [11, 12, 13],
+                4: [10, 11, 12, 13],
+            }
+            positions = positions_by_count.get(min(len(petugas), 4), [13])
             for idx, pet in enumerate(petugas[:4]):
                 col_start = positions[idx]
                 cell = ws.cell(signature_row, col_start, pet["nama"])
                 cell.alignment = Alignment(horizontal="center", vertical="top", wrap_text=True)
         else:
-            ws.cell(signature_row, 11, "-")
-            ws.cell(signature_row, 11).alignment = Alignment(horizontal="center")
+            ws.cell(signature_row, 13, "-")
+            ws.cell(signature_row, 13).alignment = Alignment(horizontal="center")
 
         widths = [6, 30, 22, 30, 15, 18, 14, 20, 10, 10, 30, 34, 25]
         for idx, width in enumerate(widths, 1):
