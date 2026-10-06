@@ -173,6 +173,8 @@ from app.controllers.rekamMedisKegiatanController import (
     api_rekam_medis_kegiatan_pegawai_complete, api_rekam_medis_kegiatan_non_pegawai_complete,
     api_rekam_medis_kegiatan_pegawai_qr, api_rekam_medis_kegiatan_non_pegawai_qr,
     api_rekam_medis_scan, api_rekam_medis_petugas_search,
+    api_calendar_rekam_medis_info, api_calendar_rekam_medis_employee,
+    api_calendar_rekam_medis_guest,
     api_rekam_medis_kegiatan_pegawai_peserta_detail,
     api_rekam_medis_kegiatan_non_pegawai_peserta_detail,
     api_rekam_medis_kegiatan_pegawai_peserta_save,
@@ -2660,6 +2662,30 @@ def api_calendar_personal_internal_route():
     )
 
     return api_calendar_personal_internal()
+
+
+@main.route(
+    '/api/internal/calendar/agenda/rekam-medis/attendance-info',
+    methods=['GET']
+)
+def api_calendar_rekam_medis_info_route():
+    return api_calendar_rekam_medis_info()
+
+
+@main.route(
+    '/api/internal/calendar/agenda/rekam-medis/attendance/employee',
+    methods=['POST']
+)
+def api_calendar_rekam_medis_employee_route():
+    return api_calendar_rekam_medis_employee()
+
+
+@main.route(
+    '/api/internal/calendar/agenda/rekam-medis/attendance/guest',
+    methods=['POST']
+)
+def api_calendar_rekam_medis_guest_route():
+    return api_calendar_rekam_medis_guest()
 
 
 @main.route(
