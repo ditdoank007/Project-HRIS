@@ -38,7 +38,7 @@
                 <button type="button" class="hris-account-toggle" id="hrisAccountToggle"
                         aria-expanded="false" aria-label="Buka menu akun">
                     <span class="hris-account-avatar" style="overflow:hidden;padding:0;">
-                        <img src="{{ url_for('api_profilku_photo_route') }}"
+                        <img src="{{ url_for('main.api_profilku_photo_route') }}"
                              alt="Foto profil"
                              style="width:100%;height:100%;object-fit:cover;"
                              onerror="this.style.display='none'; this.parentElement.textContent='{{ session.get('nama', 'G')[:1]|upper }}';">
