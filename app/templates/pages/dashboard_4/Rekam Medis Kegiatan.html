@@ -530,7 +530,7 @@ document.addEventListener("DOMContentLoaded", function () {
     function renderDetail(x) {
         currentDetail = x;
         document.getElementById("detailSubjudul").textContent = x.judul || "-";
-        const exportReady = Number(x.total_peserta) > 0 && Number(x.belum_diperiksa) === 0;
+        const exportReady = Number(x.total_peserta) > 0;
         const petugas = (x.petugas_medis || []).map(p => '<span class="badge rounded-pill text-bg-light border me-1 mb-1">' + esc(p.nama) + '</span>').join("") || '<span class="text-muted">-</span>';
 
         document.getElementById("detailBody").innerHTML =
