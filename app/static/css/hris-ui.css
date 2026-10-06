@@ -836,7 +836,17 @@ body {
   transition: transform .15s ease;
 }
 
-.hris-shell .nxl-link.hris-active {\n  color: var(--ui-brand-dark);\n  background: rgba(235, 104, 49, .10);\n  font-weight: 700;\n}\n\n.hris-shell .nxl-hasmenu > .nxl-link.hris-active {\n  color: var(--ui-brand-dark);\n  background: rgba(235, 104, 49, .10);\n}\n\n.hris-shell .nxl-hasmenu.hris-open > .nxl-link {
+.hris-shell .nxl-link.hris-active {
+  color: var(--ui-brand-dark);
+  background: rgba(255,255,255,.16);
+  font-weight: 700;
+}
+
+.hris-shell .nxl-hasmenu > .nxl-link.hris-active {
+  color: #fff;
+  background: rgba(255,255,255,.16);
+}
+\n.hris-shell .nxl-hasmenu.hris-open > .nxl-link {
   color: #fff;
   background: rgba(0,0,0,.14);
 }
