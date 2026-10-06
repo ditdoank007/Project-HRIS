@@ -87,11 +87,24 @@
                     {% endif %}
 
                     {% if is_administrator() or has_form_access('REKAM_MEDIS') %}
-                    <li class="nxl-item">
-                        <a href="{{ url_for('main.view_rekam_medis') }}" class="nxl-link{% if request.endpoint == 'main.view_rekam_medis' %} hris-active{% endif %}">
+                    <li class="nxl-item nxl-hasmenu{% if request.endpoint in ['main.view_rekam_medis_pegawai', 'main.view_rekam_medis_non_pegawai'] %} hris-active{% endif %}">
+                        <a href="#" class="nxl-link" onclick="return false;">
                             <span class="nxl-micon"><i class="ti ti-heartbeat"></i></span>
                             <span class="nxl-mtext">Rekam Medis</span>
+                            <span class="nxl-arrow"><i class="ti ti-chevron-down"></i></span>
                         </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item">
+                                <a href="{{ url_for('main.view_rekam_medis_pegawai') }}" class="nxl-link{% if request.endpoint == 'main.view_rekam_medis_pegawai' %} hris-active{% endif %}">
+                                    <span class="nxl-mtext">Rekam Medis Pegawai</span>
+                                </a>
+                            </li>
+                            <li class="nxl-item">
+                                <a href="{{ url_for('main.view_rekam_medis_non_pegawai') }}" class="nxl-link{% if request.endpoint == 'main.view_rekam_medis_non_pegawai' %} hris-active{% endif %}">
+                                    <span class="nxl-mtext">Rekam Medis Non Pegawai</span>
+                                </a>
+                            </li>
+                        </ul>
                     </li>
                     {% endif %}
 
