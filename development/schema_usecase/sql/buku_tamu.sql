@@ -54,8 +54,11 @@ SELECT
     'HRIS',
     '',
     1,
-    COALESCE(MAX(TransacID), 0) + 1
-FROM MF_FORM
+    next_id
+FROM (
+    SELECT COALESCE(MAX(TransacID), 0) + 1 AS next_id
+    FROM MF_FORM
+) AS next_form
 WHERE NOT EXISTS (
     SELECT 1 FROM MF_FORM WHERE FormID = 'AGENDA_BUKU_TAMU'
 );
