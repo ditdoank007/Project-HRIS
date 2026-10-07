@@ -70,7 +70,7 @@
   document.getElementById('btnTambah').onclick=()=>showForm(null);
   document.getElementById('btnBatal').onclick=resetForm;
   document.getElementById('btnSimpan').onclick=async function(){const n=nama.value.trim();if(!n)return alert('Nama Jenis Keperluan wajib diisi.');const b=this;b.disabled=true;try{const r=await fetch('/api/agenda/buku-tamu/jenis-keperluan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:editId||null,nama:n,urut:Number(urut.value||0)})});const j=await r.json();if(j.status!=='success')throw new Error(j.message||'Gagal menyimpan.');resetForm();load();}catch(e){alert(e.message);}finally{b.disabled=false;}};
-  function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]);}
+  function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
   load();
 })();
 </script>
