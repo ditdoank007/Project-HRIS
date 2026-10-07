@@ -232,6 +232,8 @@ def api_calendar_rapat_guest_attendance():
     signature_data = payload.get("signature_data")
     attendance_key = str(payload.get("attendance_key") or "").strip()
     nip_or_finger = str(payload.get("nip_or_finger") or "").strip()
+    instansi = str(payload.get("instansi") or "").strip()
+    no_handphone = str(payload.get("no_handphone") or "").strip()
 
     if not token:
         return jsonify({"status": "error", "message": "Token QR wajib diisi."}), 400
@@ -248,6 +250,8 @@ def api_calendar_rapat_guest_attendance():
             signature_data=signature_data,
             attendance_key=attendance_key,
             nip_or_finger=nip_or_finger,
+            instansi=instansi,
+            no_handphone=no_handphone,
             method="QR_GUEST",
         )
         return jsonify({
@@ -259,6 +263,8 @@ def api_calendar_rapat_guest_attendance():
                 "attendee_type": "NON_PEGAWAI",
                 "name": attendance.NAME,
                 "email": attendance.EMAIL,
+                "instansi": attendance.INSTANSI,
+                "no_handphone": attendance.NO_HANDPHONE,
                 "nip_or_finger": attendance.NIP,
                 "scanned_date": attendance.SCANNED_DATE.isoformat(),
             },
