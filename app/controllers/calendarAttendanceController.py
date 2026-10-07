@@ -104,6 +104,7 @@ def _event_payload(event, meta, nip=None):
         .first()
         if meta else None
     )
+    employee = Pegawai.query.filter(Pegawai.NIP == nip).first() if nip else None
 
     return {
         "event_id": event.EVENT_ID,
@@ -115,6 +116,7 @@ def _event_payload(event, meta, nip=None):
         "status": event.STATUS,
         "organizer_name": organizer.NAMA if organizer else (meta.ORGANIZER_NIP if meta else "-"),
         "qr_active": bool(meta and meta.QR_ACTIVE == "Y"),
+        "employee_eligible": bool(employee),
         "employee_attended": bool(employee_attendance),
         "employee_attendance_at": (
             employee_attendance.SCANNED_DATE.isoformat()
