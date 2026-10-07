@@ -40,11 +40,44 @@ CREATE TABLE IF NOT EXISTS BUKU_TAMU_ENTRY (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- Daftarkan modul agar dapat diberikan melalui HAK_AKSES_FORM.
+-- Daftarkan modul mengikuti pola MF_FORM HRIS yang sudah berjalan.
+-- TransacID pada MF_FORM bukan AUTO_INCREMENT, sehingga gunakan ID berikutnya.
 INSERT INTO MF_FORM
-    (FormID, Formname, FormType, Nourut, Berkas, Modul, parentForm, HirarkiLvl)
+    (FormID, Formname, FormType, Nourut, Berkas, Modul, parentForm, HirarkiLvl, TransacID)
 SELECT
-    'AGENDA_BUKU_TAMU', 'Buku Tamu', 'MENU', 30, 'BukuTamu.aspx', 'AGENDA', 'AGENDA', 2
+    'AGENDA_BUKU_TAMU',
+    'AGENDA - Buku Tamu',
+    'Transaksi',
+    3,
+    'BukuTamu.aspx',
+    'HRIS',
+    '',
+    1,
+    COALESCE(MAX(TransacID), 0) + 1
+FROM MF_FORM
 WHERE NOT EXISTS (
     SELECT 1 FROM MF_FORM WHERE FormID = 'AGENDA_BUKU_TAMU'
 );
+
+-- Berikan akses awal Buku Tamu kepada user yang sudah memiliki akses AGENDA_RAPAT.
+-- HAK_AKSES_FORM menggunakan kombinasi NIP + FormID sebagai primary key.
+INSERT INTO HAK_AKSES_FORM
+    (NIP, FormID, isAkses, TypeAkses, IdUnitKerja, Modul, Updateby, UpdateDate)
+SELECT
+    r.NIP,
+    'AGENDA_BUKU_TAMU',
+    'Y',
+    r.TypeAkses,
+    r.IdUnitKerja,
+    'HRIS',
+    'SYSTEM',
+    NOW()
+FROM HAK_AKSES_FORM r
+WHERE r.FormID = 'AGENDA_RAPAT'
+  AND r.isAkses = 'Y'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM HAK_AKSES_FORM b
+      WHERE b.NIP = r.NIP
+        AND b.FormID = 'AGENDA_BUKU_TAMU'
+  );
