@@ -77,14 +77,23 @@ def buku_tamu():
         BukuTamuEntry.SCANNED_DATE < now.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1),
     ).count()
 
+    month_names = {
+        1: "Januari", 2: "Februari", 3: "Maret", 4: "April",
+        5: "Mei", 6: "Juni", 7: "Juli", 8: "Agustus",
+        9: "September", 10: "Oktober", 11: "November", 12: "Desember",
+    }
+
     return render_template(
         "pages/dashboard_1/Buku Tamu.html",
         books=books,
+        units=_active_units(),
         month_count=month_count,
         year_count=year_count,
         today_count=today_count,
         active_books=sum(1 for x in books if x.QR_ACTIVE == "Y"),
-        month_label=now.strftime("%B %Y"),
+        month_label=month_names[now.month] + " " + str(now.year),
+        month_number=now.month,
+        month_names=month_names,
         year=now.year,
     )
 
