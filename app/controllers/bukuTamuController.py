@@ -167,6 +167,20 @@ def api_buku_tamu_qr(book_id):
     output = io.BytesIO()
     image.save(output, format="PNG")
     output.seek(0)
+
+    # Preview tetap inline. Jika ?download=1, kirim sebagai file PNG
+    # dengan nama yang siap dipakai untuk dicetak/ditempel di lobby.
+    download = str(request.args.get("download") or "").strip().lower() in {"1", "true", "yes"}
+    if download:
+        filename = f"qr-buku-tamu-{_safe_filename(book.UNIT_KERJA_NAME or book.JUDUL)}.png"
+        return send_file(
+            output,
+            mimetype="image/png",
+            as_attachment=True,
+            download_name=filename,
+            max_age=0,
+        )
+
     return send_file(output, mimetype="image/png", max_age=0)
 
 
