@@ -77,6 +77,15 @@
               {% endfor %}
             </select>
           </div>
+          <div class="bt-unit-filter">
+            <label for="statKeperluan">Keperluan</label>
+            <select id="statKeperluan" class="hris-select">
+              <option value="">Semua Keperluan</option>
+              {% for item in keperluan_types %}
+              <option value="{{ item.NAMA_KEPERLUAN }}">{{ item.NAMA_KEPERLUAN }}</option>
+              {% endfor %}
+            </select>
+          </div>
           <button type="button" class="hris-btn hris-btn-primary" id="btnStat"><i class="feather-search"></i> Tampilkan</button>
         </div>
 
@@ -88,6 +97,14 @@
 
         <div class="bt-traffic-wrap">
           <div id="trafficChart" class="bt-traffic-chart"><div class="hris-loading">Memuat trafik tamu...</div></div>
+        </div>
+        <div class="bt-period-summary" id="keperluanStats" style="margin-top:16px;">
+          <div><span>Registrasi EPIRB</span><strong>0</strong></div>
+          <div><span>Magang</span><strong>0</strong></div>
+          <div><span>Hotel</span><strong>0</strong></div>
+          <div><span>Bank</span><strong>0</strong></div>
+          <div><span>Undangan</span><strong>0</strong></div>
+          <div><span>Lainnya</span><strong>0</strong></div>
         </div>
       </div>
     </div>
@@ -169,12 +186,14 @@
     const month = Number(document.getElementById('statMonth').value);
     const year = Number(document.getElementById('statYear').value);
     const unit = document.getElementById('statUnit').value;
+    const keperluan = document.getElementById('statKeperluan').value;
     chart.innerHTML = '<div class="hris-loading">Memuat trafik tamu...</div>';
 
     try {
       const url = '/api/agenda/buku-tamu/rekap?year=' + encodeURIComponent(year)
         + '&month=' + encodeURIComponent(month)
-        + '&unit_kerja_id=' + encodeURIComponent(unit);
+        + '&unit_kerja_id=' + encodeURIComponent(unit)
+        + '&keperluan=' + encodeURIComponent(keperluan);
       const response = await fetch(url);
       const result = await response.json();
       if (result.status !== 'success') throw new Error(result.message || 'Gagal memuat trafik.');
@@ -200,6 +219,11 @@
       document.getElementById('summaryTotal').textContent = total;
       document.getElementById('summaryPeak').textContent = peak.count ? ('Tgl ' + peak.day + ' · ' + peak.count) : '-';
       document.getElementById('summaryAverage').textContent = average;
+
+      const stats = result.keperluan_stats || [];
+      document.getElementById('keperluanStats').innerHTML = stats.map(function (item) {
+        return '<div><span>' + item.nama + '</span><strong>' + item.total + '</strong></div>';
+      }).join('');
 
       const max = Math.max.apply(null, values.map(function (x) { return x.count; }).concat([1]));
       chart.innerHTML = values.map(function (item) {
@@ -227,6 +251,7 @@
   document.getElementById('statMonth').addEventListener('change', loadTraffic);
   document.getElementById('statYear').addEventListener('change', loadTraffic);
   document.getElementById('statUnit').addEventListener('change', loadTraffic);
+  document.getElementById('statKeperluan').addEventListener('change', loadTraffic);
   loadTraffic();
 })();
 
