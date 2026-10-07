@@ -32,13 +32,48 @@ def _calendar_public_url(token):
     return f"{base}/buku-tamu?token={token}"
 
 
+def _unit_sort_key(unit):
+    """
+    Urutan Buku Tamu mengikuti KODE/ID Unit Kerja pada master.
+    Unit Surabaya selalu ditempatkan paling atas sebagai kantor induk.
+    """
+    code = str(unit.UNIT_KERJA_ID or "").strip()
+    name = str(unit.NAMA_UNIT_KERJA or "").strip().upper()
+    is_surabaya = "SURABAYA" in name
+    return (
+        0 if is_surabaya else 1,
+        code,
+        name,
+    )
+
+
 def _active_units():
-    rows = MfUnitKerja.query.order_by(
-        MfUnitKerja.URUT_REPORT.asc(),
-        MfUnitKerja.NAMA_UNIT_KERJA.asc()
-    ).all()
+    rows = MfUnitKerja.query.all()
     active = [x for x in rows if str(x.IS_AKTIF or "").strip().upper() in {"Y", "1", "TRUE"}]
-    return active or rows
+    rows = active or rows
+    return sorted(rows, key=_unit_sort_key)
+
+
+def _sort_books_by_unit_code(rows):
+    """
+    Tabel Buku Tamu Unit Kerja harus mengikuti urutan master unit kerja,
+    bukan urutan alfabet nama unit.
+    """
+    units = MfUnitKerja.query.all()
+    unit_keys = {
+        str(x.UNIT_KERJA_ID or "").strip(): _unit_sort_key(x)
+        for x in units
+    }
+    return sorted(
+        rows,
+        key=lambda book: (
+            unit_keys.get(
+                str(book.ID_UNIT_KERJA or "").strip(),
+                (1, str(book.ID_UNIT_KERJA or "").strip(), str(book.UNIT_KERJA_NAME or "").strip().upper()),
+            ),
+            str(book.JUDUL or "").strip().upper(),
+        ),
+    )
 
 
 def _find_book(book_id):
@@ -96,7 +131,7 @@ def buku_tamu():
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     next_month = (month_start.replace(day=28) + timedelta(days=4)).replace(day=1)
     year_start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
-    books = BukuTamu.query.order_by(BukuTamu.UNIT_KERJA_NAME.asc(), BukuTamu.JUDUL.asc()).all()
+    books = _sort_books_by_unit_code(BukuTamu.query.all())
 
     month_count = BukuTamuEntry.query.filter(
         BukuTamuEntry.SCANNED_DATE >= month_start,
@@ -260,7 +295,7 @@ def api_buku_tamu_save():
 
 
 def api_buku_tamu_list():
-    rows = BukuTamu.query.order_by(BukuTamu.UNIT_KERJA_NAME.asc(), BukuTamu.JUDUL.asc()).all()
+    rows = _sort_books_by_unit_code(BukuTamu.query.all())
     return jsonify({"status": "success", "data": [_book_payload(x) for x in rows]})
 
 
