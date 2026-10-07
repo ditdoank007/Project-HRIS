@@ -14,6 +14,8 @@ class AgendaRapatAttendance(db.Model):
     NAME = db.Column("NAME", db.String(150), nullable=True)
     NAME_RAW = db.Column("NAME_RAW", db.String(150), nullable=True)
     EMAIL = db.Column("EMAIL", db.String(255), nullable=True)
+    INSTANSI = db.Column("INSTANSI", db.String(255), nullable=True)
+    NO_HANDPHONE = db.Column("NO_HANDPHONE", db.String(50), nullable=True)
     SIGNATURE_PATH = db.Column("SIGNATURE_PATH", db.String(500), nullable=True)
     SCANNED_DATE = db.Column("SCANNED_DATE", db.DateTime, nullable=False, default=datetime.utcnow)
     METHOD = db.Column("METHOD", db.String(30), nullable=False, default="QR")
