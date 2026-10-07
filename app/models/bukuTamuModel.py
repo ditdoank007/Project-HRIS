@@ -27,9 +27,23 @@ class BukuTamuEntry(db.Model):
     INSTANSI = db.Column(db.String(150), nullable=False)
     NO_HP = db.Column(db.String(50), nullable=False)
     KEPERLUAN = db.Column(db.String(255), nullable=False)
+    KEPERLUAN_DETAIL = db.Column(db.String(255))
     KETERANGAN = db.Column(db.String(255))
     PEGAWAI_NIP = db.Column(db.String(30))
     PEGAWAI_NAMA = db.Column(db.String(150))
     TANDA_TANGAN_PATH = db.Column(db.String(500))
     CREATED_IP = db.Column(db.String(64))
     USER_AGENT = db.Column(db.String(500))
+
+
+class JenisKeperluan(db.Model):
+    __tablename__ = "MF_JENIS_KEPERLUAN"
+
+    ID = db.Column(db.BigInteger, primary_key=True, autoincrement=True)
+    NAMA_KEPERLUAN = db.Column(db.String(100), nullable=False, unique=True)
+    IS_AKTIF = db.Column(db.String(1), nullable=False, default="Y")
+    URUT = db.Column(db.Integer, nullable=False, default=0)
+    CREATED_BY = db.Column(db.String(50))
+    CREATED_DATE = db.Column(db.DateTime, nullable=False)
+    UPDATE_BY = db.Column(db.String(50))
+    UPDATE_DATE = db.Column(db.DateTime)
