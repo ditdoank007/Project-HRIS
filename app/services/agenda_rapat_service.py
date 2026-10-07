@@ -344,18 +344,30 @@ def record_guest_attendance(
     signature_data,
     attendance_key=None,
     nip_or_finger=None,
+    instansi=None,
+    no_handphone=None,
     method="QR_GUEST",
 ):
     _ensure_qr_open(event)
 
     name_raw = re.sub(r"\s+", " ", str(name or "").strip())
     email = str(email or "").strip()
+    instansi = str(instansi or "").strip() or None
+    no_handphone = str(no_handphone or "").strip() or None
     if not name_raw:
         raise ValueError("Nama lengkap wajib diisi.")
     if len(name_raw) > 150:
         raise ValueError("Nama lengkap terlalu panjang.")
     if not email or len(email) > 255 or "@" not in email:
         raise ValueError("Email wajib diisi dengan format yang valid.")
+    if not instansi:
+        raise ValueError("Instansi / Organisasi wajib diisi.")
+    if len(instansi) > 255:
+        raise ValueError("Instansi / Organisasi terlalu panjang.")
+    if not no_handphone:
+        raise ValueError("No. Handphone wajib diisi.")
+    if len(no_handphone) > 50:
+        raise ValueError("No. Handphone terlalu panjang.")
 
     attendance_key = str(attendance_key or uuid.uuid4().hex).strip()
     if not re.fullmatch(r"[A-Za-z0-9_-]{8,100}", attendance_key):
@@ -389,6 +401,8 @@ def record_guest_attendance(
         NAME=normalize_display_name(name_raw),
         NAME_RAW=name_raw,
         EMAIL=email,
+        INSTANSI=instansi,
+        NO_HANDPHONE=no_handphone,
         SIGNATURE_PATH=signature_path,
         SCANNED_DATE=now,
         METHOD=method,
