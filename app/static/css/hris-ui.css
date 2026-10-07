@@ -1405,13 +1405,15 @@ body {
   background: var(--ui-bg);
 }
 
+/* Mini sidebar: keep the layout width fixed.
+   Only labels collapse; the content area must not expand. */
 body.hris-sidebar-mini .hris-sidebar-v2 {
-  width: 76px;
+  width: 250px;
 }
 
 body.hris-sidebar-mini .hris-app-main {
-  width: calc(100% - 76px);
-  margin-left: 76px;
+  width: calc(100% - 250px);
+  margin-left: 250px;
 }
 
 body.hris-sidebar-mini .hris-sidebar-brand {
