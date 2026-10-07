@@ -1,0 +1,14 @@
+{% extends "layout/baseDashboard1.html" %}
+{% block title %}- Buat Buku Tamu{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/buku-tamu.css') }}">
+<div class="nxl-content bt-page"><div class="page-header"><div class="page-header-left d-flex align-items-center"><div class="page-header-title"><h5 class="m-b-10">AGENDA</h5></div><ul class="breadcrumb"><li class="breadcrumb-item"><a href="{{ url_for('main.view_agenda_buku_tamu') }}">Buku Tamu</a></li></ul><ul class="breadcrumb"><li class="breadcrumb-item active">Buat Buku Tamu</li></ul></div></div>
+<div class="main-content"><div class="container-fluid"><div class="bt-card card bt-form-card"><div class="card-header"><h6 class="mb-1"><i class="feather-book-open me-1"></i>Buat Buku Tamu</h6><small class="text-muted">Setiap Unit Kerja memiliki QR Code Buku Tamu permanen.</small></div><div class="card-body">
+<div class="mb-3"><label class="form-label">Judul <span class="text-danger">*</span></label><input id="judul" class="form-control" maxlength="150" placeholder="Contoh: BUKU TAMU USS Lamongan"></div>
+<div class="mb-4"><label class="form-label">Pilih Unit Kerja <span class="text-danger">*</span></label><select id="unit" class="form-select"><option value="">-- Pilih Unit Kerja --</option>{% for unit in units %}<option value="{{ unit.UNIT_KERJA_ID }}">{{ unit.NAMA_UNIT_KERJA }}</option>{% endfor %}</select></div>
+<div class="d-flex justify-content-end gap-2"><a href="{{ url_for('main.view_agenda_buku_tamu') }}" class="btn btn-light">Batal</a><button class="btn btn-primary" id="btnSimpan"><i class="feather-save me-1"></i>Simpan</button></div>
+</div></div></div></div></div>
+{% endblock %}
+{% block script %}<script>
+document.getElementById('btnSimpan').addEventListener('click',async()=>{const judul=document.getElementById('judul').value.trim(),unit=document.getElementById('unit').value;if(!judul||!unit)return alert('Judul dan Unit Kerja wajib diisi.');const b=document.getElementById('btnSimpan');b.disabled=true;try{const r=await fetch('/api/agenda/buku-tamu',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({judul,unit_kerja_id:unit})});const j=await r.json();if(j.status!=='success')throw new Error(j.message||'Gagal menyimpan.');window.location.href='/agenda/buku-tamu';}catch(e){alert(e.message);b.disabled=false;}});
+</script>{% endblock %}
