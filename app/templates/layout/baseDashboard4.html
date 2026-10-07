@@ -91,6 +91,16 @@
                     </li>
                     {% endif %}
 
+                    {% if is_administrator() or has_form_access('AGENDA_BUKU_TAMU') %}
+                    <li class="nxl-item">
+                        <a href="{{ url_for('main.view_agenda_buku_tamu') }}"
+                           class="nxl-link{% if request.endpoint == 'main.view_agenda_buku_tamu' %} active{% endif %}">
+                            <span class="nxl-micon"><i class="ti ti-book"></i></span>
+                            <span class="nxl-mtext">Buku Tamu</span>
+                        </a>
+                    </li>
+                    {% endif %}
+
                     {% if is_administrator() or has_form_access('SUMDA_KESAMAPTAAN') %}
                     <li class="nxl-item">
                         <a href="{{ url_for('main.view_kesamaptaan') }}"
