@@ -407,17 +407,16 @@ async function printQrPoster() {
         <div class="poster">
           <img src="${imageData}" alt="QR Code ${title}">
         </div>
-        <script>
-          window.onload = function () {
-            setTimeout(function () {
-              window.print();
-            }, 250);
-          };
-        </script>
       </body>
       </html>
     `);
     printWindow.document.close();
+    printWindow.onload = function () {
+      setTimeout(function () {
+        printWindow.focus();
+        printWindow.print();
+      }, 250);
+    };
   } catch (error) {
     alert('Gagal menyiapkan cetakan: ' + error.message);
   }
