@@ -3,44 +3,98 @@
 {% block content %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/hris-ui.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/buku-tamu.css') }}">
+
 <div class="hris-modern">
   <div class="hris-page">
     <div class="hris-page-header">
       <div>
         <h1 class="hris-page-title">Buku Tamu</h1>
-        <p class="hris-page-subtitle">Pengelolaan Buku Tamu dan QR Code permanen setiap Unit Kerja.</p>
+        <p class="hris-page-subtitle">Dashboard trafik kunjungan tamu Kantor SAR Surabaya.</p>
       </div>
       <a href="{{ url_for('main.view_agenda_buku_tamu_buat') }}" class="hris-btn hris-btn-primary">
         <i class="feather-plus"></i> Buat Buku Tamu
       </a>
     </div>
 
-    <div class="hris-hero">
-      <div>
-        <h2 class="hris-hero-title">Buku Tamu</h2>
-        <p class="hris-hero-text">Infografis kunjungan tamu Kantor SAR Surabaya.</p>
+    <div class="hris-grid hris-grid-4 bt-kpi-stack">
+      <div class="hris-card bt-kpi-card">
+        <div class="hris-card-body">
+          <div class="bt-kpi-label"><i class="feather-users"></i> Tamu Hari Ini</div>
+          <div class="bt-kpi-value">{{ today_count }}</div>
+          <div class="bt-kpi-note">Kunjungan hari ini</div>
+        </div>
+      </div>
+      <div class="hris-card bt-kpi-card">
+        <div class="hris-card-body">
+          <div class="bt-kpi-label"><i class="feather-calendar"></i> Bulan Berjalan</div>
+          <div class="bt-kpi-value">{{ month_count }}</div>
+          <div class="bt-kpi-note">{{ month_label }}</div>
+        </div>
+      </div>
+      <div class="hris-card bt-kpi-card">
+        <div class="hris-card-body">
+          <div class="bt-kpi-label"><i class="feather-bar-chart-2"></i> Tahun Berjalan</div>
+          <div class="bt-kpi-value">{{ year_count }}</div>
+          <div class="bt-kpi-note">Tahun {{ year }}</div>
+        </div>
+      </div>
+      <div class="hris-card bt-kpi-card">
+        <div class="hris-card-body">
+          <div class="bt-kpi-label"><i class="feather-book-open"></i> Buku Tamu Aktif</div>
+          <div class="bt-kpi-value">{{ active_books }}</div>
+          <div class="bt-kpi-note">QR Code permanen aktif</div>
+        </div>
       </div>
     </div>
 
-    <div class="hris-grid hris-grid-4" style="margin-bottom:16px;">
-      <div class="hris-card"><div class="hris-card-body">
-        <div class="hris-page-subtitle">Tamu Hari Ini</div>
-        <div class="hris-page-title" style="font-size:28px;margin-top:5px;">{{ today_count }}</div>
-      </div></div>
-      <div class="hris-card"><div class="hris-card-body">
-        <div class="hris-page-subtitle">Tamu Bulan Berjalan</div>
-        <div class="hris-page-title" style="font-size:28px;margin-top:5px;">{{ month_count }}</div>
-        <div class="hris-page-subtitle">{{ month_label }}</div>
-      </div></div>
-      <div class="hris-card"><div class="hris-card-body">
-        <div class="hris-page-subtitle">Tamu Tahun Berjalan</div>
-        <div class="hris-page-title" style="font-size:28px;margin-top:5px;">{{ year_count }}</div>
-        <div class="hris-page-subtitle">Tahun {{ year }}</div>
-      </div></div>
-      <div class="hris-card"><div class="hris-card-body">
-        <div class="hris-page-subtitle">Buku Tamu Aktif</div>
-        <div class="hris-page-title" style="font-size:28px;margin-top:5px;">{{ active_books }}</div>
-      </div></div>
+    <div class="hris-card bt-period-card">
+      <div class="hris-card-header">
+        <div>
+          <h3 class="hris-card-title">Trafik Tamu</h3>
+          <div class="hris-page-subtitle">Pilih bulan untuk melihat jumlah kunjungan tamu per hari.</div>
+        </div>
+        <strong id="periodTotal" class="bt-period-total">0 tamu</strong>
+      </div>
+      <div class="hris-card-body">
+        <div class="bt-period-filter">
+          <div class="hris-field">
+            <label class="hris-label" for="statMonth">Bulan</label>
+            <select id="statMonth" class="hris-select">
+              {% for m in range(1, 13) %}
+              <option value="{{ m }}" {% if m == month_number %}selected{% endif %}>{{ month_names[m] }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="hris-field bt-year-field">
+            <label class="hris-label" for="statYear">Tahun</label>
+            <input id="statYear" class="hris-input" type="number" min="2020" max="2100" value="{{ year }}">
+          </div>
+          <div class="hris-field bt-unit-field">
+            <label class="hris-label" for="statUnit">Unit Kerja</label>
+            <select id="statUnit" class="hris-select">
+              <option value="">Semua Unit Kerja</option>
+              {% for unit in units %}
+              <option value="{{ unit.UNIT_KERJA_ID }}">{{ unit.NAMA_UNIT_KERJA }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <button type="button" class="hris-btn hris-btn-primary bt-period-btn" id="btnStat">
+            <i class="feather-search"></i> Tampilkan
+          </button>
+        </div>
+
+        <div class="bt-period-summary" id="periodSummary">
+          <div><span>Total Kunjungan</span><strong id="summaryTotal">0</strong></div>
+          <div><span>Hari Tertinggi</span><strong id="summaryPeak">-</strong></div>
+          <div><span>Rata-rata / Hari</span><strong id="summaryAverage">0</strong></div>
+        </div>
+
+        <div class="bt-traffic-wrap">
+          <div id="trafficChart" class="bt-traffic-chart">
+            <div class="hris-loading">Memuat trafik tamu...</div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="hris-card">
@@ -49,7 +103,9 @@
           <h3 class="hris-card-title">Buku Tamu Unit Kerja</h3>
           <div class="hris-page-subtitle">QR Code permanen yang telah dibuat.</div>
         </div>
-        <a href="{{ url_for('main.view_agenda_buku_tamu_rekap') }}" class="hris-btn hris-btn-secondary">Rekap Buku Tamu</a>
+        <a href="{{ url_for('main.view_agenda_buku_tamu_rekap') }}" class="hris-btn hris-btn-secondary">
+          <i class="feather-list"></i> Rekap Buku Tamu
+        </a>
       </div>
       <div class="hris-table-wrap">
         <table class="hris-table-modern">
@@ -72,6 +128,7 @@
     </div>
   </div>
 </div>
+
 <div class="modal fade bt-modal-preview" id="modalPreview" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
     <div class="modal-header"><h5 class="modal-title">Preview Buku Tamu</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
@@ -80,6 +137,78 @@
   </div></div>
 </div>
 {% endblock %}
-{% block script %}<script>
-async function previewBook(id){const r=await fetch('/api/agenda/buku-tamu/'+id+'/preview');const j=await r.json();if(j.status!=='success')return alert(j.message||'Gagal memuat preview.');document.getElementById('pvJudul').textContent=j.data.judul;document.getElementById('pvUnit').textContent=j.data.unit_kerja;document.getElementById('pvQr').src='/api/agenda/buku-tamu/'+id+'/qr?ts='+Date.now();new bootstrap.Modal(document.getElementById('modalPreview')).show();}
-</script>{% endblock %}
+
+{% block script %}
+<script>
+(function () {
+  const monthNames = {{ month_names|tojson }};
+  const chart = document.getElementById('trafficChart');
+
+  async function loadTraffic() {
+    const month = document.getElementById('statMonth').value;
+    const year = document.getElementById('statYear').value;
+    const unit = document.getElementById('statUnit').value;
+    chart.innerHTML = '<div class="hris-loading">Memuat trafik tamu...</div>';
+
+    try {
+      const url = '/api/agenda/buku-tamu/rekap?year=' + encodeURIComponent(year)
+        + '&month=' + encodeURIComponent(month)
+        + '&unit_kerja_id=' + encodeURIComponent(unit);
+      const response = await fetch(url);
+      const result = await response.json();
+      if (result.status !== 'success') throw new Error(result.message || 'Gagal memuat trafik.');
+
+      const counts = {};
+      result.data.forEach(function (row) {
+        const day = String(row.tanggal || '').slice(0, 2);
+        counts[day] = (counts[day] || 0) + 1;
+      });
+
+      const daysInMonth = new Date(Number(year), Number(month), 0).getDate();
+      const values = [];
+      for (let day = 1; day <= daysInMonth; day++) {
+        const key = String(day).padStart(2, '0');
+        values.push({ day: day, count: counts[key] || 0 });
+      }
+
+      const total = result.total || 0;
+      const peak = values.reduce(function (a, b) { return b.count > a.count ? b : a; }, {day: 0, count: 0});
+      const average = daysInMonth ? (total / daysInMonth).toFixed(1) : '0.0';
+
+      document.getElementById('periodTotal').textContent = total + ' tamu';
+      document.getElementById('summaryTotal').textContent = total;
+      document.getElementById('summaryPeak').textContent = peak.count ? ('Tgl ' + peak.day + ' · ' + peak.count) : '-';
+      document.getElementById('summaryAverage').textContent = average;
+
+      const max = Math.max.apply(null, values.map(function (x) { return x.count; }).concat([1]));
+      chart.innerHTML = values.map(function (item) {
+        const height = Math.max(4, Math.round((item.count / max) * 100));
+        return '<div class="bt-traffic-item" title="Tanggal ' + item.day + ': ' + item.count + ' tamu">'
+          + '<div class="bt-traffic-value">' + (item.count || '') + '</div>'
+          + '<div class="bt-traffic-bar"><span style="height:' + height + '%"></span></div>'
+          + '<div class="bt-traffic-day">' + item.day + '</div>'
+          + '</div>';
+      }).join('');
+    } catch (error) {
+      chart.innerHTML = '<div class="hris-empty">Gagal memuat trafik: ' + error.message + '</div>';
+    }
+  }
+
+  document.getElementById('btnStat').addEventListener('click', loadTraffic);
+  document.getElementById('statMonth').addEventListener('change', loadTraffic);
+  document.getElementById('statYear').addEventListener('change', loadTraffic);
+  document.getElementById('statUnit').addEventListener('change', loadTraffic);
+  loadTraffic();
+})();
+
+async function previewBook(id) {
+  const r = await fetch('/api/agenda/buku-tamu/' + id + '/preview');
+  const j = await r.json();
+  if (j.status !== 'success') return alert(j.message || 'Gagal memuat preview.');
+  document.getElementById('pvJudul').textContent = j.data.judul;
+  document.getElementById('pvUnit').textContent = j.data.unit_kerja;
+  document.getElementById('pvQr').src = '/api/agenda/buku-tamu/' + id + '/qr?ts=' + Date.now();
+  new bootstrap.Modal(document.getElementById('modalPreview')).show();
+}
+</script>
+{% endblock %}
