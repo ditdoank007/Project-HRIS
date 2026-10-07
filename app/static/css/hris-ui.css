@@ -4020,3 +4020,96 @@ body.hris-sidebar-mini .hris-submenu {
 .hris-participant-table td:last-child {
   white-space: nowrap;
 }
+
+
+/* ============================================================
+   AGENDA SIDEBAR — GLOBAL UI STANDARD
+   ============================================================ */
+.hris-agenda-shell .nxl-navigation {
+  background: var(--ui-brand);
+}
+.hris-agenda-shell .nxl-navbar {
+  padding: 10px 10px 24px;
+}
+.hris-agenda-shell .nxl-item > .nxl-link {
+  min-height: 40px;
+  padding: 8px 10px;
+  gap: 9px;
+  border-radius: 9px;
+  color: rgba(255,255,255,.92);
+  font-size: 12px;
+  font-weight: 600;
+}
+.hris-agenda-shell .nxl-item > .nxl-link:hover {
+  color: #fff;
+  background: rgba(255,255,255,.12);
+}
+.hris-agenda-shell .nxl-micon {
+  width: 22px;
+  min-width: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+.hris-agenda-shell .nxl-mtext {
+  flex: 1;
+  min-width: 0;
+}
+.hris-agenda-shell .nxl-hasmenu > .nxl-link.hris-active,
+.hris-agenda-shell .nxl-hasmenu.hris-active > .nxl-link {
+  color: var(--ui-brand-dark);
+  background: #fff;
+  font-weight: 700;
+}
+.hris-agenda-shell .nxl-hasmenu.hris-active > .nxl-link .nxl-micon,
+.hris-agenda-shell .nxl-hasmenu.hris-active > .nxl-link .nxl-mtext {
+  color: var(--ui-brand-dark);
+}
+.hris-agenda-shell .nxl-submenu {
+  display: none;
+  margin: 3px 0 7px;
+  padding: 4px 0 4px 38px;
+  list-style: none;
+}
+.hris-agenda-shell .nxl-hasmenu.hris-active > .nxl-submenu,
+.hris-agenda-shell .nxl-hasmenu.menu-open > .nxl-submenu {
+  display: block;
+}
+.hris-agenda-shell .nxl-submenu .nxl-link {
+  min-height: 34px;
+  padding: 7px 10px;
+  gap: 8px;
+  border-radius: 8px;
+  color: rgba(255,255,255,.82);
+  font-size: 11px;
+  font-weight: 600;
+}
+.hris-agenda-shell .nxl-submenu .nxl-micon {
+  width: 20px;
+  min-width: 20px;
+  font-size: 14px;
+  text-align: center;
+}
+.hris-agenda-shell .nxl-submenu .nxl-link:hover {
+  color: #fff;
+  background: rgba(255,255,255,.10);
+}
+.hris-agenda-shell .nxl-submenu .nxl-link.active {
+  color: var(--ui-brand-dark);
+  background: rgba(255,255,255,.92);
+  font-weight: 700;
+}
+.hris-agenda-shell .nxl-arrow {
+  margin-left: auto;
+  transition: transform .15s ease;
+}
+.hris-agenda-shell .custom-nav-header .nav-separator {
+  margin-left: 0;
+  margin-right: 0;
+}
+@media (max-width: 900px) {
+  .hris-agenda-shell .nxl-submenu {
+    padding-left: 32px;
+  }
+}
