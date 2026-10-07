@@ -4638,3 +4638,35 @@ body.modal-open .modal-backdrop.show {
     margin-bottom: 6px;
   }
 }
+
+
+/* ============================================================
+   HRIS REBORN — MODAL BACKDROP COMPATIBILITY
+   ============================================================ */
+/*
+ * baseDashboard4.html loads the legacy Dashboard theme/bootstrap.
+ * theme.min.css explicitly blurs the whole application shell whenever
+ * body.modal-open is present:
+ *   body.modal-open .nxl-container,
+ *   body.modal-open .nxl-header,
+ *   body.modal-open .nxl-navigation,
+ *   body.modal-open .page-header { filter: blur(3px); }
+ *
+ * Buku Tamu uses the HRIS Reborn modal style, so the legacy shell blur
+ * must be disabled. The backdrop itself provides the visual dimming.
+ */
+body.modal-open .nxl-container,
+body.modal-open .nxl-header,
+body.modal-open .nxl-navigation,
+body.modal-open .page-header {
+  filter: none !important;
+  -webkit-filter: none !important;
+  transition: none !important;
+}
+
+body.modal-open .modal-backdrop {
+  opacity: .48 !important;
+  background-color: #0f172a !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+}
