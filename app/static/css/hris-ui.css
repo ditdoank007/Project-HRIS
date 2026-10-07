@@ -4568,3 +4568,73 @@ body.modal-open .modal-backdrop.show {
   background: #f8fafc !important;
   padding: 22px !important;
 }
+
+
+/* ============================================================
+   BUKU TAMU — MODAL PREVIEW STANDARD
+   ============================================================ */
+.bt-modal-preview {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+.bt-modal-preview .modal-dialog,
+.bt-modal-preview .modal-content,
+.bt-modal-preview .modal-header,
+.bt-modal-preview .modal-body,
+.bt-modal-preview .modal-footer,
+.bt-modal-preview .bt-print,
+.bt-modal-preview .bt-print * {
+  filter: none !important;
+  opacity: 1 !important;
+}
+.bt-modal-preview .modal-content {
+  background: #fff !important;
+  border: 0 !important;
+  border-radius: 16px !important;
+  box-shadow: 0 24px 70px rgba(15,23,42,.28) !important;
+}
+.bt-modal-preview .modal-body {
+  background: #f8fafc !important;
+}
+.bt-modal-preview .bt-print {
+  background: #fff !important;
+}
+body.modal-open .modal-backdrop.show {
+  opacity: .48 !important;
+  background: #0f172a !important;
+  backdrop-filter: blur(2px) !important;
+  -webkit-backdrop-filter: blur(2px) !important;
+}
+.bt-modal-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 3px;
+  color: var(--ui-brand);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .06em;
+}
+.bt-modal-footer-note {
+  margin-right: auto;
+  color: var(--ui-muted);
+  font-size: 10px;
+}
+.bt-modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+@media (max-width: 700px) {
+  .bt-modal-preview .modal-dialog {
+    margin: 10px !important;
+  }
+  .bt-modal-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .bt-modal-footer-note {
+    width: 100%;
+    margin-bottom: 6px;
+  }
+}
