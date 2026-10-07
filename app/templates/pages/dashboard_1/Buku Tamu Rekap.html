@@ -1,0 +1,23 @@
+{% extends "layout/baseDashboard1.html" %}
+{% block title %}- Rekap Buku Tamu{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/buku-tamu.css') }}">
+<div class="nxl-content bt-page"><div class="page-header"><div class="page-header-left d-flex align-items-center"><div class="page-header-title"><h5 class="m-b-10">AGENDA</h5></div><ul class="breadcrumb"><li class="breadcrumb-item"><a href="{{ url_for('main.view_agenda_buku_tamu') }}">Buku Tamu</a></li></ul><ul class="breadcrumb"><li class="breadcrumb-item active">Rekap Buku Tamu</li></ul></div></div>
+<div class="main-content"><div class="container-fluid">
+<div class="bt-card card mb-3"><div class="card-body"><div class="bt-rekap-toolbar row g-2 align-items-end">
+<div class="col-12 col-md-3"><label class="form-label">Bulan</label><select id="bulan" class="form-select"><option value="1">Januari</option><option value="2">Februari</option><option value="3">Maret</option><option value="4">April</option><option value="5">Mei</option><option value="6">Juni</option><option value="7">Juli</option><option value="8">Agustus</option><option value="9">September</option><option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option></select></div>
+<div class="col-12 col-md-2"><label class="form-label">Tahun</label><input id="tahun" type="number" class="form-control" value="{{ year }}" min="2020" max="2100"></div>
+<div class="col-12 col-md-4"><label class="form-label">Unit Kerja</label><select id="unit" class="form-select"><option value="">-- Pilih Unit Kerja --</option>{% for unit in units %}<option value="{{ unit.UNIT_KERJA_ID }}">{{ unit.NAMA_UNIT_KERJA }}</option>{% endfor %}</select></div>
+<div class="col-12 col-md-3 d-flex gap-2"><button class="btn btn-primary flex-fill" id="btnPreview"><i class="feather-eye me-1"></i>Preview</button><button class="btn btn-danger flex-fill" id="btnPdf"><i class="feather-file-text me-1"></i>Ekspor Buku Tamu</button></div>
+</div></div></div>
+<div class="bt-card card"><div class="card-header d-flex justify-content-between align-items-center"><div><h6 class="mb-1">Rekap Buku Tamu</h6><small id="previewLabel" class="text-muted">Pilih periode dan Unit Kerja lalu klik Preview.</small></div><strong id="total" class="text-primary">0 tamu</strong></div>
+<div class="card-body p-0"><div class="table-responsive"><table class="table table-hover mb-0 bt-table"><thead><tr><th class="ps-3">No</th><th>Tanggal</th><th>Jam</th><th>Nama Lengkap</th><th>Instansi / Organisasi</th><th>No. HP</th><th>Keperluan</th><th>Bertemu</th><th>Keterangan</th></tr></thead><tbody id="body"><tr><td colspan="9" class="bt-empty">Belum ada preview.</td></tr></tbody></table></div></div></div>
+</div></div></div>
+{% endblock %}
+{% block script %}<script>
+document.getElementById('bulan').value='{{ month }}';
+async function loadPreview(){const unit=document.getElementById('unit').value;if(!unit)return alert('Pilih Unit Kerja terlebih dahulu.');const y=document.getElementById('tahun').value,m=document.getElementById('bulan').value;const r=await fetch('/api/agenda/buku-tamu/rekap?year='+encodeURIComponent(y)+'&month='+encodeURIComponent(m)+'&unit_kerja_id='+encodeURIComponent(unit));const j=await r.json();if(j.status!=='success')return alert(j.message||'Gagal memuat rekap.');document.getElementById('total').textContent=j.total+' tamu';document.getElementById('previewLabel').textContent='Preview Buku Tamu · '+document.getElementById('unit').selectedOptions[0].text+' · '+String(m).padStart(2,'0')+'-'+y;const body=document.getElementById('body');if(!j.data.length){body.innerHTML='<tr><td colspan="9" class="bt-empty">Tidak ada tamu pada periode tersebut.</td></tr>';return;}body.innerHTML=j.data.map((x,i)=>'<tr><td class="ps-3">'+(i+1)+'</td><td>'+x.tanggal+'</td><td>'+x.jam+'</td><td><strong>'+esc(x.nama)+'</strong></td><td>'+esc(x.instansi)+'</td><td>'+esc(x.no_hp)+'</td><td>'+esc(x.keperluan)+'</td><td>'+esc(x.pegawai||'-')+'</td><td>'+esc(x.keterangan||'-')+'</td></tr>').join('');}
+function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
+document.getElementById('btnPreview').addEventListener('click',loadPreview);
+document.getElementById('btnPdf').addEventListener('click',()=>{const unit=document.getElementById('unit').value;if(!unit)return alert('Pilih Unit Kerja terlebih dahulu.');const y=document.getElementById('tahun').value,m=document.getElementById('bulan').value;window.location.href='/api/agenda/buku-tamu/export-pdf?year='+encodeURIComponent(y)+'&month='+encodeURIComponent(m)+'&unit_kerja_id='+encodeURIComponent(unit);});
+</script>{% endblock %}
