@@ -92,12 +92,27 @@
                     {% endif %}
 
                     {% if is_administrator() or has_form_access('AGENDA_BUKU_TAMU') %}
-                    <li class="nxl-item">
+                    <li class="nxl-item nxl-hasmenu{% if request.endpoint in ['main.view_agenda_buku_tamu', 'main.view_agenda_buku_tamu_buat', 'main.view_agenda_buku_tamu_rekap'] %} hris-active{% endif %}">
                         <a href="{{ url_for('main.view_agenda_buku_tamu') }}"
                            class="nxl-link{% if request.endpoint == 'main.view_agenda_buku_tamu' %} active{% endif %}">
                             <span class="nxl-micon"><i class="ti ti-book"></i></span>
                             <span class="nxl-mtext">Buku Tamu</span>
+                            <span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
                         </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item">
+                                <a href="{{ url_for('main.view_agenda_buku_tamu_buat') }}"
+                                   class="nxl-link{% if request.endpoint == 'main.view_agenda_buku_tamu_buat' %} active{% endif %}">
+                                    <span class="nxl-mtext">Buat Buku Tamu</span>
+                                </a>
+                            </li>
+                            <li class="nxl-item">
+                                <a href="{{ url_for('main.view_agenda_buku_tamu_rekap') }}"
+                                   class="nxl-link{% if request.endpoint == 'main.view_agenda_buku_tamu_rekap' %} active{% endif %}">
+                                    <span class="nxl-mtext">Rekap Buku Tamu</span>
+                                </a>
+                            </li>
+                        </ul>
                     </li>
                     {% endif %}
 
