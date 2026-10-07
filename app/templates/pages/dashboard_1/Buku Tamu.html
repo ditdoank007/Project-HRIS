@@ -125,11 +125,28 @@
   </div>
 </div>
 
-<div class="modal fade bt-modal-preview" id="modalPreview" tabindex="-1">
+<div class="modal fade bt-modal-preview" id="modalPreview" tabindex="-1" aria-labelledby="modalPreviewLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
-    <div class="modal-header"><h5 class="modal-title">Preview Buku Tamu</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-header">
+      <div>
+        <div class="bt-modal-eyebrow"><i class="ti ti-qrcode"></i> QR CODE PERMANEN</div>
+        <h5 class="modal-title" id="modalPreviewLabel">Preview Buku Tamu</h5>
+      </div>
+      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+    </div>
     <div class="modal-body"><div id="printBook" class="bt-print"><div class="small text-muted mb-2">BUKU TAMU</div><h1 id="pvJudul">-</h1><h2>Unit Kerja : <span id="pvUnit">-</span></h2><img id="pvQr" src="" alt="QR Code Buku Tamu"><div class="hint">Silahkan Scan menggunakan kamera handphone dan klik tautan untuk mengisi Buku Tamu<br><br>- Terima kasih -</div></div></div>
-    <div class="modal-footer"><button class="btn btn-light" onclick="window.print()">Cetak</button><button class="btn btn-primary" data-bs-dismiss="modal">Tutup</button></div>
+    <div class="modal-footer">
+      <div class="bt-modal-footer-note"><i class="ti ti-info-circle"></i> QR Code permanen — simpan/cetak dan tempel di lobby Unit Kerja.</div>
+      <div class="bt-modal-actions">
+        <a id="btnDownloadQr" class="hris-btn hris-btn-primary" href="#" download>
+          <i class="feather-download"></i> DOWNLOAD QR CODE
+        </a>
+        <button type="button" class="hris-btn hris-btn-secondary" onclick="window.print()">
+          <i class="feather-printer"></i> CETAK
+        </button>
+        <button type="button" class="hris-btn hris-btn-secondary" data-bs-dismiss="modal">Tutup</button>
+      </div>
+    </div>
   </div></div>
 </div>
 {% endblock %}
@@ -219,7 +236,11 @@ async function previewBook(id) {
   if (j.status !== 'success') return alert(j.message || 'Gagal memuat preview.');
   document.getElementById('pvJudul').textContent = j.data.judul;
   document.getElementById('pvUnit').textContent = j.data.unit_kerja;
-  document.getElementById('pvQr').src = '/api/agenda/buku-tamu/' + id + '/qr?ts=' + Date.now();
+  const qrUrl = '/api/agenda/buku-tamu/' + id + '/qr';
+  document.getElementById('pvQr').src = qrUrl + '?ts=' + Date.now();
+  const download = document.getElementById('btnDownloadQr');
+  download.href = qrUrl + '?download=1';
+  download.setAttribute('download', 'qr-buku-tamu-' + String(j.data.unit_kerja || 'unit').toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.png');
   new bootstrap.Modal(document.getElementById('modalPreview')).show();
 }
 </script>
