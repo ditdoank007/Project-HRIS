@@ -1,0 +1,77 @@
+{% extends "layout/baseDashboard4.html" %}
+{% block title %}- Jenis Keperluan Buku Tamu{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/hris-ui.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/buku-tamu.css') }}">
+<div class="hris-modern">
+  <div class="hris-page">
+    <div class="hris-page-header">
+      <div>
+        <h1 class="hris-page-title">Jenis Keperluan</h1>
+        <p class="hris-page-subtitle">Kelola jenis keperluan yang tampil pada form Buku Tamu dan digunakan untuk statistik kunjungan.</p>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <a href="{{ url_for('main.view_agenda_buku_tamu') }}" class="hris-btn hris-btn-secondary"><i class="feather-arrow-left"></i> Buku Tamu</a>
+        <button class="hris-btn hris-btn-primary" id="btnTambah"><i class="feather-plus"></i> Tambah Jenis</button>
+      </div>
+    </div>
+
+    <div class="hris-card" id="formCard" style="display:none;margin-bottom:16px;">
+      <div class="hris-card-header"><div><h3 class="hris-card-title" id="formTitle">Tambah Jenis Keperluan</h3><div class="hris-page-subtitle">Lainnya wajib tetap aktif sebagai fallback input manual tamu.</div></div></div>
+      <div class="hris-card-body">
+        <div class="hris-form-grid">
+          <div class="hris-field">
+            <label class="hris-label">Nama Jenis Keperluan <span class="text-danger">*</span></label>
+            <input id="nama" class="hris-input" maxlength="100" placeholder="Contoh: Konsultasi">
+          </div>
+          <div class="hris-field">
+            <label class="hris-label">Urutan</label>
+            <input id="urut" class="hris-input" type="number" min="0" value="10">
+          </div>
+        </div>
+        <div class="hris-form-actions">
+          <button class="hris-btn hris-btn-secondary" id="btnBatal">Batal</button>
+          <button class="hris-btn hris-btn-primary" id="btnSimpan"><i class="feather-save"></i> Simpan</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="hris-card">
+      <div class="hris-card-header">
+        <div><h3 class="hris-card-title">Master Jenis Keperluan</h3><div class="hris-page-subtitle">Jenis aktif akan langsung tersedia di Buku Tamu publik.</div></div>
+        <strong id="total" style="color:var(--ui-brand-dark);">0 jenis</strong>
+      </div>
+      <div class="hris-table-wrap">
+        <table class="hris-table-modern">
+          <thead><tr><th>No</th><th>Jenis Keperluan</th><th>Urutan</th><th>Status</th><th>Aksi</th></tr></thead>
+          <tbody id="body"><tr><td colspan="5" class="hris-empty">Memuat data...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block script %}
+<script>
+(function(){
+  let editId=0;
+  const formCard=document.getElementById('formCard'), nama=document.getElementById('nama'), urut=document.getElementById('urut');
+  function resetForm(){editId=0;nama.value='';urut.value='10';document.getElementById('formTitle').textContent='Tambah Jenis Keperluan';formCard.style.display='none';}
+  function showForm(row){editId=row?row.id:0;nama.value=row?row.nama:'';urut.value=row?row.urut:10;document.getElementById('formTitle').textContent=row?'Edit Jenis Keperluan':'Tambah Jenis Keperluan';formCard.style.display='block';nama.focus();}
+  async function load(){
+    const r=await fetch('/api/agenda/buku-tamu/jenis-keperluan');const j=await r.json();
+    if(j.status!=='success')return alert(j.message||'Gagal memuat master keperluan.');
+    const rows=j.data||[];document.getElementById('total').textContent=rows.length+' jenis';
+    document.getElementById('body').innerHTML=rows.length?rows.map((x,i)=>'<tr><td>'+(i+1)+'</td><td><strong>'+esc(x.nama)+'</strong></td><td>'+x.urut+'</td><td>'+(x.aktif?'<span class="hris-badge-modern hris-badge-success">AKTIF</span>':'<span class="hris-badge-modern hris-badge-danger">NONAKTIF</span>')+'</td><td style="display:flex;gap:6px;"><button class="hris-btn hris-btn-secondary" onclick="editJenis('+x.id+')"><i class="feather-edit-2"></i> Edit</button>'+(x.nama.toLowerCase()==='lainnya'?'':'<button class="hris-btn '+(x.aktif?'hris-btn-danger':'hris-btn-primary')+'" onclick="toggleJenis('+x.id+','+(x.aktif?'false':'true')+')">'+(x.aktif?'Nonaktifkan':'Aktifkan')+'</button>')+'</td></tr>').join(''):'<tr><td colspan="5" class="hris-empty">Belum ada Jenis Keperluan.</td></tr>';
+    window.jenisRows=rows;
+  }
+  window.editJenis=function(id){showForm((window.jenisRows||[]).find(x=>x.id===id));};
+  window.toggleJenis=async function(id,aktif){const r=await fetch('/api/agenda/buku-tamu/jenis-keperluan/'+id+'/toggle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({aktif:aktif?'Y':'N'})});const j=await r.json();if(j.status!=='success')return alert(j.message||'Gagal mengubah status.');load();};
+  document.getElementById('btnTambah').onclick=()=>showForm(null);
+  document.getElementById('btnBatal').onclick=resetForm;
+  document.getElementById('btnSimpan').onclick=async function(){const n=nama.value.trim();if(!n)return alert('Nama Jenis Keperluan wajib diisi.');const b=this;b.disabled=true;try{const r=await fetch('/api/agenda/buku-tamu/jenis-keperluan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:editId||null,nama:n,urut:Number(urut.value||0)})});const j=await r.json();if(j.status!=='success')throw new Error(j.message||'Gagal menyimpan.');resetForm();load();}catch(e){alert(e.message);}finally{b.disabled=false;}};
+  function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]);}
+  load();
+})();
+</script>
+{% endblock %}
