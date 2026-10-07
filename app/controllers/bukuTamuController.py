@@ -311,6 +311,7 @@ def api_buku_tamu_rekap():
         return jsonify({"status": "error", "message": "Periode tidak valid."}), 400
 
     unit_id = str(request.args.get("unit_kerja_id") or "").strip()
+    keperluan = str(request.args.get("keperluan") or "").strip()
     start = datetime(year, month, 1)
     end = datetime(year + 1, 1, 1) if month == 12 else datetime(year, month + 1, 1)
 
@@ -322,6 +323,8 @@ def api_buku_tamu_rekap():
     )
     if unit_id:
         query = query.filter(BukuTamu.ID_UNIT_KERJA == unit_id)
+    if keperluan:
+        query = query.filter(BukuTamuEntry.KEPERLUAN == keperluan)
 
     rows = query.order_by(BukuTamuEntry.SCANNED_DATE.asc(), BukuTamuEntry.ID.asc()).all()
     data = []
@@ -334,12 +337,34 @@ def api_buku_tamu_rekap():
             "instansi": entry.INSTANSI,
             "no_hp": entry.NO_HP,
             "keperluan": entry.KEPERLUAN,
+            "keperluan_detail": entry.KEPERLUAN_DETAIL or "",
             "keterangan": entry.KETERANGAN or "",
             "pegawai": entry.PEGAWAI_NAMA or "",
             "unit_kerja": book.UNIT_KERJA_NAME,
             "judul": book.JUDUL,
         })
-    return jsonify({"status": "success", "data": data, "total": len(data)})
+    stats_query = db.session.query(
+        BukuTamuEntry.KEPERLUAN, db.func.count(BukuTamuEntry.ID)
+    ).join(
+        BukuTamu, BukuTamu.ID == BukuTamuEntry.BUKU_TAMU_ID
+    ).filter(
+        BukuTamuEntry.SCANNED_DATE >= start,
+        BukuTamuEntry.SCANNED_DATE < end,
+    )
+    if unit_id:
+        stats_query = stats_query.filter(BukuTamu.ID_UNIT_KERJA == unit_id)
+    stats_rows = stats_query.group_by(BukuTamuEntry.KEPERLUAN).all()
+    stats_map = {str(name): int(total) for name, total in stats_rows}
+    keperluan_stats = [
+        {"nama": x.NAMA_KEPERLUAN, "total": stats_map.get(x.NAMA_KEPERLUAN, 0)}
+        for x in _active_keperluan()
+    ]
+    return jsonify({
+        "status": "success",
+        "data": data,
+        "total": len(data),
+        "keperluan_stats": keperluan_stats,
+    })
 
 
 def _safe_filename(value):
@@ -361,6 +386,7 @@ def export_buku_tamu_pdf():
         return jsonify({"status": "error", "message": "Periode tidak valid."}), 400
 
     unit_id = str(request.args.get("unit_kerja_id") or "").strip()
+    keperluan = str(request.args.get("keperluan") or "").strip()
     if not unit_id:
         return jsonify({"status": "error", "message": "Unit Kerja wajib dipilih untuk ekspor PDF."}), 400
 
@@ -370,13 +396,16 @@ def export_buku_tamu_pdf():
 
     start = datetime(year, month, 1)
     end = datetime(year + 1, 1, 1) if month == 12 else datetime(year, month + 1, 1)
-    rows = db.session.query(BukuTamuEntry, BukuTamu).join(
+    query = db.session.query(BukuTamuEntry, BukuTamu).join(
         BukuTamu, BukuTamu.ID == BukuTamuEntry.BUKU_TAMU_ID
     ).filter(
         BukuTamuEntry.SCANNED_DATE >= start,
         BukuTamuEntry.SCANNED_DATE < end,
         BukuTamu.ID_UNIT_KERJA == unit_id,
-    ).order_by(BukuTamuEntry.SCANNED_DATE.asc(), BukuTamuEntry.ID.asc()).all()
+    )
+    if keperluan:
+        query = query.filter(BukuTamuEntry.KEPERLUAN == keperluan)
+    rows = query.order_by(BukuTamuEntry.SCANNED_DATE.asc(), BukuTamuEntry.ID.asc()).all()
 
     safe_unit = _safe_filename(unit.NAMA_UNIT_KERJA or unit_id)
     filename = f"buku-tamu-{safe_unit}-{year}-{month:02d}.pdf"
@@ -423,7 +452,11 @@ def export_buku_tamu_pdf():
             Paragraph(entry.NAMA_LENGKAP or "-", styles["BTCell"]),
             Paragraph(entry.INSTANSI or "-", styles["BTCell"]),
             Paragraph(entry.NO_HP or "-", styles["BTCell"]),
-            Paragraph(entry.KEPERLUAN or "-", styles["BTCell"]),
+            Paragraph(
+                (entry.KEPERLUAN or "-") +
+                (f" — {entry.KEPERLUAN_DETAIL}" if entry.KEPERLUAN_DETAIL else ""),
+                styles["BTCell"],
+            ),
             Paragraph(entry.KETERANGAN or "-", styles["BTCell"]),
             Paragraph(entry.PEGAWAI_NAMA or "-", styles["BTCell"]),
             (
@@ -492,6 +525,11 @@ def _validate_public_payload(payload):
     for key, label in fields.items():
         if not str(payload.get(key) or "").strip():
             return f"{label} wajib diisi."
+    keperluan = str(payload.get("keperluan") or "").strip()
+    if not _find_active_keperluan(keperluan):
+        return "Jenis Keperluan tidak valid atau sudah tidak aktif."
+    if _is_lainnya(keperluan) and not str(payload.get("keperluan_detail") or "").strip():
+        return "Detail Keperluan wajib diisi jika memilih Lainnya."
     return None
 
 
@@ -581,7 +619,8 @@ def api_buku_tamu_internal_submit():
             NAMA_LENGKAP=str(payload["nama"]).strip()[:150],
             INSTANSI=str(payload["instansi"]).strip()[:150],
             NO_HP=str(payload["no_hp"]).strip()[:50],
-            KEPERLUAN=str(payload["keperluan"]).strip()[:255],
+            KEPERLUAN=keperluan,
+            KEPERLUAN_DETAIL=keperluan_detail,
             KETERANGAN=keterangan,
             PEGAWAI_NIP=nip,
             PEGAWAI_NAMA=nama_pegawai,
