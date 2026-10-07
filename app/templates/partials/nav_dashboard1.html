@@ -442,45 +442,6 @@
                 </li>
                 {% endif %}
 
-                {% if is_administrator() or has_form_access('AGENDA_RAPAT') or has_form_access('AGENDA_DISPOSISI') or has_form_access('AGENDA_BUKU_TAMU') %}
-                <li class="nxl-item nxl-hasmenu">
-                    <a href="javascript:void(0);" class="nxl-link">
-                        <span class="nxl-micon"><i class="feather-calendar"></i></span>
-                        <span class="nxl-mtext">AGENDA</span><span class="nxl-arrow"><i
-                                class="feather-chevron-right"></i></span>
-                    </a>
-                    <ul class="nxl-submenu">
-                        {% if is_administrator() or has_form_access('AGENDA_RAPAT') %}
-                        <li class="nxl-item">
-                            <a class="nxl-link" href="{{ url_for('main.view_agenda_rapat') }}">
-                                <span class="nxl-micon"><i class="feather-users"></i></span>
-                                <span class="nxl-mtext">Rapat</span>
-                            </a>
-                        </li>
-                        {% endif %}
-                        {% if is_administrator() or has_form_access('AGENDA_DISPOSISI') %}
-                        <li class="nxl-item">
-                            <a class="nxl-link" href="{{ url_for('main.view_agenda_disposisi') }}">
-                                <span class="nxl-micon"><i class="feather-send"></i></span>
-                                <span class="nxl-mtext">Disposisi</span>
-                            </a>
-                        </li>
-                        {% endif %}
-                        {% if is_administrator() or has_form_access('AGENDA_BUKU_TAMU') %}
-                        <li class="nxl-item">
-                            <a class="nxl-link" href="{{ url_for('main.view_agenda_buku_tamu') }}">
-                                <span class="nxl-micon"><i class="feather-book-open"></i></span>
-                                <span class="nxl-mtext">Buku Tamu</span>
-                            </a>
-                            <ul class="nxl-submenu">
-                                <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.view_agenda_buku_tamu_buat') }}"><span class="nxl-micon"><i class="feather-plus"></i></span><span class="nxl-mtext">Buat Buku Tamu</span></a></li>
-                                <li class="nxl-item"><a class="nxl-link" href="{{ url_for('main.view_agenda_buku_tamu_rekap') }}"><span class="nxl-micon"><i class="feather-list"></i></span><span class="nxl-mtext">Rekap Buku Tamu</span></a></li>
-                            </ul>
-                        </li>
-                        {% endif %}
-                    </ul>
-                </li>
-                {% endif %}
                 {% if is_administrator() or has_form_access('InpPengumuman.aspx') %}
                 <li class="nxl-item nxl-hasmenu">
                     <a href="javascript:void(0);" class="nxl-link">
