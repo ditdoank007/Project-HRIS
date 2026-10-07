@@ -1,6 +1,6 @@
 # app/routes/routes.py
 
-from flask import Blueprint, jsonify, render_template
+from flask import Blueprint, jsonify, render_template, redirect, url_for
 from app.utils.decorators import login_required, admin_required, form_access_required
 from app.controllers.homeController import (
     get_pelanggaran_disiplin,
@@ -27,9 +27,9 @@ from app.controllers.dashboard_1MasterFileController import (
     master_unit_kerja, toggle_unit_kerja, master_user, master_uang_makan, cari_master_pegawai_vip, cari_master_jabatan, cari_master_jam_finger, cari_master_jam_kerja,
     cari_master_kalender, cari_master_potongan, cari_master_tunkin_class, cari_master_uang_makan, cari_master_unit_kerja,
     cari_user_account, create_kalender, save_jabatan, save_jam_kerja, save_joblist, save_potongan, save_tunkin_class, save_uang_makan, save_unit_kerja, save_user_account,
-    toggle_pegawai_vip, save_jam_finger, update_potongan, delete_potongan, update_unit_kerja,
+    toggle_pegawai_vip, save_pegawai_vip, save_jam_finger, update_potongan, delete_potongan, update_unit_kerja,
     get_jam_kerja_by_id, update_jam_kerja, delete_jam_kerja,
-    get_auth_config, save_auth_config,
+    get_auth_config, save_auth_config, api_user_account_pegawai_search,
     get_jam_finger_by_id, update_jam_finger, delete_jam_finger,
     get_jabatan_by_id, get_jabatan_structure, update_jabatan, delete_jabatan,
 )
@@ -57,11 +57,28 @@ from app.controllers.dashboard_1KepegawaianController import (
     api_dinas_luar_save as master_api_dinas_luar_save,
     api_dinas_luar_get as master_api_dinas_luar_get,
     api_dinas_luar_delete as master_api_dinas_luar_delete,
+    api_dinas_luar_pdf,
     api_sprin_header_save as master_api_sprin_header_save,
     api_dinas_luar_save_peserta as master_api_dinas_luar_save_peserta,
     api_dinas_luar_cari as master_api_dinas_luar_cari,
     api_dinas_luar_get_filter_fields as master_api_dinas_luar_get_filter_fields,
+    api_sakit_get_jenis as master_api_sakit_get_jenis,
+    api_sakit_cari as master_api_sakit_cari,
+    api_ijin_cari as master_api_ijin_cari,
 )
+from app.controllers.backupRestoreController import (
+    backup_restore_home,
+    backup_mariadb_home,
+    restore_mariadb_home,
+    import_mssql_home,
+    api_backup_mariadb,
+    api_backup_mariadb_list,
+    api_restore_mariadb,
+    api_import_mssql_upload,
+    api_import_mssql_preview,
+    api_import_mssql_execute,
+)
+
 from app.controllers.dashboard_1MediaInformasiController import (
     media_informasi, media_informasi_detail,
     save_media_informasi, save_media_informasi_slide,
@@ -75,6 +92,7 @@ from app.controllers.dashboard_1LaporanRekapController import (
     export_rekap_absensi_individu,
     export_rekap_absensi_log_finger,
     export_rekap_clock_exception,
+    export_rekap_clock_exception_pdf,
     preview_rekap_clock_exception,
     export_rekap_daftar_lembur_umum,
     export_rekap_ketidakhadiran_pegawai,
@@ -115,6 +133,9 @@ from app.controllers.benefitController import (
     api_calendar_benefit_uang_makan_internal,
     api_calendar_benefit_uang_siaga_internal,
 )
+from app.controllers.uangSiagaV2Controller import (
+    api_calendar_benefit_uang_siaga_v2_internal,
+)
 
 from app.controllers.calendarAttendanceController import (
     api_calendar_rapat_attendance_info,
@@ -150,6 +171,29 @@ from app.controllers.bukuTamuController import (
     api_buku_tamu_internal_info, api_buku_tamu_internal_pegawai,
     api_buku_tamu_internal_submit,
 )
+from app.controllers.rekamMedisKegiatanController import (
+    rekam_medis_pegawai, rekam_medis_non_pegawai,
+    api_rekam_medis_kegiatan_pegawai_list, api_rekam_medis_kegiatan_non_pegawai_list,
+    api_rekam_medis_kegiatan_pegawai_save, api_rekam_medis_kegiatan_non_pegawai_save,
+    api_rekam_medis_kegiatan_pegawai_detail, api_rekam_medis_kegiatan_non_pegawai_detail,
+    api_rekam_medis_kegiatan_pegawai_update, api_rekam_medis_kegiatan_non_pegawai_update,
+    api_rekam_medis_kegiatan_pegawai_cancel, api_rekam_medis_kegiatan_non_pegawai_cancel,
+    api_rekam_medis_kegiatan_pegawai_complete, api_rekam_medis_kegiatan_non_pegawai_complete,
+    api_rekam_medis_kegiatan_pegawai_qr, api_rekam_medis_kegiatan_non_pegawai_qr,
+    api_rekam_medis_scan, api_rekam_medis_petugas_search,
+    api_calendar_rekam_medis_info, api_calendar_rekam_medis_employee,
+    api_calendar_rekam_medis_guest, api_calendar_rekam_medis_history,
+    api_rekam_medis_kegiatan_pegawai_peserta_detail,
+    api_rekam_medis_kegiatan_non_pegawai_peserta_detail,
+    api_rekam_medis_kegiatan_pegawai_peserta_save,
+    api_rekam_medis_kegiatan_non_pegawai_peserta_save,
+    api_rekam_medis_kegiatan_pegawai_export_excel,
+    api_rekam_medis_kegiatan_pegawai_export_pdf,
+    api_rekam_medis_kegiatan_non_pegawai_export_excel,
+)
+from app.controllers.rekamMedisController import (
+    rekam_medis, api_rekam_medis_search_pegawai, api_rekam_medis_save,
+)
 
 from app.controllers.dashboard_1DataAbsensiController import (
     data_absensi_non_finger, data_absensi_normalisasi_finger, data_absensi_impor_file, data_absensi_pegawai_manual,
@@ -176,6 +220,8 @@ from app.controllers.dashboard_1DataAbsensiController import (
     api_normalisasi_upload_dat as data_absensi_api_normalisasi_upload_dat,
     api_normalisasi_commit_dat as data_absensi_api_normalisasi_commit_dat,
     api_normalisasi_export as data_absensi_api_normalisasi_export,
+    api_normalisasi_download_excel as data_absensi_api_normalisasi_download_excel,
+    api_normalisasi_download_pdf as data_absensi_api_normalisasi_download_pdf,
     api_normalisasi_absensi_view as data_absensi_api_normalisasi_absensi_view,
     api_closing_get as data_absensi_api_closing_get,
     api_closing_save as data_absensi_api_closing_save,
@@ -187,6 +233,9 @@ from app.controllers.dashboard_2DataSiagaController import (
     data_siaga_view_jadwal,
     api_absensi_kehadiran_get as data_siaga_api_absensi_kehadiran_get,
     api_absensi_kehadiran_update as data_siaga_api_absensi_kehadiran_update,
+    api_absensi_kehadiran_export_pdf as data_siaga_api_absensi_kehadiran_export_pdf,
+    api_absensi_kehadiran_save_pdf as data_siaga_api_absensi_kehadiran_save_pdf,
+    api_absensi_kehadiran_internal_pdf as data_siaga_api_absensi_kehadiran_internal_pdf,
     api_pembuatan_jadwal_siaga_save as data_siaga_api_pembuatan_jadwal_siaga_save,
     api_siaga_view_jadwal_edit as data_siaga_api_view_jadwal_edit,
     api_siaga_view_jadwal_lengkapi_shift2 as data_siaga_api_view_jadwal_lengkapi_shift2,
@@ -266,10 +315,28 @@ from app.controllers.dashboard_3ApprovalController import (
 from app.controllers.dashboard_3ProfileController import (
     profile,
 )
+from app.controllers.profilkuController import (
+    profilku,
+    api_profilku,
+    api_profilku_update,
+    api_profilku_photo,
+    api_profilku_photo_upload,
+    api_profilku_password,
+    api_profilku_signature,
+    api_profilku_signature_file,
+    api_internal_profile_signature_file,
+    api_internal_profile,
+    api_internal_profile_update,
+    api_internal_profile_photo,
+    api_internal_profile_photo_upload,
+    api_internal_profile_password,
+    api_internal_profile_signature,
+)
 from app.controllers.dashboard_3KirimController import (
     kirim_kritik_saran,
     kirim_forum_media_informasi,
 )
+from app.controllers.dashboard4HomeController import dashboard4, has_any_agenda_access
 from app.controllers.dashboard_3PengajuanController import (
     pengajuan_skp,
     pengajuan_absensi,
@@ -324,6 +391,69 @@ def preview_pegawai():
         'count': len(data),
         'data': [pegawai.to_dict() for pegawai in data]
     })
+
+
+# ============================================================
+# BACKUP / RESTORE
+# Administrator only
+# ============================================================
+
+@main.route('/backup-restore')
+@login_required
+def view_backup_restore():
+    return backup_restore_home()
+
+@main.route('/backup-restore/backup-mariadb')
+@login_required
+def view_backup_mariadb():
+    return backup_mariadb_home()
+
+@main.route('/backup-restore/restore-mariadb')
+@login_required
+def view_restore_mariadb():
+    return restore_mariadb_home()
+
+@main.route('/backup-restore/import-mssql-2013')
+@login_required
+def view_import_mssql_2013():
+    return import_mssql_home()
+
+
+@main.route('/api/backup-mariadb', methods=['POST'])
+@login_required
+def api_backup_mariadb_route():
+    return api_backup_mariadb()
+
+
+@main.route('/api/backup-mariadb/list', methods=['GET'])
+@login_required
+def api_backup_mariadb_list_route():
+    return api_backup_mariadb_list()
+
+
+@main.route('/api/restore-mariadb', methods=['POST'])
+@login_required
+def api_restore_mariadb_route():
+    return api_restore_mariadb()
+
+
+@main.route('/api/import-mssql-2013/upload', methods=['POST'])
+@login_required
+def api_import_mssql_upload_route():
+    return api_import_mssql_upload()
+
+
+@main.route('/api/import-mssql-2013/preview', methods=['POST'])
+@login_required
+def api_import_mssql_preview_route():
+    return api_import_mssql_preview()
+
+
+@main.route('/api/import-mssql-2013/execute', methods=['POST'])
+@login_required
+def api_import_mssql_execute_route():
+    return api_import_mssql_execute()
+
 
 # ============================
 # ---- Dashboard 1 Routes ----
@@ -441,6 +571,17 @@ def api_dinas_luar_delete():
     return master_api_dinas_luar_delete()
 
 
+@main.route('/api/dinas-luar/pdf')
+@login_required
+def api_dinas_luar_pdf_route():
+    return api_dinas_luar_pdf()
+
+
+@main.route('/api/internal/calendar/dinas-luar/pdf')
+def api_calendar_dinas_luar_pdf_internal_route():
+    return api_dinas_luar_pdf()
+
+
 @main.route('/kepegawaian/cari/dinas-luar-umum')
 @login_required
 def view_kepegawaian_cari_dinas_luar_umum():
@@ -477,28 +618,25 @@ def view_kepegawaian_dinas_luar_operasi():
 @main.route('/api/dinas-luar-operasi/save', methods=['POST'])
 @login_required
 def api_dinas_luar_operasi_save():
-    from app.controllers.dashboard_1KepegawaianController import api_dinas_luar_operasi_save
-    return api_dinas_luar_operasi_save()
+    return master_api_dinas_luar_save('OP')
 
 # API: Get Dinas Luar Operasi by No Surat
 @main.route('/api/dinas-luar-operasi/get')
 @login_required
 def api_dinas_luar_operasi_get():
-    from app.controllers.dashboard_1KepegawaianController import api_dinas_luar_operasi_get
-    return api_dinas_luar_operasi_get()
+    return master_api_dinas_luar_get('OP')
 
 # API: Delete Dinas Luar Operasi
 @main.route('/api/dinas-luar-operasi/delete', methods=['POST'])
 @login_required
 def api_dinas_luar_operasi_delete():
-    from app.controllers.dashboard_1KepegawaianController import api_dinas_luar_operasi_delete
-    return api_dinas_luar_operasi_delete()
+    return master_api_dinas_luar_delete('OP')
 
 @main.route('/api/dinas-luar-operasi/save-peserta', methods=['POST'])
 @login_required
 def api_dinas_luar_operasi_save_peserta():
-    from app.controllers.dashboard_1KepegawaianController import api_dinas_luar_operasi_save_peserta
-    return api_dinas_luar_operasi_save_peserta()
+    from app.controllers.dashboard_1KepegawaianController import api_dinas_luar_operasi_save_peserta as save_operation_participants
+    return save_operation_participants()
 
 @main.route('/kepegawaian/dinas-luar-pelatihan')
 @login_required
@@ -508,20 +646,17 @@ def view_kepegawaian_dinas_luar_pelatihan():
 @main.route('/api/dinas-luar-pelatihan/save-peserta', methods=['POST'])
 @login_required
 def api_dinas_luar_pelatihan_save_peserta():
-    from app.controllers.dashboard_1KepegawaianController import api_dinas_luar_pelatihan_save_peserta
-    return api_dinas_luar_pelatihan_save_peserta()
+    return master_api_dinas_luar_save('PL')
 
 @main.route('/api/dinas-luar-pelatihan/get')
 @login_required
 def api_dinas_luar_pelatihan_get():
-    from app.controllers.dashboard_1KepegawaianController import api_dinas_luar_pelatihan_get
-    return api_dinas_luar_pelatihan_get()
+    return master_api_dinas_luar_get('PL')
 
 @main.route('/api/dinas-luar-pelatihan/delete', methods=['POST'])
 @login_required
 def api_dinas_luar_pelatihan_delete():
-    from app.controllers.dashboard_1KepegawaianController import api_dinas_luar_pelatihan_delete
-    return api_dinas_luar_pelatihan_delete()
+    return master_api_dinas_luar_delete('PL')
 
 @main.route('/kepegawaian/pegawai-cuti')
 @login_required
@@ -579,15 +714,42 @@ def api_cuti_get_filter_fields():
 def view_kepegawaian_pegawai_sakit():
     return kepegawaian_pegawai_sakit()
 
+
+@main.route('/api/sakit/jenis')
+@login_required
+def api_sakit_get_jenis():
+    return master_api_sakit_get_jenis()
+
+
+@main.route('/api/sakit/cari')
+@login_required
+def api_sakit_cari():
+    return master_api_sakit_cari()
+
+
 @main.route('/kepegawaian/pegawai-tidak-hadir')
 @login_required
 def view_kepegawaian_pegawai_tidak_hadir():
     return kepegawaian_pegawai_tidak_hadir()
 
+
+@main.route('/api/ijin/cari')
+@login_required
+def api_ijin_cari():
+    return master_api_ijin_cari()
+
+
 @main.route('/kepegawaian/mutasi-penempatan')
 @login_required
 def view_kepegawaian_mutasi_penempatan_pegawai():
     return kepegawaian_mutasi_penempatan_pegawai()
+
+@main.route('/api/mutasi/unit-kerja')
+@login_required
+def api_mutasi_unit_kerja():
+    from app.controllers.dashboard_1KepegawaianController import api_mutasi_unit_kerja
+    return api_mutasi_unit_kerja()
+
 
 @main.route('/api/mutasi/save', methods=['POST'])
 @login_required
@@ -635,6 +797,13 @@ def api_update_pendukung_search():
 def api_update_pendukung_save():
     from app.controllers.dashboard_1KepegawaianController import api_update_pendukung_save
     return api_update_pendukung_save()
+
+@main.route('/api/update-pendukung/autocomplete')
+@login_required
+def api_update_pendukung_autocomplete():
+    from app.controllers.dashboard_1KepegawaianController import api_update_pendukung_autocomplete
+    return api_update_pendukung_autocomplete()
+
 
 @main.route('/api/update-pendukung/tingkatan')
 @login_required
@@ -773,6 +942,13 @@ def api_pegawai_vip_list():
 def api_pegawai_vip_toggle():
     return toggle_pegawai_vip()
 
+@main.route('/api/pegawai-vip/save', methods=['POST'])
+@login_required
+def api_pegawai_vip_save():
+    return save_pegawai_vip()
+
+
+
 @main.route('/master/potongan')
 @login_required
 def view_master_potongan():
@@ -868,6 +1044,11 @@ def api_auth_config():
 @admin_required
 def api_auth_config_save():
     return save_auth_config()
+
+@main.route('/api/user-account/pegawai-search', methods=['GET'])
+@login_required
+def api_user_account_pegawai_search_route():
+    return api_user_account_pegawai_search()
 
 @main.route('/api/user-account/detail', methods=['GET'])
 @login_required
@@ -1141,6 +1322,11 @@ def export_laporan_rekap_absensi_individu():
 def api_laporan_search_pegawai():
     return search_pegawai_by_name()
 
+@main.route('/api/laporan/rekap-uang-makan/search-pegawai')
+@form_access_required('RekapUM.aspx')
+def api_rekap_uang_makan_search_pegawai():
+    return search_pegawai_by_name()
+
 @main.route('/laporan/rekap-absensi-log-finger')
 @form_access_required('RTimerecorder.aspx')
 def view_laporan_rekap_absensi_log_finger():
@@ -1169,6 +1355,11 @@ def preview_laporan_rekap_clock_exception():
 @form_access_required('RDailyabsensi.aspx')
 def export_laporan_rekap_clock_exception():
     return export_rekap_clock_exception()
+
+@main.route('/laporan/rekap-clock-exception/export-pdf', methods=['POST'])
+@form_access_required('RDailyabsensi.aspx')
+def export_laporan_rekap_clock_exception_pdf():
+    return export_rekap_clock_exception_pdf()
 
 @main.route('/laporan/rekap-ketidakhadiran-pegawai')
 @form_access_required('Rekapsprint.aspx')
@@ -1205,6 +1396,12 @@ def preview_laporan_rekap_uang_makan():
 @form_access_required('RekapUM.aspx')
 def export_laporan_rekap_uang_makan():
     return export_rekap_uang_makan()
+
+
+@main.route('/laporan/rekap-uang-makan/export/pdf', methods=['POST'])
+@form_access_required('RekapUM.aspx')
+def export_laporan_rekap_uang_makan_pdf():
+    return export_rekap_uang_makan(pdf=True)
 
 @main.route('/laporan/rekap-tunjangan-kinerja')
 @form_access_required('RRincianBayar.aspx')
@@ -1296,6 +1493,16 @@ def api_normalisasi_legacy_test():
 @form_access_required('AbsensiFP.aspx')
 def api_normalisasi_export():
     return data_absensi_api_normalisasi_export()
+
+@main.route('/api/normalisasi/download-excel', methods=['GET'])
+@form_access_required('AbsensiFP.aspx')
+def api_normalisasi_download_excel():
+    return data_absensi_api_normalisasi_download_excel()
+
+@main.route('/api/normalisasi/download-pdf', methods=['GET'])
+@form_access_required('AbsensiFP.aspx')
+def api_normalisasi_download_pdf():
+    return data_absensi_api_normalisasi_download_pdf()
 
 @main.route('/api/normalisasi/absensi-view', methods=['GET'])
 @form_access_required('AbsensiFP.aspx')
@@ -1457,6 +1664,20 @@ def api_absensi_kehadiran_get():
 @login_required
 def api_absensi_kehadiran_update():
     return data_siaga_api_absensi_kehadiran_update()
+
+@main.route('/api/absensi-kehadiran/save-pdf')
+@login_required
+def api_absensi_kehadiran_save_pdf():
+    return data_siaga_api_absensi_kehadiran_save_pdf()
+
+@main.route('/api/absensi-kehadiran/export-pdf')
+@login_required
+def api_absensi_kehadiran_export_pdf():
+    return data_siaga_api_absensi_kehadiran_export_pdf()
+
+@main.route('/api/internal/calendar/piket-siaga/pdf')
+def api_internal_calendar_piket_siaga_pdf():
+    return data_siaga_api_absensi_kehadiran_internal_pdf()
 
 @main.route('/siaga/cetak-daftar-lembur')
 @login_required
@@ -1930,6 +2151,79 @@ def view_approval_approved():
 def view_profile():
     return profile()
 
+
+# ============================================================
+# PROFILKU - profil pribadi pegawai
+# ============================================================
+
+@main.route('/profilku')
+@login_required
+def view_profilku():
+    return profilku()
+
+@main.route('/api/profilku', methods=['GET'])
+@login_required
+def api_profilku_route():
+    return api_profilku()
+
+@main.route('/api/profilku', methods=['PUT'])
+@login_required
+def api_profilku_update_route():
+    return api_profilku_update()
+
+@main.route('/api/profilku/photo', methods=['GET'])
+@login_required
+def api_profilku_photo_route():
+    return api_profilku_photo()
+
+@main.route('/api/profilku/photo', methods=['POST'])
+@login_required
+def api_profilku_photo_upload_route():
+    return api_profilku_photo_upload()
+
+@main.route('/api/profilku/password', methods=['POST'])
+@login_required
+def api_profilku_password_route():
+    return api_profilku_password()
+
+@main.route('/api/profilku/signature', methods=['GET'])
+@login_required
+def api_profilku_signature_file_route():
+    return api_profilku_signature_file()
+
+@main.route('/api/profilku/signature', methods=['POST'])
+@login_required
+def api_profilku_signature_route():
+    return api_profilku_signature()
+
+@main.route('/api/internal/calendar/profile', methods=['GET'])
+def api_internal_calendar_profile_route():
+    return api_internal_profile()
+
+@main.route('/api/internal/calendar/profile', methods=['PUT'])
+def api_internal_calendar_profile_update_route():
+    return api_internal_profile_update()
+
+@main.route('/api/internal/calendar/profile-photo', methods=['GET'])
+def api_internal_calendar_profile_photo_route():
+    return api_internal_profile_photo()
+
+@main.route('/api/internal/calendar/profile-photo', methods=['POST'])
+def api_internal_calendar_profile_photo_upload_route():
+    return api_internal_profile_photo_upload()
+
+@main.route('/api/internal/calendar/profile-password', methods=['POST'])
+def api_internal_calendar_profile_password_route():
+    return api_internal_profile_password()
+
+@main.route('/api/internal/calendar/profile-signature', methods=['GET'])
+def api_internal_calendar_profile_signature_file_route():
+    return api_internal_profile_signature_file()
+
+@main.route('/api/internal/calendar/profile-signature', methods=['POST'])
+def api_internal_calendar_profile_signature_route():
+    return api_internal_profile_signature()
+
 # Kirim:
 @main.route('/kinerja/kirim/kritik-saran')
 @login_required
@@ -1941,10 +2235,195 @@ def view_kirim_kritik_saran():
 def view_kirim_forum_media_informasi():
     return kirim_forum_media_informasi()
 
+
+# ============================================================
+# DASHBOARD 4 - AGENDA
+# ============================================================
+
+@main.route('/dashboard4')
+@login_required
+def dashboard4_home():
+    if not has_any_agenda_access():
+        return ('Forbidden', 403)
+    return dashboard4()
+
 # ============================================================
 # AGENDA RAPAT
 # UI prototype — backend akan disambungkan pada tahap berikutnya.
 # ============================================================
+
+@main.route('/rekam-medis/pegawai')
+@login_required
+@form_access_required('REKAM_MEDIS')
+def view_rekam_medis_pegawai():
+    return rekam_medis_pegawai()
+
+
+@main.route('/api/rekam-medis/petugas/search')
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_petugas_search_route():
+    return api_rekam_medis_petugas_search()
+
+@main.route('/rekam-medis/scan/<token>')
+@login_required
+def rekam_medis_scan_route(token):
+    return api_rekam_medis_scan(token)
+
+
+@main.route('/rekam-medis/non-pegawai')
+@login_required
+@form_access_required('REKAM_MEDIS')
+def view_rekam_medis_non_pegawai():
+    return rekam_medis_non_pegawai()
+
+@main.route('/api/rekam-medis/kegiatan/pegawai')
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_kegiatan_pegawai_list_route():
+    return api_rekam_medis_kegiatan_pegawai_list()
+
+@main.route('/api/rekam-medis/kegiatan/non-pegawai')
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_kegiatan_non_pegawai_list_route():
+    return api_rekam_medis_kegiatan_non_pegawai_list()
+
+@main.route('/api/rekam-medis/kegiatan/pegawai/save', methods=['POST'])
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_kegiatan_pegawai_save_route():
+    return api_rekam_medis_kegiatan_pegawai_save()
+
+@main.route('/api/rekam-medis/kegiatan/non-pegawai/save', methods=['POST'])
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_kegiatan_non_pegawai_save_route():
+    return api_rekam_medis_kegiatan_non_pegawai_save()
+
+@main.route('/api/rekam-medis/kegiatan/pegawai/<int:kegiatan_id>')
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_kegiatan_pegawai_detail_route(kegiatan_id):
+    return api_rekam_medis_kegiatan_pegawai_detail(kegiatan_id)
+
+@main.route('/api/rekam-medis/kegiatan/non-pegawai/<int:kegiatan_id>')
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_kegiatan_non_pegawai_detail_route(kegiatan_id):
+    return api_rekam_medis_kegiatan_non_pegawai_detail(kegiatan_id)
+
+@main.route('/api/rekam-medis/kegiatan/pegawai/<int:kegiatan_id>/qr')
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_kegiatan_pegawai_qr_route(kegiatan_id):
+    return api_rekam_medis_kegiatan_pegawai_qr(kegiatan_id)
+
+
+@main.route('/api/rekam-medis/kegiatan/pegawai/<int:kegiatan_id>', methods=['PUT'])
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_kegiatan_pegawai_update_route(kegiatan_id):
+    return api_rekam_medis_kegiatan_pegawai_update(kegiatan_id)
+
+@main.route('/api/rekam-medis/kegiatan/non-pegawai/<int:kegiatan_id>', methods=['PUT'])
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_kegiatan_non_pegawai_update_route(kegiatan_id):
+    return api_rekam_medis_kegiatan_non_pegawai_update(kegiatan_id)
+
+@main.route('/api/rekam-medis/kegiatan/pegawai/<int:kegiatan_id>/cancel', methods=['POST'])
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_kegiatan_pegawai_cancel_route(kegiatan_id):
+    return api_rekam_medis_kegiatan_pegawai_cancel(kegiatan_id)
+
+@main.route('/api/rekam-medis/kegiatan/pegawai/<int:kegiatan_id>/complete', methods=['POST'])
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_kegiatan_pegawai_complete_route(kegiatan_id):
+    return api_rekam_medis_kegiatan_pegawai_complete(kegiatan_id)
+
+@main.route('/api/rekam-medis/kegiatan/non-pegawai/<int:kegiatan_id>/cancel', methods=['POST'])
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_kegiatan_non_pegawai_cancel_route(kegiatan_id):
+    return api_rekam_medis_kegiatan_non_pegawai_cancel(kegiatan_id)
+
+@main.route('/api/rekam-medis/kegiatan/non-pegawai/<int:kegiatan_id>/complete', methods=['POST'])
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_kegiatan_non_pegawai_complete_route(kegiatan_id):
+    return api_rekam_medis_kegiatan_non_pegawai_complete(kegiatan_id)
+
+@main.route('/api/rekam-medis/kegiatan/pegawai/<int:kegiatan_id>/peserta/<int:peserta_id>')
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_kegiatan_pegawai_peserta_detail_route(kegiatan_id, peserta_id):
+    return api_rekam_medis_kegiatan_pegawai_peserta_detail(kegiatan_id, peserta_id)
+
+@main.route('/api/rekam-medis/kegiatan/pegawai/<int:kegiatan_id>/peserta/<int:peserta_id>/save', methods=['POST'])
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_kegiatan_pegawai_peserta_save_route(kegiatan_id, peserta_id):
+    return api_rekam_medis_kegiatan_pegawai_peserta_save(kegiatan_id, peserta_id)
+
+@main.route('/api/rekam-medis/kegiatan/pegawai/<int:kegiatan_id>/export/excel')
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_kegiatan_pegawai_export_excel_route(kegiatan_id):
+    return api_rekam_medis_kegiatan_pegawai_export_excel(kegiatan_id)
+
+@main.route('/api/rekam-medis/kegiatan/pegawai/<int:kegiatan_id>/export/pdf')
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_kegiatan_pegawai_export_pdf_route(kegiatan_id):
+    return api_rekam_medis_kegiatan_pegawai_export_pdf(kegiatan_id)
+
+@main.route('/api/rekam-medis/kegiatan/non-pegawai/<int:kegiatan_id>/peserta/<int:peserta_id>')
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_kegiatan_non_pegawai_peserta_detail_route(kegiatan_id, peserta_id):
+    return api_rekam_medis_kegiatan_non_pegawai_peserta_detail(kegiatan_id, peserta_id)
+
+@main.route('/api/rekam-medis/kegiatan/non-pegawai/<int:kegiatan_id>/peserta/<int:peserta_id>/save', methods=['POST'])
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_kegiatan_non_pegawai_peserta_save_route(kegiatan_id, peserta_id):
+    return api_rekam_medis_kegiatan_non_pegawai_peserta_save(kegiatan_id, peserta_id)
+
+@main.route('/api/rekam-medis/kegiatan/non-pegawai/<int:kegiatan_id>/export/excel')
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_kegiatan_non_pegawai_export_excel_route(kegiatan_id):
+    return api_rekam_medis_kegiatan_non_pegawai_export_excel(kegiatan_id)
+
+@main.route('/api/rekam-medis/kegiatan/non-pegawai/<int:kegiatan_id>/qr')
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_kegiatan_non_pegawai_qr_route(kegiatan_id):
+    return api_rekam_medis_kegiatan_non_pegawai_qr(kegiatan_id)
+
+@main.route('/rekam-medis')
+@login_required
+@form_access_required('REKAM_MEDIS')
+def view_rekam_medis():
+    return redirect(url_for('main.view_rekam_medis_pegawai'))
+
+
+@main.route('/api/rekam-medis/search-pegawai', methods=['GET'])
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_search_pegawai_route():
+    return api_rekam_medis_search_pegawai()
+
+
+@main.route('/api/rekam-medis', methods=['POST'])
+@login_required
+@form_access_required('REKAM_MEDIS')
+def api_rekam_medis_save_route():
+    return api_rekam_medis_save()
+
 
 @main.route('/agenda/rapat')
 @login_required
@@ -2157,7 +2636,6 @@ def api_agenda_buku_tamu_pegawai_search_route():
     return api_buku_tamu_pegawai_search()
 
 
-# Gateway internal Calendar -> HRIS. Tidak membutuhkan login browser.
 @main.route('/api/internal/calendar/buku-tamu/info', methods=['GET'])
 def api_calendar_buku_tamu_info_route():
     return api_buku_tamu_internal_info()
@@ -2354,6 +2832,14 @@ def api_calendar_benefit_uang_siaga_internal_route():
 
 
 @main.route(
+    '/api/internal/calendar/benefit/uang-siaga-v2',
+    methods=['GET']
+)
+def api_calendar_benefit_uang_siaga_v2_internal_route():
+    return api_calendar_benefit_uang_siaga_v2_internal()
+
+
+@main.route(
     '/api/internal/calendar/pelanggaran',
     methods=['GET']
 )
@@ -2387,6 +2873,38 @@ def api_calendar_personal_internal_route():
     )
 
     return api_calendar_personal_internal()
+
+
+@main.route(
+    '/api/internal/calendar/rekam-medis/history',
+    methods=['GET']
+)
+def api_calendar_rekam_medis_history_route():
+    return api_calendar_rekam_medis_history()
+
+
+@main.route(
+    '/api/internal/calendar/agenda/rekam-medis/attendance-info',
+    methods=['GET']
+)
+def api_calendar_rekam_medis_info_route():
+    return api_calendar_rekam_medis_info()
+
+
+@main.route(
+    '/api/internal/calendar/agenda/rekam-medis/attendance/employee',
+    methods=['POST']
+)
+def api_calendar_rekam_medis_employee_route():
+    return api_calendar_rekam_medis_employee()
+
+
+@main.route(
+    '/api/internal/calendar/agenda/rekam-medis/attendance/guest',
+    methods=['POST']
+)
+def api_calendar_rekam_medis_guest_route():
+    return api_calendar_rekam_medis_guest()
 
 
 @main.route(
