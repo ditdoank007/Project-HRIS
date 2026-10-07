@@ -1405,15 +1405,15 @@ body {
   background: var(--ui-bg);
 }
 
-/* Mini sidebar: keep the layout width fixed.
-   Only labels collapse; the content area must not expand. */
+/* Mini sidebar: collapse to icon-only mode and give the dashboard
+   the freed horizontal space. */
 body.hris-sidebar-mini .hris-sidebar-v2 {
-  width: 250px;
+  width: 78px;
 }
 
 body.hris-sidebar-mini .hris-app-main {
-  width: calc(100% - 250px);
-  margin-left: 250px;
+  width: calc(100% - 78px);
+  margin-left: 78px;
 }
 
 body.hris-sidebar-mini .hris-sidebar-brand {
