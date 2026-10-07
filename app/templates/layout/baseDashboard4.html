@@ -2,200 +2,269 @@
 <html lang="id">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="AGENDA HRIS Reborn - Basarnas Surabaya">
     <title>BHRIS AGENDA {% block title %}{% endblock %}</title>
 
     <link rel="shortcut icon" type="image/x-icon"
           href="{{ url_for('static', filename='static_dashboard_1/assets/images/logo-full.png') }}">
-
-    <link rel="stylesheet" type="text/css"
-          href="{{ url_for('static', filename='static_dashboard_1/assets/css/bootstrap.min.css') }}">
-    <link rel="stylesheet" type="text/css"
-          href="{{ url_for('static', filename='static_dashboard_1/assets/vendors/css/vendors.min.css') }}">
-    <link rel="stylesheet" type="text/css"
-          href="{{ url_for('static', filename='static_dashboard_1/assets/css/theme.min.css') }}">
     <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/hris-global.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/hris-ui.css') }}">
-    <script src="{{ url_for('static', filename='js/hris-global.js') }}"></script>
-
-    <style>
-        /* Menu interaction only; visual styling lives in Global UI CSS. */
-        .nxl-hasmenu > .nxl-link { cursor: pointer; }
-    </style>
+          href="{{ url_for('static', filename='css/hris-ui.css') }}">
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/buku-tamu.css') }}">
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='static_dashboard_1/assets/vendors/css/feather.min.css') }}">
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='static_dashboard_1/assets/vendors/css/bsicon.min.css') }}">
 
     {% block head %}{% endblock %}
 </head>
 
-<body class="hris-modern hris-agenda-shell">
+<body class="hris-modern hris-app-shell">
 
-    {% include 'partials/header.html' %}
+    <aside class="hris-sidebar-v2" id="hrisSidebar" aria-label="Menu AGENDA">
+        <div class="hris-sidebar-brand">
+            <a href="{{ url_for('main.view_dashboard_infografis') }}" class="hris-sidebar-brand-link">
+                <img src="{{ url_for('static', filename='static_dashboard_1/assets/images/logo-full.png') }}"
+                     alt="HRIS Kansar">
+                <span class="hris-sidebar-brand-text">
+                    <strong>HRIS Kansar</strong>
+                    <small>Basarnas Surabaya</small>
+                </span>
+            </a>
+            <button type="button" class="hris-sidebar-toggle" id="hrisSidebarToggle"
+                    aria-label="Minimize sidebar" title="Minimize sidebar">
+                <i class="feather-chevron-left"></i>
+            </button>
+        </div>
 
-    <nav class="nxl-navigation" aria-label="Menu AGENDA">
-        <div class="navbar-wrapper">
-            <div class="navbar-content">
-                <ul class="nxl-navbar">
-                    <div class="custom-nav-header">
-                        <div class="header-container">
-                            <img src="{{ url_for('static', filename='static_dashboard_1/assets/images/logo-full.png') }}"
-                                 alt="" width="40" height="auto">
-                            <div class="nxl-navigation-toggle toggle-btn-action"></div>
-                            <span class="nav-text-label nxl-mtext">HRIS Kansar</span>
-                        </div>
-                        <div class="header-container">
-                            <div class="nxl-navigation-toggle toggle-btn-action">
-                                <div id="menu-mini-button" class="btn-mini-style" style="cursor: pointer;">
-                                    <i class="feather-menu"></i>
-                                </div>
-                                <div id="menu-expend-button" class="btn-expand-style" style="display: none;">
-                                    <i class="feather-menu"></i>
-                                </div>
-                            </div>
-                            <span class="nav-text-label nxl-mtext">Navigation</span>
-                        </div>
-                        <div class="nav-separator"></div>
-                    </div>
+        <ul class="hris-nav-list">
+            <li class="hris-nav-item hris-nav-group">
+                <a href="javascript:void(0);" class="hris-nav-link">
+                    <span class="hris-nav-icon"><i class="feather-menu"></i></span>
+                    <span class="hris-nav-text">NAVIGATION</span>
+                </a>
+            </li>
 
-                    {% if is_administrator() or has_form_access('AGENDA_RAPAT') %}
-                    <li class="nxl-item">
-                        <a href="{{ url_for('main.view_agenda_rapat') }}"
-                           class="nxl-link{% if request.endpoint == 'main.view_agenda_rapat' %} active{% endif %}">
-                            <span class="nxl-micon"><i class="ti ti-calendar-event"></i></span>
-                            <span class="nxl-mtext">Rapat</span>
-                        </a>
-                    </li>
-                    {% endif %}
+            {% if is_administrator() or has_form_access('AGENDA_RAPAT') %}
+            <li class="hris-nav-item">
+                <a href="{{ url_for('main.view_agenda_rapat') }}"
+                   class="hris-nav-link{% if request.endpoint == 'main.view_agenda_rapat' %} hris-active{% endif %}">
+                    <span class="hris-nav-icon"><i class="ti ti-calendar-event"></i></span>
+                    <span class="hris-nav-text">Rapat</span>
+                </a>
+            </li>
+            {% endif %}
 
-                    {% if is_administrator() or has_form_access('AGENDA_DISPOSISI') %}
-                    <li class="nxl-item">
-                        <a href="{{ url_for('main.view_agenda_disposisi') }}"
-                           class="nxl-link{% if request.endpoint == 'main.view_agenda_disposisi' %} active{% endif %}">
-                            <span class="nxl-micon"><i class="ti ti-send"></i></span>
-                            <span class="nxl-mtext">Disposisi</span>
-                        </a>
-                    </li>
-                    {% endif %}
+            {% if is_administrator() or has_form_access('AGENDA_DISPOSISI') %}
+            <li class="hris-nav-item">
+                <a href="{{ url_for('main.view_agenda_disposisi') }}"
+                   class="hris-nav-link{% if request.endpoint == 'main.view_agenda_disposisi' %} hris-active{% endif %}">
+                    <span class="hris-nav-icon"><i class="ti ti-send"></i></span>
+                    <span class="hris-nav-text">Disposisi</span>
+                </a>
+            </li>
+            {% endif %}
 
-                    {% if is_administrator() or has_form_access('AGENDA_BUKU_TAMU') %}
-                    <li class="nxl-item nxl-hasmenu{% if request.endpoint in ['main.view_agenda_buku_tamu', 'main.view_agenda_buku_tamu_buat', 'main.view_agenda_buku_tamu_rekap'] %} hris-active{% endif %}">
+            {% if is_administrator() or has_form_access('AGENDA_BUKU_TAMU') %}
+            <li class="hris-nav-item hris-nav-group{% if request.endpoint in ['main.view_agenda_buku_tamu', 'main.view_agenda_buku_tamu_buat', 'main.view_agenda_buku_tamu_jenis_keperluan', 'main.view_agenda_buku_tamu_rekap'] %} hris-open{% endif %}">
+                <a href="javascript:void(0);" class="hris-nav-link{% if request.endpoint in ['main.view_agenda_buku_tamu', 'main.view_agenda_buku_tamu_buat', 'main.view_agenda_buku_tamu_jenis_keperluan', 'main.view_agenda_buku_tamu_rekap'] %} hris-active{% endif %}"
+                   aria-expanded="{% if request.endpoint in ['main.view_agenda_buku_tamu', 'main.view_agenda_buku_tamu_buat', 'main.view_agenda_buku_tamu_jenis_keperluan', 'main.view_agenda_buku_tamu_rekap'] %}true{% else %}false{% endif %}">
+                    <span class="hris-nav-icon"><i class="ti ti-book"></i></span>
+                    <span class="hris-nav-text">Buku Tamu</span>
+                    <span class="hris-nav-arrow"><i class="feather-chevron-right"></i></span>
+                </a>
+                <ul class="hris-submenu">
+                    <li class="hris-nav-item">
                         <a href="{{ url_for('main.view_agenda_buku_tamu') }}"
-                           class="nxl-link{% if request.endpoint == 'main.view_agenda_buku_tamu' %} active{% endif %}">
-                            <span class="nxl-micon"><i class="ti ti-book"></i></span>
-                            <span class="nxl-mtext">Buku Tamu</span>
-                            <span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
-                        </a>
-                        <ul class="nxl-submenu">
-                            <li class="nxl-item">
-                                <a href="{{ url_for('main.view_agenda_buku_tamu_buat') }}"
-                                   class="nxl-link{% if request.endpoint == 'main.view_agenda_buku_tamu_buat' %} active{% endif %}">
-                                    <span class="nxl-micon"><i class="ti ti-book-upload"></i></span>
-                                    <span class="nxl-mtext">Buat Buku Tamu</span>
-                                </a>
-                            </li>
-                            <li class="nxl-item">
-                                <a href="{{ url_for('main.view_agenda_buku_tamu_rekap') }}"
-                                   class="nxl-link{% if request.endpoint == 'main.view_agenda_buku_tamu_rekap' %} active{% endif %}">
-                                    <span class="nxl-micon"><i class="ti ti-report-analytics"></i></span>
-                                    <span class="nxl-mtext">Rekap Buku Tamu</span>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-                    {% endif %}
-
-                    {% if is_administrator() or has_form_access('SUMDA_KESAMAPTAAN') %}
-                    <li class="nxl-item">
-                        <a href="{{ url_for('main.view_kesamaptaan') }}"
-                           class="nxl-link{% if request.endpoint == 'main.view_kesamaptaan' %} active{% endif %}">
-                            <span class="nxl-micon"><i class="ti ti-run"></i></span>
-                            <span class="nxl-mtext">Kesamaptaan</span>
+                           class="hris-nav-link{% if request.endpoint == 'main.view_agenda_buku_tamu' %} hris-active{% endif %}">
+                            <span class="hris-nav-icon"><i class="ti ti-chart-bar"></i></span>
+                            <span class="hris-nav-text">Dashboard Buku Tamu</span>
                         </a>
                     </li>
-                    {% endif %}
-
-                    {% if is_administrator() or has_form_access('REKAM_MEDIS') %}
-                    <li class="nxl-item nxl-hasmenu{% if request.endpoint in ['main.view_rekam_medis_pegawai', 'main.view_rekam_medis_non_pegawai'] %} hris-active{% endif %}">
-                        <a href="javascript:void(0);" class="nxl-link">
-                            <span class="nxl-micon"><i class="ti ti-heartbeat"></i></span>
-                            <span class="nxl-mtext">Rekam Medis</span>
-                            <span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                    <li class="hris-nav-item">
+                        <a href="{{ url_for('main.view_agenda_buku_tamu_buat') }}"
+                           class="hris-nav-link{% if request.endpoint == 'main.view_agenda_buku_tamu_buat' %} hris-active{% endif %}">
+                            <span class="hris-nav-icon"><i class="ti ti-book-upload"></i></span>
+                            <span class="hris-nav-text">Buat Buku Tamu</span>
                         </a>
-                        <ul class="nxl-submenu">
-                            <li class="nxl-item">
-                                <a href="{{ url_for('main.view_rekam_medis_pegawai') }}"
-                                   class="nxl-link{% if request.endpoint == 'main.view_rekam_medis_pegawai' %} active{% endif %}">
-                                    <span class="nxl-mtext">Rekam Medis Pegawai</span>
-                                </a>
-                            </li>
-                            <li class="nxl-item">
-                                <a href="{{ url_for('main.view_rekam_medis_non_pegawai') }}"
-                                   class="nxl-link{% if request.endpoint == 'main.view_rekam_medis_non_pegawai' %} active{% endif %}">
-                                    <span class="nxl-mtext">Rekam Medis Non Pegawai</span>
-                                </a>
-                            </li>
-                        </ul>
                     </li>
-                    {% endif %}
-
-                    <li class="nxl-item">
-                        <a href="{{ url_for('main.index') }}" class="nxl-link">
-                            <span class="nxl-micon"><i class="ti ti-arrow-left"></i></span>
-                            <span class="nxl-mtext">Kembali ke Portal</span>
+                    <li class="hris-nav-item">
+                        <a href="{{ url_for('main.view_agenda_buku_tamu_jenis_keperluan') }}"
+                           class="hris-nav-link{% if request.endpoint == 'main.view_agenda_buku_tamu_jenis_keperluan' %} hris-active{% endif %}">
+                            <span class="hris-nav-icon"><i class="ti ti-list"></i></span>
+                            <span class="hris-nav-text">Jenis Keperluan</span>
+                        </a>
+                    </li>
+                    <li class="hris-nav-item">
+                        <a href="{{ url_for('main.view_agenda_buku_tamu_rekap') }}"
+                           class="hris-nav-link{% if request.endpoint == 'main.view_agenda_buku_tamu_rekap' %} hris-active{% endif %}">
+                            <span class="hris-nav-icon"><i class="ti ti-report-analytics"></i></span>
+                            <span class="hris-nav-text">Rekap Buku Tamu</span>
                         </a>
                     </li>
                 </ul>
+            </li>
+            {% endif %}
+
+            {% if is_administrator() or has_form_access('SUMDA_KESAMAPTAAN') %}
+            <li class="hris-nav-item">
+                <a href="{{ url_for('main.view_kesamaptaan') }}"
+                   class="hris-nav-link{% if request.endpoint == 'main.view_kesamaptaan' %} hris-active{% endif %}">
+                    <span class="hris-nav-icon"><i class="ti ti-run"></i></span>
+                    <span class="hris-nav-text">Kesamaptaan</span>
+                </a>
+            </li>
+            {% endif %}
+
+            {% if is_administrator() or has_form_access('REKAM_MEDIS') %}
+            <li class="hris-nav-item hris-nav-group{% if request.endpoint in ['main.view_rekam_medis_pegawai', 'main.view_rekam_medis_non_pegawai'] %} hris-open{% endif %}">
+                <a href="javascript:void(0);" class="hris-nav-link" aria-expanded="{% if request.endpoint in ['main.view_rekam_medis_pegawai', 'main.view_rekam_medis_non_pegawai'] %}true{% else %}false{% endif %}">
+                    <span class="hris-nav-icon"><i class="ti ti-heartbeat"></i></span>
+                    <span class="hris-nav-text">Rekam Medis</span>
+                    <span class="hris-nav-arrow"><i class="feather-chevron-right"></i></span>
+                </a>
+                <ul class="hris-submenu">
+                    <li class="hris-nav-item">
+                        <a href="{{ url_for('main.view_rekam_medis_pegawai') }}" class="hris-nav-link{% if request.endpoint == 'main.view_rekam_medis_pegawai' %} hris-active{% endif %}">
+                            <span class="hris-nav-icon"><i class="ti ti-user"></i></span>
+                            <span class="hris-nav-text">Rekam Medis Pegawai</span>
+                        </a>
+                    </li>
+                    <li class="hris-nav-item">
+                        <a href="{{ url_for('main.view_rekam_medis_non_pegawai') }}" class="hris-nav-link{% if request.endpoint == 'main.view_rekam_medis_non_pegawai' %} hris-active{% endif %}">
+                            <span class="hris-nav-icon"><i class="ti ti-users"></i></span>
+                            <span class="hris-nav-text">Rekam Medis Non Pegawai</span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+            {% endif %}
+
+            <li class="hris-nav-item">
+                <a href="{{ url_for('main.index') }}" class="hris-nav-link">
+                    <span class="hris-nav-icon"><i class="ti ti-arrow-left"></i></span>
+                    <span class="hris-nav-text">Kembali ke Portal</span>
+                </a>
+            </li>
+        </ul>
+    </aside>
+
+    <div class="hris-app-main">
+        <header class="hris-app-topbar">
+            <div class="hris-app-topbar-left">
+                <button type="button" class="hris-mobile-menu" id="hrisMobileMenu" aria-label="Buka menu">
+                    <i class="feather-menu"></i>
+                </button>
+                <div class="hris-page-heading">
+                    <span class="hris-page-kicker">HRIS REBORN · AGENDA</span>
+                    <h1>{% block header_title %}AGENDA{% endblock %}</h1>
+                </div>
             </div>
-        </div>
-    </nav>
 
-    <main class="nxl-container">
-        {% block content %}
-        {% endblock %}
-    </main>
+            <div class="hris-account">
+                <button type="button" class="hris-account-toggle" id="hrisAccountToggle"
+                        aria-expanded="false" aria-label="Buka menu akun">
+                    <span class="hris-account-avatar" style="overflow:hidden;padding:0;">
+                        <img src="{{ url_for('main.api_profilku_photo_route') }}"
+                             alt="Foto profil"
+                             style="width:100%;height:100%;object-fit:cover;"
+                             onerror="this.style.display='none'; this.parentElement.textContent='{{ session.get('nama', 'G')[:1]|upper }}';">
+                    </span>
+                    <span class="hris-account-name">{{ session.get('nama', 'Guest') }}</span>
+                    <i class="feather-chevron-down hris-account-chevron"></i>
+                </button>
+                <div class="hris-account-dropdown" id="hrisAccountDropdown">
+                    <div class="hris-account-info">
+                        <strong>{{ session.get('nama', 'Guest') }}</strong>
+                        <span>{{ session.get('nip', '') }}</span>
+                    </div>
+                    <button type="button" class="hris-account-logout" id="hrisSignOutBtn">
+                        <i class="feather-log-out"></i><span>Logout</span>
+                    </button>
+                </div>
+            </div>
+        </header>
 
-<script src="{{ url_for('static', filename='static_dashboard_1/assets/vendors/js/vendors.min.js') }}"></script>
-<script src="{{ url_for('static', filename='static_dashboard_1/assets/js/common-init.min.js') }}"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('.nxl-hasmenu').forEach(function (menu) {
-        const link = menu.querySelector(':scope > .nxl-link');
-        const submenu = menu.querySelector(':scope > .nxl-submenu');
-        if (!link || !submenu) return;
+        <main class="hris-main-v2" id="hrisMain">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
 
-        /* Keep submenu open whenever its dashboard/child page is active. */
-        if (menu.classList.contains('hris-active')) {
-            menu.classList.add('menu-open');
+    <div class="hris-mobile-overlay" id="hrisMobileOverlay"></div>
+
+    <script>
+    (function () {
+        const body = document.body;
+        const sidebarToggle = document.getElementById('hrisSidebarToggle');
+        const mobileMenu = document.getElementById('hrisMobileMenu');
+        const mobileOverlay = document.getElementById('hrisMobileOverlay');
+        const accountToggle = document.getElementById('hrisAccountToggle');
+        const accountDropdown = document.getElementById('hrisAccountDropdown');
+        const signOut = document.getElementById('hrisSignOutBtn');
+
+        function setMini(mini) {
+            body.classList.toggle('hris-sidebar-mini', mini);
+            localStorage.setItem('hris-sidebar-mini', mini ? '1' : '0');
         }
 
-        link.addEventListener('click', function (event) {
-            const href = (link.getAttribute('href') || '').trim();
-            if (!href || href.toLowerCase() === 'javascript:void(0);') {
-                event.preventDefault();
-                menu.classList.toggle('menu-open');
-                return;
-            }
+        function setMobile(open) {
+            body.classList.toggle('hris-mobile-open', open);
+        }
 
-            const targetPath = new URL(href, window.location.origin).pathname;
-            if (window.location.pathname === targetPath) {
-                event.preventDefault();
-                menu.classList.toggle('menu-open');
+        if (localStorage.getItem('hris-sidebar-mini') === '1') {
+            setMini(true);
+        }
+
+        sidebarToggle?.addEventListener('click', function () {
+            setMini(!body.classList.contains('hris-sidebar-mini'));
+        });
+
+        mobileMenu?.addEventListener('click', function () { setMobile(true); });
+        mobileOverlay?.addEventListener('click', function () { setMobile(false); });
+
+        document.querySelectorAll('.hris-nav-group > .hris-nav-link').forEach(function (link) {
+            link.addEventListener('click', function (event) {
+                const group = link.closest('.hris-nav-group');
+                if (!group) return;
+
+                const href = (link.getAttribute('href') || '').trim();
+                if (!href || href === 'javascript:void(0);' || href === '#') {
+                    event.preventDefault();
+                    const open = group.classList.toggle('hris-open');
+                    link.setAttribute('aria-expanded', open ? 'true' : 'false');
+                }
+            });
+        });
+
+        accountToggle?.addEventListener('click', function (event) {
+            event.stopPropagation();
+            const open = !accountDropdown.classList.contains('is-open');
+            accountDropdown.classList.toggle('is-open', open);
+            accountToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+
+        document.addEventListener('click', function (event) {
+            if (!event.target.closest('.hris-account')) {
+                accountDropdown?.classList.remove('is-open');
+                accountToggle?.setAttribute('aria-expanded', 'false');
             }
         });
-    });
 
-    document.getElementById('headerSignOutBtn')?.addEventListener('click', async function () {
-        try {
-            await fetch('/api/logout', { method: 'POST' });
-        } finally {
-            window.location.href = "{{ url_for('main.index') }}";
-        }
-    });
-});
-</script>
+        document.querySelectorAll('.hris-submenu .hris-nav-link').forEach(function (link) {
+            link.addEventListener('click', function () { setMobile(false); });
+        });
 
-{% block script %}{% endblock %}
+        signOut?.addEventListener('click', async function () {
+            try { await fetch('/api/logout', { method: 'POST' }); }
+            finally { window.location.href = "{{ url_for('main.index') }}"; }
+        });
+    })();
+    </script>
+
+    {# Bootstrap JS is retained only for existing page-level components such as QR preview modal. #}
+    <script src="{{ url_for('static', filename='static_dashboard_1/assets/vendors/js/vendors.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='static_dashboard_1/assets/js/common-init.min.js') }}"></script>
+    {% block script %}{% endblock %}
 </body>
 </html>
