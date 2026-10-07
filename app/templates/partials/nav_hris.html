@@ -466,16 +466,37 @@
                         </li>
                         {% endif %}
                         {% if is_administrator() or has_form_access('AGENDA_BUKU_TAMU') %}
-                        <li class="hris-nav-item hris-nav-group">
-                            <a class="hris-nav-link" href="javascript:void(0);">
+                        <li class="hris-nav-item hris-nav-group" data-nav-group="buku-tamu">
+                            <a class="hris-nav-link" href="javascript:void(0);" aria-expanded="false">
                                 <span class="hris-nav-icon"><i class="feather-book"></i></span>
-                                <span class="hris-nav-text">Buku Tamu</span><span class="hris-nav-arrow"><i class="feather-chevron-right"></i></span>
+                                <span class="hris-nav-text">Buku Tamu</span>
+                                <span class="hris-nav-arrow"><i class="feather-chevron-right"></i></span>
                             </a>
                             <ul class="hris-submenu">
-                                <li class="hris-nav-item"><a class="hris-nav-link" href="{{ url_for('main.view_agenda_buku_tamu') }}"><span class="hris-nav-icon"><i class="feather-bar-chart-2"></i></span><span class="hris-nav-text">Dashboard Buku Tamu</span></a></li>
-                                <li class="hris-nav-item"><a class="hris-nav-link" href="{{ url_for('main.view_agenda_buku_tamu_buat') }}"><span class="hris-nav-icon"><i class="feather-plus-circle"></i></span><span class="hris-nav-text">Buat Buku Tamu</span></a></li>
-                                <li class="hris-nav-item"><a class="hris-nav-link" href="{{ url_for('main.view_agenda_buku_tamu_jenis_keperluan') }}"><span class="hris-nav-icon"><i class="feather-list"></i></span><span class="hris-nav-text">Jenis Keperluan</span></a></li>
-                                <li class="hris-nav-item"><a class="hris-nav-link" href="{{ url_for('main.view_agenda_buku_tamu_rekap') }}"><span class="hris-nav-icon"><i class="feather-file-text"></i></span><span class="hris-nav-text">Rekap Buku Tamu</span></a></li>
+                                <li class="hris-nav-item">
+                                    <a class="hris-nav-link" href="{{ url_for('main.view_agenda_buku_tamu') }}">
+                                        <span class="hris-nav-icon"><i class="feather-bar-chart-2"></i></span>
+                                        <span class="hris-nav-text">Dashboard Buku Tamu</span>
+                                    </a>
+                                </li>
+                                <li class="hris-nav-item">
+                                    <a class="hris-nav-link" href="{{ url_for('main.view_agenda_buku_tamu_buat') }}">
+                                        <span class="hris-nav-icon"><i class="feather-plus-circle"></i></span>
+                                        <span class="hris-nav-text">Buat Buku Tamu</span>
+                                    </a>
+                                </li>
+                                <li class="hris-nav-item">
+                                    <a class="hris-nav-link" href="{{ url_for('main.view_agenda_buku_tamu_jenis_keperluan') }}">
+                                        <span class="hris-nav-icon"><i class="feather-list"></i></span>
+                                        <span class="hris-nav-text">Jenis Keperluan</span>
+                                    </a>
+                                </li>
+                                <li class="hris-nav-item">
+                                    <a class="hris-nav-link" href="{{ url_for('main.view_agenda_buku_tamu_rekap') }}">
+                                        <span class="hris-nav-icon"><i class="feather-file-text"></i></span>
+                                        <span class="hris-nav-text">Rekap Buku Tamu</span>
+                                    </a>
+                                </li>
                             </ul>
                         </li>
                         {% endif %}
