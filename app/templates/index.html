@@ -218,13 +218,12 @@
                             or has_form_access('AGENDA_DISPOSISI')
                             or has_form_access('SUMDA_KESAMAPTAAN')
                             or has_form_access('REKAM_MEDIS') %}
-                        {% if agenda_access %}
                         <a
+                            id="agendaNavItem"
                             href="{{ url_for('main.dashboard4_home') }}"
-                            class="nav-link hris-nav-link">
+                            class="nav-link hris-nav-link {% if not agenda_access %}d-none{% endif %}">
                             <span>AGENDA</span>
                         </a>
-                        {% endif %}
 
                         <!-- DATA PRIBADI -->
                         <a
@@ -1203,6 +1202,16 @@
         }
 
         function updateNavbarAfterLogin(nama, menuAccess) {
+            const agendaItem = document.getElementById('agendaNavItem');
+            if (agendaItem) {
+                const hasAgendaAccess =
+                    !!menuAccess?.AGENDA_RAPAT ||
+                    !!menuAccess?.AGENDA_DISPOSISI ||
+                    !!menuAccess?.SUMDA_KESAMAPTAAN ||
+                    !!menuAccess?.REKAM_MEDIS;
+                agendaItem.classList.toggle('d-none', !hasAgendaAccess);
+            }
+
             const kesamaptaanItem = document.getElementById('sumdaKesamaptaanItem');
             if (kesamaptaanItem) {
                 kesamaptaanItem.classList.toggle('hris-access-hidden', !menuAccess.SUMDA_KESAMAPTAAN);
