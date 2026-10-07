@@ -140,7 +140,16 @@
                     const linkPath = new URL(href, window.location.origin).pathname.replace(/\/$/, '') || '/';
                     if (linkPath === currentPath) {
                         link.classList.add('hris-active');
-                        link.closest('.hris-nav-group')?.classList.add('hris-open');
+
+                        // Buku Tamu memiliki submenu bertingkat.
+                        // Buka semua parent group agar Dashboard / Jenis Keperluan /
+                        // Buat / Rekap tetap terlihat setelah navigasi.
+                        let group = link.closest('.hris-nav-group');
+                        while (group) {
+                            group.classList.add('hris-open');
+                            group.querySelector(':scope > .hris-nav-link')?.setAttribute('aria-expanded', 'true');
+                            group = group.parentElement?.closest('.hris-nav-group') || null;
+                        }
                     }
                 } catch (err) {}
             });
