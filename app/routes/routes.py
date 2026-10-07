@@ -164,10 +164,12 @@ from app.controllers.dashboard_1DisposisiController import (
     api_agenda_disposisi_detail, api_agenda_disposisi_cancel,
 )
 from app.controllers.bukuTamuController import (
-    buku_tamu, buku_tamu_buat, buku_tamu_rekap,
+    buku_tamu, buku_tamu_buat, buku_tamu_jenis_keperluan, buku_tamu_rekap,
     api_buku_tamu_save, api_buku_tamu_list, api_buku_tamu_qr,
     api_buku_tamu_preview, api_buku_tamu_rekap, export_buku_tamu_pdf,
     api_buku_tamu_pegawai_search,
+    api_buku_tamu_jenis_keperluan_list, api_buku_tamu_jenis_keperluan_save,
+    api_buku_tamu_jenis_keperluan_toggle, api_buku_tamu_internal_keperluan,
     api_buku_tamu_internal_info, api_buku_tamu_internal_pegawai,
     api_buku_tamu_internal_submit,
 )
@@ -2580,6 +2582,13 @@ def view_agenda_buku_tamu_buat():
     return buku_tamu_buat()
 
 
+@main.route('/agenda/buku-tamu/jenis-keperluan')
+@login_required
+@form_access_required('AGENDA_BUKU_TAMU')
+def view_agenda_buku_tamu_jenis_keperluan():
+    return buku_tamu_jenis_keperluan()
+
+
 @main.route('/agenda/buku-tamu/rekap')
 @login_required
 @form_access_required('AGENDA_BUKU_TAMU')
@@ -2615,6 +2624,27 @@ def api_agenda_buku_tamu_qr_route(book_id):
     return api_buku_tamu_qr(book_id)
 
 
+@main.route('/api/agenda/buku-tamu/jenis-keperluan', methods=['GET'])
+@login_required
+@form_access_required('AGENDA_BUKU_TAMU')
+def api_agenda_buku_tamu_jenis_keperluan_list_route():
+    return api_buku_tamu_jenis_keperluan_list()
+
+
+@main.route('/api/agenda/buku-tamu/jenis-keperluan', methods=['POST'])
+@login_required
+@form_access_required('AGENDA_BUKU_TAMU')
+def api_agenda_buku_tamu_jenis_keperluan_save_route():
+    return api_buku_tamu_jenis_keperluan_save()
+
+
+@main.route('/api/agenda/buku-tamu/jenis-keperluan/<int:row_id>/toggle', methods=['POST'])
+@login_required
+@form_access_required('AGENDA_BUKU_TAMU')
+def api_agenda_buku_tamu_jenis_keperluan_toggle_route(row_id):
+    return api_buku_tamu_jenis_keperluan_toggle(row_id)
+
+
 @main.route('/api/agenda/buku-tamu/rekap', methods=['GET'])
 @login_required
 @form_access_required('AGENDA_BUKU_TAMU')
@@ -2634,6 +2664,11 @@ def api_agenda_buku_tamu_export_pdf_route():
 @form_access_required('AGENDA_BUKU_TAMU')
 def api_agenda_buku_tamu_pegawai_search_route():
     return api_buku_tamu_pegawai_search()
+
+
+@main.route('/api/internal/calendar/buku-tamu/keperluan', methods=['GET'])
+def api_internal_calendar_buku_tamu_keperluan():
+    return api_buku_tamu_internal_keperluan()
 
 
 @main.route('/api/internal/calendar/buku-tamu/info', methods=['GET'])
