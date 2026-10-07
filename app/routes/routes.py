@@ -142,6 +142,14 @@ from app.controllers.dashboard_1DisposisiController import (
     agenda_disposisi, api_agenda_disposisi_list, api_agenda_disposisi_save,
     api_agenda_disposisi_detail, api_agenda_disposisi_cancel,
 )
+from app.controllers.bukuTamuController import (
+    buku_tamu, buku_tamu_buat, buku_tamu_rekap,
+    api_buku_tamu_save, api_buku_tamu_list, api_buku_tamu_qr,
+    api_buku_tamu_preview, api_buku_tamu_rekap, export_buku_tamu_pdf,
+    api_buku_tamu_pegawai_search,
+    api_buku_tamu_internal_info, api_buku_tamu_internal_pegawai,
+    api_buku_tamu_internal_submit,
+)
 
 from app.controllers.dashboard_1DataAbsensiController import (
     data_absensi_non_finger, data_absensi_normalisasi_finger, data_absensi_impor_file, data_absensi_pegawai_manual,
@@ -2073,6 +2081,96 @@ def api_agenda_disposisi_detail_route(agenda_id):
 @form_access_required('AGENDA_DISPOSISI')
 def api_agenda_disposisi_cancel_route(agenda_id):
     return api_agenda_disposisi_cancel(agenda_id)
+
+
+# ============================================================
+# BUKU TAMU
+# ============================================================
+
+@main.route('/agenda/buku-tamu')
+@login_required
+@form_access_required('AGENDA_BUKU_TAMU')
+def view_agenda_buku_tamu():
+    return buku_tamu()
+
+
+@main.route('/agenda/buku-tamu/buat')
+@login_required
+@form_access_required('AGENDA_BUKU_TAMU')
+def view_agenda_buku_tamu_buat():
+    return buku_tamu_buat()
+
+
+@main.route('/agenda/buku-tamu/rekap')
+@login_required
+@form_access_required('AGENDA_BUKU_TAMU')
+def view_agenda_buku_tamu_rekap():
+    return buku_tamu_rekap()
+
+
+@main.route('/api/agenda/buku-tamu', methods=['GET'])
+@login_required
+@form_access_required('AGENDA_BUKU_TAMU')
+def api_agenda_buku_tamu_list_route():
+    return api_buku_tamu_list()
+
+
+@main.route('/api/agenda/buku-tamu', methods=['POST'])
+@login_required
+@form_access_required('AGENDA_BUKU_TAMU')
+def api_agenda_buku_tamu_save_route():
+    return api_buku_tamu_save()
+
+
+@main.route('/api/agenda/buku-tamu/<int:book_id>/preview', methods=['GET'])
+@login_required
+@form_access_required('AGENDA_BUKU_TAMU')
+def api_agenda_buku_tamu_preview_route(book_id):
+    return api_buku_tamu_preview(book_id)
+
+
+@main.route('/api/agenda/buku-tamu/<int:book_id>/qr', methods=['GET'])
+@login_required
+@form_access_required('AGENDA_BUKU_TAMU')
+def api_agenda_buku_tamu_qr_route(book_id):
+    return api_buku_tamu_qr(book_id)
+
+
+@main.route('/api/agenda/buku-tamu/rekap', methods=['GET'])
+@login_required
+@form_access_required('AGENDA_BUKU_TAMU')
+def api_agenda_buku_tamu_rekap_route():
+    return api_buku_tamu_rekap()
+
+
+@main.route('/api/agenda/buku-tamu/export-pdf', methods=['GET'])
+@login_required
+@form_access_required('AGENDA_BUKU_TAMU')
+def api_agenda_buku_tamu_export_pdf_route():
+    return export_buku_tamu_pdf()
+
+
+@main.route('/api/agenda/buku-tamu/pegawai/search', methods=['GET'])
+@login_required
+@form_access_required('AGENDA_BUKU_TAMU')
+def api_agenda_buku_tamu_pegawai_search_route():
+    return api_buku_tamu_pegawai_search()
+
+
+# Gateway internal Calendar -> HRIS. Tidak membutuhkan login browser.
+@main.route('/api/internal/calendar/buku-tamu/info', methods=['GET'])
+def api_calendar_buku_tamu_info_route():
+    return api_buku_tamu_internal_info()
+
+
+@main.route('/api/internal/calendar/buku-tamu/pegawai', methods=['GET'])
+def api_calendar_buku_tamu_pegawai_route():
+    return api_buku_tamu_internal_pegawai()
+
+
+@main.route('/api/internal/calendar/buku-tamu/submit', methods=['POST'])
+def api_calendar_buku_tamu_submit_route():
+    return api_buku_tamu_internal_submit()
 
 
 # ============================================================
