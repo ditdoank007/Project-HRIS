@@ -25,10 +25,6 @@
     <style>
         /* Menu interaction only; visual styling lives in Global UI CSS. */
         .nxl-hasmenu > .nxl-link { cursor: pointer; }
-        .nxl-hasmenu.menu-open > .nxl-submenu,
-        .nxl-hasmenu.hris-active > .nxl-submenu { display: block; }
-        .nxl-hasmenu.menu-open > .nxl-link .nxl-arrow,
-        .nxl-hasmenu.hris-active > .nxl-link .nxl-arrow { transform: rotate(90deg); }
     </style>
 
     {% block head %}{% endblock %}
@@ -164,12 +160,28 @@
 <script src="{{ url_for('static', filename='static_dashboard_1/assets/js/common-init.min.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('.nxl-hasmenu > .nxl-link').forEach(function (link) {
+    document.querySelectorAll('.nxl-hasmenu').forEach(function (menu) {
+        const link = menu.querySelector(':scope > .nxl-link');
+        const submenu = menu.querySelector(':scope > .nxl-submenu');
+        if (!link || !submenu) return;
+
+        /* Keep submenu open whenever its dashboard/child page is active. */
+        if (menu.classList.contains('hris-active')) {
+            menu.classList.add('menu-open');
+        }
+
         link.addEventListener('click', function (event) {
-            /* Real links navigate to their dashboard. Only javascript:void links toggle. */
-            if ((link.getAttribute('href') || '').trim().toLowerCase() === 'javascript:void(0);') {
+            const href = (link.getAttribute('href') || '').trim();
+            if (!href || href.toLowerCase() === 'javascript:void(0);') {
                 event.preventDefault();
-                link.closest('.nxl-hasmenu')?.classList.toggle('menu-open');
+                menu.classList.toggle('menu-open');
+                return;
+            }
+
+            const targetPath = new URL(href, window.location.origin).pathname;
+            if (window.location.pathname === targetPath) {
+                event.preventDefault();
+                menu.classList.toggle('menu-open');
             }
         });
     });
