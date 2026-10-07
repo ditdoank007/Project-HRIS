@@ -166,8 +166,11 @@
 document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.nxl-hasmenu > .nxl-link').forEach(function (link) {
         link.addEventListener('click', function (event) {
-            event.preventDefault();
-            link.closest('.nxl-hasmenu')?.classList.toggle('menu-open');
+            /* Real links navigate to their dashboard. Only javascript:void links toggle. */
+            if ((link.getAttribute('href') || '').trim().toLowerCase() === 'javascript:void(0);') {
+                event.preventDefault();
+                link.closest('.nxl-hasmenu')?.classList.toggle('menu-open');
+            }
         });
     });
 
