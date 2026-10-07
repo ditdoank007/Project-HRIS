@@ -5,6 +5,7 @@ from app.utils.authorization import has_form_access, is_administrator
 AGENDA_FORM_IDS = (
     "AGENDA_RAPAT",
     "AGENDA_DISPOSISI",
+    "AGENDA_BUKU_TAMU",
     "SUMDA_KESAMAPTAAN",
     "REKAM_MEDIS",
 )
