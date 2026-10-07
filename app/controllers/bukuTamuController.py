@@ -18,7 +18,7 @@ from reportlab.platypus import (
 
 from app import db
 from config import Config
-from app.models.bukuTamuModel import BukuTamu, BukuTamuEntry
+from app.models.bukuTamuModel import BukuTamu, BukuTamuEntry, JenisKeperluan
 from app.models.unitKerjaModel import MfUnitKerja
 from app.models.pegawaiModel import Pegawai
 
@@ -43,6 +43,40 @@ def _active_units():
 
 def _find_book(book_id):
     return BukuTamu.query.get(int(book_id))
+
+
+
+def _active_keperluan():
+    rows = JenisKeperluan.query.filter(
+        JenisKeperluan.IS_AKTIF == "Y"
+    ).order_by(
+        JenisKeperluan.URUT.asc(),
+        JenisKeperluan.NAMA_KEPERLUAN.asc()
+    ).all()
+    return rows
+
+
+def _keperluan_payload(row):
+    return {
+        "id": row.ID,
+        "nama": row.NAMA_KEPERLUAN,
+        "aktif": row.IS_AKTIF == "Y",
+        "urut": row.URUT,
+    }
+
+
+def _is_lainnya(name):
+    return str(name or "").strip().casefold() == "lainnya"
+
+
+def _find_active_keperluan(name):
+    value = str(name or "").strip()
+    if not value:
+        return None
+    return JenisKeperluan.query.filter(
+        JenisKeperluan.NAMA_KEPERLUAN == value,
+        JenisKeperluan.IS_AKTIF == "Y"
+    ).first()
 
 
 def _book_payload(book):
@@ -87,6 +121,7 @@ def buku_tamu():
         "pages/dashboard_1/Buku Tamu.html",
         books=books,
         units=_active_units(),
+        keperluan_types=_active_keperluan(),
         month_count=month_count,
         year_count=year_count,
         today_count=today_count,
@@ -99,7 +134,15 @@ def buku_tamu():
 
 
 def buku_tamu_buat():
-    return render_template("pages/dashboard_1/Buku Tamu Buat.html", units=_active_units())
+    return render_template(
+        "pages/dashboard_1/Buku Tamu Buat.html",
+        units=_active_units(),
+        keperluan_types=_active_keperluan(),
+    )
+
+
+def buku_tamu_jenis_keperluan():
+    return render_template("pages/dashboard_1/Buku Tamu Jenis Keperluan.html")
 
 
 def buku_tamu_rekap():
@@ -107,9 +150,78 @@ def buku_tamu_rekap():
     return render_template(
         "pages/dashboard_1/Buku Tamu Rekap.html",
         units=_active_units(),
+        keperluan_types=_active_keperluan(),
         year=now.year,
         month=now.month,
     )
+
+
+def api_buku_tamu_jenis_keperluan_list():
+    rows = JenisKeperluan.query.order_by(
+        JenisKeperluan.URUT.asc(), JenisKeperluan.NAMA_KEPERLUAN.asc()
+    ).all()
+    return jsonify({"status": "success", "data": [_keperluan_payload(x) for x in rows]})
+
+
+def api_buku_tamu_jenis_keperluan_save():
+    payload = request.get_json(silent=True) or {}
+    name = str(payload.get("nama") or "").strip()
+    if not name:
+        return jsonify({"status": "error", "message": "Nama Jenis Keperluan wajib diisi."}), 400
+    if len(name) > 100:
+        return jsonify({"status": "error", "message": "Nama Jenis Keperluan maksimal 100 karakter."}), 400
+    try:
+        row_id = int(payload.get("id") or 0)
+        urut = max(0, int(payload.get("urut") or 0))
+    except (TypeError, ValueError):
+        row_id, urut = 0, 0
+    row = JenisKeperluan.query.get(row_id) if row_id else None
+    duplicate = JenisKeperluan.query.filter(
+        db.func.lower(JenisKeperluan.NAMA_KEPERLUAN) == name.lower()
+    )
+    if row:
+        duplicate = duplicate.filter(JenisKeperluan.ID != row.ID)
+    if duplicate.first():
+        return jsonify({"status": "error", "message": "Jenis Keperluan sudah ada."}), 409
+    now = _now()
+    actor = request.headers.get("X-User-NIP") or "system"
+    if row:
+        row.NAMA_KEPERLUAN = name
+        row.URUT = urut
+        row.UPDATE_BY = actor
+        row.UPDATE_DATE = now
+    else:
+        row = JenisKeperluan(
+            NAMA_KEPERLUAN=name, IS_AKTIF="Y", URUT=urut,
+            CREATED_BY=actor, CREATED_DATE=now,
+            UPDATE_BY=actor, UPDATE_DATE=now,
+        )
+        db.session.add(row)
+    db.session.commit()
+    return jsonify({"status": "success", "data": _keperluan_payload(row)})
+
+
+def api_buku_tamu_jenis_keperluan_toggle(row_id):
+    row = JenisKeperluan.query.get(int(row_id))
+    if not row:
+        return jsonify({"status": "error", "message": "Jenis Keperluan tidak ditemukan."}), 404
+    value = str((request.get_json(silent=True) or {}).get("aktif") or "").upper()
+    if value not in {"Y", "N"}:
+        value = "N" if row.IS_AKTIF == "Y" else "Y"
+    if value == "N" and _is_lainnya(row.NAMA_KEPERLUAN):
+        return jsonify({"status": "error", "message": "Jenis Keperluan Lainnya harus tetap aktif."}), 400
+    row.IS_AKTIF = value
+    row.UPDATE_BY = request.headers.get("X-User-NIP") or "system"
+    row.UPDATE_DATE = _now()
+    db.session.commit()
+    return jsonify({"status": "success", "data": _keperluan_payload(row)})
+
+
+def api_buku_tamu_internal_keperluan():
+    unauthorized = _require_calendar_internal()
+    if unauthorized:
+        return unauthorized
+    return jsonify({"status": "success", "data": [_keperluan_payload(x) for x in _active_keperluan()]})
 
 
 def api_buku_tamu_save():
