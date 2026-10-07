@@ -186,7 +186,9 @@ def api_buku_tamu_jenis_keperluan_save():
     now = _now()
     actor = request.headers.get("X-User-NIP") or "system"
     if row:
-        row.NAMA_KEPERLUAN = name
+        if _is_lainnya(row.NAMA_KEPERLUAN) and not _is_lainnya(name):
+            return jsonify({"status": "error", "message": "Jenis Keperluan Lainnya tidak boleh diubah namanya."}), 400
+        row.NAMA_KEPERLUAN = "Lainnya" if _is_lainnya(row.NAMA_KEPERLUAN) else name
         row.URUT = urut
         row.UPDATE_BY = actor
         row.UPDATE_DATE = now
