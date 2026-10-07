@@ -23,26 +23,18 @@
     <script src="{{ url_for('static', filename='js/hris-global.js') }}"></script>
 
     <style>
-        /* AGENDA uses the same NEXL shell dimensions as Dashboard UMUM. */
-        .nxl-hasmenu > .nxl-link {
-            cursor: pointer;
-        }
-
+        /* Menu interaction only; visual styling lives in Global UI CSS. */
+        .nxl-hasmenu > .nxl-link { cursor: pointer; }
         .nxl-hasmenu.menu-open > .nxl-submenu,
-        .nxl-hasmenu.hris-active > .nxl-submenu {
-            display: block;
-        }
-
+        .nxl-hasmenu.hris-active > .nxl-submenu { display: block; }
         .nxl-hasmenu.menu-open > .nxl-link .nxl-arrow,
-        .nxl-hasmenu.hris-active > .nxl-link .nxl-arrow {
-            transform: rotate(90deg);
-        }
+        .nxl-hasmenu.hris-active > .nxl-link .nxl-arrow { transform: rotate(90deg); }
     </style>
 
     {% block head %}{% endblock %}
 </head>
 
-<body class="hris-modern">
+<body class="hris-modern hris-agenda-shell">
 
     {% include 'partials/header.html' %}
 
@@ -103,12 +95,14 @@
                             <li class="nxl-item">
                                 <a href="{{ url_for('main.view_agenda_buku_tamu_buat') }}"
                                    class="nxl-link{% if request.endpoint == 'main.view_agenda_buku_tamu_buat' %} active{% endif %}">
+                                    <span class="nxl-micon"><i class="ti ti-book-upload"></i></span>
                                     <span class="nxl-mtext">Buat Buku Tamu</span>
                                 </a>
                             </li>
                             <li class="nxl-item">
                                 <a href="{{ url_for('main.view_agenda_buku_tamu_rekap') }}"
                                    class="nxl-link{% if request.endpoint == 'main.view_agenda_buku_tamu_rekap' %} active{% endif %}">
+                                    <span class="nxl-micon"><i class="ti ti-report-analytics"></i></span>
                                     <span class="nxl-mtext">Rekap Buku Tamu</span>
                                 </a>
                             </li>
