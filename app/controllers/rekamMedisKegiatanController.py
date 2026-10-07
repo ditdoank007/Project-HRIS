@@ -366,8 +366,8 @@ def api_rekam_medis_kegiatan_non_pegawai_complete(kegiatan_id):
 
 
 def _build_medical_qr(kegiatan):
-    base_url = str(Config.CALENDAR_PUBLIC_BASE_URL or "https://calendar.sarsurabaya.id").rstrip("/")
-    scan_url = f"{base_url}/rekam-medis-qrcode?token={kegiatan.QR_TOKEN}"
+    base_url = str(Config.HRIS_PUBLIC_BASE_URL or "https://hris.sarsurabaya.id").rstrip("/")
+    scan_url = f"{base_url}/rekam-medis/scan/{kegiatan.QR_TOKEN}"
 
     qr = qrcode.QRCode(
         version=None,
