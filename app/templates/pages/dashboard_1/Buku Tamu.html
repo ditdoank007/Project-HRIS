@@ -1,26 +1,84 @@
 {% extends "layout/baseDashboard4.html" %}
 {% block title %}- Buku Tamu{% endblock %}
 {% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/hris-ui.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/buku-tamu.css') }}">
-<div class="nxl-content bt-page">
-  <div class="page-header"><div class="page-header-left d-flex align-items-center"><div class="page-header-title"><h5 class="m-b-10">AGENDA</h5></div><ul class="breadcrumb"><li class="breadcrumb-item active">Buku Tamu</li></ul></div></div>
-  <div class="main-content"><div class="container-fluid">
-    <div class="bt-hero mb-4"><div class="d-flex flex-wrap justify-content-between align-items-center gap-3"><div><div class="small text-white-50 mb-1">HRIS Reborn · AGENDA</div><h4>Buku Tamu</h4><div class="small text-white-50 mt-1">Infografis kunjungan tamu Kantor SAR Surabaya.</div></div><a href="{{ url_for('main.view_agenda_buku_tamu_buat') }}" class="btn btn-light"><i class="feather-plus me-1"></i>Buat Buku Tamu</a></div></div>
-    <div class="row g-3 mb-4">
-      <div class="col-12 col-md-6 col-xl-3"><div class="bt-stat card"><div class="card-body d-flex justify-content-between align-items-center"><div><div class="text-muted small">Tamu Hari Ini</div><div class="value mt-2">{{ today_count }}</div></div><div class="icon"><i class="feather-users"></i></div></div></div></div>
-      <div class="col-12 col-md-6 col-xl-3"><div class="bt-stat card"><div class="card-body d-flex justify-content-between align-items-center"><div><div class="text-muted small">Tamu Bulan Berjalan</div><div class="value mt-2">{{ month_count }}</div><div class="small text-muted mt-1">{{ month_label }}</div></div><div class="icon"><i class="feather-calendar"></i></div></div></div></div>
-      <div class="col-12 col-md-6 col-xl-3"><div class="bt-stat card"><div class="card-body d-flex justify-content-between align-items-center"><div><div class="text-muted small">Tamu Tahun Berjalan</div><div class="value mt-2">{{ year_count }}</div><div class="small text-muted mt-1">Tahun {{ year }}</div></div><div class="icon"><i class="feather-bar-chart-2"></i></div></div></div></div>
-      <div class="col-12 col-md-6 col-xl-3"><div class="bt-stat card"><div class="card-body d-flex justify-content-between align-items-center"><div><div class="text-muted small">Buku Tamu Aktif</div><div class="value mt-2">{{ active_books }}</div></div><div class="icon"><i class="feather-book-open"></i></div></div></div></div>
+<div class="hris-modern">
+  <div class="hris-page">
+    <div class="hris-page-header">
+      <div>
+        <h1 class="hris-page-title">Buku Tamu</h1>
+        <p class="hris-page-subtitle">Pengelolaan Buku Tamu dan QR Code permanen setiap Unit Kerja.</p>
+      </div>
+      <a href="{{ url_for('main.view_agenda_buku_tamu_buat') }}" class="hris-btn hris-btn-primary">
+        <i class="feather-plus"></i> Buat Buku Tamu
+      </a>
     </div>
-    <div class="bt-card card"><div class="card-header d-flex justify-content-between align-items-center"><div><h6 class="mb-1">Buku Tamu Unit Kerja</h6><small class="text-muted">QR Code permanen yang telah dibuat.</small></div><a href="{{ url_for('main.view_agenda_buku_tamu_rekap') }}" class="btn btn-sm btn-outline-primary">Rekap Buku Tamu</a></div>
-      <div class="card-body p-0"><div class="table-responsive"><table class="table table-hover mb-0 bt-table"><thead><tr><th class="ps-3">No</th><th>Judul</th><th>Unit Kerja</th><th>Status QR</th><th class="text-end pe-3">Aksi</th></tr></thead><tbody>
-      {% for book in books %}<tr><td class="ps-3">{{ loop.index }}</td><td><strong>{{ book.JUDUL }}</strong></td><td>{{ book.UNIT_KERJA_NAME }}</td><td>{% if book.QR_ACTIVE == 'Y' %}<span class="badge bg-success">AKTIF</span>{% else %}<span class="badge bg-secondary">NONAKTIF</span>{% endif %}</td><td class="text-end pe-3"><button class="btn btn-sm btn-outline-primary" onclick="previewBook({{ book.ID }})"><i class="feather-eye me-1"></i>Preview</button></td></tr>
-      {% else %}<tr><td colspan="5" class="bt-empty">Belum ada Buku Tamu.</td></tr>{% endfor %}
-      </tbody></table></div></div>
+
+    <div class="hris-hero">
+      <div>
+        <h2 class="hris-hero-title">Buku Tamu</h2>
+        <p class="hris-hero-text">Infografis kunjungan tamu Kantor SAR Surabaya.</p>
+      </div>
     </div>
+
+    <div class="hris-grid hris-grid-4" style="margin-bottom:16px;">
+      <div class="hris-card"><div class="hris-card-body">
+        <div class="hris-page-subtitle">Tamu Hari Ini</div>
+        <div class="hris-page-title" style="font-size:28px;margin-top:5px;">{{ today_count }}</div>
+      </div></div>
+      <div class="hris-card"><div class="hris-card-body">
+        <div class="hris-page-subtitle">Tamu Bulan Berjalan</div>
+        <div class="hris-page-title" style="font-size:28px;margin-top:5px;">{{ month_count }}</div>
+        <div class="hris-page-subtitle">{{ month_label }}</div>
+      </div></div>
+      <div class="hris-card"><div class="hris-card-body">
+        <div class="hris-page-subtitle">Tamu Tahun Berjalan</div>
+        <div class="hris-page-title" style="font-size:28px;margin-top:5px;">{{ year_count }}</div>
+        <div class="hris-page-subtitle">Tahun {{ year }}</div>
+      </div></div>
+      <div class="hris-card"><div class="hris-card-body">
+        <div class="hris-page-subtitle">Buku Tamu Aktif</div>
+        <div class="hris-page-title" style="font-size:28px;margin-top:5px;">{{ active_books }}</div>
+      </div></div>
+    </div>
+
+    <div class="hris-card">
+      <div class="hris-card-header">
+        <div>
+          <h3 class="hris-card-title">Buku Tamu Unit Kerja</h3>
+          <div class="hris-page-subtitle">QR Code permanen yang telah dibuat.</div>
+        </div>
+        <a href="{{ url_for('main.view_agenda_buku_tamu_rekap') }}" class="hris-btn hris-btn-secondary">Rekap Buku Tamu</a>
+      </div>
+      <div class="hris-table-wrap">
+        <table class="hris-table-modern">
+          <thead><tr><th>No</th><th>Judul</th><th>Unit Kerja</th><th>Status QR</th><th>Aksi</th></tr></thead>
+          <tbody>
+          {% for book in books %}
+            <tr>
+              <td>{{ loop.index }}</td>
+              <td><strong>{{ book.JUDUL }}</strong></td>
+              <td>{{ book.UNIT_KERJA_NAME }}</td>
+              <td>{% if book.QR_ACTIVE == 'Y' %}<span class="hris-badge-modern hris-badge-success">AKTIF</span>{% else %}<span class="hris-badge-modern hris-badge-danger">NONAKTIF</span>{% endif %}</td>
+              <td><button class="hris-btn hris-btn-secondary" onclick="previewBook({{ book.ID }})"><i class="feather-eye"></i> Preview</button></td>
+            </tr>
+          {% else %}
+            <tr><td colspan="5" class="hris-empty">Belum ada Buku Tamu.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal fade bt-modal-preview" id="modalPreview" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title">Preview Buku Tamu</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body"><div id="printBook" class="bt-print"><div class="small text-muted mb-2">BUKU TAMU</div><h1 id="pvJudul">-</h1><h2>Unit Kerja : <span id="pvUnit">-</span></h2><img id="pvQr" src="" alt="QR Code Buku Tamu"><div class="hint">Silahkan Scan menggunakan kamera handphone dan klik tautan untuk mengisi Buku Tamu<br><br>- Terima kasih -</div></div></div>
+    <div class="modal-footer"><button class="btn btn-light" onclick="window.print()">Cetak</button><button class="btn btn-primary" data-bs-dismiss="modal">Tutup</button></div>
   </div></div>
 </div>
-<div class="modal fade bt-modal-preview" id="modalPreview" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Preview Buku Tamu</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div id="printBook" class="bt-print"><div class="small text-muted mb-2">BUKU TAMU</div><h1 id="pvJudul">-</h1><h2>Unit Kerja : <span id="pvUnit">-</span></h2><img id="pvQr" src="" alt="QR Code Buku Tamu"><div class="hint">Silahkan Scan menggunakan kamera handphone dan klik tautan untuk mengisi Buku Tamu<br><br>- Terima kasih -</div></div></div><div class="modal-footer"><button class="btn btn-light" onclick="window.print()">Cetak</button><button class="btn btn-primary" data-bs-dismiss="modal">Tutup</button></div></div></div></div>
 {% endblock %}
 {% block script %}<script>
 async function previewBook(id){const r=await fetch('/api/agenda/buku-tamu/'+id+'/preview');const j=await r.json();if(j.status!=='success')return alert(j.message||'Gagal memuat preview.');document.getElementById('pvJudul').textContent=j.data.judul;document.getElementById('pvUnit').textContent=j.data.unit_kerja;document.getElementById('pvQr').src='/api/agenda/buku-tamu/'+id+'/qr?ts='+Date.now();new bootstrap.Modal(document.getElementById('modalPreview')).show();}
