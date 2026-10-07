@@ -38,3 +38,13 @@ CREATE TABLE IF NOT EXISTS BUKU_TAMU_ENTRY (
         FOREIGN KEY (BUKU_TAMU_ID) REFERENCES BUKU_TAMU(ID)
         ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- Daftarkan modul agar dapat diberikan melalui HAK_AKSES_FORM.
+INSERT INTO MF_FORM
+    (FormID, Formname, FormType, Nourut, Berkas, Modul, parentForm, HirarkiLvl)
+SELECT
+    'AGENDA_BUKU_TAMU', 'Buku Tamu', 'MENU', 30, 'BukuTamu.aspx', 'AGENDA', 'AGENDA', 2
+WHERE NOT EXISTS (
+    SELECT 1 FROM MF_FORM WHERE FormID = 'AGENDA_BUKU_TAMU'
+);
