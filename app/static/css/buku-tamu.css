@@ -138,3 +138,16 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Modal Buku Tamu — opaque preview card, blurred page backdrop. */
+.bt-modal-preview .modal-content {
+  background: #fff !important;
+  opacity: 1 !important;
+}
+.bt-modal-preview .bt-print {
+  background: #fff !important;
+  opacity: 1 !important;
+  border: 1px solid var(--ui-border) !important;
+  box-shadow: 0 8px 24px rgba(15,23,42,.06) !important;
+}
