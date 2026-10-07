@@ -370,7 +370,18 @@ def _save_signature(token, signature_data):
     return rel
 
 
+def _require_calendar_internal():
+    expected = getattr(Config, "CALENDAR_INTERNAL_API_KEY", None)
+    supplied = request.headers.get("X-Calendar-Internal-Key")
+    if not expected or supplied != expected:
+        return jsonify({"status": "error", "message": "Unauthorized."}), 401
+    return None
+
+
 def api_buku_tamu_internal_info():
+    unauthorized = _require_calendar_internal()
+    if unauthorized:
+        return unauthorized
     token = str(request.args.get("token") or "").strip()
     book = _internal_book(token)
     if not book:
@@ -383,6 +394,9 @@ def api_buku_tamu_internal_info():
 
 
 def api_buku_tamu_internal_pegawai():
+    unauthorized = _require_calendar_internal()
+    if unauthorized:
+        return unauthorized
     q = str(request.args.get("q") or "").strip()
     if len(q) < 2:
         return jsonify({"status": "success", "data": []})
@@ -398,6 +412,9 @@ def api_buku_tamu_internal_pegawai():
 
 
 def api_buku_tamu_internal_submit():
+    unauthorized = _require_calendar_internal()
+    if unauthorized:
+        return unauthorized
     payload = request.get_json(silent=True) or {}
     token = str(payload.get("token") or "").strip()
     book = _internal_book(token)
