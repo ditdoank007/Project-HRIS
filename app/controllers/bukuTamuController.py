@@ -278,7 +278,7 @@ def export_buku_tamu_pdf():
     ]
 
     header = ["No", "Tanggal", "Jam", "Nama Lengkap", "Instansi / Organisasi",
-              "No. HP", "Keperluan", "Keterangan", "Bertemu Pegawai"]
+              "No. HP", "Keperluan", "Keterangan", "Bertemu Pegawai", "Tanda Tangan"]
     table_data = [header]
     for i, (entry, _book) in enumerate(rows, 1):
         table_data.append([
@@ -291,9 +291,14 @@ def export_buku_tamu_pdf():
             Paragraph(entry.KEPERLUAN or "-", styles["BTCell"]),
             Paragraph(entry.KETERANGAN or "-", styles["BTCell"]),
             Paragraph(entry.PEGAWAI_NAMA or "-", styles["BTCell"]),
+            (
+                RLImage(_signature_absolute(entry.TANDA_TANGAN_PATH), width=24*mm, height=14*mm)
+                if entry.TANDA_TANGAN_PATH and os.path.isfile(_signature_absolute(entry.TANDA_TANGAN_PATH))
+                else Paragraph("-", styles["BTCell"])
+            ),
         ])
 
-    col_widths = [8*mm, 23*mm, 15*mm, 34*mm, 40*mm, 25*mm, 45*mm, 42*mm, 38*mm]
+    col_widths = [7*mm, 21*mm, 13*mm, 31*mm, 37*mm, 23*mm, 39*mm, 36*mm, 34*mm, 27*mm]
     table = Table(table_data, colWidths=col_widths, repeatRows=1)
     table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f97316")),
