@@ -15,6 +15,7 @@ from app.services.kesamaptaan_service import (
     jakarta_now,
     record_employee_attendance,
     save_photos,
+    signature_path_for_nip,
 )
 from app.utils.authorization import is_administrator, is_hris_operator
 
@@ -218,7 +219,7 @@ def api_kesamaptaan_attendance(kegiatan_id):
                 "nip": row.NIP,
                 "nama": row.NAMA,
                 "scanned_date": row.SCANNED_DATE.isoformat(),
-                "signature_available": bool(row.SIGNATURE_PATH),
+                "signature_available": bool(signature_path_for_nip(row.NIP, row.SIGNATURE_PATH)),
             }
             for index, row in enumerate(attendance_rows(kegiatan_id), start=1)
         ],
