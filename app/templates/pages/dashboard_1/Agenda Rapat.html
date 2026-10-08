@@ -91,9 +91,13 @@
                 <div class="card-header rapat-toolbar d-flex flex-wrap align-items-center justify-content-between gap-2">
                     <div>
                         <h6 class="mb-1">Daftar Rapat</h6>
-                        <small class="text-muted">Agenda yang dibuat melalui HRIS Reborn.</small>
+                        <small class="text-muted">Menampilkan agenda berdasarkan bulan yang dipilih.</small>
                     </div>
-                    <div class="d-flex gap-2">
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <div class="hris-month-filter">
+                            <span class="hris-month-filter-label">Bulan</span>
+                            <input id="filterBulanRapat" type="month" aria-label="Pilih bulan agenda rapat">
+                        </div>
                         <select id="filterStatusRapat" class="form-select form-select-sm" style="width: 150px;">
                             <option value="">Semua Status</option>
                             <option value="TERJADWAL">Terjadwal</option>
@@ -303,6 +307,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const search = document.getElementById("searchRapat");
     const status = document.getElementById("filterStatusRapat");
+    const monthFilter = document.getElementById("filterBulanRapat");
     const body = document.getElementById("tabelRapatBody");
     const participants = [];
     const participantInput = document.getElementById("inputPeserta");
@@ -323,12 +328,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function render(rows) {
         const q=(search?.value||"").toLowerCase().trim(), st=status?.value||"";
-        const filtered=rows.filter(x=>(!q || JSON.stringify(x).toLowerCase().includes(q)) && (!st || x.status===st));
+        const month=monthFilter.value || new Date().toISOString().slice(0,7);
+        const monthRows=rows.filter(x=>String(x.start||"").slice(0,7)===month);
+        const filtered=monthRows.filter(x=>(!q || JSON.stringify(x).toLowerCase().includes(q)) && (!st || x.status===st));
         body.innerHTML=filtered.length ? filtered.map(x=>'<tr><td class="ps-3 hris-text-left"><strong>'+fmtDate(x.start)+'</strong><div class="rapat-meta">'+fmtTime(x.start)+' - '+fmtTime(x.end)+' WIB</div></td><td class="hris-text-left"><div class="rapat-title">'+esc(x.title)+'</div><div class="rapat-meta"><i class="feather-map-pin me-1"></i>'+esc(x.location||"-")+'</div></td><td class="hris-text-left">'+esc(x.organizer_name||x.organizer_nip||"-")+'</td><td class="hris-text-left">'+Number(x.attendance_count||0)+' orang</td><td class="hris-text-left">'+badge(x.status)+'</td><td class="pe-3 hris-text-left"><button class="btn btn-sm btn-light" onclick="lihatRapat('+Number(x.event_id)+')"><i class="feather-eye"></i></button></td></tr>').join("") : '<tr><td colspan="6" class="text-center py-4 text-muted">Belum ada agenda rapat.</td></tr>';
-        document.getElementById("statRapatHariIni").textContent=rows.filter(x=>x.start && new Date(x.start).toDateString()===new Date().toDateString()).length;
-        document.getElementById("statRapatTerjadwal").textContent=rows.filter(x=>x.status==="TERJADWAL").length;
-        document.getElementById("statRapatSelesai").textContent=rows.filter(x=>x.status==="SELESAI").length;
-        document.getElementById("statRapatBatal").textContent=rows.filter(x=>x.status==="BATAL").length;
+        document.getElementById("statRapatHariIni").textContent=monthRows.filter(x=>x.start && new Date(x.start).toDateString()===new Date().toDateString()).length;
+        document.getElementById("statRapatTerjadwal").textContent=monthRows.filter(x=>x.status==="TERJADWAL").length;
+        document.getElementById("statRapatSelesai").textContent=monthRows.filter(x=>x.status==="SELESAI").length;
+        document.getElementById("statRapatBatal").textContent=monthRows.filter(x=>x.status==="BATAL").length;
     }
 
     async function load() {
