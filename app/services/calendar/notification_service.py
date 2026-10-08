@@ -223,6 +223,7 @@ def list_for_nip(nip, limit=30):
 
 def unread_count(nip):
     nip = str(nip or "").strip()
+    expire_past_dinas_luar(nip)
     return (
         CalendarNotification.query
         .filter(
