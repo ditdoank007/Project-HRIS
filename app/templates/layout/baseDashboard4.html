@@ -37,6 +37,31 @@
         .nxl-hasmenu.hris-active > .nxl-link .nxl-arrow {
             transform: rotate(90deg);
         }
+
+        /* Dashboard4 = HRIS Calendar shell, Agenda identity */
+        .agenda-sidebar-brand { padding: 18px 20px !important; min-height: 78px; background:#111827; }
+        .agenda-brand-row { display:flex; align-items:center; gap:12px; position:relative; }
+        .agenda-brand-row img { width:38px !important; height:38px !important; object-fit:contain; flex:0 0 38px; }
+        .agenda-brand-text { min-width:0; }
+        .agenda-brand-name { color:#fff; font-size:16px; font-weight:800; letter-spacing:1px; line-height:1.1; }
+        .agenda-brand-office { margin-top:3px; color:#9ca3af; font-size:10px; white-space:nowrap; }
+        .agenda-sidebar-toggle { margin-left:auto; flex:0 0 30px; width:30px; height:30px; border:1px solid rgba(255,255,255,.12); border-radius:6px; background:transparent; color:#d1d5db; cursor:pointer; font-size:20px; line-height:1; }
+        .agenda-sidebar-toggle:hover { background:rgba(255,255,255,.08); color:#fff; }
+        .agenda-dashboard-link { margin-top:0 !important; }
+        body.agenda-sidebar-minimized .nxl-navigation { width:72px !important; }
+        body.agenda-sidebar-minimized .nxl-navigation .navbar-wrapper,
+        body.agenda-sidebar-minimized .nxl-navigation .navbar-content { width:72px !important; }
+        body.agenda-sidebar-minimized .nxl-container { width:calc(100% - 72px) !important; margin-left:72px !important; }
+        body.agenda-sidebar-minimized .agenda-brand-text,
+        body.agenda-sidebar-minimized .nxl-navigation .nxl-mtext { display:none !important; }
+        body.agenda-sidebar-minimized .agenda-sidebar-brand { padding-left:10px !important; padding-right:10px !important; }
+        body.agenda-sidebar-minimized .agenda-brand-row { justify-content:center; }
+        body.agenda-sidebar-minimized .agenda-sidebar-toggle { position:absolute; right:-13px; top:24px; z-index:20; background:#111827; }
+        body.agenda-sidebar-minimized .nxl-navigation .nxl-link { justify-content:center; padding-left:0 !important; padding-right:0 !important; }
+        body.agenda-sidebar-minimized .nxl-navigation .nxl-micon { margin-right:0 !important; }
+        @media (max-width:650px) {
+          body.agenda-sidebar-minimized .nxl-container { width:100% !important; margin-left:0 !important; }
+        }
     </style>
 
     {% block head %}{% endblock %}
@@ -50,26 +75,26 @@
         <div class="navbar-wrapper">
             <div class="navbar-content">
                 <ul class="nxl-navbar">
-                    <div class="custom-nav-header">
-                        <div class="header-container">
+                    <div class="custom-nav-header agenda-sidebar-brand">
+                        <div class="agenda-brand-row">
                             <img src="{{ url_for('static', filename='static_dashboard_1/assets/images/logo-full.png') }}"
-                                 alt="" width="40" height="auto">
-                            <div class="nxl-navigation-toggle toggle-btn-action"></div>
-                            <span class="nav-text-label nxl-mtext">HRIS Kansar</span>
-                        </div>
-                        <div class="header-container">
-                            <div class="nxl-navigation-toggle toggle-btn-action">
-                                <div id="menu-mini-button" class="btn-mini-style" style="cursor: pointer;">
-                                    <i class="feather-menu"></i>
-                                </div>
-                                <div id="menu-expend-button" class="btn-expand-style" style="display: none;">
-                                    <i class="feather-menu"></i>
-                                </div>
+                                 alt="Basarnas" width="38" height="38">
+                            <div class="agenda-brand-text">
+                                <div class="agenda-brand-name">AGENDA</div>
+                                <div class="agenda-brand-office">Kantor SAR Surabaya</div>
                             </div>
-                            <span class="nav-text-label nxl-mtext">Navigation</span>
+                            <button type="button" id="sidebarToggle" class="agenda-sidebar-toggle"
+                                    title="Minimize sidebar" aria-label="Minimize sidebar">‹</button>
                         </div>
-                        <div class="nav-separator"></div>
                     </div>
+
+                    <li class="nxl-item agenda-dashboard-link">
+                        <a href="{{ url_for('main.dashboard4') }}"
+                           class="nxl-link{% if request.endpoint == 'main.dashboard4' %} active{% endif %}">
+                            <span class="nxl-micon"><i class="feather-home"></i></span>
+                            <span class="nxl-mtext">DASHBOARD</span>
+                        </a>
+                    </li>
 
                     {% if is_administrator() or has_form_access('AGENDA_RAPAT') %}
                     <li class="nxl-item">
@@ -145,6 +170,15 @@
 <script src="{{ url_for('static', filename='static_dashboard_1/assets/js/common-init.min.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', function () {
+            document.body.classList.toggle('agenda-sidebar-minimized');
+            const minimized = document.body.classList.contains('agenda-sidebar-minimized');
+            sidebarToggle.textContent = minimized ? '›' : '‹';
+            sidebarToggle.setAttribute('aria-label', minimized ? 'Maximize sidebar' : 'Minimize sidebar');
+        });
+    }
     document.querySelectorAll('.nxl-hasmenu > .nxl-link').forEach(function (link) {
         link.addEventListener('click', function (event) {
             event.preventDefault();
