@@ -386,6 +386,10 @@ def api_agenda_rapat_cancel(event_id):
         meta.QR_ACTIVE = "N"
         meta.UPDATE_BY = session.get("nip", "system")
         meta.UPDATE_DATE = datetime.utcnow()
+
+    from app.services.calendar.notification_service import complete_source
+    complete_source("AGENDA_RAPAT", str(event.EVENT_ID))
+
     db.session.commit()
     return jsonify({"status": "success", "data": _serialize_event(event)})
 
