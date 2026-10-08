@@ -398,6 +398,9 @@ def api_agenda_rapat_complete(event_id):
         meta.UPDATE_BY = update_by
         meta.UPDATE_DATE = now
 
+    from app.services.calendar.notification_service import complete_source
+    complete_source("AGENDA_RAPAT", str(event.EVENT_ID))
+
     db.session.flush()
     db.session.commit()
 
