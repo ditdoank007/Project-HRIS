@@ -23,6 +23,7 @@ from app.models.dinasLuarModel import DinasLuar
 from app.models.pegawaiModel import Pegawai
 from app.models.kalenderModel import MfKalender
 from app.models.agendaRapatAttendanceModel import AgendaRapatAttendance
+from app.models.agendaRapatMetaModel import AgendaRapatMeta
 from app.models.calendarEventModel import CalendarEvent
 from app.models.kesamaptaanKegiatanModel import KesamaptaanKegiatan
 from app.models.kesamaptaanKehadiranModel import KesamaptaanKehadiran
@@ -437,6 +438,24 @@ def build_personal_calendar_events(
             .first()
         )
 
+        meta = (
+            AgendaRapatMeta.query
+            .filter(AgendaRapatMeta.EVENT_ID == event.EVENT_ID)
+            .first()
+        )
+
+        attendance_url = None
+        if meta and meta.QR_TOKEN and meta.QR_ACTIVE == "Y":
+            from config import Config
+            base_url = (
+                os.getenv("CALENDAR_PUBLIC_BASE_URL")
+                or getattr(Config, "CALENDAR_PUBLIC_BASE_URL", None)
+                or "https://calendar.sarsurabaya.id"
+            ).rstrip("/")
+            attendance_url = (
+                f"{base_url}/absen-qrcode/pegawai?token={meta.QR_TOKEN}"
+            )
+
         events.append({
             "id": f"RAPAT-{event.EVENT_ID}-{nip}",
             "title": event.TITLE,
@@ -451,6 +470,7 @@ def build_personal_calendar_events(
             "location": event.LOCATION,
             "event_id": event.EVENT_ID,
             "status": event.STATUS,
+            "attendance_url": attendance_url,
             "attendance_at": (
                 attendance.SCANNED_DATE.isoformat()
                 if attendance else None
