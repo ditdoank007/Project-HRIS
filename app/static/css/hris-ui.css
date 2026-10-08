@@ -4095,3 +4095,210 @@ html body .hris-table tbody td.hris-text-right {
 html body .nxl-content table.hris-table tbody td > * {
   text-align: left !important;
 }
+
+
+/* HRIS CALENDAR-STYLE AGENDA CONTROLLER */
+.hris-agenda-period-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 108px;
+  margin-bottom: 18px;
+  padding: 22px 24px;
+  background: #fff;
+  border: 1px solid #e8edf3;
+  border-radius: 14px;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, .045);
+}
+
+.hris-agenda-period-copy {
+  min-width: 0;
+}
+
+.hris-agenda-kicker {
+  margin-bottom: 5px;
+  color: var(--ui-brand, #f1662a);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .16em;
+}
+
+.hris-agenda-period-copy h2 {
+  margin: 0 0 4px;
+  color: #172033;
+  font-size: 22px;
+  line-height: 1.15;
+  font-weight: 800;
+}
+
+.hris-agenda-period-copy p {
+  margin: 0;
+  color: #697586;
+  font-size: 12px;
+}
+
+.hris-month-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  flex: 0 0 auto;
+  min-width: 196px;
+  height: 40px;
+  padding: 3px;
+  background: #fff;
+  border: 1px solid #e3e8ef;
+  border-radius: 9px;
+  box-shadow: 0 2px 8px rgba(15,23,42,.04);
+}
+
+.hris-month-nav-btn {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #64748b;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.hris-month-nav-btn:hover {
+  background: #fff1e9;
+  color: var(--ui-brand, #f1662a);
+}
+
+.hris-month-nav-label {
+  flex: 1 1 auto;
+  text-align: center;
+  color: #344054;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.hris-agenda-list-card {
+  overflow: hidden;
+  border: 1px solid #e8edf3 !important;
+  border-radius: 14px !important;
+  box-shadow: 0 4px 18px rgba(15,23,42,.045) !important;
+}
+
+.hris-agenda-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  min-height: 74px;
+  padding: 16px 18px;
+  background: #fff;
+  border-bottom: 1px solid #edf1f5;
+}
+
+.hris-agenda-list-title {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+}
+
+.hris-agenda-list-icon {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: #fff0e8;
+  color: var(--ui-brand, #f1662a);
+  font-size: 17px;
+}
+
+.hris-agenda-list-title h6 {
+  margin: 0 0 2px;
+  color: #172033;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.hris-agenda-list-title small {
+  color: #7a8494;
+  font-size: 11px;
+}
+
+.hris-agenda-count {
+  color: #667085;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.hris-agenda-filterbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: #fff;
+  border-bottom: 1px solid #f0f2f5;
+}
+
+.hris-agenda-filterbar .form-select {
+  width: 150px;
+}
+
+.hris-agenda-filterbar .form-control {
+  width: 190px;
+}
+
+.hris-agenda-list-card .table {
+  margin-bottom: 0;
+}
+
+.hris-agenda-list-card .table thead th {
+  background: #fbfcfd;
+  color: #667085;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .025em;
+  white-space: nowrap;
+}
+
+.hris-agenda-list-card .table tbody td {
+  color: #344054;
+  font-size: 12px;
+  vertical-align: middle;
+}
+
+.hris-agenda-list-card .table tbody tr:hover {
+  background: #fffaf7;
+}
+
+@media (max-width: 720px) {
+  .hris-agenda-period-card {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 18px;
+  }
+
+  .hris-month-nav {
+    width: 100%;
+  }
+
+  .hris-agenda-list-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .hris-agenda-filterbar {
+    justify-content: stretch;
+    flex-direction: column;
+  }
+
+  .hris-agenda-filterbar .form-select,
+  .hris-agenda-filterbar .form-control {
+    width: 100%;
+  }
+}
