@@ -4027,9 +4027,13 @@ body.hris-sidebar-mini .hris-submenu {
    Every table carrying .hris-table is left-aligned by default.
    Center/right remain explicit semantic exceptions.
 */
-html body .hris-table,
-html body .hris-table thead th,
-html body .hris-table tbody td {
+html body .nxl-content table.hris-table,
+html body .nxl-content table.hris-table thead,
+html body .nxl-content table.hris-table thead tr,
+html body .nxl-content table.hris-table thead th,
+html body .nxl-content table.hris-table tbody,
+html body .nxl-content table.hris-table tbody tr,
+html body .nxl-content table.hris-table tbody td {
   text-align: left !important;
 }
 
@@ -4041,4 +4045,47 @@ html body .hris-table tbody td.hris-text-center {
 html body .hris-table thead th.hris-text-right,
 html body .hris-table tbody td.hris-text-right {
   text-align: right !important;
+}
+
+
+/* GLOBAL MONTH FILTER CONTROLLER */
+/* Reusable month selector for list pages. Defaults are set by page JS to the current month. */
+.hris-month-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--ui-border-strong, #dbe5ef);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ui-ink, #17324d);
+}
+
+.hris-month-filter-label {
+  color: var(--ui-muted, #64748b);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.hris-month-filter input[type="month"] {
+  min-width: 138px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ui-ink, #17324d);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .hris-month-filter {
+    width: 100%;
+  }
+  .hris-month-filter input[type="month"] {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
 }
