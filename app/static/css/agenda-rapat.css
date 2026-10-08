@@ -212,3 +212,56 @@
         min-width: 920px;
     }
 }
+
+
+/* ============================================================
+   AGENDA RAPAT — DARK HERO STANDARD
+   Match the Kesamaptaan page header treatment.
+   ============================================================ */
+.rapat-page .rapat-period-card {
+    color: #fff;
+    background: linear-gradient(135deg, #102a43 0%, #1f4e79 100%);
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, .12);
+}
+
+.rapat-page .rapat-period-card .hris-agenda-kicker,
+.rapat-page .rapat-period-card h2,
+.rapat-page .rapat-period-card p {
+    color: #fff;
+}
+
+.rapat-page .rapat-period-card p {
+    color: rgba(255,255,255,.72);
+}
+
+.rapat-page .rapat-period-card .hris-agenda-create-btn {
+    color: #17324d;
+    background: #fff;
+    border-color: #fff;
+}
+
+.rapat-page .rapat-period-card .hris-agenda-create-btn:hover {
+    color: #17324d;
+    background: #f1f5f9;
+    border-color: #f1f5f9;
+}
+
+.rapat-page .rapat-period-card .hris-month-nav {
+    border-color: rgba(255,255,255,.20);
+    background: rgba(255,255,255,.10);
+}
+
+.rapat-page .rapat-period-card .hris-month-nav-btn {
+    color: #fff;
+    border-color: transparent;
+    background: transparent;
+}
+
+.rapat-page .rapat-period-card .hris-month-nav-btn:hover {
+    background: rgba(255,255,255,.12);
+}
+
+.rapat-page .rapat-period-card .hris-month-nav-label {
+    color: #fff;
+}
