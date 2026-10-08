@@ -288,6 +288,31 @@
     text-align: right !important;
 }
 
+/*
+   Strong global table controller.
+   This intentionally outranks page/theme selectors such as
+   .page-name .table td while keeping semantic center/right helpers available.
+*/
+.hris-table.hris-table thead th,
+.hris-table.hris-table tbody td {
+    text-align: left !important;
+}
+
+.hris-table.hris-table thead th.hris-text-center,
+.hris-table.hris-table tbody td.hris-text-center {
+    text-align: center !important;
+}
+
+.hris-table.hris-table thead th.hris-text-right,
+.hris-table.hris-table tbody td.hris-text-right {
+    text-align: right !important;
+}
+
+.hris-table.hris-table tbody td > * {
+    text-align: left !important;
+}
+
+
 
 /* ============================================================
    08. TABLE STATUS — TEXT ONLY
