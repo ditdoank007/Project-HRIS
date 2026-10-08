@@ -48,6 +48,17 @@ def ensure_notification(
         .first()
     )
     if existing:
+        if existing.IS_ACTIVE != "Y":
+            now = _now()
+            existing.IS_ACTIVE = "Y"
+            existing.READ_STATUS = "N"
+            existing.READ_DATE = None
+            existing.COMPLETED_DATE = None
+            existing.CREATED_DATE = now
+            existing.TITLE = str(title or existing.TITLE or "").strip()[:200]
+            existing.MESSAGE = str(message or title or existing.MESSAGE or "").strip()[:255]
+            existing.URL = str(url or existing.URL or "").strip()[:500] or None
+            existing.EVENT_ID = event_id
         return existing
 
     now = _now()
