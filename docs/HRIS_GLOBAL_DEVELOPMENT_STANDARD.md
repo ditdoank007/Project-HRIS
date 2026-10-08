@@ -350,6 +350,62 @@ Status:
 
 ---
 
+## 13.7 Global Table Alignment Controller
+
+Status:
+
+    EXISTING
+
+Aturan:
+
+    Semua tabel yang menggunakan .hris-table default rata kiri.
+
+Pengecualian alignment harus eksplisit menggunakan:
+
+    .hris-text-center
+    .hris-text-right
+
+Jangan membuat alignment controller lokal pada halaman apabila
+Global Table Alignment Controller sudah dapat digunakan.
+
+---
+
+## 13.8 Global Agenda / Month Navigation Controller
+
+Status:
+
+    EXISTING
+
+Digunakan untuk halaman daftar kegiatan/agenda yang datanya bersifat periodik,
+termasuk Agenda Rapat dan Kesamaptaan.
+
+Aturan:
+
+    - Default membuka bulan berjalan.
+    - Navigasi bulan menggunakan tombol bulan sebelumnya / berikutnya.
+    - Tampilan mengikuti pola UI AgendaKu pada HRIS Calendar.
+    - Warna identitas HRIS Reborn tetap menggunakan aksen orange.
+    - Daftar hanya menampilkan data pada bulan yang dipilih.
+    - Jangan membuat month picker lokal dengan desain berbeda.
+
+Komponen global:
+
+    .hris-agenda-period-card
+    .hris-month-nav
+    .hris-month-nav-btn
+    .hris-month-nav-label
+    .hris-agenda-list-card
+    .hris-agenda-list-header
+    .hris-agenda-list-title
+    .hris-agenda-count
+
+Prinsip:
+
+    ONE MONTH NAVIGATION PATTERN.
+    ONE AGENDA LIST PATTERN.
+
+---
+
 # 14. ATURAN PENAMBAHAN HELPER BARU
 
 Helper baru hanya dibuat apabila:
@@ -408,3 +464,11 @@ Ditambahkan standard:
 - Micro-Patch Standard
 - New Form Checklist
 - Global Helper Registry
+
+## Change Log — 2026-10-08
+
+Ditambahkan:
+
+- Global Table Alignment Controller
+- Global Agenda / Month Navigation Controller
+- UI agenda mengikuti pola AgendaKu HRIS Calendar dengan aksen orange
