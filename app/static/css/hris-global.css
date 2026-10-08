@@ -254,17 +254,38 @@
 
 .hris-table th.hris-text-left,
 .hris-table td.hris-text-left {
-    text-align: left;
+    text-align: left !important;
 }
 
 .hris-table th.hris-text-center,
 .hris-table td.hris-text-center {
-    text-align: center;
+    text-align: center !important;
 }
 
 .hris-table th.hris-text-right,
 .hris-table td.hris-text-right {
-    text-align: right;
+    text-align: right !important;
+}
+
+/*
+   Global default alignment for every HRIS table.
+   Page-specific Bootstrap/theme rules must not override this.
+*/
+.hris-table,
+.hris-table thead th,
+.hris-table tbody td {
+    text-align: left !important;
+    white-space: normal;
+}
+
+.hris-table thead th.hris-text-center,
+.hris-table tbody td.hris-text-center {
+    text-align: center !important;
+}
+
+.hris-table thead th.hris-text-right,
+.hris-table tbody td.hris-text-right {
+    text-align: right !important;
 }
 
 
