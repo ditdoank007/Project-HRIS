@@ -4597,3 +4597,8 @@ body.hris-modern .hris-btn-primary:hover {
   .kes-hero-actions .btn { width:100%; }
   .kes-month-nav { width:100%; }
 }
+
+.agenda-topbar-title { margin-left: 8px; }
+.agenda-topbar-kicker { font-size:9px; font-weight:800; color:#9ca3af; letter-spacing:1.2px; line-height:1; }
+.agenda-topbar-page { margin-top:4px; color:#1f2937; font-size:21px; font-weight:800; line-height:1.05; }
+@media(max-width:650px){ .agenda-topbar-title{margin-left:2px}.agenda-topbar-page{font-size:18px}.agenda-topbar-kicker{font-size:8px} }
