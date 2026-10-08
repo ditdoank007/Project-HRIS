@@ -111,6 +111,13 @@ from app.controllers.dashboard_1LaporanRekapController import (
     search_pegawai_by_name,
 )
 
+from app.controllers.calendarNotificationController import (
+    api_calendar_notifications,
+    api_calendar_notifications_unread_count,
+    api_calendar_notification_read,
+    api_calendar_notifications_read_all,
+)
+
 from app.controllers.calendarController import (
     api_calendar_personal,
     api_calendar_personal_sync_token,
@@ -2680,6 +2687,30 @@ def api_calendar_kesamaptaan_employee_attendance_route():
 def api_calendar_personal_sync_token_route():
 
     return api_calendar_personal_sync_token()
+
+
+@main.route('/api/notifications', methods=['GET'])
+@login_required
+def api_notifications_route():
+    return api_calendar_notifications()
+
+
+@main.route('/api/notifications/unread-count', methods=['GET'])
+@login_required
+def api_notifications_unread_count_route():
+    return api_calendar_notifications_unread_count()
+
+
+@main.route('/api/notifications/<int:notification_id>/read', methods=['POST'])
+@login_required
+def api_notification_read_route(notification_id):
+    return api_calendar_notification_read(notification_id)
+
+
+@main.route('/api/notifications/read-all', methods=['POST'])
+@login_required
+def api_notifications_read_all_route():
+    return api_calendar_notifications_read_all()
 
 
 @main.route(
