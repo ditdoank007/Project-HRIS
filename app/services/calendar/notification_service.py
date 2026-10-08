@@ -153,16 +153,68 @@ def deactivate_recipient(source_type, source_id, nip):
     )
 
 
+def expire_past_dinas_luar(nip):
+    """Hide Dinas Luar notifications after the latest assignment date passes."""
+    from datetime import date
+    from app.models.dinasLuarModel import DinasLuar
+
+    nip = str(nip or "").strip()
+    if not nip:
+        return 0
+
+    today = date.today()
+    rows = (
+        CalendarNotification.query
+        .filter(
+            CalendarNotification.NIP == nip,
+            CalendarNotification.SOURCE_TYPE == "DINAS_LUAR",
+            CalendarNotification.IS_ACTIVE == "Y",
+        )
+        .all()
+    )
+
+    expired = 0
+    for row in rows:
+        latest = (
+            DinasLuar.query
+            .filter(
+                DinasLuar.GUID_SPRIN == row.SOURCE_ID,
+                DinasLuar.FINGER_ID == (
+                    __import__("app.models.pegawaiModel", fromlist=["Pegawai"])
+                    .Pegawai.query
+                    .filter_by(NIP=nip)
+                    .with_entities(
+                        __import__("app.models.pegawaiModel", fromlist=["Pegawai"]).Pegawai.FINGER_ID
+                    )
+                    .scalar_subquery()
+                ),
+            )
+            .order_by(DinasLuar.TGL_AKHIR_DINAS_LUAR.desc())
+            .first()
+        )
+        if latest and latest.TGL_AKHIR_DINAS_LUAR and latest.TGL_AKHIR_DINAS_LUAR.date() < today:
+            row.IS_ACTIVE = "N"
+            row.COMPLETED_DATE = _now()
+            expired += 1
+
+    if expired:
+        db.session.commit()
+
+    return expired
+
+
 def list_for_nip(nip, limit=30):
     nip = str(nip or "").strip()
+    expire_past_dinas_luar(nip)
+
     return (
         CalendarNotification.query
         .filter(
             CalendarNotification.NIP == nip,
             CalendarNotification.IS_ACTIVE == "Y",
+            CalendarNotification.READ_STATUS == "N",
         )
         .order_by(
-            CalendarNotification.READ_STATUS.asc(),
             CalendarNotification.CREATED_DATE.desc(),
             CalendarNotification.ID.desc(),
         )
