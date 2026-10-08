@@ -3,31 +3,185 @@
 {% block title %}- Dashboard{% endblock %}
 
 {% block content %}
-<div class="hris-page">
-    <div class="hris-page-header">
+<div class="agenda-dashboard-page">
+    <div class="agenda-dashboard-heading">
         <div>
-            <h1 class="hris-page-title">AGENDA</h1>
-            <p class="hris-page-subtitle">
-                Pusat pengelolaan Rapat, Disposisi, Kesamaptaan, dan Rekam Medis.
-            </p>
+            <div class="agenda-dashboard-kicker">AGENDA INTERNAL</div>
+            <h1>Dashboard</h1>
+            <p>Ringkasan aktivitas Rapat, Disposisi, Kesamaptaan, dan Rekam Medis.</p>
         </div>
     </div>
 
-    <section class="hris-hero">
+    <section class="agenda-dashboard-hero">
         <div>
-            <h2 class="hris-hero-title">AGENDA KANTOR SAR SURABAYA</h2>
-            <p class="hris-hero-text">
-                Pilih menu pada sidebar untuk mengelola kegiatan sesuai hak akses Anda.
-            </p>
+            <div class="agenda-dashboard-hero-kicker">AGENDA KANTOR SAR SURABAYA</div>
+            <h2>Selamat datang di Dashboard AGENDA</h2>
+            <p>Pantau kegiatan utama dari satu halaman. Pilih kartu untuk membuka modul terkait.</p>
         </div>
     </section>
 
-    <div style="padding: 4px 2px 0;">
-        <h2 class="hris-page-title" style="font-size:16px;">Selamat datang di Dashboard AGENDA</h2>
-        <p class="hris-page-subtitle" style="margin-top:8px;max-width:760px;">
-            Gunakan sidebar sebelah kiri untuk membuka modul yang diberikan kepada akun Anda.
-            Hak akses setiap modul dikendalikan melalui User Account pada Master File.
-        </p>
-    </div>
+    <section class="agenda-card-stack" aria-label="Ringkasan modul Agenda">
+        {% if is_administrator() or has_form_access('AGENDA_RAPAT') %}
+        <a href="{{ url_for('main.view_agenda_rapat') }}" class="agenda-info-card agenda-card-rapat">
+            <div class="agenda-info-card-head">
+                <span class="agenda-info-icon"><i class="ti ti-calendar-event"></i></span>
+                <span class="agenda-info-link">Buka Rapat <i class="ti ti-arrow-up-right"></i></span>
+            </div>
+            <div class="agenda-info-card-title">Rapat</div>
+            <div class="agenda-info-card-subtitle">Agenda rapat internal</div>
+            <div class="agenda-info-card-stats">
+                <div><strong id="dashRapatTotal">-</strong><span>agenda bulan ini</span></div>
+                <div><strong id="dashRapatUpcoming">-</strong><span>terjadwal</span></div>
+            </div>
+            <div id="dashRapatLatest" class="agenda-info-card-latest">Memuat agenda terbaru...</div>
+        </a>
+        {% endif %}
+
+        {% if is_administrator() or has_form_access('AGENDA_DISPOSISI') %}
+        <a href="{{ url_for('main.view_agenda_disposisi') }}" class="agenda-info-card agenda-card-disposisi">
+            <div class="agenda-info-card-head">
+                <span class="agenda-info-icon"><i class="ti ti-send"></i></span>
+                <span class="agenda-info-link">Buka Disposisi <i class="ti ti-arrow-up-right"></i></span>
+            </div>
+            <div class="agenda-info-card-title">Disposisi</div>
+            <div class="agenda-info-card-subtitle">Penugasan dan tindak lanjut</div>
+            <div class="agenda-info-card-stats">
+                <div><strong id="dashDisposisiTotal">-</strong><span>total disposisi</span></div>
+                <div><strong id="dashDisposisiActive">-</strong><span>aktif</span></div>
+            </div>
+            <div id="dashDisposisiLatest" class="agenda-info-card-latest">Memuat disposisi terbaru...</div>
+        </a>
+        {% endif %}
+
+        {% if is_administrator() or has_form_access('SUMDA_KESAMAPTAAN') %}
+        <a href="{{ url_for('main.view_kesamaptaan') }}" class="agenda-info-card agenda-card-kesamaptaan">
+            <div class="agenda-info-card-head">
+                <span class="agenda-info-icon"><i class="ti ti-run"></i></span>
+                <span class="agenda-info-link">Buka Kesamaptaan <i class="ti ti-arrow-up-right"></i></span>
+            </div>
+            <div class="agenda-info-card-title">Kesamaptaan</div>
+            <div class="agenda-info-card-subtitle">Kegiatan dan kehadiran pegawai</div>
+            <div class="agenda-info-card-stats">
+                <div><strong id="dashKesTotal">-</strong><span>kegiatan bulan ini</span></div>
+                <div><strong id="dashKesHadir">-</strong><span>kehadiran</span></div>
+            </div>
+            <div id="dashKesLatest" class="agenda-info-card-latest">Memuat kegiatan terbaru...</div>
+        </a>
+        {% endif %}
+
+        {% if is_administrator() or has_form_access('REKAM_MEDIS') %}
+        <a href="{{ url_for('main.view_rekam_medis_pegawai') }}" class="agenda-info-card agenda-card-medis">
+            <div class="agenda-info-card-head">
+                <span class="agenda-info-icon"><i class="ti ti-heartbeat"></i></span>
+                <span class="agenda-info-link">Buka Rekam Medis <i class="ti ti-arrow-up-right"></i></span>
+            </div>
+            <div class="agenda-info-card-title">Rekam Medis</div>
+            <div class="agenda-info-card-subtitle">Kegiatan pemeriksaan pegawai & non-pegawai</div>
+            <div class="agenda-info-card-stats">
+                <div><strong id="dashMedisTotal">-</strong><span>kegiatan</span></div>
+                <div><strong id="dashMedisPending">-</strong><span>menunggu pemeriksaan</span></div>
+            </div>
+            <div id="dashMedisLatest" class="agenda-info-card-latest">Memuat kegiatan medis terbaru...</div>
+        </a>
+        {% endif %}
+    </section>
 </div>
+
+<style>
+.agenda-dashboard-page{padding:24px;min-height:calc(100vh - 72px);background:#f4f6f8}
+.agenda-dashboard-heading{margin:2px 0 18px}
+.agenda-dashboard-kicker{font-size:9px;font-weight:800;letter-spacing:.16em;color:#94a3b8;text-transform:uppercase}
+.agenda-dashboard-heading h1{margin:3px 0 2px;color:#172033;font-size:22px;font-weight:800}
+.agenda-dashboard-heading p{margin:0;color:#94a3b8;font-size:12px}
+.agenda-dashboard-hero{padding:22px 24px;margin-bottom:18px;border-radius:16px;color:#fff;background:linear-gradient(135deg,#102a43 0%,#1f4e79 100%);box-shadow:0 10px 30px rgba(15,23,42,.12)}
+.agenda-dashboard-hero-kicker{font-size:10px;font-weight:800;letter-spacing:.13em;color:#b9d0e5}
+.agenda-dashboard-hero h2{margin:5px 0 3px;font-size:20px;font-weight:800}
+.agenda-dashboard-hero p{margin:0;color:#d7e3ee;font-size:12px}
+.agenda-card-stack{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.agenda-info-card{position:relative;min-width:0;overflow:hidden;padding:19px 20px;border:1px solid #e2e8f0;border-radius:15px;background:#fff;box-shadow:0 5px 18px rgba(15,23,42,.06);color:#172033;text-decoration:none;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease}
+.agenda-info-card:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(15,23,42,.11);border-color:#cbd5e1;color:#172033}
+.agenda-info-card:after{content:"";position:absolute;right:-32px;bottom:-48px;width:130px;height:130px;border-radius:50%;background:rgba(235,104,49,.055)}
+.agenda-info-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.agenda-info-icon{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:10px;background:#fff1e9;color:#eb6831;font-size:20px}
+.agenda-info-link{font-size:11px;font-weight:700;color:#64748b}
+.agenda-info-card-title{margin-top:14px;font-size:18px;font-weight:800}
+.agenda-info-card-subtitle{margin-top:2px;color:#94a3b8;font-size:11px}
+.agenda-info-card-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;padding-top:14px;border-top:1px solid #eef2f7}
+.agenda-info-card-stats div{display:flex;flex-direction:column}
+.agenda-info-card-stats strong{color:#172033;font-size:22px;line-height:1.05}
+.agenda-info-card-stats span{margin-top:3px;color:#94a3b8;font-size:10px}
+.agenda-info-card-latest{margin-top:13px;min-height:34px;color:#475569;font-size:11px;line-height:1.45}
+.agenda-info-card-latest strong{color:#172033}
+.agenda-card-kesamaptaan .agenda-info-icon{color:#1f4e79;background:#eaf2f9}
+.agenda-card-medis .agenda-info-icon{color:#b42318;background:#fff0ee}
+@media(max-width:900px){.agenda-card-stack{grid-template-columns:1fr}}
+@media(max-width:650px){.agenda-dashboard-page{padding:14px}.agenda-dashboard-hero{padding:18px}.agenda-info-card{padding:16px}}
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded",function(){
+    const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+    const now=new Date();
+    const monthKey=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
+    const fmtDate=v=>{
+        if(!v)return "-";
+        const d=new Date(String(v).length===10?v+"T00:00:00":v);
+        return isNaN(d)?"-":d.toLocaleDateString("id-ID",{day:"2-digit",month:"short",year:"numeric"});
+    };
+
+    function set(id,value){const el=document.getElementById(id);if(el)el.textContent=value}
+    function latestText(id,title,meta){
+        const el=document.getElementById(id);
+        if(el)el.innerHTML="<strong>"+esc(title||"-")+"</strong><br><span>"+esc(meta||"")+"</span>";
+    }
+    async function getJson(url){
+        try{
+            const r=await fetch(url,{cache:"no-store"});
+            const j=await r.json();
+            return r.ok?(j.data||[]):[];
+        }catch(e){return []}
+    }
+
+    const rapat=getJson("/api/agenda/rapat");
+    const disposisi=getJson("/api/agenda/disposisi");
+    const kes=getJson("/api/kesamaptaan");
+    const medisPegawai=getJson("/api/rekam-medis/kegiatan/pegawai");
+    const medisNonPegawai=getJson("/api/rekam-medis/kegiatan/non-pegawai");
+
+    rapat.then(rows=>{
+        const month=rows.filter(x=>String(x.start||"").slice(0,7)===monthKey);
+        set("dashRapatTotal",month.length);
+        set("dashRapatUpcoming",month.filter(x=>String(x.status||"").toUpperCase()==="TERJADWAL").length);
+        const x=month[0]||rows[0];
+        if(x)latestText("dashRapatLatest",x.title,(x.start?fmtDate(x.start):"-")+" · "+(x.location||"Lokasi belum diisi"));
+        else set("dashRapatLatest","Belum ada agenda rapat.");
+    });
+
+    disposisi.then(rows=>{
+        set("dashDisposisiTotal",rows.length);
+        set("dashDisposisiActive",rows.filter(x=>String(x.status||"").toUpperCase()==="AKTIF").length);
+        const x=rows[0];
+        if(x)latestText("dashDisposisiLatest",x.kegiatan,(x.tanggal?fmtDate(x.tanggal):"-")+" · "+(x.lokasi||"-"));
+        else set("dashDisposisiLatest","Belum ada disposisi.");
+    });
+
+    kes.then(rows=>{
+        const month=rows.filter(x=>String(x.tanggal||"").slice(0,7)===monthKey);
+        set("dashKesTotal",month.length);
+        set("dashKesHadir",month.reduce((sum,x)=>sum+Number(x.attendance_count||0),0));
+        const x=month[0]||rows[0];
+        if(x)latestText("dashKesLatest",x.judul,(x.tanggal?fmtDate(x.tanggal):"-")+" · "+(x.status||"-"));
+        else set("dashKesLatest","Belum ada kegiatan kesamaptaan.");
+    });
+
+    Promise.all([medisPegawai,medisNonPegawai]).then(([pegawai,nonPegawai])=>{
+        const rows=[...pegawai,...nonPegawai].sort((a,b)=>String(b.tanggal||"").localeCompare(String(a.tanggal||"")));
+        set("dashMedisTotal",rows.length);
+        set("dashMedisPending",rows.reduce((sum,x)=>sum+Number(x.menunggu||0),0));
+        const x=rows[0];
+        if(x)latestText("dashMedisLatest",x.judul,(x.tanggal?fmtDate(x.tanggal):"-")+" · "+(x.status||"-"));
+        else set("dashMedisLatest","Belum ada kegiatan rekam medis.");
+    });
+});
+</script>
 {% endblock %}
