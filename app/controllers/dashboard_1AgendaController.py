@@ -223,6 +223,28 @@ def api_agenda_rapat_save():
         }, user)
 
         get_or_create_meta(event, organizer_nip, user)
+
+        # Agenda rapat TERJADWAL muncul di kalender pribadi seluruh pegawai
+        # aktif. Notification mengikuti rule yang sama: satu kali saat agenda
+        # pertama dibuat, bukan setiap kali pegawai membuka kalender.
+        from app.models.pegawaiModel import Pegawai
+        from app.services.calendar.notification_service import create_for_recipients
+        recipient_rows = (
+            Pegawai.query
+            .filter(Pegawai.NIP.isnot(None))
+            .filter((Pegawai.IS_KELUAR.is_(None)) | (Pegawai.IS_KELUAR != "Y"))
+            .all()
+        )
+        create_for_recipients(
+            recipients=[row.NIP for row in recipient_rows],
+            source_type="AGENDA_RAPAT",
+            source_id=str(event.EVENT_ID),
+            title=f"Rapat Baru: {event.TITLE}",
+            message=f"Agenda rapat baru: {event.TITLE}",
+            url=f"/agenda?tab=rapat&event_id={event.EVENT_ID}",
+            event_id=event.EVENT_ID,
+        )
+
         db.session.commit()
         return jsonify({"status": "success", "data": _serialize_event(event)})
     except ValueError as exc:
