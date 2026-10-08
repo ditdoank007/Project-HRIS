@@ -178,6 +178,24 @@ def record_employee_attendance(kegiatan, nip):
     return row, pegawai, True
 
 
+def _normalized_photo_mime(file_storage: FileStorage):
+    filename = (file_storage.filename or "").strip().lower()
+    mime = (file_storage.mimetype or "").split(";")[0].strip().lower()
+
+    # Be tolerant of mobile browsers that report JPEG as image/jpg or omit
+    # the MIME type while still providing a .jpg/.jpeg filename.
+    if mime == "image/jpg":
+        return "image/jpeg"
+    if mime in ALLOWED_MIMES:
+        return mime
+    if not mime or mime == "application/octet-stream":
+        if filename.endswith((".jpg", ".jpeg")):
+            return "image/jpeg"
+        if filename.endswith(".png"):
+            return "image/png"
+    return mime
+
+
 def validate_photo(file_storage: FileStorage):
     if not file_storage or not file_storage.filename:
         raise ValueError("File foto wajib dipilih.")
@@ -186,7 +204,7 @@ def validate_photo(file_storage: FileStorage):
     if len(filename) > 255:
         raise ValueError("Nama file foto maksimal 255 karakter.")
 
-    mime = (file_storage.mimetype or "").lower()
+    mime = _normalized_photo_mime(file_storage)
     if mime not in ALLOWED_MIMES:
         raise ValueError("Foto hanya boleh JPG/JPEG atau PNG.")
 
@@ -205,7 +223,7 @@ def validate_photo(file_storage: FileStorage):
     if mime == "image/png" and not content.startswith(b"\x89PNG\r\n\x1a\n"):
         raise ValueError("File PNG tidak valid.")
 
-    return content, hashlib.sha256(content).hexdigest()
+    return content, hashlib.sha256(content).hexdigest(), mime
 
 
 def save_photos(kegiatan, files, created_by):
@@ -228,8 +246,8 @@ def save_photos(kegiatan, files, created_by):
 
     try:
         for offset, file_storage in enumerate(selected, start=1):
-            content, sha256 = validate_photo(file_storage)
-            ext = ".jpg" if (file_storage.mimetype or "").lower() == "image/jpeg" else ".png"
+            content, sha256, mime = validate_photo(file_storage)
+            ext = ".jpg" if mime == "image/jpeg" else ".png"
             safe_stem = re.sub(r"[^A-Za-z0-9_-]+", "-", Path(file_storage.filename).stem).strip("-")[:80]
             safe_stem = safe_stem or "foto"
             filename = f"{start_order + offset:03d}-{safe_stem}{ext}"
@@ -253,7 +271,7 @@ def save_photos(kegiatan, files, created_by):
                 KEGIATAN_ID=kegiatan.KEGIATAN_ID,
                 ORIGINAL_FILENAME=file_storage.filename.strip(),
                 STORAGE_PATH=photo_relative_path(kegiatan, filename),
-                MIME_TYPE=file_storage.mimetype,
+                MIME_TYPE=mime,
                 FILE_SIZE=len(content),
                 SHA256=sha256,
                 SORT_ORDER=start_order + offset,
