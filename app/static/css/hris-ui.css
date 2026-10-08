@@ -4089,3 +4089,9 @@ html body .hris-table tbody td.hris-text-right {
     min-width: 0;
   }
 }
+
+
+/* Global table alignment: also align direct cell content, not only the TD box. */
+html body .nxl-content table.hris-table tbody td > * {
+  text-align: left !important;
+}
