@@ -202,19 +202,28 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 <style>
-/* AGENDA shell — active menu uses a clean white highlight, not orange. */
-.nxl-navigation .nxl-link.active,
-.nxl-navigation .nxl-link.hris-active {
+/* AGENDA shell — active menu is intentionally WHITE; orange is reserved for brand/actions. */
+.nxl-navigation .nxl-navbar .nxl-item > .nxl-link.active,
+.nxl-navigation .nxl-navbar .nxl-item.hris-active > .nxl-link {
     color:#172033 !important;
-    background:#fff !important;
-    box-shadow:0 2px 8px rgba(0,0,0,.10);
+    background:#ffffff !important;
+    box-shadow:0 2px 8px rgba(0,0,0,.10) !important;
+    border-radius:6px !important;
 }
-.nxl-navigation .nxl-link.active .nxl-micon,
-.nxl-navigation .nxl-link.hris-active .nxl-micon {
+.nxl-navigation .nxl-navbar .nxl-item > .nxl-link.active .nxl-micon,
+.nxl-navigation .nxl-navbar .nxl-item.hris-active > .nxl-link .nxl-micon {
     color:#172033 !important;
 }
-.nxl-navigation .nxl-link:hover {
-    color:#fff !important;
+.nxl-navigation .nxl-navbar .nxl-item > .nxl-link.active .nxl-mtext,
+.nxl-navigation .nxl-navbar .nxl-item.hris-active > .nxl-link .nxl-mtext {
+    color:#172033 !important;
+}
+.nxl-navigation .nxl-navbar .nxl-item > .nxl-link:hover {
+    color:#ffffff !important;
     background:rgba(255,255,255,.10) !important;
+}
+.nxl-navigation .nxl-navbar .nxl-item > .nxl-link:hover .nxl-micon,
+.nxl-navigation .nxl-navbar .nxl-item > .nxl-link:hover .nxl-mtext {
+    color:#ffffff !important;
 }
 </style>
