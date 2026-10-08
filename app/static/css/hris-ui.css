@@ -4585,3 +4585,15 @@ body.hris-modern .hris-btn-primary:hover {
     padding: 15px !important;
   }
 }
+
+/* Dashboard4 Agenda actions */
+.hris-agenda-period-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+.hris-agenda-create-btn { min-height:40px; border-radius:7px !important; font-size:11px; font-weight:700 !important; }
+.kes-hero-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+.kes-month-nav { min-width:196px; }
+@media (max-width:720px) {
+  .hris-agenda-period-actions,.kes-hero-actions { width:100%; justify-content:stretch; }
+  .hris-agenda-create-btn { flex:1 1 100%; }
+  .kes-hero-actions .btn { width:100%; }
+  .kes-month-nav { width:100%; }
+}
