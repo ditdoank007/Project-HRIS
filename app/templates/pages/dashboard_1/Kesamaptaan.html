@@ -49,8 +49,8 @@
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead><tr><th>No.</th><th>Hari / Tanggal</th><th>Jam</th><th>Judul Kegiatan</th><th>Hadir</th><th>Foto</th><th>Status</th><th class="text-end">Action</th></tr></thead>
+                        <table class="table table-hover align-middle mb-0 hris-table">
+                            <thead><tr><th class="hris-text-left">No.</th><th class="hris-text-left">Hari / Tanggal</th><th class="hris-text-left">Jam</th><th class="hris-text-left">Judul Kegiatan</th><th class="hris-text-left">Hadir</th><th class="hris-text-left">Foto</th><th class="hris-text-left">Status</th><th class="hris-text-left">Action</th></tr></thead>
                             <tbody id="kesRows"><tr><td colspan="8" class="text-center py-5 text-muted">Memuat data...</td></tr></tbody>
                         </table>
                     </div>
@@ -107,7 +107,7 @@ document.addEventListener("DOMContentLoaded",()=>{
    document.getElementById("statTotal").textContent=rows.length;
    document.getElementById("statTerjadwal").textContent=rows.filter(x=>x.status==="TERJADWAL").length;
    document.getElementById("statSelesai").textContent=rows.filter(x=>x.status==="SELESAI").length;
-   body.innerHTML=filtered.length?filtered.map((x,i)=>'<tr><td>'+(i+1)+'</td><td><strong>'+esc(x.hari)+'</strong><div class="text-muted small">'+esc(fmtDate(x.tanggal))+'</div></td><td>'+esc(x.jam)+' WIB</td><td>'+esc(x.judul)+'</td><td>'+x.attendance_count+'</td><td>'+x.photo_count+'</td><td>'+badge(x.status)+'</td><td class="text-end"><button class="btn btn-sm btn-outline-primary" onclick="lihatKesamaptaan('+x.kegiatan_id+')"><i class="feather-eye"></i></button></td></tr>').join(""):'<tr><td colspan="8" class="text-center py-5 text-muted">Belum ada kegiatan.</td></tr>';
+   body.innerHTML=filtered.length?filtered.map((x,i)=>'<tr><td class="hris-text-left">'+(i+1)+'</td><td class="hris-text-left"><strong>'+esc(x.hari)+'</strong><div class="text-muted small">'+esc(fmtDate(x.tanggal))+'</div></td><td class="hris-text-left">'+esc(x.jam)+' WIB</td><td class="hris-text-left">'+esc(x.judul)+'</td><td class="hris-text-left">'+x.attendance_count+'</td><td class="hris-text-left">'+x.photo_count+'</td><td class="hris-text-left">'+badge(x.status)+'</td><td class="hris-text-left"><button class="btn btn-sm btn-outline-primary" onclick="lihatKesamaptaan('+x.kegiatan_id+')"><i class="feather-eye"></i></button></td></tr>').join(""):'<tr><td colspan="8" class="text-center py-5 text-muted">Belum ada kegiatan.</td></tr>';
  }
  async function load(){const r=await fetch("/api/kesamaptaan");const j=await r.json();if(!r.ok)throw Error(j.message||"Gagal memuat data.");rows=j.data||[];render()}
  search.addEventListener("input",render);
