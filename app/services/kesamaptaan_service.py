@@ -317,14 +317,41 @@ def documentation_rows(kegiatan_id):
     )
 
 
-def _signature_path(row):
-    if not row.SIGNATURE_PATH:
-        return None
-    path = Path(row.SIGNATURE_PATH).resolve()
+def signature_path_for_nip(nip, stored_path=None):
+    """
+    Resolve the latest available employee signature.
+
+    Older attendance rows may have been saved before the employee's
+    signature file was available, so do not rely only on SIGNATURE_PATH.
+    Always fall back to the current employee master data (NIP/FINGER_ID).
+    """
     root = Path(Config.HRIS_TTD_ROOT).resolve()
-    if path != root and root not in path.parents:
+
+    if stored_path:
+        path = Path(stored_path).resolve()
+        if path == root or root in path.parents:
+            if path.is_file():
+                return path
+
+    pegawai = employee_for_nip(nip)
+    if not pegawai:
         return None
-    return path if path.is_file() else None
+
+    candidates = []
+    if pegawai.NIP:
+        candidates.append(root / f"{pegawai.NIP}.png")
+    if pegawai.FINGER_ID:
+        candidates.append(root / f"{pegawai.FINGER_ID}.png")
+
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate
+
+    return None
+
+
+def _signature_path(row):
+    return signature_path_for_nip(row.NIP, row.SIGNATURE_PATH)
 
 
 def generate_final_pdf(kegiatan):
