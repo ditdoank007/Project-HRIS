@@ -72,14 +72,14 @@
 .rapat-table th:nth-child(6) { width: 6%; }
 
 .rapat-title {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    overflow: hidden;
+    display: block;
     line-height: 1.35;
     min-height: calc(1.35em * 2);
     max-height: calc(1.35em * 2);
+    overflow: hidden;
+    white-space: normal !important;
     overflow-wrap: anywhere;
+    word-break: break-word;
     font-weight: 600;
     color: #1e293b;
 }
