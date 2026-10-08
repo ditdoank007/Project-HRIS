@@ -577,7 +577,8 @@ def _save_signature(token, signature_data):
     if len(raw) > 2 * 1024 * 1024:
         raise ValueError("Ukuran tanda tangan terlalu besar.")
     safe_token = re.sub(r"[^A-Za-z0-9_-]", "", token)
-    rel = f"TAMU/{datetime.now():%Y/%m/%d}/{safe_token}.png"
+    unique_name = f"{safe_token}-{datetime.now():%H%M%S%f}-{secrets.token_hex(8)}.png"
+    rel = f"TAMU/{datetime.now():%Y/%m/%d}/{unique_name}"
     absolute = os.path.join(getattr(Config, "HRIS_DATA_ROOT", "/mnt/hris-data"), rel)
     os.makedirs(os.path.dirname(absolute), exist_ok=True)
     with open(absolute, "wb") as fh:
