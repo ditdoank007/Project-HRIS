@@ -157,9 +157,15 @@ def expire_past_dinas_luar(nip):
     """Hide Dinas Luar notifications after the latest assignment date passes."""
     from datetime import date
     from app.models.dinasLuarModel import DinasLuar
+    from app.models.pegawaiModel import Pegawai
 
     nip = str(nip or "").strip()
     if not nip:
+        return 0
+
+    pegawai = Pegawai.query.filter(Pegawai.NIP == nip).first()
+    finger_id = str(pegawai.FINGER_ID or "").strip() if pegawai else ""
+    if not finger_id:
         return 0
 
     today = date.today()
@@ -179,15 +185,7 @@ def expire_past_dinas_luar(nip):
             DinasLuar.query
             .filter(
                 DinasLuar.GUID_SPRIN == row.SOURCE_ID,
-                DinasLuar.FINGER_ID == (
-                    __import__("app.models.pegawaiModel", fromlist=["Pegawai"])
-                    .Pegawai.query
-                    .filter_by(NIP=nip)
-                    .with_entities(
-                        __import__("app.models.pegawaiModel", fromlist=["Pegawai"]).Pegawai.FINGER_ID
-                    )
-                    .scalar_subquery()
-                ),
+                DinasLuar.FINGER_ID == finger_id,
             )
             .order_by(DinasLuar.TGL_AKHIR_DINAS_LUAR.desc())
             .first()
