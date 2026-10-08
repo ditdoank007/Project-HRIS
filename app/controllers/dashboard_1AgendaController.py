@@ -161,7 +161,14 @@ def _serialize_event(event):
         "attendance_count": len(attendance_data),
         "qr_active": bool(meta and meta.QR_ACTIVE == "Y"),
         "attendance_url": (
-            build_qr_svg(meta.QR_TOKEN)[1]
+            (
+                (
+                    os.getenv("CALENDAR_PUBLIC_BASE_URL")
+                    or getattr(Config, "CALENDAR_PUBLIC_BASE_URL", None)
+                    or "https://calendar.sarsurabaya.id"
+                ).rstrip("/")
+                + f"/absen-qrcode/pegawai?token={meta.QR_TOKEN}"
+            )
             if meta and meta.QR_TOKEN and meta.QR_ACTIVE == "Y"
             else None
         ),
