@@ -95,6 +95,17 @@ def api_agenda_disposisi_save():
             db.session.add(AgendaDisposisiPeserta(
                 AGENDA_ID=row.ID, NIP=nip, STATUS="DITUGASKAN", CREATED_DATE=now
             ))
+
+        from app.services.calendar.notification_service import create_for_recipients
+        create_for_recipients(
+            recipients=nips,
+            source_type="DISPOSISI",
+            source_id=str(row.ID),
+            title=f"Disposisi Baru: {kegiatan}",
+            message=f"Disposisi baru: {kegiatan}",
+            url=f"/agenda?tab=disposisi&agenda_id={row.ID}",
+        )
+
         db.session.commit()
         return jsonify({"status": "success", "data": _serialize(row)})
     except ValueError as exc:
@@ -119,5 +130,9 @@ def api_agenda_disposisi_cancel(agenda_id):
     row.STATUS = "BATAL"
     row.UPDATE_BY = session.get("nip", "system")
     row.UPDATE_DATE = datetime.utcnow()
+
+    from app.services.calendar.notification_service import complete_source
+    complete_source("DISPOSISI", str(row.ID))
+
     db.session.commit()
     return jsonify({"status": "success", "data": _serialize(row)})
