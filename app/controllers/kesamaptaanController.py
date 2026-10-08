@@ -264,13 +264,9 @@ def api_kesamaptaan_signature(kegiatan_id, nip):
         KesamaptaanKehadiran.NIP == str(nip).strip(),
         KesamaptaanKehadiran.STATUS == "HADIR",
     ).first()
-    if not row or not row.SIGNATURE_PATH:
+    path = signature_path_for_nip(row.NIP, row.SIGNATURE_PATH)
+    if not path:
         return jsonify({"status": "error", "message": "Tanda tangan tidak tersedia."}), 404
-    from pathlib import Path
-    path = Path(row.SIGNATURE_PATH).resolve()
-    root = Path(__import__("config").Config.HRIS_TTD_ROOT).resolve()
-    if path != root and root not in path.parents or not path.is_file():
-        return jsonify({"status": "error", "message": "File tanda tangan tidak ditemukan."}), 404
     return send_file(path, mimetype="image/png", as_attachment=False, max_age=0)
 
 
