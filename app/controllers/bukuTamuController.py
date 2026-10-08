@@ -641,6 +641,11 @@ def api_buku_tamu_internal_submit():
         return jsonify({"status": "error", "message": error}), 400
 
     try:
+        keperluan = str(payload.get("keperluan") or "").strip()
+        keperluan_detail = str(payload.get("keperluan_detail") or "").strip()[:255] or None
+        if not _is_lainnya(keperluan):
+            keperluan_detail = None
+
         signature_path = _save_signature(token, str(payload.get("signature_data") or ""))
         nip = str(payload.get("pegawai_nip") or "").strip() or None
         nama_pegawai = str(payload.get("pegawai_nama") or "").strip() or None
