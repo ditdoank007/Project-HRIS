@@ -1983,6 +1983,42 @@ def api_dinas_luar_save(type_sprin=None):
                 TIPE=item['tipe'],
             ))
 
+        from app.services.calendar.notification_service import create_for_recipients, deactivate_recipient
+
+        current_nips = [item['pegawai'].NIP for item in normalized]
+        current_set = set(current_nips)
+
+        # Jika SPRIN diedit, pegawai yang dicabut dari SPRIN kehilangan
+        # notification aktifnya; pegawai yang tetap di dalamnya tidak
+        # mendapatkan notification ganda.
+        existing_notifications = []
+        try:
+            from app.models.calendarNotificationModel import CalendarNotification
+            existing_notifications = (
+                CalendarNotification.query
+                .filter(
+                    CalendarNotification.SOURCE_TYPE == "DINAS_LUAR",
+                    CalendarNotification.SOURCE_ID == guid_sprin,
+                    CalendarNotification.IS_ACTIVE == "Y",
+                )
+                .all()
+            )
+        except Exception:
+            existing_notifications = []
+
+        for notif in existing_notifications:
+            if notif.NIP not in current_set:
+                deactivate_recipient("DINAS_LUAR", guid_sprin, notif.NIP)
+
+        create_for_recipients(
+            recipients=current_nips,
+            source_type="DINAS_LUAR",
+            source_id=guid_sprin,
+            title=f"SPRIN Dinas Luar: {no_surat}",
+            message=f"Anda mendapatkan SPRIN Dinas Luar {no_surat}",
+            url=f"/calendar?guid_sprin={guid_sprin}",
+        )
+
         db.session.commit()
         return jsonify({
             'success': True,
