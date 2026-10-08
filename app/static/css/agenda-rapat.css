@@ -59,8 +59,12 @@
     background: #f8fafc;
 }
 
-.rapat-table th,
-.rapat-table td {
+.rapat-page #tabelRapat thead th,
+.rapat-page #tabelRapat tbody td {
+    text-align: left !important;
+}
+
+.rapat-page #tabelRapat tbody td > * {
     text-align: left !important;
 }
 
