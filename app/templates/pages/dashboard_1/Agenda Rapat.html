@@ -25,7 +25,12 @@
                     <h2>RAPAT</h2>
                     <p>Agenda rapat yang terhubung dengan HRIS Reborn.</p>
                 </div>
-                <div class="hris-month-nav" aria-label="Navigasi bulan agenda rapat">
+                <div class="hris-agenda-period-actions">
+                    <button type="button" class="btn btn-primary hris-agenda-create-btn"
+                            data-bs-toggle="modal" data-bs-target="#modalRapat" onclick="resetEditor()">
+                        <i class="feather-plus me-1"></i> Buat Agenda
+                    </button>
+                    <div class="hris-month-nav" aria-label="Navigasi bulan agenda rapat">
                     <button type="button" id="prevMonthRapat" class="hris-month-nav-btn" aria-label="Bulan sebelumnya">‹</button>
                     <strong id="periodRapat" class="hris-month-nav-label">-</strong>
                     <button type="button" id="nextMonthRapat" class="hris-month-nav-btn" aria-label="Bulan berikutnya">›</button>
@@ -73,6 +78,32 @@
             </section>
         </div>
     </div>
+</div>
+
+<!-- MODAL BUAT / UBAH RAPAT -->
+<div class="modal fade" id="modalRapat" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div><h5 class="modal-title">Buat Agenda Rapat</h5><small id="rapatModalSubtitle" class="text-muted">Buat agenda rapat.</small></div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-md-8"><label class="form-label">Judul / Agenda *</label><input id="rapatTitle" class="form-control"></div>
+          <div class="col-md-4"><label class="form-label">Status</label><select id="rapatStatus" class="form-select"><option value="TERJADWAL">TERJADWAL</option><option value="DRAFT">DRAFT</option></select></div>
+          <div class="col-md-4"><label class="form-label">Tanggal *</label><input id="rapatTanggal" type="date" class="form-control"></div>
+          <div class="col-md-4"><label class="form-label">Mulai *</label><input id="rapatMulai" type="time" class="form-control"></div>
+          <div class="col-md-4"><label class="form-label">Selesai</label><input id="rapatSelesai" type="time" class="form-control"></div>
+          <div class="col-12"><label class="form-label">Lokasi</label><input id="rapatLokasi" class="form-control"></div>
+          <div class="col-12"><label class="form-label">Pimpinan Rapat *</label><input id="rapatOrganizerDisplay" class="form-control" autocomplete="off" placeholder="Cari nama / NIP"><input id="rapatOrganizerNip" type="hidden"><div id="rapatOrganizerSuggestions" class="list-group mt-1"></div></div>
+          <div class="col-12"><label class="form-label">Peserta</label><input id="inputPeserta" class="form-control" autocomplete="off" placeholder="Cari nama / NIP"><div id="rapatSuggestions" class="list-group mt-1"></div><div id="daftarPeserta" class="d-flex flex-wrap gap-2 mt-2"></div></div>
+          <div class="col-12"><label class="form-label">Keterangan</label><textarea id="rapatDescription" class="form-control" rows="3"></textarea></div>
+        </div>
+      </div>
+      <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Tutup</button><button type="button" class="btn btn-primary" onclick="simpanRapat()"><i class="feather-save me-1"></i><span id="btnSimpanRapatText">Simpan Agenda</span></button></div>
+    </div>
+  </div>
 </div>
 
 <!-- MODAL DETAIL RAPAT -->
