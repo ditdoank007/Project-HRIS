@@ -25,9 +25,16 @@
                     <h4 class="mb-1 text-white">KESAMAPTAAN PEGAWAI KANTOR SAR SURABAYA</h4>
                     <div class="small text-white-50">Kelola kegiatan, QR absensi pegawai, dokumentasi foto, dan PDF kegiatan.</div>
                 </div>
-                <button class="btn btn-light" data-bs-toggle="modal" data-bs-target="#modalKesamaptaan" onclick="resetEditor()">
-                    <i class="feather-plus me-1"></i> Buat Kegiatan
-                </button>
+                <div class="kes-hero-actions">
+                    <button class="btn btn-light" data-bs-toggle="modal" data-bs-target="#modalKesamaptaan" onclick="resetEditor()">
+                        <i class="feather-plus me-1"></i> Buat Kegiatan
+                    </button>
+                    <div class="hris-month-nav kes-month-nav" aria-label="Navigasi bulan kesamaptaan">
+                        <button type="button" id="prevMonthKes" class="hris-month-nav-btn" aria-label="Bulan sebelumnya">‹</button>
+                        <strong id="periodKes" class="hris-month-nav-label">-</strong>
+                        <button type="button" id="nextMonthKes" class="hris-month-nav-btn" aria-label="Bulan berikutnya">›</button>
+                    </div>
+                </div>
             </div>
 
             <div class="row g-3 mb-4">
@@ -99,7 +106,7 @@ document.addEventListener("DOMContentLoaded",()=>{
  // Bootstrap modal harus berada langsung di <body> agar backdrop tidak menutupi dialog.
  if(modalKesamaptaan && modalKesamaptaan.parentElement!==document.body) document.body.appendChild(modalKesamaptaan);
  if(modalDetailKes && modalDetailKes.parentElement!==document.body) document.body.appendChild(modalDetailKes);
- let rows=[], currentId=null, editId=null;
+ let rows=[], currentId=null, editId=null, currentKesMonth=new Date();
  const body=document.getElementById("kesRows"), search=document.getElementById("searchKes");
 
  const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
@@ -108,14 +115,19 @@ document.addEventListener("DOMContentLoaded",()=>{
 
  function render(){
    const q=(search.value||"").toLowerCase().trim();
-   const filtered=rows.filter(x=>(x.hari+" "+x.tanggal+" "+x.status).toLowerCase().includes(q));
-   document.getElementById("statTotal").textContent=rows.length;
-   document.getElementById("statTerjadwal").textContent=rows.filter(x=>x.status==="TERJADWAL").length;
-   document.getElementById("statSelesai").textContent=rows.filter(x=>x.status==="SELESAI").length;
+   const monthKey=currentKesMonth.getFullYear()+"-"+String(currentKesMonth.getMonth()+1).padStart(2,"0");
+   const monthRows=rows.filter(x=>String(x.tanggal||"").slice(0,7)===monthKey);
+   const filtered=monthRows.filter(x=>(x.hari+" "+x.tanggal+" "+x.status).toLowerCase().includes(q));
+   document.getElementById("periodKes").textContent=currentKesMonth.toLocaleDateString("id-ID",{month:"long",year:"numeric"});
+   document.getElementById("statTotal").textContent=monthRows.length;
+   document.getElementById("statTerjadwal").textContent=monthRows.filter(x=>x.status==="TERJADWAL").length;
+   document.getElementById("statSelesai").textContent=monthRows.filter(x=>x.status==="SELESAI").length;
    body.innerHTML=filtered.length?filtered.map((x,i)=>'<tr><td>'+(i+1)+'</td><td><strong>'+esc(x.hari)+'</strong><div class="text-muted small">'+esc(fmtDate(x.tanggal))+'</div></td><td>'+esc(x.jam)+' WIB</td><td>'+esc(x.judul)+'</td><td>'+x.attendance_count+'</td><td>'+x.photo_count+'</td><td>'+badge(x.status)+'</td><td class="text-end"><button class="btn btn-sm btn-outline-primary" onclick="lihatKesamaptaan('+x.kegiatan_id+')"><i class="feather-eye"></i></button></td></tr>').join(""):'<tr><td colspan="8" class="text-center py-5 text-muted">Belum ada kegiatan.</td></tr>';
  }
  async function load(){const r=await fetch("/api/kesamaptaan");const j=await r.json();if(!r.ok)throw Error(j.message||"Gagal memuat data.");rows=j.data||[];render()}
  search.addEventListener("input",render);
+ document.getElementById("prevMonthKes").addEventListener("click",()=>{currentKesMonth.setMonth(currentKesMonth.getMonth()-1);render()});
+ document.getElementById("nextMonthKes").addEventListener("click",()=>{currentKesMonth.setMonth(currentKesMonth.getMonth()+1);render()});
 
  window.resetEditor=()=>{editId=null;document.getElementById("kesHari").value="";document.getElementById("kesTanggal").value=new Date().toISOString().slice(0,10);document.getElementById("kesJam").value="07:30";document.getElementById("btnSimpanKes").textContent="Simpan"};
  window.simpanKesamaptaan=async()=>{
