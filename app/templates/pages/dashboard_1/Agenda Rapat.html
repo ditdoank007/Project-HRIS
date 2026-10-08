@@ -225,6 +225,9 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById("rapatDescription").value="";
         document.getElementById("rapatLokasi").value="";
         document.getElementById("rapatStatus").value="TERJADWAL";
+        document.getElementById("rapatTanggal").value=new Date().toISOString().slice(0,10);
+        document.getElementById("rapatMulai").value="09:00";
+        document.getElementById("rapatSelesai").value="10:30";
         organizerInput.value="";
         organizerNip.value="";
         organizerSuggestions.innerHTML="";
