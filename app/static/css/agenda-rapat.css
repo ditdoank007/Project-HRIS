@@ -59,15 +59,6 @@
     background: #f8fafc;
 }
 
-.rapat-page #tabelRapat thead th,
-.rapat-page #tabelRapat tbody td {
-    text-align: left !important;
-}
-
-.rapat-page #tabelRapat tbody td > * {
-    text-align: left !important;
-}
-
 .rapat-table td {
     vertical-align: middle;
     font-size: .84rem;
