@@ -55,6 +55,23 @@ def _photo_path(nip):
     return None
 
 
+def _format_profile_date(value):
+    """Normalize DB date/datetime/string values for Profilku."""
+    if not value:
+        return None
+
+    if isinstance(value, str):
+        value = value.strip()
+        if not value or value.startswith("0000-00-00"):
+            return None
+        return value[:10]
+
+    try:
+        return value.strftime("%Y-%m-%d")
+    except (AttributeError, TypeError, ValueError):
+        return None
+
+
 def _profile_payload(pegawai):
     photo = _photo_path(pegawai.NIP)
     ttd = os.path.join(_ttd_root(), f"{pegawai.NIP}.png")
@@ -79,11 +96,11 @@ def _profile_payload(pegawai):
             "jabatan": jabatan_nama,
             "unit_kerja": pegawai.UNIT_KERJA,
             "eselon": pegawai.ESELON,
-            "tgl_masuk": pegawai.TGL_MASUK.strftime("%Y-%m-%d") if pegawai.TGL_MASUK else None,
+            "tgl_masuk": _format_profile_date(pegawai.TGL_MASUK),
             "status_peg": pegawai.STATUS_PEG,
             "is_keluar": pegawai.IS_KELUAR,
-            "tgl_keluar": pegawai.TGL_KELUAR.strftime("%Y-%m-%d") if pegawai.TGL_KELUAR else None,
-            "tgl_lahir": pegawai.TGL_LAHIR.strftime("%Y-%m-%d") if pegawai.TGL_LAHIR else None,
+            "tgl_keluar": _format_profile_date(pegawai.TGL_KELUAR),
+            "tgl_lahir": _format_profile_date(pegawai.TGL_LAHIR),
             "jenis_kel": pegawai.JENIS_KEL,
             "tempat_lahir": pegawai.TEMPAT_LAHIR,
             "agama": pegawai.AGAMA,
@@ -97,14 +114,14 @@ def _profile_payload(pegawai):
             "kota": pegawai.KOTA,
             "no_ktp": pegawai.NO_KTP,
             "no_npwp": pegawai.NO_NPWP,
-            "tmt_cpns": pegawai.TMTCPNS.strftime("%Y-%m-%d") if pegawai.TMTCPNS else None,
-            "tmt_pns": pegawai.TMTPNS.strftime("%Y-%m-%d") if pegawai.TMTPNS else None,
+            "tmt_cpns": _format_profile_date(pegawai.TMTCPNS),
+            "tmt_pns": _format_profile_date(pegawai.TMTPNS),
             "alasan_keluar": pegawai.ALASAN_KELUAR,
             "gol_recruit": pegawai.GOL_RECRUIT,
             "is_vip": pegawai.IS_VIP,
-            "tmt_class": pegawai.TMT_CLASS.strftime("%Y-%m-%d") if pegawai.TMT_CLASS else None,
-            "tmt_pangkat": pegawai.TMTPANGKAT.strftime("%Y-%m-%d") if pegawai.TMTPANGKAT else None,
-            "tmt_jabatan": pegawai.TMT_JABATAN.strftime("%Y-%m-%d") if pegawai.TMT_JABATAN else None,
+            "tmt_class": _format_profile_date(pegawai.TMT_CLASS),
+            "tmt_pangkat": _format_profile_date(pegawai.TMTPANGKAT),
+            "tmt_jabatan": _format_profile_date(pegawai.TMT_JABATAN),
             "photo_url": "/api/profilku/photo" if photo else None,
             "signature_exists": os.path.isfile(ttd),
         },
