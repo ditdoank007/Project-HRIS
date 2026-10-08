@@ -85,9 +85,6 @@
     min-height: calc(1.35em * 2);
     max-height: calc(1.35em * 2);
     overflow-wrap: anywhere;
-}
-
-.rapat-title {
     font-weight: 600;
     color: #1e293b;
 }
