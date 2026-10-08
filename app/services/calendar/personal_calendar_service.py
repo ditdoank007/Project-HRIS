@@ -458,30 +458,60 @@ def build_personal_calendar_events(
         })
 
     # ============================================================
+    # ============================================================
     # 7. KESAMAPTAAN
     #
-    # Hanya pegawai yang benar-benar tercatat HADIR melalui QR
-    # yang mendapatkan event setelah kegiatan SELESAI.
+    # TERJADWAL:
+    #   Semua pegawai melihat agenda yang baru dibuat.
+    #
+    # SELESAI:
+    #   Hanya pegawai yang benar-benar HADIR melalui QR yang
+    #   mempertahankan kegiatan di kalender pribadi.
+    #
+    # BATAL:
+    #   Tidak ditampilkan.
     # ============================================================
 
-    kesamaptaan_rows = (
-        db.session.query(KesamaptaanKegiatan, KesamaptaanKehadiran)
-        .join(
-            KesamaptaanKehadiran,
+    kesamaptaan_attendance_exists = exists().where(
+        and_(
             KesamaptaanKehadiran.KEGIATAN_ID == KesamaptaanKegiatan.KEGIATAN_ID,
-        )
-        .filter(
             KesamaptaanKehadiran.NIP == nip,
             KesamaptaanKehadiran.STATUS == "HADIR",
-            KesamaptaanKegiatan.STATUS == "SELESAI",
+        )
+    )
+
+    kesamaptaan_rows = (
+        KesamaptaanKegiatan.query
+        .filter(
+            or_(
+                KesamaptaanKegiatan.STATUS == "TERJADWAL",
+                and_(
+                    KesamaptaanKegiatan.STATUS == "SELESAI",
+                    kesamaptaan_attendance_exists,
+                ),
+            ),
             KesamaptaanKegiatan.TANGGAL >= tanggal_awal,
             KesamaptaanKegiatan.TANGGAL < tanggal_akhir,
         )
-        .order_by(KesamaptaanKegiatan.TANGGAL.asc(), KesamaptaanKegiatan.JAM.asc())
+        .order_by(
+            KesamaptaanKegiatan.TANGGAL.asc(),
+            KesamaptaanKegiatan.JAM.asc(),
+        )
         .all()
     )
 
-    for kegiatan, attendance in kesamaptaan_rows:
+    for kegiatan in kesamaptaan_rows:
+        attendance = (
+            KesamaptaanKehadiran.query
+            .filter(
+                KesamaptaanKehadiran.KEGIATAN_ID == kegiatan.KEGIATAN_ID,
+                KesamaptaanKehadiran.NIP == nip,
+                KesamaptaanKehadiran.STATUS == "HADIR",
+            )
+            .order_by(KesamaptaanKehadiran.SCANNED_DATE.asc())
+            .first()
+        )
+
         events.append({
             "id": f"KESAMAPTAAN-{kegiatan.KEGIATAN_ID}-{nip}",
             "title": kegiatan.JUDUL,
@@ -494,7 +524,10 @@ def build_personal_calendar_events(
             "location": "Kantor SAR Surabaya",
             "event_id": kegiatan.KEGIATAN_ID,
             "status": kegiatan.STATUS,
-            "attendance_at": attendance.SCANNED_DATE.isoformat(),
+            "attendance_at": (
+                attendance.SCANNED_DATE.isoformat()
+                if attendance else None
+            ),
             "pdf_available": bool(kegiatan.PDF_PATH),
         })
 
