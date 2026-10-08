@@ -92,6 +92,26 @@ def api_kesamaptaan_save():
         CREATED_DATE=jakarta_now(),
     )
     db.session.add(kegiatan)
+    db.session.flush()
+
+    # Agenda Kesamaptaan muncul di kalender seluruh pegawai aktif.
+    from app.models.pegawaiModel import Pegawai
+    from app.services.calendar.notification_service import create_for_recipients
+    recipient_rows = (
+        Pegawai.query
+        .filter(Pegawai.NIP.isnot(None))
+        .filter((Pegawai.IS_KELUAR.is_(None)) | (Pegawai.IS_KELUAR != "Y"))
+        .all()
+    )
+    create_for_recipients(
+        recipients=[row.NIP for row in recipient_rows],
+        source_type="KESAMAPTAAN",
+        source_id=str(kegiatan.KEGIATAN_ID),
+        title=f"Kesamaptaan Baru: {kegiatan.JUDUL}",
+        message=f"Kesamaptaan baru: {kegiatan.TANGGAL:%d-%m-%Y} {kegiatan.JAM:%H:%M}",
+        url=f"/agenda?tab=kesamaptaan&kegiatan_id={kegiatan.KEGIATAN_ID}",
+    )
+
     db.session.commit()
     return jsonify({"status": "success", "data": _serialize(kegiatan)})
 
@@ -153,6 +173,10 @@ def api_kesamaptaan_cancel(kegiatan_id):
     kegiatan.QR_ACTIVE = "N"
     kegiatan.UPDATE_BY = session.get("nip")
     kegiatan.UPDATE_DATE = jakarta_now()
+
+    from app.services.calendar.notification_service import complete_source
+    complete_source("KESAMAPTAAN", str(kegiatan.KEGIATAN_ID))
+
     db.session.commit()
     return jsonify({"status": "success", "data": _serialize(kegiatan)})
 
@@ -177,6 +201,11 @@ def api_kesamaptaan_complete(kegiatan_id):
         kegiatan.UPDATE_BY = session.get("nip")
         kegiatan.UPDATE_DATE = jakarta_now()
         target = finalize_pdf(kegiatan)
+
+        from app.services.calendar.notification_service import complete_source
+        complete_source("KESAMAPTAAN", str(kegiatan.KEGIATAN_ID))
+        db.session.commit()
+
         return jsonify({
             "status": "success",
             "data": _serialize(kegiatan),
