@@ -116,6 +116,10 @@ from app.controllers.calendarNotificationController import (
     api_calendar_notifications_unread_count,
     api_calendar_notification_read,
     api_calendar_notifications_read_all,
+    api_calendar_notifications_internal,
+    api_calendar_notifications_unread_count_internal,
+    api_calendar_notification_read_internal,
+    api_calendar_notifications_read_all_internal,
 )
 
 from app.controllers.calendarController import (
@@ -2795,6 +2799,26 @@ def api_calendar_struktur_organisasi_internal_route():
 )
 def api_calendar_infografis_internal_route():
     return api_calendar_infografis_internal()
+
+@main.route('/api/internal/calendar/notifications', methods=['GET'])
+def api_calendar_notifications_internal_route():
+    return api_calendar_notifications_internal()
+
+
+@main.route('/api/internal/calendar/notifications/unread-count', methods=['GET'])
+def api_calendar_notifications_unread_count_internal_route():
+    return api_calendar_notifications_unread_count_internal()
+
+
+@main.route('/api/internal/calendar/notifications/<int:notification_id>/read', methods=['POST'])
+def api_calendar_notification_read_internal_route(notification_id):
+    return api_calendar_notification_read_internal(notification_id)
+
+
+@main.route('/api/internal/calendar/notifications/read-all', methods=['POST'])
+def api_calendar_notifications_read_all_internal_route():
+    return api_calendar_notifications_read_all_internal()
+
 
 @main.route(
     '/api/internal/calendar/personal',
