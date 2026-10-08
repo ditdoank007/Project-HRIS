@@ -44,8 +44,14 @@
 
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white d-flex flex-wrap align-items-center justify-content-between gap-2">
-                    <div><h6 class="mb-0">Daftar Kegiatan Kesamaptaan</h6><div class="text-muted small">Kegiatan terbaru ditampilkan di bagian atas.</div></div>
-                    <input id="searchKes" class="form-control form-control-sm kes-search" placeholder="Cari tanggal / status...">
+                    <div><h6 class="mb-0">Daftar Kegiatan Kesamaptaan</h6><div class="text-muted small">Menampilkan kegiatan berdasarkan bulan yang dipilih.</div></div>
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <div class="hris-month-filter">
+                            <span class="hris-month-filter-label">Bulan</span>
+                            <input id="filterBulanKes" type="month" aria-label="Pilih bulan kegiatan Kesamaptaan">
+                        </div>
+                        <input id="searchKes" class="form-control form-control-sm kes-search" placeholder="Cari tanggal / status...">
+                    </div>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
@@ -103,13 +109,17 @@ document.addEventListener("DOMContentLoaded",()=>{
 
  function render(){
    const q=(search.value||"").toLowerCase().trim();
-   const filtered=rows.filter(x=>(x.hari+" "+x.tanggal+" "+x.status).toLowerCase().includes(q));
-   document.getElementById("statTotal").textContent=rows.length;
-   document.getElementById("statTerjadwal").textContent=rows.filter(x=>x.status==="TERJADWAL").length;
-   document.getElementById("statSelesai").textContent=rows.filter(x=>x.status==="SELESAI").length;
+   const month=monthFilter.value || new Date().toISOString().slice(0,7);
+   const monthRows=rows.filter(x=>String(x.tanggal||"").slice(0,7)===month);
+   const filtered=monthRows.filter(x=>(x.hari+" "+x.tanggal+" "+x.status).toLowerCase().includes(q));
+   document.getElementById("statTotal").textContent=monthRows.length;
+   document.getElementById("statTerjadwal").textContent=monthRows.filter(x=>x.status==="TERJADWAL").length;
+   document.getElementById("statSelesai").textContent=monthRows.filter(x=>x.status==="SELESAI").length;
    body.innerHTML=filtered.length?filtered.map((x,i)=>'<tr><td class="hris-text-left">'+(i+1)+'</td><td class="hris-text-left"><strong>'+esc(x.hari)+'</strong><div class="text-muted small">'+esc(fmtDate(x.tanggal))+'</div></td><td class="hris-text-left">'+esc(x.jam)+' WIB</td><td class="hris-text-left">'+esc(x.judul)+'</td><td class="hris-text-left">'+x.attendance_count+'</td><td class="hris-text-left">'+x.photo_count+'</td><td class="hris-text-left">'+badge(x.status)+'</td><td class="hris-text-left"><button class="btn btn-sm btn-outline-primary" onclick="lihatKesamaptaan('+x.kegiatan_id+')"><i class="feather-eye"></i></button></td></tr>').join(""):'<tr><td colspan="8" class="text-center py-5 text-muted">Belum ada kegiatan.</td></tr>';
  }
  async function load(){const r=await fetch("/api/kesamaptaan");const j=await r.json();if(!r.ok)throw Error(j.message||"Gagal memuat data.");rows=j.data||[];render()}
+ monthFilter.value=new Date().toISOString().slice(0,7);
+ monthFilter.addEventListener("change",render);
  search.addEventListener("input",render);
 
  window.resetEditor=()=>{editId=null;document.getElementById("kesHari").value="";document.getElementById("kesTanggal").value=new Date().toISOString().slice(0,10);document.getElementById("kesJam").value="07:30";document.getElementById("btnSimpanKes").textContent="Simpan"};
