@@ -160,6 +160,11 @@ def _serialize_event(event):
         "attendance": attendance_data,
         "attendance_count": len(attendance_data),
         "qr_active": bool(meta and meta.QR_ACTIVE == "Y"),
+        "attendance_url": (
+            build_qr_svg(meta.QR_TOKEN)[1]
+            if meta and meta.QR_TOKEN and meta.QR_ACTIVE == "Y"
+            else None
+        ),
         "notulen": notulen.to_dict() if notulen else None,
         "can_view_notulen": can_view_notulen,
         "can_upload_notulen": _can_upload_event_document(event),
