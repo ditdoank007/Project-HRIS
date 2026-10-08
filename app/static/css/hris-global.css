@@ -188,7 +188,7 @@
 
     border: 1px solid var(--hris-orange-dark);
 
-    text-align: center;
+    text-align: left !important;
     vertical-align: middle;
 
     font-weight: 600;
@@ -207,6 +207,18 @@
 
     font-family: inherit;
     font-size: var(--hris-font-size);
+    text-align: left !important;
+}
+
+/*
+   Global default: seluruh isi tabel rata kiri.
+   Jika sebuah kolom memang membutuhkan alignment lain,
+   gunakan helper semantic di bawah:
+   .hris-text-center / .hris-text-right.
+*/
+.hris-table th,
+.hris-table td {
+    text-align: left !important;
 }
 
 .hris-table tbody tr:hover > td {
@@ -218,16 +230,19 @@
    07. TABLE ALIGNMENT
    ============================================================ */
 
-.hris-table .text-left {
-    text-align: left;
+.hris-table .text-left,
+.hris-table .hris-text-left {
+    text-align: left !important;
 }
 
-.hris-table .text-center {
-    text-align: center;
+.hris-table .text-center,
+.hris-table .hris-text-center {
+    text-align: center !important;
 }
 
-.hris-table .text-right {
-    text-align: right;
+.hris-table .text-right,
+.hris-table .hris-text-right {
+    text-align: right !important;
 }
 
 
