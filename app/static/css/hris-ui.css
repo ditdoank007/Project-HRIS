@@ -4020,3 +4020,25 @@ body.hris-sidebar-mini .hris-submenu {
 .hris-participant-table td:last-child {
   white-space: nowrap;
 }
+
+
+/* GLOBAL TABLE ALIGNMENT CONTROLLER */
+/*
+   Every table carrying .hris-table is left-aligned by default.
+   Center/right remain explicit semantic exceptions.
+*/
+html body .hris-table,
+html body .hris-table thead th,
+html body .hris-table tbody td {
+  text-align: left !important;
+}
+
+html body .hris-table thead th.hris-text-center,
+html body .hris-table tbody td.hris-text-center {
+  text-align: center !important;
+}
+
+html body .hris-table thead th.hris-text-right,
+html body .hris-table tbody td.hris-text-right {
+  text-align: right !important;
+}
