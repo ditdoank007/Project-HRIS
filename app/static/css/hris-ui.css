@@ -4302,3 +4302,286 @@ html body .nxl-content table.hris-table tbody td > * {
     width: 100%;
   }
 }
+
+
+/* ============================================================
+   DASHBOARD4 — HRIS CALENDAR SHELL
+   Purpose: dashboard4 keeps HRIS Reborn functionality but adopts
+   the visual language and geometry of HRIS Calendar.
+   Brand accent remains orange.
+   ============================================================ */
+
+body.hris-modern {
+  background: #f4f6f9 !important;
+  color: #1f2937;
+}
+
+/* ---------- Left navigation ---------- */
+body.hris-modern .nxl-navigation {
+  width: 250px !important;
+  min-height: 100vh !important;
+  background: #111827 !important;
+  border-right: 0 !important;
+  box-shadow: none !important;
+  z-index: 1030;
+}
+
+body.hris-modern .nxl-navigation .navbar-wrapper,
+body.hris-modern .nxl-navigation .navbar-content {
+  width: 250px !important;
+  background: #111827 !important;
+}
+
+body.hris-modern .nxl-navbar {
+  padding: 0 12px 18px !important;
+  background: #111827 !important;
+}
+
+body.hris-modern .custom-nav-header {
+  min-height: 78px;
+  padding: 18px 20px !important;
+  background: #111827 !important;
+}
+
+body.hris-modern .custom-nav-header .header-container {
+  gap: 12px;
+}
+
+body.hris-modern .custom-nav-header img {
+  width: 38px !important;
+  height: 38px !important;
+  object-fit: contain;
+}
+
+body.hris-modern .custom-nav-header .nav-text-label {
+  color: #fff !important;
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  letter-spacing: 1px;
+}
+
+body.hris-modern .custom-nav-header .header-container:nth-child(2) {
+  min-height: 44px;
+  margin-top: 17px;
+  padding: 0 !important;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+
+body.hris-modern .custom-nav-header .header-container:nth-child(2) .nav-text-label {
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: .3px;
+  color: #cbd5e1 !important;
+}
+
+body.hris-modern .custom-nav-header .header-container:nth-child(2) .nxl-navigation-toggle {
+  width: 22px;
+  color: #cbd5e1 !important;
+}
+
+body.hris-modern .custom-nav-header .header-container:nth-child(2) .nxl-navigation-toggle > div {
+  color: #cbd5e1 !important;
+}
+
+body.hris-modern .nav-separator {
+  display: none !important;
+}
+
+body.hris-modern .nxl-navigation .nxl-navbar > .nxl-item {
+  margin: 0 0 5px !important;
+}
+
+body.hris-modern .nxl-navigation .nxl-link {
+  min-height: 44px !important;
+  padding: 0 14px !important;
+  border-radius: 8px !important;
+  color: #cbd5e1 !important;
+  background: transparent !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: .3px;
+}
+
+body.hris-modern .nxl-navigation .nxl-link:hover {
+  color: #fff !important;
+  background: rgba(255,255,255,.07) !important;
+}
+
+body.hris-modern .nxl-navigation .nxl-link.active {
+  color: #fff !important;
+  background: var(--ui-brand, #eb6831) !important;
+}
+
+body.hris-modern .nxl-navigation .nxl-micon {
+  width: 22px !important;
+  color: inherit !important;
+  font-size: 17px !important;
+}
+
+body.hris-modern .nxl-navigation .nxl-submenu {
+  background: transparent !important;
+  padding: 4px 0 2px 18px !important;
+}
+
+body.hris-modern .nxl-navigation .nxl-submenu .nxl-link {
+  min-height: 38px !important;
+  font-size: 11px !important;
+  color: #9ca3af !important;
+  padding-left: 14px !important;
+}
+
+body.hris-modern .nxl-navigation .nxl-submenu .nxl-link.active,
+body.hris-modern .nxl-navigation .nxl-submenu .nxl-link:hover {
+  color: #fff !important;
+  background: rgba(235,104,49,.16) !important;
+}
+
+/* ---------- Top bar ---------- */
+body.hris-modern .nxl-header {
+  height: 78px !important;
+  min-height: 78px !important;
+  background: #fff !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  box-shadow: none !important;
+}
+
+body.hris-modern .nxl-header .header-wrapper {
+  height: 78px !important;
+  padding: 0 30px !important;
+}
+
+body.hris-modern .nxl-header .header-left {
+  min-width: 38px;
+}
+
+body.hris-modern .nxl-header .nxl-head-mobile-toggler {
+  color: #374151 !important;
+}
+
+body.hris-modern .nxl-header .dropdown > a {
+  color: #1f2937 !important;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+body.hris-modern .nxl-header .dropdown > a:hover {
+  background: #f3f4f6;
+  border-radius: 10px;
+}
+
+body.hris-modern .nxl-header .dropdown-menu {
+  top: calc(100% + 8px) !important;
+  width: 250px;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 10px !important;
+  box-shadow: 0 12px 30px rgba(15,23,42,.16) !important;
+}
+
+body.hris-modern .nxl-header .custom-profile-dropdown .btn-orange-figma {
+  background: var(--ui-brand, #eb6831) !important;
+  border-color: var(--ui-brand, #eb6831) !important;
+}
+
+/* ---------- Main canvas ---------- */
+body.hris-modern .nxl-container {
+  width: calc(100% - 250px) !important;
+  margin-left: 250px !important;
+  min-height: calc(100vh - 78px);
+  background: #f4f6f9 !important;
+}
+
+body.hris-modern .nxl-content {
+  min-height: calc(100vh - 78px);
+  padding: 25px 30px 40px !important;
+  background: #f4f6f9 !important;
+}
+
+body.hris-modern .page-header {
+  margin-bottom: 15px !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+}
+
+body.hris-modern .page-header .page-header-title h5 {
+  color: #374151 !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+}
+
+body.hris-modern .page-header .breadcrumb {
+  margin: 0 !important;
+}
+
+body.hris-modern .page-header .breadcrumb-item {
+  color: #6b7280 !important;
+  font-size: 12px !important;
+}
+
+/* ---------- Calendar-style cards ---------- */
+body.hris-modern .card,
+body.hris-modern .hris-card {
+  border-color: #e5e7eb !important;
+  border-radius: 10px !important;
+  box-shadow: 0 2px 8px rgba(15,23,42,.04) !important;
+}
+
+body.hris-modern .card-header {
+  background: #fff !important;
+  border-bottom-color: #e5e7eb !important;
+}
+
+body.hris-modern .btn-primary,
+body.hris-modern .btn-orange-figma,
+body.hris-modern .hris-btn-primary {
+  background: var(--ui-brand, #eb6831) !important;
+  border-color: var(--ui-brand, #eb6831) !important;
+}
+
+body.hris-modern .btn-primary:hover,
+body.hris-modern .btn-orange-figma:hover,
+body.hris-modern .hris-btn-primary:hover {
+  background: var(--ui-brand-dark, #d95722) !important;
+  border-color: var(--ui-brand-dark, #d95722) !important;
+}
+
+/* ---------- Responsive shell ---------- */
+@media (max-width: 900px) {
+  body.hris-modern .nxl-navigation,
+  body.hris-modern .nxl-navigation .navbar-wrapper,
+  body.hris-modern .nxl-navigation .navbar-content {
+    width: 210px !important;
+  }
+
+  body.hris-modern .nxl-container {
+    width: calc(100% - 210px) !important;
+    margin-left: 210px !important;
+  }
+}
+
+@media (max-width: 650px) {
+  body.hris-modern .nxl-navigation {
+    width: 250px !important;
+    transform: translateX(-100%);
+    transition: transform .2s ease;
+    z-index: 1500;
+  }
+
+  body.hris-modern .nxl-navigation.mobile-open {
+    transform: translateX(0);
+  }
+
+  body.hris-modern .nxl-container {
+    width: 100% !important;
+    margin-left: 0 !important;
+  }
+
+  body.hris-modern .nxl-header .header-wrapper {
+    padding: 0 15px !important;
+  }
+
+  body.hris-modern .nxl-content {
+    padding: 15px !important;
+  }
+}
