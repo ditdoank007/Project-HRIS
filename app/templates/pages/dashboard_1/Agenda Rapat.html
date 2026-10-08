@@ -433,6 +433,29 @@ document.addEventListener("DOMContentLoaded", function () {
                                     </div>
                                 </div>
                             </div>
+                            <div class="mt-3">
+                                <label class="form-label fw-semibold mb-1">
+                                    Tautan Absensi Rapat
+                                </label>
+                                <div class="input-group">
+                                    <input
+                                        type="text"
+                                        class="form-control form-control-sm"
+                                        id="rapatAttendanceUrl"
+                                        value="${esc(x.attendance_url || "-")}"
+                                        readonly>
+                                    <button
+                                        class="btn btn-outline-secondary"
+                                        type="button"
+                                        onclick="copyRapatAttendanceUrl()">
+                                        <i class="feather-copy me-1"></i> Salin
+                                    </button>
+                                </div>
+                                <div class="text-muted small mt-1">
+                                    Bagikan tautan ini melalui WhatsApp atau chat Zoom agar pegawai dapat absen dari HP.
+                                </div>
+                            </div>
+
                             <div class="d-grid gap-2 mt-3">
                                 <button class="btn btn-outline-primary"
                                         type="button"
@@ -469,6 +492,28 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById("btnBatalRapat").classList.toggle("d-none",!x.can_edit);
         document.getElementById("btnSelesaiRapat").classList.toggle("d-none",!x.can_complete);
         bootstrap.Modal.getOrCreateInstance(detailModalEl).show();
+    };
+
+    window.copyRapatAttendanceUrl=async function(){
+        const input=document.getElementById("rapatAttendanceUrl");
+        const value=input ? String(input.value || "").trim() : "";
+        if(!value || value === "-"){
+            alert("Tautan absensi rapat belum tersedia.");
+            return;
+        }
+        try{
+            await navigator.clipboard.writeText(value);
+        }catch(error){
+            input.focus();
+            input.select();
+            document.execCommand("copy");
+        }
+        const button=document.querySelector("#rapatAttendanceUrl + button");
+        if(button){
+            const original=button.innerHTML;
+            button.innerHTML='<i class="feather-check me-1"></i> Tersalin';
+            setTimeout(()=>{button.innerHTML=original;},1600);
+        }
     };
 
     window.fullscreenQR=function(id){
