@@ -17,7 +17,7 @@ from app import db
 
 from app.models.calendarEventModel import CalendarEvent
 from app.models.calendarParticipantModel import CalendarParticipant
-from app.models.calendarNotificationModel import CalendarNotification
+from app.services.calendar.notification_service import ensure_notification
 from app.models.calendarAuditModel import CalendarAuditLog
 
 
@@ -136,27 +136,14 @@ def create_event(data, user):
             # CREATE NOTIFICATION
             # ================================================
 
-            notif = CalendarNotification(
-
-                EVENT_ID=event.EVENT_ID,
-
-                NIP=item.get(
-                    "nip"
-                ),
-
-                MESSAGE=(
-                    f"Agenda baru: {event.TITLE}"
-                ),
-
-                READ_STATUS="N",
-
-                SENT_DATE=None
-
-            )
-
-
-            db.session.add(
-                notif
+            ensure_notification(
+                nip=item.get("nip"),
+                source_type="AGENDA_RAPAT" if event.EVENT_TYPE == "RAPAT" else "CALENDAR_EVENT",
+                source_id=str(event.EVENT_ID),
+                title=f"Agenda Rapat Baru: {event.TITLE}" if event.EVENT_TYPE == "RAPAT" else f"Agenda Baru: {event.TITLE}",
+                message=f"Agenda baru: {event.TITLE}",
+                url=f"/agenda?tab=rapat&event_id={event.EVENT_ID}" if event.EVENT_TYPE == "RAPAT" else f"/calendar?event_id={event.EVENT_ID}",
+                event_id=event.EVENT_ID,
             )
 
 
