@@ -2502,7 +2502,14 @@ def api_rejadwal_siaga_get_fungsional():
 def api_rejadwal_siaga_get_shift():
     """API: Get list Shift"""
     try:
-        shift_list = MfShift.query.filter(MfShidef api_rejadwal_siaga_add_personil():
+        shift_list = MfShift.query.filter(MfShift.NAMA_SHIFT != '').order_by(MfShift.SHIFT_ID).all()
+        data = [{'id': item.SHIFT_ID, 'nama': item.NAMA_SHIFT} for item in shift_list]
+        return jsonify({'success': True, 'data': data})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e), 'data': []})
+
+
+def api_rejadwal_siaga_add_personil():
     """Tambah personel ke roster terpilih dengan validasi yang mengikuti HRIS 2013."""
     try:
         data = request.get_json(silent=True) or {}
@@ -2614,6 +2621,7 @@ def api_rejadwal_siaga_get_shift():
         db.session.rollback()
         current_app.logger.exception('Gagal menambah personel jadwal siaga')
         return jsonify({'success': False, 'error': 'Penambahan gagal. Tidak ada perubahan yang disimpan.'}), 500
+
 
 def api_rejadwal_siaga_reset():
     """Pulihkan seluruh roster asli sebelum perubahan personel dalam satu transaksi."""
