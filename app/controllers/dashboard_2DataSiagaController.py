@@ -2607,14 +2607,24 @@ def api_rejadwal_siaga_add_personil():
             return jsonify({'success': False, 'error': 'Personel sedang cuti, sakit, atau dinas luar pada tanggal tersebut.'}), 409
 
         # Personel yang pernah dihapus harus dipulihkan melalui tombol Rollback.
-        deleted_backup = LogActivityBackup.query.filter(
-            LogActivityBackup.GUID_BACKUP == 'Delete Rejadwal',
-            LogActivityBackup.ACTIVITY == 'Piket Siaga',
-            LogActivityBackup.NIP == nip,
-            db.func.date(LogActivityBackup.ACTIVITY_DATE) == selected_date,
-            LogActivityBackup.UNIT_KERJA_ID == str(unit_id),
-            LogActivityBackup.SHIFT == shift
-        ).first()
+        # Hindari ORM LogActivityBackup karena model memetakan kolom yang
+        # tidak ada di skema produksi (Biaya/Qty/SatuanQty dan lainnya).
+        deleted_backup = db.session.execute(db.text("""
+            SELECT 1
+            FROM LOG_ACTIVITIY_BACKUP
+            WHERE GUIDBackUp = 'Delete Rejadwal'
+              AND Activity = 'Piket Siaga'
+              AND NIP = :nip
+              AND DATE(ActivityDate) = :selected_date
+              AND IDUnitKerja = :unit_id
+              AND Shift = :shift
+            LIMIT 1
+        """), {
+            'nip': nip,
+            'selected_date': selected_date,
+            'unit_id': str(unit_id),
+            'shift': shift,
+        }).first()
         if deleted_backup:
             return jsonify({'success': False, 'error': 'Personel ada di daftar rollback. Gunakan tombol Rollback agar data lama dipulihkan utuh.'}), 409
 
