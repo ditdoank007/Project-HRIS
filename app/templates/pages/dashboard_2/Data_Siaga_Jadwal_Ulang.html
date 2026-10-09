@@ -728,7 +728,7 @@ $(document).ready(function() {
         const shift = $('#shift').val();
         if (!unit || !tgl || !shift) { showAlert('warning', 'Pilih unit, tanggal, dan shift terlebih dahulu.'); return; }
         if (!guidLog) { showAlert('warning', 'Klik Show terlebih dahulu untuk memuat jadwal.'); return; }
-        if (!confirm('Reset jadwal untuk unit, tanggal, dan shift ini? Personel pengganti akan dihapus dan roster asli dipulihkan.')) return;
+        if (!confirm('Reset jadwal untuk unit, tanggal, dan shift ini? Semua perubahan ganti, tambah, dan hapus personel pada jadwal ini akan dibatalkan. Seluruh petugas roster asli akan dipulihkan.')) return;
         const $btn = $(this).prop('disabled', true).html('<i class="bi bi-hourglass-split me-1"></i>Memproses...');
         $.ajax({
             url: '/api/rejadwal-siaga/reset', method: 'POST', contentType: 'application/json',
