@@ -140,6 +140,39 @@
     </div>
 </div>
 
+<!-- Modal Pengganti Petugas -->
+<div class="modal fade" id="replacementModal" tabindex="-1" aria-labelledby="replacementModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h2 class="modal-title fs-5 fw-semibold" id="replacementModalTitle"><i class="bi bi-person-arrows me-2" style="color:var(--ui-brand);"></i>Ganti Petugas Piket</h2>
+                    <p class="mb-0 mt-1 small text-muted">Cari pegawai berdasarkan nama, lalu pilih dari hasil pencarian.</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+            </div>
+            <div class="modal-body">
+                <div class="replacement-current">
+                    <div class="small text-muted mb-1">Petugas saat ini</div>
+                    <div class="fw-semibold" id="replacementCurrentName">-</div>
+                    <div class="small text-muted" id="replacementCurrentRole">-</div>
+                </div>
+                <label for="replacementSearch" class="hris-label">Nama pegawai pengganti</label>
+                <div class="replacement-search-wrap">
+                    <input type="text" class="hris-input" id="replacementSearch" placeholder="Ketik nama pegawai..." autocomplete="off">
+                    <div id="replacementSuggestions" role="listbox" aria-label="Hasil pencarian pegawai"></div>
+                </div>
+                <input type="hidden" id="replacementNip">
+                <div class="small text-muted mt-2" id="replacementSearchHint">Ketik minimal 2 karakter untuk mencari pegawai.</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="hris-btn hris-btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="hris-btn hris-btn-primary" id="btnConfirmReplacement" disabled><i class="bi bi-person-check me-1"></i>Ganti Petugas</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
     .jadwal-card { margin-bottom:18px; }
     .jadwal-filter-grid { display:grid; grid-template-columns:minmax(165px,.9fr) minmax(300px,2fr) minmax(150px,.8fr) auto; gap:14px; align-items:end; }
@@ -155,10 +188,26 @@
     #pegawaiDropdown { border:1px solid var(--ui-border); border-radius:8px; box-shadow:var(--ui-shadow); }
     #pegawaiDropdown .pegawai-item { cursor:pointer; padding:9px 12px; white-space:normal; }
     #pegawaiDropdown .pegawai-item:hover { background:#fff5ef; }
-    #tableBodyJadwal tr { height:42px; }
-    #tableBodyJadwal td { padding:7px 10px !important; vertical-align:middle; line-height:1.25; }
+    #tableJadwal { table-layout:auto; }
+    #tableBodyJadwal tr { height:38px; }
+    #tableBodyJadwal td { padding:5px 10px !important; vertical-align:middle; line-height:1.2; white-space:nowrap; }
+    #tableBodyJadwal td:nth-child(3) { min-width:220px; }
     #tableBodyJadwal .jadwal-action-cell { white-space:nowrap; text-align:center; }
-    #tableBodyJadwal .btn-action,#tableBodyRollback .btn-action { min-height:28px; min-width:30px; padding:4px 7px; border-radius:7px; margin:0 2px; vertical-align:middle; }
+    #tableBodyJadwal .jadwal-action-group { display:inline-flex; flex-flow:row nowrap; align-items:center; justify-content:center; gap:8px; white-space:nowrap; }
+    #tableBodyJadwal .btn-action,#tableBodyRollback .btn-action { display:inline-flex; align-items:center; justify-content:center; min-height:30px; min-width:32px; padding:5px 8px; border-radius:8px; margin:0; vertical-align:middle; flex:0 0 auto; }
+    #replacementModal .modal-dialog { max-width:520px; }
+    #replacementModal .modal-content { border:1px solid rgba(226,232,240,.9); border-radius:18px; background:rgba(255,255,255,.96); box-shadow:0 24px 80px rgba(15,23,42,.24); overflow:visible; }
+    #replacementModal .modal-header { padding:20px 22px 14px; border-bottom:1px solid #edf0f5; }
+    #replacementModal .modal-body { padding:20px 22px; }
+    #replacementModal .modal-footer { padding:14px 22px 20px; border-top:1px solid #edf0f5; gap:8px; }
+    #replacementModal .replacement-current { background:#f8fafc; border:1px solid #e8edf4; border-radius:12px; padding:12px 14px; margin-bottom:18px; }
+    #replacementModal .replacement-search-wrap { position:relative; }
+    #replacementSuggestions { display:none; position:absolute; inset:calc(100% + 6px) 0 auto; z-index:1085; max-height:240px; overflow-y:auto; border:1px solid #e2e8f0; border-radius:12px; background:#fff; box-shadow:0 14px 35px rgba(15,23,42,.15); }
+    #replacementSuggestions .replacement-option { display:block; width:100%; padding:11px 14px; border:0; border-bottom:1px solid #f1f5f9; background:#fff; text-align:left; color:#1e293b; }
+    #replacementSuggestions .replacement-option:hover,#replacementSuggestions .replacement-option:focus { background:#fff4ed; outline:0; }
+    #replacementSuggestions .replacement-option small { display:block; margin-top:3px; color:#64748b; }
+    body.modal-open .modal-backdrop.show { opacity:.28; backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); }
+    #replacementModal { backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px); }
     @media(max-width:1100px) { .jadwal-filter-grid { grid-template-columns:minmax(150px,.85fr) minmax(230px,1.5fr) minmax(135px,.8fr); } .jadwal-filter-actions { grid-column:1/-1; flex-wrap:wrap; } }
     @media(max-width:700px) { .hris-page { padding:15px; } .jadwal-filter-grid,.jadwal-add-grid { grid-template-columns:minmax(0,1fr); } .jadwal-filter-actions { grid-column:auto; } .jadwal-filter-actions .hris-btn { flex:1; } }
 </style>
@@ -316,12 +365,14 @@ $(document).ready(function() {
                     <td>${row.fungsional}</td>
                     <td><span class="badge ${statusBadge}">${row.status || '-'}</span></td>
                     <td class="jadwal-action-cell">
-                        <button class="btn btn-sm btn-outline-secondary btn-action btn-edit-jadwal" title="Ganti petugas" aria-label="Ganti petugas">
-                            <i class="bi bi-pencil"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger btn-action btn-delete-jadwal" title="Hapus dari jadwal" aria-label="Hapus dari jadwal">
-                            <i class="bi bi-trash"></i>
-                        </button>
+                        <div class="jadwal-action-group">
+                            <button type="button" class="btn btn-sm btn-outline-primary btn-action btn-edit-jadwal" title="Ganti petugas" aria-label="Ganti petugas">
+                                <i class="bi bi-person-arrows"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-danger btn-action btn-delete-jadwal" title="Hapus dari jadwal" aria-label="Hapus dari jadwal">
+                                <i class="bi bi-trash3"></i>
+                            </button>
+                        </div>
                     </td>
                 </tr>
             `);
@@ -383,31 +434,101 @@ $(document).ready(function() {
     });
 
     // ============================================
-    // GANTI PETUGAS — mengikuti pola penggantian HRIS 2013
-    // ============================================
+    // GANTI PETUGAS — pilih nama dari autocomplete, NIP hanya dipakai internal.
+    let replacementRow = null;
+    let replacementSearchTimer = null;
+    const replacementModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('replacementModal'));
+
     $('#tableBodyJadwal').on('click', '.btn-edit-jadwal', function() {
-        const $row = $(this).closest('tr');
+        replacementRow = $(this).closest('tr');
+        const oldNip = String(replacementRow.data('nip') || '').trim();
+        const currentName = String(replacementRow.find('td').eq(2).text() || '').trim();
+        const currentRole = String(replacementRow.find('td').eq(3).text() || '').trim();
+
+        $('#replacementCurrentName').text(currentName || oldNip);
+        $('#replacementCurrentRole').text((currentRole ? currentRole + ' • ' : '') + 'Petugas saat ini');
+        $('#replacementSearch').val('');
+        $('#replacementNip').val('');
+        $('#replacementSuggestions').empty().hide();
+        $('#replacementSearchHint').text('Ketik minimal 2 karakter untuk mencari pegawai.');
+        $('#btnConfirmReplacement').prop('disabled', true);
+        replacementModal.show();
+        setTimeout(() => $('#replacementSearch').trigger('focus'), 180);
+    });
+
+    $('#replacementSearch').on('input', function() {
+        clearTimeout(replacementSearchTimer);
+        const keyword = String($(this).val() || '').trim();
+        $('#replacementNip').val('');
+        $('#btnConfirmReplacement').prop('disabled', true);
+        const $suggestions = $('#replacementSuggestions').empty();
+
+        if (keyword.length < 2) {
+            $suggestions.hide();
+            $('#replacementSearchHint').text('Ketik minimal 2 karakter untuk mencari pegawai.');
+            return;
+        }
+
+        $('#replacementSearchHint').text('Mencari pegawai...');
+        replacementSearchTimer = setTimeout(function() {
+            $.get('/api/rejadwal-siaga/search-pegawai', { keyword: keyword })
+                .done(function(r) {
+                    $suggestions.empty();
+                    if (r && r.success && Array.isArray(r.data) && r.data.length) {
+                        r.data.forEach(function(person) {
+                            const $option = $('<button>', {
+                                type: 'button',
+                                class: 'replacement-option',
+                                role: 'option'
+                            });
+                            $('<span>').addClass('fw-semibold').text(person.nama || '-').appendTo($option);
+                            $('<small>').text('NIP: ' + (person.nip || '-')).appendTo($option);
+                            $option.data('person', person);
+                            $suggestions.append($option);
+                        });
+                        $suggestions.show();
+                        $('#replacementSearchHint').text('Pilih nama pegawai dari daftar hasil pencarian.');
+                    } else {
+                        $suggestions.html('<div class="px-3 py-3 small text-muted">Pegawai tidak ditemukan.</div>').show();
+                        $('#replacementSearchHint').text('Coba kata kunci nama yang lain.');
+                    }
+                })
+                .fail(function() {
+                    $suggestions.html('<div class="px-3 py-3 small text-danger">Pencarian gagal. Silakan coba lagi.</div>').show();
+                    $('#replacementSearchHint').text('Tidak dapat menghubungi layanan pencarian.');
+                });
+        }, 250);
+    });
+
+    $('#replacementSuggestions').on('click', '.replacement-option', function() {
+        const person = $(this).data('person');
+        if (!person) return;
+        $('#replacementSearch').val(person.nama || '');
+        $('#replacementNip').val(person.nip || '');
+        $('#replacementSuggestions').hide().empty();
+        $('#replacementSearchHint').text('Pegawai dipilih. Periksa nama sebelum menyimpan.');
+        $('#btnConfirmReplacement').prop('disabled', !person.nip);
+    });
+
+    $('#btnConfirmReplacement').on('click', function() {
+        if (!replacementRow) return;
+        const $row = replacementRow;
         const oldNip = String($row.data('nip') || '').trim();
         const actDate = String($row.data('act') || '').trim();
         const shift = String($row.data('shift') || '').trim();
-        const currentName = String($row.find('td').eq(2).text() || '').trim();
-        const newNip = window.prompt(
-            'GANTI PETUGAS\nPetugas saat ini: ' + currentName + ' (' + oldNip + ')\n\nMasukkan NIP pegawai pengganti:',
-            ''
-        );
-        if (newNip === null) return;
-        const cleanNip = newNip.trim();
-        if (!cleanNip) {
-            showAlert('warning', 'NIP pegawai pengganti wajib diisi.');
-            return;
-        }
-        if (cleanNip === oldNip) {
-            showAlert('warning', 'NIP pengganti sama dengan petugas saat ini.');
-            return;
-        }
-        if (!window.confirm('Ganti ' + currentName + ' (' + oldNip + ') dengan NIP ' + cleanNip + '?')) return;
+        const newNip = String($('#replacementNip').val() || '').trim();
+        const newName = String($('#replacementSearch').val() || '').trim();
 
-        const $btn = $(this).prop('disabled', true);
+        if (!newNip || !newName) {
+            $('#replacementSearchHint').text('Pilih nama pegawai dari daftar pencarian terlebih dahulu.');
+            return;
+        }
+        if (newNip === oldNip) {
+            $('#replacementSearchHint').text('Pegawai pengganti sama dengan petugas saat ini.');
+            return;
+        }
+
+        const $btn = $(this).prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Menyimpan...');
         $.ajax({
             url: '/api/rejadwal-siaga/edit-personil',
             method: 'POST',
@@ -415,25 +536,33 @@ $(document).ready(function() {
             data: JSON.stringify({
                 guid_log: String($row.data('guid') || guidLog),
                 old_nip: oldNip,
-                new_nip: cleanNip,
+                new_nip: newNip,
                 act_date: actDate,
                 shift: shift
             }),
             success: function(r) {
                 if (r && r.success) {
-                    showAlert('success', r.message || 'Petugas berhasil diganti.');
+                    replacementModal.hide();
+                    showAlert('success', r.message || ('Petugas berhasil diganti dengan ' + newName + '.'));
                     $('#btnShow').click();
                 } else {
-                    showAlert('danger', (r && r.error) || 'Gagal mengganti petugas.');
+                    $('#replacementSearchHint').text((r && r.error) || 'Gagal mengganti petugas.');
                 }
             },
             error: function(xhr) {
                 let msg = 'Gagal mengganti petugas.';
                 try { msg = JSON.parse(xhr.responseText).error || msg; } catch (e) {}
-                showAlert('danger', msg + ' (HTTP ' + xhr.status + ')');
+                $('#replacementSearchHint').text(msg + ' (HTTP ' + xhr.status + ')');
             },
-            complete: function() { $btn.prop('disabled', false); }
+            complete: function() {
+                $btn.prop('disabled', false).html('<i class="bi bi-person-check me-1"></i>Ganti Petugas');
+            }
         });
+    });
+
+    $('#replacementModal').on('hidden.bs.modal', function() {
+        $('#replacementSuggestions').hide().empty();
+        replacementRow = null;
     });
 
     // ============================================
