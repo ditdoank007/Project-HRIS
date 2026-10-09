@@ -209,12 +209,13 @@
     #replacementSuggestions .replacement-option { display:block; width:100%; padding:11px 14px; border:0; border-bottom:1px solid #f1f5f9; background:#fff; text-align:left; color:#1e293b; }
     #replacementSuggestions .replacement-option:hover,#replacementSuggestions .replacement-option:focus { background:#fff4ed; outline:0; }
     #replacementSuggestions .replacement-option small { display:block; margin-top:3px; color:#64748b; }
-    /* Paksa modal ke layer teratas; blur hanya diterapkan pada backdrop di belakang modal. */
-    body.modal-open .modal-backdrop { z-index:19990 !important; background:rgba(15,23,42,.30) !important; opacity:1 !important; backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); }
-    #replacementModal { z-index:20000 !important; position:fixed !important; inset:0; overflow-y:auto; }
-    #replacementModal .modal-dialog { position:relative; z-index:20001; margin-left:auto; margin-right:auto; }
-    #replacementModal .modal-content { position:relative; z-index:20002; background:#fff; }
-    #replacementSuggestions { z-index:20010; }
+    /* Modal ditempatkan langsung di body agar backdrop selalu di belakang dialog. */
+    body.modal-open .modal-backdrop { z-index:1050 !important; background:rgba(15,23,42,.30) !important; opacity:1 !important; backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); }
+    #replacementModal { z-index:1060 !important; position:fixed !important; inset:0; overflow-y:auto; }
+    #replacementModal .modal-dialog { position:relative; z-index:1061; margin:1.75rem auto; min-height:calc(100% - 3.5rem); display:flex; align-items:center; }
+    #replacementModal .modal-content { position:relative; z-index:1062; width:100%; background:#fff !important; opacity:1 !important; filter:none !important; }
+    #replacementSuggestions { z-index:1070; }
+    @media(max-width:575px) { #replacementModal .modal-dialog { margin:1rem; min-height:calc(100% - 2rem); } }
     @media(max-width:1100px) { .jadwal-filter-grid { grid-template-columns:minmax(150px,.85fr) minmax(230px,1.5fr) minmax(135px,.8fr); } .jadwal-filter-actions { grid-column:1/-1; flex-wrap:wrap; } }
     @media(max-width:700px) { .hris-page { padding:15px; } .jadwal-filter-grid,.jadwal-add-grid { grid-template-columns:minmax(0,1fr); } .jadwal-filter-actions { grid-column:auto; } .jadwal-filter-actions .hris-btn { flex:1; } }
 </style>
@@ -225,6 +226,12 @@
 {% block script %}
 <script>
 $(document).ready(function() {
+    // Portal modal langsung ke body agar tidak mewarisi stacking context/blur dari wrapper halaman.
+    const replacementModalElement = document.getElementById('replacementModal');
+    if (replacementModalElement && replacementModalElement.parentElement !== document.body) {
+        document.body.appendChild(replacementModalElement);
+    }
+
     let guidLog = '';
     let jadwalData = [];
     let rollbackData = [];
