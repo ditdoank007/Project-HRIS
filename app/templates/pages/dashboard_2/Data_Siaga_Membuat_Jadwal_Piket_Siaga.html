@@ -6,115 +6,115 @@
 @media(max-width:767px){.roster-page{padding:9px}.roster-page .roster-body{padding:13px}.roster-page .roster-head{padding:14px;align-items:flex-start;flex-direction:column}.roster-page .insert-row{flex-direction:column}.roster-page .btn-insert{width:100%}}
 </style>
 <div class="nxl-content roster-page">
-  <div class="page-header"><div class="page-header-left d-flex align-items-center"><div class="page-header-title"><h5 class="m-b-10">Data Siaga</h5></div><ul class="breadcrumb"><li class="breadcrumb-item"><a href="{{ url_for('main.view_data_siaga_membuat_jadwal_piket_siaga') }}">Buat Jadwal Piket</a></li></ul></div></div>
-  <div class="main-content">
-    <section class="roster-card mb-4">
-      <div class="roster-head"><div><h5><i class="bi bi-calendar2-week me-2" style="color:#f2652b"></i>Pembuatan Jadwal Piket Siaga</h5><div class="subtle">Susun urutan personel untuk satu periode, unit kerja, dan shift. Data lama tidak ditimpa.</div></div><span class="summary-chip"><i class="bi bi-shield-check"></i> Data legacy tetap dipertahankan</span></div>
-      <div class="roster-body">
-        <div id="rosterAlert" class="alert d-none" role="alert"></div>
-        <div class="row g-3 align-items-end mb-4">
-          <div class="col-6 col-lg-2"><label class="field-label" for="rosterTahun">Tahun</label><select id="rosterTahun" class="form-select"></select></div>
-          <div class="col-6 col-lg-2"><label class="field-label" for="rosterBulan">Bulan</label><select id="rosterBulan" class="form-select"><option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option><option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option><option value="07">Juli</option><option value="08">Agustus</option><option value="09">September</option><option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option></select></div>
-          <div class="col-12 col-lg-5"><label class="field-label" for="rosterUnit">Unit Kerja</label><select id="rosterUnit" class="form-select"><option value="">Memuat unit kerja...</option></select></div>
-          <div class="col-12 col-lg-3"><label class="field-label" for="rosterShift">Shift</label><select id="rosterShift" class="form-select"><option value="1">Shift 1</option><option value="2">Shift 2</option></select></div>
-        </div>
-        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3"><div><h6 class="mb-1" style="font-weight:800;font-size:14px">Jabatan Siaga &amp; Urutan Rotasi</h6><div class="subtle">No. Urut personel menentukan urutan rotasi harian. Contoh 1–6: setelah urutan 6, rotasi kembali ke urutan 1 pada hari berikutnya.</div></div><span id="rosterRoleCount" class="summary-chip">Memuat master jabatan...</span></div>
-        <div id="rosterRoleGrid" class="row g-3"><div class="col-12"><div class="empty-members">Memuat Master Jabatan Siaga aktif...</div></div></div>
-        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4"><div class="subtle"><i class="bi bi-info-circle me-1"></i>Gunakan tombol Insert untuk memasukkan nama ke daftar urutan. Ikon hapus hanya menghapus dari formulir sebelum disimpan.</div><div class="d-flex gap-2"><button type="button" id="rosterReset" class="btn-secondary-hris"><i class="bi bi-arrow-counterclockwise me-1"></i>Reset Form</button><button type="button" id="rosterSave" class="btn-primary-hris"><i class="bi bi-save me-1"></i>Simpan</button></div></div>
-      </div>
+ <div class="page-header"><div class="page-header-left d-flex align-items-center"><div class="page-header-title"><h5 class="m-b-10">Data Siaga</h5></div><ul class="breadcrumb"><li class="breadcrumb-item">Buat Jadwal Piket</li></ul></div></div>
+ <div class="main-content">
+  <section class="roster-card mb-4">
+   <div class="roster-head"><div><h5><i class="bi bi-calendar2-week me-2" style="color:#f2652b"></i>Pembuatan Jadwal Piket Siaga</h5><div class="subtle">Simpan satu tim per jabatan dan nomor tim. Nomor Tim menentukan pola rotasi tanggal selama bulan yang dipilih.</div></div><span class="summary-chip"><i class="bi bi-shield-check"></i> Data lama tidak ditimpa</span></div>
+   <div class="roster-body">
+    <div id="rosterAlert" class="alert d-none" role="alert"></div>
+    <div class="row g-3 align-items-end mb-4">
+     <div class="col-6 col-lg-2"><label class="field-label" for="rosterTahun">Tahun</label><select id="rosterTahun" class="form-select"></select></div>
+     <div class="col-6 col-lg-2"><label class="field-label" for="rosterBulan">Bulan</label><select id="rosterBulan" class="form-select"><option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option><option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option><option value="07">Juli</option><option value="08">Agustus</option><option value="09">September</option><option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option></select></div>
+     <div class="col-12 col-lg-5"><label class="field-label" for="rosterUnit">Unit Kerja</label><select id="rosterUnit" class="form-select"><option value="">Memuat unit kerja...</option></select></div>
+     <div class="col-12 col-lg-3"><label class="field-label" for="rosterShift">Shift</label><select id="rosterShift" class="form-select"><option value="1">Shift 1</option><option value="2">Shift 2</option></select></div>
+    </div>
+    <div class="row g-3 align-items-end mb-4">
+     <div class="col-12 col-md-6"><label class="field-label" for="rosterJabatan">Jabatan Siaga</label><select id="rosterJabatan" class="form-select"><option value="">Memuat jabatan...</option></select></div>
+     <div class="col-12 col-md-3"><label class="field-label" for="rosterNoUrut">No. Urut Tim</label><input id="rosterNoUrut" type="number" min="1" step="1" class="form-control" placeholder="Contoh: 1"></div>
+     <div class="col-12 col-md-3"><div class="switch-box"><label class="d-flex align-items-start gap-2 mb-0" for="rosterShiftSama"><input type="checkbox" id="rosterShiftSama" style="margin-top:3px"><span><strong style="font-size:12px">Shift 1 = Shift 2</strong><small class="d-block subtle mt-1">Salin tim dan nomor rotasi ini ke kedua shift.</small></span></label></div></div>
+    </div>
+    <section class="role-card">
+     <div class="role-head"><div><h6 class="role-title">Personel Tim Siaga</h6><div class="subtle mt-1">Pilih nama pegawai, lalu tekan Insert. Nomor urut di daftar ini hanya urutan anggota di dalam tim.</div></div><span id="memberCount" class="role-order">0 personel</span></div>
+     <div class="role-body">
+      <label class="field-label" for="searchEmployee">Nama Pegawai</label>
+      <div class="insert-row"><div class="autocomplete-wrap"><input type="text" id="searchEmployee" class="form-control" autocomplete="off" placeholder="Ketik nama atau NIP pegawai..."><div id="employeeAutocomplete" class="autocomplete-list d-none"></div></div><button type="button" id="insertEmployee" class="btn-insert" disabled><i class="bi bi-plus-lg me-1"></i>Insert</button></div>
+      <div id="memberList"></div>
+     </div>
     </section>
-    <section id="rosterSavedCard" class="roster-card d-none"><div class="roster-head"><div><h5><i class="bi bi-check-circle me-2" style="color:#16a765"></i>Roster Berhasil Disimpan</h5><div class="subtle" id="rosterSavedMeta"></div></div></div><div class="roster-body" style="padding:0;overflow-x:auto"><table class="preview-table"><thead><tr><th>Urutan Jabatan</th><th>Jabatan Siaga</th><th>Shift</th><th>Jumlah Personel</th><th>Urutan Personel</th></tr></thead><tbody id="rosterSavedRows"></tbody></table></div></section>
-  </div>
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4"><div class="subtle"><i class="bi bi-info-circle me-1"></i>Contoh: No. Urut Tim 1 bertugas tanggal 1, 1+jumlah tim, dan seterusnya sampai akhir bulan.</div><div class="d-flex gap-2"><button type="button" id="rosterReset" class="btn-secondary-hris"><i class="bi bi-arrow-counterclockwise me-1"></i>Reset Form</button><button type="button" id="rosterSave" class="btn-primary-hris"><i class="bi bi-save me-1"></i>Simpan Tim</button></div></div>
+   </div>
+  </section>
+  <section id="rosterSavedCard" class="roster-card d-none"><div class="roster-head"><div><h5><i class="bi bi-check-circle me-2" style="color:#16a765"></i>Tim Berhasil Disimpan</h5><div class="subtle" id="rosterSavedMeta"></div></div></div><div class="roster-body" style="padding:0;overflow-x:auto"><table class="preview-table"><thead><tr><th>No. Urut Tim</th><th>Jabatan Siaga</th><th>Shift</th><th>Jadwal Tanggal</th><th>Daftar Personel</th></tr></thead><tbody id="rosterSavedRows"></tbody></table></div></section>
+ </div>
 </div>
 <script>
 (function(){
 "use strict";
 var $=function(id){return document.getElementById(id);};
-var state={roles:[],members:{},timers:{},sequences:{}};
-var monthNames=["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+var state={roles:[],members:[],pending:null,timer:null,sequence:0};
+var months=["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
 function esc(v){return String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");}
-function displayRole(name){var k=String(name||"").trim().toUpperCase();if(k==="KAGAHAR"||k==="KGR")return "KGR · Kagahar";if(k==="PERWIRA"||k==="PW")return "PW · Perwira";if(k==="KOM"||k==="KOMUNIKASI")return "Kom · Komunikasi";if(k==="RESCUER")return "Rescuer";if(k==="ABK")return "ABK";return name;}
-function alertMsg(message,type){var box=$("rosterAlert");box.className="alert alert-"+(type||"info");box.textContent=message;box.classList.remove("d-none");}
-function hideAlert(){$("rosterAlert").classList.add("d-none");}
-function getList(role){if(!state.members[role])state.members[role]=[];return state.members[role];}
-function usedElsewhere(role,nip){return state.roles.some(function(r){return r.nama_jabatan!==role&&getList(r.nama_jabatan).some(function(p){return p.nip===nip;});});}
-function renderMembers(role){
- var target=$("members-"+role);if(!target)return;var list=getList(role);
- if(!list.length){target.innerHTML='<div class="empty-members">Belum ada personel yang di-insert.</div>';return;}
- target.innerHTML='<table class="member-table"><thead><tr><th style="width:70px">No. Urut</th><th>Nama Pegawai</th><th style="width:60px;text-align:center">Hapus</th></tr></thead><tbody>'+list.map(function(p,i){return '<tr><td><strong>'+String(i+1).padStart(2,"0")+'</strong></td><td><strong>'+esc(p.nama||p.nip)+'</strong><small style="display:block;color:#8794a6;font-size:10px;margin-top:2px">NIP '+esc(p.nip)+' · FingerID '+esc(p.finger_id||"-")+'</small></td><td style="text-align:center"><button type="button" class="remove-member" data-role="'+esc(role)+'" data-index="'+i+'" title="Hapus personel" aria-label="Hapus personel"><i class="bi bi-trash3"></i></button></td></tr>';}).join("")+'</tbody></table>';
-}
-function closeSearch(role){var node=$("autocomplete-"+role);if(node){node.classList.add("d-none");node.innerHTML="";}}
+function message(text,type){var box=$("rosterAlert");box.className="alert alert-"+(type||"info");box.textContent=text;box.classList.remove("d-none");}
+function hideMessage(){$("rosterAlert").classList.add("d-none");}
 function normalize(row){return {nip:String(row.nip||row.NIP||row.id||"").trim(),nama:String(row.nama||row.Nama||row.nama_lengkap||row.NamaLengkap||"").trim(),finger_id:String(row.finger_id||row.FingerID||"").trim()};}
-async function searchEmployee(role,keyword){
- var box=$("autocomplete-"+role);if(!keyword.trim()){closeSearch(role);return;}
- var seq=(state.sequences[role]||0)+1;state.sequences[role]=seq;box.classList.remove("d-none");box.innerHTML='<div class="empty-members">Mencari pegawai...</div>';
+function renderMembers(){
+ $("memberCount").textContent=state.members.length+" personel";
+ if(!state.members.length){$("memberList").innerHTML='<div class="empty-members">Belum ada pegawai yang di-insert.</div>';return;}
+ $("memberList").innerHTML='<table class="member-table"><thead><tr><th style="width:64px">No.</th><th>Nama Pegawai</th><th style="width:60px;text-align:center">Hapus</th></tr></thead><tbody>'+state.members.map(function(p,i){return '<tr><td><strong>'+String(i+1).padStart(2,"0")+'</strong></td><td><strong>'+esc(p.nama||p.nip)+'</strong><small style="display:block;color:#8794a6;font-size:10px;margin-top:2px">NIP '+esc(p.nip)+'</small></td><td style="text-align:center"><button type="button" class="remove-member" data-index="'+i+'" title="Keluarkan dari daftar" aria-label="Hapus pegawai"><i class="bi bi-trash3"></i></button></td></tr>';}).join("")+'</tbody></table>';
+}
+function closeSearch(){$("employeeAutocomplete").classList.add("d-none");$("employeeAutocomplete").innerHTML="";}
+async function searchEmployee(keyword){
+ var box=$("employeeAutocomplete");if(!keyword.trim()){closeSearch();return;}
+ var seq=++state.sequence;box.classList.remove("d-none");box.innerHTML='<div class="empty-members">Mencari pegawai...</div>';
  try{
   var response=await fetch("/api/laporan/search-pegawai?keyword="+encodeURIComponent(keyword.trim()));if(!response.ok)throw new Error("Pencarian pegawai gagal.");
-  var result=await response.json();if(state.sequences[role]!==seq)return;
+  var result=await response.json();if(state.sequence!==seq)return;
   var rows=(result.data||result.results||result.pegawai||[]).map(normalize).filter(function(p){return p.nip;});
   if(!rows.length){box.innerHTML='<div class="empty-members">Pegawai tidak ditemukan.</div>';return;}
   box.innerHTML="";
-  rows.forEach(function(p){var btn=document.createElement("button");btn.type="button";btn.className="autocomplete-item";btn.innerHTML='<strong>'+esc(p.nama||p.nip)+'</strong><small>NIP '+esc(p.nip)+' · FingerID '+esc(p.finger_id||"-")+'</small>';
-   btn.addEventListener("click",function(){
-    state.pending=state.pending||{};state.pending[role]=p;$("search-"+role).value=p.nama||p.nip;$("search-"+role).dataset.pendingNip=p.nip;closeSearch(role);$("insert-"+role).disabled=false;
-   });box.appendChild(btn);
-  });
+  rows.forEach(function(p){var btn=document.createElement("button");btn.type="button";btn.className="autocomplete-item";btn.innerHTML='<strong>'+esc(p.nama||p.nip)+'</strong><small>NIP '+esc(p.nip)+'</small>';btn.addEventListener("click",function(){state.pending=p;$("searchEmployee").value=p.nama||p.nip;$("insertEmployee").disabled=false;closeSearch();});box.appendChild(btn);});
  }catch(err){box.innerHTML='<div class="empty-members">'+esc(err.message||"Gagal mencari pegawai.")+'</div>';}
 }
-function insertEmployee(role){
- var p=(state.pending||{})[role];if(!p){alertMsg("Pilih nama pegawai dari hasil pencarian terlebih dahulu.","warning");return;}
- if(usedElsewhere(role,p.nip)){alertMsg((p.nama||p.nip)+" sudah dipilih pada fungsional lain.","warning");return;}
- var list=getList(role);if(list.some(function(x){return x.nip===p.nip;})){alertMsg((p.nama||p.nip)+" sudah ada pada roster ini.","warning");return;}
- list.push(p);delete state.pending[role];$("search-"+role).value="";$("search-"+role).dataset.pendingNip="";$("insert-"+role).disabled=true;renderMembers(role);hideAlert();updateCount();
-}
-function updateCount(){var count=state.roles.filter(function(r){return getList(r.nama_jabatan).length>0;}).length;var total=state.roles.reduce(function(sum,r){return sum+getList(r.nama_jabatan).length;},0);$("rosterRoleCount").textContent=count+" jabatan diisi · "+total+" personel";}
-function renderRoles(){
- var grid=$("rosterRoleGrid");grid.innerHTML="";
- state.roles.forEach(function(role){
-  var name=role.nama_jabatan;getList(name);
-  var col=document.createElement("div");col.className="col-12 col-xl-6";
-  col.innerHTML='<section class="role-card"><div class="role-head"><h6 class="role-title">'+esc(displayRole(name))+'</h6><span class="role-order">Urutan jabatan '+esc(role.no_urut)+'</span></div><div class="role-body"><label class="field-label" for="search-'+esc(name)+'">Nama Pegawai</label><div class="insert-row"><div class="autocomplete-wrap"><input type="text" id="search-'+esc(name)+'" class="form-control" autocomplete="off" placeholder="Cari nama atau NIP..."><div id="autocomplete-'+esc(name)+'" class="autocomplete-list d-none"></div></div><button type="button" id="insert-'+esc(name)+'" class="btn-insert" disabled><i class="bi bi-plus-lg me-1"></i>Insert</button></div><div id="members-'+esc(name)+'"></div></div></section>';
-  grid.appendChild(col);$("search-"+name).addEventListener("input",function(){state.pending=state.pending||{};delete state.pending[name];$("insert-"+name).disabled=true;clearTimeout(state.timers[name]);var val=this.value;state.timers[name]=setTimeout(function(){searchEmployee(name,val);},250);});
-  $("search-"+name).addEventListener("keydown",function(e){if(e.key==="Escape")closeSearch(name);});
-  $("insert-"+name).addEventListener("click",function(){insertEmployee(name);});renderMembers(name);
- });updateCount();
+function insertEmployee(){
+ if(!state.pending){message("Pilih nama pegawai dari hasil pencarian terlebih dahulu.","warning");return;}
+ if(state.members.some(function(p){return p.nip===state.pending.nip;})){message("Pegawai tersebut sudah ada dalam daftar tim.","warning");return;}
+ state.members.push(state.pending);state.pending=null;$("searchEmployee").value="";$("insertEmployee").disabled=true;renderMembers();hideMessage();
 }
 async function loadMasters(){
  try{
-  var results=await Promise.all([fetch("/api/siaga/master-jabatan-aktif"),fetch("/api/siaga/master-unit-aktif")]);
-  if(!results[0].ok||!results[1].ok)throw new Error("Master Jabatan atau Unit Kerja gagal dimuat.");
-  var data=await Promise.all([results[0].json(),results[1].json()]);
+  var res=await Promise.all([fetch("/api/siaga/master-jabatan-aktif"),fetch("/api/siaga/master-unit-aktif")]);
+  if(!res[0].ok||!res[1].ok)throw new Error("Master Jabatan atau Unit Kerja gagal dimuat.");
+  var data=await Promise.all([res[0].json(),res[1].json()]);
   if(!data[0].success||!data[1].success)throw new Error(data[0].error||data[1].error||"Gagal memuat master.");
   state.roles=(data[0].data||[]).map(function(r){return {id:r.id_jabatan_siaga||r.id,no_urut:Number(r.no_urut||0),nama_jabatan:String(r.nama_jabatan||r.NamaJabatan||"").trim()};}).sort(function(a,b){return a.no_urut-b.no_urut;});
-  if(!state.roles.length)throw new Error("Tidak ada jabatan siaga aktif pada master.");
-  var unit=$("rosterUnit");unit.innerHTML='<option value="">Pilih unit kerja...</option>';
-  (data[1].data||[]).forEach(function(u){var opt=document.createElement("option");opt.value=u.id_unit_kerja||u.IDUnitKerja;opt.textContent=u.nama_unit_kerja||u.UnitKerjaName;unit.appendChild(opt);});
-  renderRoles();
- }catch(err){$("rosterRoleGrid").innerHTML='<div class="col-12"><div class="alert alert-danger">'+esc(err.message||"Gagal memuat master.")+'</div></div>';$("rosterRoleCount").textContent="Master gagal dimuat";$("rosterSave").disabled=true;}
+  $("rosterJabatan").innerHTML='<option value="">Pilih jabatan siaga...</option>';
+  state.roles.forEach(function(r){var o=document.createElement("option");o.value=r.nama_jabatan;o.textContent=r.no_urut+". "+r.nama_jabatan;$("rosterJabatan").appendChild(o);});
+  $("rosterUnit").innerHTML='<option value="">Pilih unit kerja...</option>';
+  (data[1].data||[]).forEach(function(u){var o=document.createElement("option");o.value=u.id_unit_kerja||u.IDUnitKerja;o.textContent=u.nama_unit_kerja||u.UnitKerjaName;$("rosterUnit").appendChild(o);});
+ }catch(err){message(err.message||"Gagal memuat master.","danger");$("rosterSave").disabled=true;}
 }
-function clearForm(){state.pending={};state.roles.forEach(function(r){state.members[r.nama_jabatan]=[];var input=$("search-"+r.nama_jabatan);if(input)input.value="";var insert=$("insert-"+r.nama_jabatan);if(insert)insert.disabled=true;closeSearch(r.nama_jabatan);renderMembers(r.nama_jabatan);});$("rosterSavedCard").classList.add("d-none");hideAlert();updateCount();}
-async function saveAll(){
- hideAlert();if(!$("rosterUnit").value){alertMsg("Pilih Unit Kerja terlebih dahulu.","warning");return;}
- var rosters=state.roles.map(function(r){return {fungsional:r.nama_jabatan,pegawai:getList(r.nama_jabatan).map(function(p){return {nip:p.nip};})};}).filter(function(r){return r.pegawai.length;});
- if(!rosters.length){alertMsg("Insert minimal satu pegawai pada salah satu jabatan siaga.","warning");return;}
- var total=rosters.reduce(function(sum,r){return sum+r.pegawai.length;},0);var month=$("rosterBulan").value,year=$("rosterTahun").value,shift=$("rosterShift").value;
- if(!window.confirm("Simpan "+rosters.length+" jabatan dengan "+total+" personel untuk "+$("rosterUnit").selectedOptions[0].text+", Shift "+shift+", "+monthNames[Number(month)-1]+" "+year+"? Data roster yang sudah ada tidak akan ditimpa."))return;
- var button=$("rosterSave");button.disabled=true;button.innerHTML='<span class="spinner-border spinner-border-sm me-2"></span>Menyimpan...';
+function clearForm(){state.members=[];state.pending=null;$("searchEmployee").value="";$("insertEmployee").disabled=true;$("rosterNoUrut").value="";$("rosterSavedCard").classList.add("d-none");closeSearch();renderMembers();hideMessage();}
+function dayList(team,total){var days=[];for(var day=team;day<=total;day+=1){/* replaced after total teams known */}return days;}
+async function saveRoster(){
+ hideMessage();var month=$("rosterBulan").value,year=$("rosterTahun").value,unit=$("rosterUnit").value,shift=$("rosterShift").value,role=$("rosterJabatan").value,no=Number($("rosterNoUrut").value),same=$("rosterShiftSama").checked;
+ if(!unit){message("Pilih Unit Kerja.","warning");return;}if(!role){message("Pilih Jabatan Siaga.","warning");return;}if(!Number.isInteger(no)||no<1){message("No. Urut Tim harus bilangan bulat minimal 1.","warning");return;}if(!state.members.length){message("Insert minimal satu pegawai ke dalam daftar tim.","warning");return;}
+ var unitName=$("rosterUnit").selectedOptions[0].text,roleName=$("rosterJabatan").selectedOptions[0].text;
+ if(!window.confirm("Simpan Tim "+no+" — "+roleName+" — "+unitName+" — Shift "+(same?"1 dan 2":shift)+" — "+months[Number(month)-1]+" "+year+" dengan "+state.members.length+" personel?"))return;
+ var btn=$("rosterSave");btn.disabled=true;btn.innerHTML='<span class="spinner-border spinner-border-sm me-2"></span>Menyimpan...';
  try{
-  var response=await fetch("/api/siaga/roster/batch-save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({bulan:month,tahun:year,unit_kerja_id:$("rosterUnit").value,shift:shift,shift1_sama_shift2:false,rosters:rosters})});
-  var result=await response.json();if(!response.ok||!result.success)throw new Error(result.error||"Roster gagal disimpan.");
-  $("rosterSavedMeta").textContent=result.unit_kerja+" · Shift "+shift+" · "+monthNames[Number(result.bulan)-1]+" "+result.tahun;
-  $("rosterSavedRows").innerHTML=(result.rosters||[]).map(function(r){return "<tr><td>"+esc(r.no_urut_jabatan)+"</td><td><strong>"+esc(displayRole(r.fungsional))+"</strong></td><td>Shift "+esc(r.shift)+"</td><td>"+esc(r.jumlah_pegawai)+"</td><td>"+(r.pegawai||[]).map(function(p,i){return (i+1)+". "+esc(p.nama||p.nip);}).join("<br>")+"</td></tr>";}).join("");
-  clearForm();$("rosterSavedCard").classList.remove("d-none");alertMsg(result.message||"Roster berhasil disimpan.","success");$("rosterSavedCard").scrollIntoView({behavior:"smooth",block:"start"});
- }catch(err){alertMsg(err.message||"Roster gagal disimpan. Periksa validasi; batch harus dibatalkan utuh.","danger");}
- finally{button.disabled=false;button.innerHTML='<i class="bi bi-save me-1"></i>Simpan';}
+  var payload={bulan:month,tahun:year,unit_kerja_id:unit,shift:shift,shift1_sama_shift2:same,no_urut_tim:no,rosters:[{fungsional:role,pegawai:state.members.map(function(p){return {nip:p.nip};})}]};
+  var response=await fetch("/api/siaga/roster/batch-save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});var result=await response.json();
+  if(!response.ok||!result.success)throw new Error(result.error||"Roster gagal disimpan.");
+  var totalDays=new Date(Number(year),Number(month),0).getDate(),teamCount=0;
+  /* Determine team count from the largest saved roster number, including this one. */
+  try{var check=await fetch("/api/siaga/view-jadwal?bulan="+month+"&tahun="+year+"&unit_kerja_id="+encodeURIComponent(unit)+"&fungsional="+encodeURIComponent(role);if(check.ok){var jr=await check.json();var nums=(jr.data||[]).filter(function(r){return String(r.shift)===String(shift);}).map(function(r){return Number(r.no_urut)||0;});teamCount=Math.max.apply(null,nums.concat([no]));}}catch(ignore){}
+  if(!teamCount||!Number.isFinite(teamCount))teamCount=no;
+  var dates=[];for(var d=no;d<=totalDays;d+=teamCount)dates.push(d);
+  $("rosterSavedMeta").textContent=result.unit_kerja+" · "+months[Number(month)-1]+" "+year+" · Tim "+no+" · "+(same?"Shift 1 = Shift 2":"Shift "+shift);
+  $("rosterSavedRows").innerHTML=(result.rosters||[]).map(function(r){return "<tr><td><strong>"+esc(r.no_urut_roster||no)+"</strong></td><td>"+esc(r.fungsional)+"</td><td>"+esc(same?"1 & 2":r.shift)+"</td><td>"+esc(dates.join(", ")||"-")+"</td><td>"+(r.pegawai||[]).map(function(p){return esc(p.nama||p.nip);}).join("<br>")+"</td></tr>";}).join("");
+  $("rosterSavedCard").classList.remove("d-none");message(result.message||"Tim siaga berhasil disimpan.","success");$("rosterSavedCard").scrollIntoView({behavior:"smooth",block:"start"});clearForm();
+ }catch(err){message(err.message||"Gagal menyimpan roster.","danger");}
+ finally{btn.disabled=false;btn.innerHTML='<i class="bi bi-save me-1"></i>Simpan Tim';}
 }
-$("rosterRoleGrid").addEventListener("click",function(e){var btn=e.target.closest("[data-role][data-index]");if(!btn)return;var role=btn.getAttribute("data-role"),index=Number(btn.getAttribute("data-index"));getList(role).splice(index,1);renderMembers(role);updateCount();});
-document.addEventListener("click",function(e){if(!e.target.closest(".autocomplete-wrap"))state.roles.forEach(function(r){closeSearch(r.nama_jabatan);});});
-$("rosterReset").addEventListener("click",function(){if(window.confirm("Kosongkan semua pilihan personel di formulir ini? Data tersimpan tidak berubah."))clearForm();});
-$("rosterSave").addEventListener("click",saveAll);
-var now=new Date();$("rosterBulan").value=String(now.getMonth()+1).padStart(2,"0");var year=$("rosterTahun");for(var y=now.getFullYear()-1;y<=now.getFullYear()+3;y++){var option=document.createElement("option");option.value=String(y);option.textContent=String(y);if(y===now.getFullYear())option.selected=true;year.appendChild(option);}
-loadMasters();
+$("searchEmployee").addEventListener("input",function(){state.pending=null;$("insertEmployee").disabled=true;clearTimeout(state.timer);var v=this.value;state.timer=setTimeout(function(){searchEmployee(v);},250);});
+$("searchEmployee").addEventListener("keydown",function(e){if(e.key==="Escape")closeSearch();});
+$("insertEmployee").addEventListener("click",insertEmployee);
+$("memberList").addEventListener("click",function(e){var btn=e.target.closest("[data-index]");if(!btn)return;state.members.splice(Number(btn.dataset.index),1);renderMembers();});
+document.addEventListener("click",function(e){if(!e.target.closest(".autocomplete-wrap"))closeSearch();});
+$("rosterReset").addEventListener("click",function(){if(window.confirm("Kosongkan formulir ini? Data tersimpan tidak berubah."))clearForm();});
+$("rosterSave").addEventListener("click",saveRoster);
+var now=new Date();$("rosterBulan").value=String(now.getMonth()+1).padStart(2,"0");for(var y=now.getFullYear()-1;y<=now.getFullYear()+3;y++){var o=document.createElement("option");o.value=String(y);o.textContent=String(y);if(y===now.getFullYear())o.selected=true;$("rosterTahun").appendChild(o);}
+renderMembers();loadMasters();
 })();
 </script>
 {% endblock %}
