@@ -99,7 +99,7 @@ async function saveAll(){
   var result=await response.json();if(!response.ok||!result.success)throw new Error(result.error||"Roster gagal disimpan.");
   $("rosterSavedMeta").textContent=result.unit_kerja+" · "+monthNames[Number(result.bulan)-1]+" "+result.tahun+" · "+(result.shift1_sama_shift2?"Shift 1 dan Shift 2":"Shift 1 saja");
   $("rosterSavedRows").innerHTML=(result.rosters||[]).map(function(r){return "<tr><td>"+esc(r.no_urut_jabatan)+"</td><td><strong>"+esc(displayRole(r.fungsional))+"</strong></td><td>Shift "+esc(r.shift)+"</td><td>"+esc(r.jumlah_pegawai)+"</td><td>"+(r.pegawai||[]).map(function(p){return esc(p.nama||p.nip);}).join(", ")+"</td></tr>";}).join("");
-  $("rosterSavedCard").classList.remove("d-none");alertMsg(result.message||"Roster berhasil disimpan.","success");clearForm();$("rosterSavedCard").classList.remove("d-none");$("rosterSavedCard").scrollIntoView({behavior:"smooth",block:"start"});
+  clearForm();$("rosterSavedCard").classList.remove("d-none");alertMsg(result.message||"Roster berhasil disimpan.","success");$("rosterSavedCard").scrollIntoView({behavior:"smooth",block:"start"});
  }catch(err){alertMsg(err.message||"Roster gagal disimpan. Periksa kembali data; jika validasi gagal, seluruh batch dibatalkan.","danger");}
  finally{button.disabled=false;button.innerHTML='<i class="bi bi-save me-1"></i>Simpan Semua Roster';}
 }
