@@ -1,0 +1,574 @@
+{% extends "layout/baseDashboard2.html" %}
+
+{% block title %}- Absensi Kehadiran Piket Siaga{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/hris-ui.css') }}">
+<style>
+    /*
+     * Dashboard 2 theme.min.css memang sengaja melakukan:
+     * body.modal-open .nxl-container,
+     * body.modal-open .nxl-header,
+     * body.modal-open .nxl-navigation,
+     * body.modal-open .page-header { filter: blur(3px); }
+     *
+     * Halaman Absensi Kehadiran Piket Siaga tidak menggunakan efek blur.
+     */
+    body.siaga-modal-open .nxl-container,
+    body.siaga-modal-open .nxl-header,
+    body.siaga-modal-open .nxl-navigation,
+    body.siaga-modal-open .page-header {
+        filter: none !important;
+    }
+
+    body.siaga-modal-open .modal-backdrop {
+        background-color: rgba(0, 0, 0, 0.45) !important;
+        opacity: 1 !important;
+        filter: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+
+    body.siaga-modal-open .modal,
+    body.siaga-modal-open .modal-content {
+        filter: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+    #btnSavePdf,
+    #btnDownloadPdf {
+        white-space: nowrap;
+    }
+</style>
+
+<div class="hris-modern">
+    <div class="hris-page">
+        <div class="hris-page-header">
+            <div>
+                <h1 class="hris-page-title">
+                    <i class="bi bi-person-check"></i> Absensi Kehadiran Piket Siaga
+                </h1>
+                <p class="hris-page-subtitle">
+                    Pencatatan kehadiran berdasarkan jadwal Piket Siaga yang telah diotorisasi.
+                </p>
+            </div>
+            <button type="button" class="hris-btn hris-btn-secondary" id="btnRefresh">
+                <i class="bi bi-arrow-clockwise"></i>
+                <span>Refresh</span>
+            </button>
+        </div>
+
+        <div id="alertContainer" class="d-none" style="margin-bottom:16px;">
+            <div class="hris-card">
+                <div class="hris-card-body" style="padding:12px 16px;">
+                    <span id="alertIcon"></span>
+                    <span id="alertMessage"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="hris-card">
+            <div class="hris-card-header">
+                <div>
+                    <h2 class="hris-card-title">Filter Kehadiran Piket</h2>
+                    <div class="hris-page-subtitle">Pilih tanggal, unit, dan shift untuk menampilkan jadwal.</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <button type="button" class="hris-btn hris-btn-primary" id="btnSavePdf" title="Simpan Daftar Hadir PDF ke HRIS-DATA">
+                        <i class="bi bi-cloud-arrow-up"></i>
+                        <span>Simpan</span>
+                    </button>
+                    <button type="button" class="hris-btn hris-btn-secondary" id="btnDownloadPdf" title="Download PDF yang sudah tersimpan di HRIS-DATA">
+                        <i class="bi bi-file-earmark-pdf"></i>
+                        <span>Download PDF</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="hris-toolbar">
+                <div class="hris-toolbar-left">
+                    <div class="hris-field" style="min-width:210px;">
+                        <label class="hris-label" for="filterUnit">Unit Kerja</label>
+                        <select class="hris-select" id="filterUnit">
+                            <option value="">Semua Unit</option>
+                            {% for uk in unit_kerja_list %}
+                            <option value="{{ uk['IDUnitKerja'] }}">{{ uk['UnitKerjaName'] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="hris-field" style="min-width:175px;">
+                        <label class="hris-label" for="filterTanggal">Tanggal</label>
+                        <input class="hris-input" type="date" id="filterTanggal">
+                    </div>
+
+                    <div style="display:flex;align-items:end;gap:6px;padding-bottom:0;">
+                        <button class="hris-btn hris-btn-secondary" id="btnPrevDay" type="button" title="Hari sebelumnya">
+                            <i class="bi bi-chevron-left"></i>
+                        </button>
+                        <button class="hris-btn hris-btn-secondary" id="btnNextDay" type="button" title="Hari berikutnya">
+                            <i class="bi bi-chevron-right"></i>
+                        </button>
+                    </div>
+
+                    <div class="hris-field" style="min-width:170px;">
+                        <label class="hris-label" for="filterShift">Shift</label>
+                        <select class="hris-select" id="filterShift">
+                            <option value="">Semua Shift</option>
+                            {% for s in shift_list %}
+                            <option value="{{ s['ShiftID'] }}">{{ s['NamaShift'] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hris-table-wrap">
+                <table class="hris-table-modern" id="tableKehadiran">
+                    <thead>
+                        <tr>
+                            <th style="width:55px;text-align:center;">No</th>
+                            <th>Nama / NIP</th>
+                            <th style="width:90px;text-align:center;">Shift</th>
+                            <th style="width:125px;">Kehadiran</th>
+                            <th style="width:80px;text-align:center;">Aksi</th>
+                            <th>Fungsional</th>
+                            <th>Unit Kerja</th>
+                            <th>Update Terakhir</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr>
+                            <td colspan="8">
+                                <div class="hris-empty">
+                                    <i class="bi bi-inbox"></i>
+                                    <div>Pilih filter kemudian klik Refresh.</div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="replacementModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Informasi Pengganti</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div style="font-size:12px;color:var(--ui-muted);">Pegawai ini menggantikan:</div>
+                <div style="font-weight:700;color:var(--ui-ink);margin-top:6px;" id="modalNamaAsliPengganti"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Konfirmasi Kehadiran</h5>
+                <button type="button" class="btn-close" data-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div style="font-weight:700;color:var(--ui-ink);" id="modalNama"></div>
+                <div style="margin-top:4px;color:var(--ui-muted);font-size:12px;" id="modalDetail"></div>
+                <div class="d-flex gap-2 justify-content-center" style="margin-top:18px;">
+                    <button class="hris-btn hris-btn-primary" id="btnHadir" type="button">
+                        <i class="bi bi-check2-circle"></i> Hadir
+                    </button>
+                    <button class="hris-btn hris-btn-danger" id="btnTidakHadir" type="button">
+                        <i class="bi bi-x-circle"></i> Tidak Hadir
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+$(document).ready(function () {
+    const today = new Date();
+    const localToday = new Date(today.getTime() - today.getTimezoneOffset() * 60000)
+        .toISOString().split('T')[0];
+
+    $('#filterTanggal').val(localToday);
+
+    // Default shift mengikuti jam saat operator membuka halaman:
+    // 08:00-19:59 = Shift 1
+    // 20:00-07:59 = Shift 2
+    const currentHour = new Date().getHours();
+    const defaultShift = (
+        currentHour >= 8 && currentHour < 20
+    ) ? '1' : '2';
+
+    $('#filterShift').val(defaultShift);
+
+    let selectedGuidLog = '';
+    let selectedNip = '';
+    let selectedActivityDate = '';
+    let selectedShift = '';
+    let selectedNo = 0;
+
+    $('#btnRefresh').on('click', function (e) {
+        e.preventDefault();
+        loadData();
+    });
+
+    $('#filterUnit, #filterTanggal, #filterShift').on('change', function () {
+        loadData();
+    });
+
+    $('#btnPrevDay').on('click', function (e) {
+        e.preventDefault();
+        changeDate(-1);
+    });
+
+    $('#btnNextDay').on('click', function (e) {
+        e.preventDefault();
+        changeDate(1);
+    });
+
+    $('#btnHadir').on('click', function (e) {
+        e.preventDefault();
+        updateKehadiran(true);
+    });
+
+    $('#btnTidakHadir').on('click', function (e) {
+        e.preventDefault();
+        updateKehadiran(false);
+    });
+
+    // Dashboard 2 memakai Bootstrap 5. Gunakan atribut data-bs-dismiss
+    // dan fallback jQuery agar tombol X selalu menutup modal dengan benar.
+    $('#replacementModal .btn-close, #confirmModal .btn-close').on('click', function (e) {
+        e.preventDefault();
+        const modalId = $(this).closest('.modal').attr('id');
+        if (modalId) {
+            $('#' + modalId).modal('hide');
+        }
+    });
+
+    $('#replacementModal, #confirmModal').on('show.bs.modal', function () {
+        $('body').addClass('siaga-modal-open');
+    });
+
+    $('#replacementModal, #confirmModal').on('hidden.bs.modal', function () {
+        $('body').removeClass('siaga-modal-open modal-open').css('padding-right', '');
+        $('.modal-backdrop').remove();
+    });
+
+    // Pastikan backdrop selalu dibersihkan ketika modal ditutup.
+    $('#confirmModal').on('hidden.bs.modal', function () {
+        $('body').removeClass('modal-open').css('padding-right', '');
+        $('.modal-backdrop').remove();
+    });
+
+    loadData();
+
+    function changeDate(days) {
+        const current = new Date($('#filterTanggal').val() + 'T00:00:00');
+        current.setDate(current.getDate() + days);
+
+        const value = new Date(current.getTime() - current.getTimezoneOffset() * 60000)
+            .toISOString().split('T')[0];
+
+        $('#filterTanggal').val(value);
+        loadData();
+    }
+
+    function loadData() {
+        const params = {
+            tgl: $('#filterTanggal').val(),
+            unit_kerja_id: $('#filterUnit').val(),
+            shift: $('#filterShift').val()
+        };
+
+        const $btn = $('#btnRefresh');
+        $btn.prop('disabled', true).find('span').text('Memuat...');
+
+        $('#tableBody').html(
+            '<tr><td colspan="8"><div class="hris-loading">' +
+            '<div class="spinner-border spinner-border-sm" role="status"></div>' +
+            '<div style="margin-top:8px;">Memuat data...</div></div></td></tr>'
+        );
+
+        $.get('/api/absensi-kehadiran/get', params)
+            .done(function (response) {
+                if (response.success) {
+                    renderTable(response.data || []);
+                } else {
+                    showAlert('error', response.error || 'Gagal memuat data.');
+                    renderEmpty('Data tidak dapat dimuat.');
+                }
+            })
+            .fail(function (xhr) {
+                const resp = xhr.responseJSON || {};
+                showAlert('error', resp.error || 'Gagal memuat data.');
+                renderEmpty('Terjadi kesalahan saat mengambil data.');
+            })
+            .always(function () {
+                $btn.prop('disabled', false).find('span').text('Refresh');
+            });
+    }
+
+    function renderTable(data) {
+        const $tbody = $('#tableBody');
+        $tbody.empty();
+
+        if (!data.length) {
+            renderEmpty('Tidak ada jadwal Piket Siaga pada filter tersebut.');
+            return;
+        }
+
+        data.forEach(function (item) {
+            let badge = '<span class="hris-badge-modern hris-badge-warning">Belum</span>';
+
+            if (item.status_id == 3) {
+                badge = '<span class="hris-badge-modern hris-badge-success">Hadir</span>';
+            } else if (item.status_id == -1) {
+                badge = '<span class="hris-badge-modern hris-badge-danger">Tidak Hadir</span>';
+            }
+
+            const nama = escapeHtml(item.nama || item.nip || '-');
+            const nip = escapeHtml(item.nip || '-');
+            const shift = escapeHtml(item.shift || '-');
+
+            let fungsi = escapeHtml(item.fungsional_ket || item.fungsional || '-');
+            if (String(item.status_trx || '').toUpperCase() === 'DL') {
+                fungsi += ' <span class="hris-badge-modern hris-badge-warning">DL</span>';
+            }
+
+            let namaHtml = nama;
+            if (item.pengganti == 1) {
+                if (item.nama_asli_pengganti) {
+                    namaHtml += ' <button type="button" class="hris-badge-modern hris-badge-info btn-pengganti" style="border:0;cursor:pointer;" ' +
+                        'data-original-name="' + escapeHtml(item.nama_asli_pengganti) + '" ' +
+                        'title="Lihat pegawai yang digantikan">Pengganti</button>';
+                } else {
+                    namaHtml += ' <span class="hris-badge-modern hris-badge-info">Pengganti</span>';
+                }
+            }
+
+            const updateBy = escapeHtml(item.update_by || '-');
+            const updateDate = escapeHtml(item.update_date || '');
+
+            $tbody.append(
+                '<tr>' +
+                '<td style="text-align:center;">' + item.no + '</td>' +
+                '<td><strong style="color:var(--ui-ink);">' + namaHtml + '</strong>' +
+                '<div style="font-size:11px;color:var(--ui-muted);margin-top:2px;">' + nip + '</div></td>' +
+                '<td style="text-align:center;"><span class="hris-badge-modern hris-badge-info">Shift ' + shift + '</span></td>' +
+                '<td>' + badge + '</td>' +
+                '<td style="text-align:center;">' +
+                '<button class="hris-btn hris-btn-secondary btn-aksi" type="button" ' +
+                'data-guid="' + escapeHtml(item.guid_log) + '" ' +
+                'data-nip="' + escapeHtml(item.nip) + '" ' +
+                'data-date="' + escapeHtml(item.activity_date_iso) + '" ' +
+                'data-no="' + item.no + '" ' +
+                'data-shift="' + escapeHtml(item.shift) + '" ' +
+                'data-nama="' + nama + '" title="Update Kehadiran">' +
+                '<i class="bi bi-check2-square"></i></button>' +
+                '</td>' +
+                '<td>' + fungsi + '</td>' +
+                '<td>' + escapeHtml(item.unit_kerja || '-') + '</td>' +
+                '<td><div style="font-size:12px;">' + updateBy + '</div>' +
+                '<div style="font-size:11px;color:var(--ui-muted);">' + updateDate + '</div></td>' +
+                '</tr>'
+            );
+        });
+    }
+
+    function renderEmpty(message) {
+        $('#tableBody').html(
+            '<tr><td colspan="8"><div class="hris-empty">' +
+            '<i class="bi bi-inbox"></i><div>' + escapeHtml(message) + '</div>' +
+            '</div></td></tr>'
+        );
+    }
+
+    $('#btnSavePdf').on('click', async function (e) {
+        e.preventDefault();
+
+        const tgl = $('#filterTanggal').val();
+        const unit = $('#filterUnit').val();
+        const shift = $('#filterShift').val();
+        const $btn = $(this);
+
+        if (!unit) {
+            showAlert('error', 'Pilih Unit Kerja terlebih dahulu untuk menyimpan daftar hadir PDF.');
+            return;
+        }
+
+        if (shift !== '1' && shift !== '2') {
+            showAlert('error', 'Pilih Shift 1 atau Shift 2 terlebih dahulu untuk menyimpan daftar hadir PDF.');
+            return;
+        }
+
+        $btn.prop('disabled', true).find('span').text('Menyimpan...');
+
+        try {
+            const url = '/api/absensi-kehadiran/save-pdf?' +
+                $.param({ tgl: tgl, unit_kerja_id: unit, shift: shift });
+
+            const response = await fetch(url);
+
+            const payload = await response.json().catch(function () {
+                return {};
+            });
+
+            if (!response.ok || !payload.success) {
+                throw new Error(payload.error || 'Gagal menyimpan PDF.');
+            }
+
+            showAlert('success', payload.message || 'Daftar hadir PDF berhasil disimpan ke HRIS-DATA.');
+        } catch (err) {
+            showAlert('error', err.message || 'Gagal menyimpan PDF.');
+        } finally {
+            $btn.prop('disabled', false).find('span').text('Simpan');
+        }
+    });
+
+    $('#btnDownloadPdf').on('click', async function (e) {
+        e.preventDefault();
+
+        const tgl = $('#filterTanggal').val();
+        const unit = $('#filterUnit').val();
+        const shift = $('#filterShift').val();
+        const $btn = $(this);
+
+        if (!unit) {
+            showAlert('error', 'Pilih Unit Kerja terlebih dahulu untuk mengunduh daftar hadir PDF.');
+            return;
+        }
+
+        if (shift !== '1' && shift !== '2') {
+            showAlert('error', 'Pilih Shift 1 atau Shift 2 terlebih dahulu untuk mengunduh daftar hadir PDF.');
+            return;
+        }
+
+        $btn.prop('disabled', true).find('span').text('Mengambil PDF...');
+
+        try {
+            const url = '/api/absensi-kehadiran/export-pdf?' +
+                $.param({ tgl: tgl, unit_kerja_id: unit, shift: shift });
+
+            const response = await fetch(url);
+
+            if (!response.ok) {
+                const text = await response.text();
+                let message = 'Gagal membuat PDF.';
+                try {
+                    const json = JSON.parse(text);
+                    message = json.error || message;
+                } catch (_) {}
+                throw new Error(message);
+            }
+
+            const blob = await response.blob();
+            const downloadUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = tgl.split('-').reverse().join('-') + '-absen-kehadiran-shift' + shift + '.pdf';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(downloadUrl);
+        } catch (err) {
+            showAlert('error', err.message || 'Gagal membuat PDF.');
+        } finally {
+            $btn.prop('disabled', false).find('span').text('Download PDF');
+        }
+    });
+
+    $('#tableBody').on('click', '.btn-pengganti', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        $('#modalNamaAsliPengganti').text($(this).data('original-name') || '-');
+        $('#replacementModal').modal('show');
+    });
+
+    $('#tableBody').on('click', '.btn-aksi', function () {
+        selectedGuidLog = $(this).data('guid');
+        selectedNip = $(this).data('nip');
+        selectedActivityDate = $(this).data('date');
+        selectedShift = String($(this).data('shift') || '');
+        selectedNo = Number($(this).data('no') || 0);
+
+        $('#modalNama').text($(this).data('nama') || selectedNip);
+        $('#modalDetail').text(
+            'Tanggal ' + selectedActivityDate.split('-').reverse().join('-') +
+            ' • Shift ' + selectedShift
+        );
+
+        $('#confirmModal').modal('show');
+    });
+
+    function updateKehadiran(isHadir) {
+        const data = {
+            guid_log: selectedGuidLog,
+            nip: selectedNip,
+            activity_date: selectedActivityDate,
+            no: selectedNo,
+            shift1: isHadir && selectedShift === '1',
+            shift2: isHadir && selectedShift === '2'
+        };
+
+        $('#btnHadir, #btnTidakHadir').prop('disabled', true);
+
+        $.ajax({
+            url: '/api/absensi-kehadiran/update',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(data)
+        })
+        .done(function (response) {
+            $('#confirmModal').modal('hide');
+
+            if (response.success) {
+                showAlert('success', response.message);
+                loadData();
+            } else {
+                showAlert('error', response.error || 'Gagal menyimpan kehadiran.');
+            }
+        })
+        .fail(function (xhr) {
+            const resp = xhr.responseJSON || {};
+            $('#confirmModal').modal('hide');
+            showAlert('error', resp.error || 'Gagal menyimpan kehadiran.');
+        })
+        .always(function () {
+            $('#btnHadir, #btnTidakHadir').prop('disabled', false);
+        });
+    }
+
+    function showAlert(type, message) {
+        const $box = $('#alertContainer');
+        $box.removeClass('d-none');
+
+        const icon = type === 'success'
+            ? '<i class="bi bi-check-circle" style="color:var(--ui-success);margin-right:8px;"></i>'
+            : '<i class="bi bi-exclamation-circle" style="color:var(--ui-danger);margin-right:8px;"></i>';
+
+        $('#alertIcon').html(icon);
+        $('#alertMessage').text(message);
+
+        setTimeout(function () {
+            $box.addClass('d-none');
+        }, 5000);
+    }
+
+    function escapeHtml(value) {
+        return $('<div>').text(value == null ? '' : String(value)).html();
+    }
+});
+</script>
+{% endblock %}
