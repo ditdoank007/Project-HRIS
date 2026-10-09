@@ -296,13 +296,38 @@ $(document).ready(function() {
             console.warn('API master shift gagal (' + xhr.status + '); memakai opsi Shift 1 dan Shift 2.');
         });
 
-    $.get('/api/rejadwal-siaga/fungsional', function(r) {
-        if (r.success && r.data) {
-            r.data.forEach(function(f) {
-                $('#fungsionalAdd').append(`<option value="${f}">${f}</option>`);
-            });
-        }
-    });
+    // Opsi fungsional dari API master; dilengkapi dari jadwal yang sedang dimuat
+    // agar dropdown tetap dapat dipakai jika endpoint master gagal.
+    function populateFungsionalOptions(masterRows) {
+        const $select = $('#fungsionalAdd');
+        const current = $select.val() || '';
+        const values = [];
+        (Array.isArray(masterRows) ? masterRows : []).forEach(function(item) {
+            const value = String(item ?? '').trim();
+            if (value && !values.includes(value)) values.push(value);
+        });
+        (Array.isArray(jadwalData) ? jadwalData : []).forEach(function(row) {
+            const value = String(row.fungsional || '').trim();
+            if (value && !values.includes(value)) values.push(value);
+        });
+        $select.empty().append($('<option>', { value: '', text: 'Pilih fungsional...' }));
+        values.forEach(function(value) {
+            $select.append($('<option>', { value: value, text: value }));
+        });
+        if (current && values.includes(current)) $select.val(current);
+    }
+
+    $.get('/api/rejadwal-siaga/fungsional')
+        .done(function(r) {
+            populateFungsionalOptions(r && r.success && Array.isArray(r.data) ? r.data : []);
+            if (!(r && r.success && Array.isArray(r.data) && r.data.length)) {
+                console.warn('Master fungsional kosong/gagal; opsi akan diambil dari jadwal yang dimuat.');
+            }
+        })
+        .fail(function(xhr) {
+            populateFungsionalOptions([]);
+            console.warn('API master fungsional gagal (' + xhr.status + ').');
+        });
 
     // ============================================
     // SHOW JADWAL
@@ -329,6 +354,7 @@ $(document).ready(function() {
                 guidLog = r.guid_log || '';
                 jadwalData = Array.isArray(r.jadwal) ? r.jadwal : [];
                 rollbackData = Array.isArray(r.rollback) ? r.rollback : [];
+                populateFungsionalOptions([]);
                 $('#infoJadwal').text(jadwalData.length + ' personel');
                 renderJadwal();
                 renderRollback();
@@ -424,11 +450,15 @@ $(document).ready(function() {
     // ============================================
     $('#tableBodyJadwal').on('click', '.btn-delete-jadwal', function() {
         const $row = $(this).closest('tr');
-        const nip = $row.data('nip');
+        const nip = String($row.data('nip') || '');
         const actDate = $row.data('act');
         const shift = $row.data('shift');
+        const selectedPerson = jadwalData.find(function(item) {
+            return String(item.nip || '') === nip;
+        });
+        const nama = String((selectedPerson && selectedPerson.nama) || $row.find('td').eq(2).text().trim() || nip);
 
-        if (!confirm(`Hapus ${nip} dari jadwal?`)) return;
+        if (!confirm(`Hapus ${nama} dari jadwal?`)) return;
 
         $.ajax({
             url: '/api/rejadwal-siaga/delete-personil',
