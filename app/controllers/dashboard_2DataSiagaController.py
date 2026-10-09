@@ -2484,7 +2484,6 @@ def api_rejadwal_siaga_rollback():
             GUID_LOG=backup.GUID_LOG,
             TRAKSAKSI_ID=0,
             UNIT_KERJA_ID=backup.UNIT_KERJA_ID,
-            GUID_LOG_BACKUP='',
             GUID_TIM=backup.GUID_TIM or '',
             STATUS_ID=2,
             NIP=backup.NIP,
