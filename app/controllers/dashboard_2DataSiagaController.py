@@ -42,24 +42,21 @@ def _ensure_rejadwal_baseline_snapshot(unit_id, selected_date, shift):
     if exists and int(exists['total'] or 0) > 0:
         return False
 
+    # Gunakan hanya kolom yang dipakai oleh skema backup HRIS yang sudah ada.
     db.session.execute(
         db.text("""
             INSERT INTO LOG_ACTIVITIY_BACKUP (
                 GUIDLog, Trx, Activity, StatusID, ActivityDate, Note, Tempat,
                 Perihal, UpdateBy, UpdateDate, GUIDTim, NIP, IDUnitKerja,
-                Fungsional, TglClosing, shift1, shift2, Pengganti, StatusTrx,
-                BackUpdate, GUIDBackUp, KetUpdate, NIPPengganti, Shift, TransacForm, TglJamIn, TglJamOut,
-                TglJamBakuIn, TglJamBakuOut
+                Fungsional, Pengganti, BackUpdate, GUIDBackUp, KetUpdate,
+                NIPPengganti, Shift
             )
             SELECT
                 l.GUIDLog, l.Trx, l.Activity, l.StatusID, l.ActivityDate,
                 l.Note, l.Tempat, l.Perihal, l.UpdateBy, l.UpdateDate,
-                l.GUIDTim, l.NIP, l.IDUnitKerja, l.Fungsional, l.TglClosing,
-                l.shift1, l.shift2, l.Pengganti, l.StatusTrx, NOW(),
-                'Reset Rejadwal', 'Snapshot roster asli sebelum perubahan',
-                l.NIPPengganti, l.Shift,
-                l.TransacForm, l.TglJamIn, l.TglJamOut,
-                l.TglJamBakuIn, l.TglJamBakuOut
+                l.GUIDTim, l.NIP, l.IDUnitKerja, l.Fungsional,
+                l.Pengganti, NOW(), 'Reset Rejadwal',
+                'Snapshot roster asli sebelum perubahan', l.NIPPengganti, l.Shift
             FROM LOG_ACTIVITIY l
             WHERE l.Activity = 'Piket Siaga'
               AND DATE(l.ActivityDate) = :selected_date
@@ -2701,19 +2698,14 @@ def api_rejadwal_siaga_reset():
                 INSERT INTO LOG_ACTIVITIY (
                     GUIDLog, Trx, Activity, StatusID, ActivityDate, Note, Tempat,
                     Perihal, UpdateBy, UpdateDate, GUIDTim, NIP, IDUnitKerja,
-                    Fungsional, TglClosing, shift1, shift2, Pengganti, StatusTrx,
-                    ketUpdate, NIPPengganti, Shift, TransacForm, TransacID,
-                    GUIDLogBackUp, TglJamIn, TglJamOut,
-                    TglJamBakuIn, TglJamBakuOut
+                    Fungsional, Pengganti, StatusTrx, ketUpdate, NIPPengganti, Shift
                 )
                 SELECT
                     b.GUIDLog, b.Trx, b.Activity, b.StatusID, b.ActivityDate,
                     b.Note, b.Tempat, b.Perihal, b.UpdateBy, b.UpdateDate,
-                    b.GUIDTim, b.NIP, b.IDUnitKerja, b.Fungsional, b.TglClosing,
-                    b.shift1, b.shift2, COALESCE(b.Pengganti, 0), b.StatusTrx,
-                    'Reset jadwal - roster asli dipulihkan', b.NIPPengganti,
-                    b.Shift, b.TransacForm, 0, '',
-                    b.TglJamIn, b.TglJamOut, b.TglJamBakuIn, b.TglJamBakuOut
+                    b.GUIDTim, b.NIP, b.IDUnitKerja, b.Fungsional,
+                    COALESCE(b.Pengganti, 0), b.StatusTrx,
+                    'Reset jadwal - roster asli dipulihkan', b.NIPPengganti, b.Shift
                 FROM LOG_ACTIVITIY_BACKUP b
                 WHERE b.Activity = 'Piket Siaga'
                   AND b.GUIDBackUp = 'Reset Rejadwal'
