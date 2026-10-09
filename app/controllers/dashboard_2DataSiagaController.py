@@ -25,6 +25,14 @@ from app.models.orgzSiagaModel import MfOrgzSiaga
 from app.models.logActivityBackupModel import LogActivityBackup
 from app.models.dinasLuarModel import DinasLuar
 
+def _next_log_activity_backup_id():
+    """Ambil IDBackUp berikutnya untuk skema produksi yang belum AUTO_INCREMENT."""
+    value = db.session.execute(
+        db.text("SELECT COALESCE(MAX(IDBackUp), 0) + 1 FROM LOG_ACTIVITIY_BACKUP")
+    ).scalar()
+    return int(value or 1)
+
+
 def _ensure_rejadwal_baseline_snapshot(unit_id, selected_date, shift):
     """Simpan roster asli satu kali sebelum perubahan pertama pada jadwal terpilih."""
     exists = db.session.execute(
@@ -46,12 +54,14 @@ def _ensure_rejadwal_baseline_snapshot(unit_id, selected_date, shift):
     db.session.execute(
         db.text("""
             INSERT INTO LOG_ACTIVITIY_BACKUP (
-                GUIDLog, Trx, Activity, StatusID, ActivityDate, Note, Tempat,
+                IDBackUp, GUIDLog, Trx, Activity, StatusID, ActivityDate, Note, Tempat,
                 Perihal, UpdateBy, UpdateDate, GUIDTim, NIP, IDUnitKerja,
                 Fungsional, Pengganti, BackUpdate, GUIDBackUp, KetUpdate,
                 NIPPengganti, Shift
             )
             SELECT
+                (SELECT COALESCE(MAX(IDBackUp), 0) FROM LOG_ACTIVITIY_BACKUP)
+                    + ROW_NUMBER() OVER (ORDER BY l.GUIDLog, l.NIP),
                 l.GUIDLog, l.Trx, l.Activity, l.StatusID, l.ActivityDate,
                 l.Note, l.Tempat, l.Perihal, l.UpdateBy, l.UpdateDate,
                 l.GUIDTim, l.NIP, l.IDUnitKerja, l.Fungsional,
@@ -2168,11 +2178,12 @@ def api_rejadwal_siaga_edit_personil():
         # Salin baris lama ke tabel backup sebelum mengubah roster.
         db.session.execute(db.text("""
             INSERT INTO LOG_ACTIVITIY_BACKUP
-                (GUIDLog, Trx, Activity, StatusID, ActivityDate, Note, Tempat,
+                (IDBackUp, GUIDLog, Trx, Activity, StatusID, ActivityDate, Note, Tempat,
                  Perihal, UpdateBy, UpdateDate, GUIDTim, NIP, IDUnitKerja,
                  Fungsional, Pengganti, BackUpdate, GUIDBackUp, KetUpdate,
                  NIPPengganti, Shift)
-            SELECT GUIDLog, Trx, Activity, StatusID, ActivityDate, Note, Tempat,
+            SELECT (SELECT COALESCE(MAX(IDBackUp), 0) + 1 FROM LOG_ACTIVITIY_BACKUP),
+                   GUIDLog, Trx, Activity, StatusID, ActivityDate, Note, Tempat,
                    Perihal, :actor, NOW(), GUIDTim, NIP, IDUnitKerja,
                    Fungsional, Pengganti, NOW(), 'Edit Rejadwal',
                    KetUpdate, NIPPengganti, Shift
@@ -2259,6 +2270,7 @@ def api_rejadwal_siaga_delete_personil():
 
         actor = str(session.get('nip') or session.get('NIP') or 'system')[:50]
         backup = LogActivityBackup(
+            GUID_LOG_BACKUP=_next_log_activity_backup_id(),
             GUID_LOG=log.GUID_LOG,
             TRX=log.TRX,
             ACTIVITY=log.ACTIVITY,
