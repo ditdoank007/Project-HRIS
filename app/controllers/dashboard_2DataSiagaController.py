@@ -2714,14 +2714,16 @@ def api_rejadwal_siaga_reset():
                 INSERT INTO LOG_ACTIVITIY (
                     GUIDLog, Trx, Activity, StatusID, ActivityDate, Note, Tempat,
                     Perihal, UpdateBy, UpdateDate, GUIDTim, NIP, IDUnitKerja,
-                    Fungsional, Pengganti, StatusTrx, ketUpdate, NIPPengganti, Shift
+                    Fungsional, Pengganti, StatusTrx, ketUpdate, NIPPengganti,
+                    Shift, TransacID, TransacForm
                 )
                 SELECT
                     b.GUIDLog, b.Trx, b.Activity, b.StatusID, b.ActivityDate,
                     b.Note, b.Tempat, b.Perihal, b.UpdateBy, b.UpdateDate,
                     b.GUIDTim, b.NIP, b.IDUnitKerja, b.Fungsional,
                     COALESCE(b.Pengganti, 0), b.StatusTrx,
-                    'Reset jadwal - roster asli dipulihkan', b.NIPPengganti, b.Shift
+                    'Reset jadwal - roster asli dipulihkan', b.NIPPengganti, b.Shift,
+                    0, 'Reset Rejadwal'
                 FROM LOG_ACTIVITIY_BACKUP b
                 WHERE b.Activity = 'Piket Siaga'
                   AND b.GUIDBackUp = 'Reset Rejadwal'
