@@ -33,11 +33,12 @@
     <link rel="stylesheet"
           type="text/css"
           href="{{ url_for('static', filename='css/hris-global.css') }}">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/hris-ui.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/hris-ui.css') }}?v=20261009-1">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/dashboard1-sidebar.css') }}?v=20261009-1">
     <script src="{{ url_for('static', filename='js/hris-global.js') }}"></script>
 </head>
 
-<body class="hris-modern">
+<body class="hris-modern hris-dashboard1">
 
     <!-- Start Header -->
     {% include 'partials/header.html' %}
