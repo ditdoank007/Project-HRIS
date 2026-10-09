@@ -1902,6 +1902,265 @@ def api_pembuatan_jadwal_siaga_save():
         }), 500
 
 
+
+def api_pembuatan_roster_siaga_batch_save():
+    """
+    Simpan beberapa roster fungsional sekaligus dalam satu transaksi.
+    Menambah data ke tabel roster HRIS yang sudah ada; tidak mengubah,
+    menghapus, atau menimpa roster yang tersimpan sebelumnya.
+    """
+    try:
+        data = request.get_json(silent=True) or {}
+        bulan = str(data.get('bulan') or '').strip().zfill(2)
+        tahun = str(data.get('tahun') or '').strip()
+        unit_id = str(data.get('unit_kerja_id') or '').strip()
+        shift1_sama_shift2 = data.get('shift1_sama_shift2') is True
+        roster_input = data.get('rosters')
+
+        if bulan not in {f'{i:02d}' for i in range(1, 13)}:
+            return jsonify({'success': False, 'error': 'Bulan tidak valid.'}), 400
+        if len(tahun) != 4 or not tahun.isdigit():
+            return jsonify({'success': False, 'error': 'Tahun tidak valid.'}), 400
+        if not unit_id:
+            return jsonify({'success': False, 'error': 'Unit kerja wajib dipilih.'}), 400
+        if not isinstance(roster_input, list) or not roster_input:
+            return jsonify({'success': False, 'error': 'Tambahkan minimal satu roster fungsional.'}), 400
+
+        # Gunakan master aktif sebagai sumber jabatan dan urutan resmi.
+        jabatan_rows = (
+            MfJabatanSiaga.query
+            .filter(MfJabatanSiaga.IS_AKTIF == 'Y')
+            .order_by(MfJabatanSiaga.NO_URUT.asc())
+            .all()
+        )
+        jabatan_map = {
+            str(row.NAMA_JABATAN or '').strip().casefold(): row
+            for row in jabatan_rows
+        }
+        if not jabatan_map:
+            return jsonify({'success': False, 'error': 'Master Jabatan Siaga aktif belum tersedia.'}), 409
+
+        unit_obj = (
+            MfUnitKerja.query
+            .filter(
+                MfUnitKerja.UNIT_KERJA_ID == unit_id,
+                MfUnitKerja.IS_USE == 'Y'
+            )
+            .first()
+        )
+        if not unit_obj:
+            return jsonify({'success': False, 'error': 'Unit kerja tidak ditemukan atau tidak aktif.'}), 400
+
+        normalized_rosters = []
+        seen_roles = set()
+        seen_nips = set()
+        all_nips = []
+
+        for item in roster_input:
+            if not isinstance(item, dict):
+                return jsonify({'success': False, 'error': 'Format roster tidak valid.'}), 400
+            role_input = str(item.get('fungsional') or '').strip()
+            role_obj = jabatan_map.get(role_input.casefold())
+            if not role_obj:
+                return jsonify({
+                    'success': False,
+                    'error': f'Jabatan "{role_input}" tidak terdaftar sebagai jabatan siaga aktif.'
+                }), 400
+
+            role_key = str(role_obj.NAMA_JABATAN).strip().casefold()
+            if role_key in seen_roles:
+                return jsonify({
+                    'success': False,
+                    'error': f'Roster {role_obj.NAMA_JABATAN} dikirim lebih dari satu kali.'
+                }), 400
+            seen_roles.add(role_key)
+
+            members = item.get('pegawai') or []
+            if not isinstance(members, list):
+                return jsonify({'success': False, 'error': f'Daftar pegawai {role_obj.NAMA_JABATAN} tidak valid.'}), 400
+            nips = []
+            for member in members:
+                nip = str((member.get('nip') if isinstance(member, dict) else member) or '').strip()
+                if not nip:
+                    continue
+                if nip in seen_nips:
+                    return jsonify({
+                        'success': False,
+                        'error': f'Pegawai {nip} terpilih lebih dari satu kali. Satu pegawai hanya boleh berada dalam satu fungsional pada batch ini.'
+                    }), 400
+                seen_nips.add(nip)
+                nips.append(nip)
+                all_nips.append(nip)
+
+            # Roster kosong dilewati; fungsional yang tidak relevan untuk unit
+            # (misalnya KGR di unit kapal) tidak diwajibkan diisi.
+            if nips:
+                normalized_rosters.append({
+                    'fungsional': str(role_obj.NAMA_JABATAN).strip(),
+                    'no_urut_jabatan': int(role_obj.NO_URUT or 0),
+                    'pegawai': nips
+                })
+
+        if not normalized_rosters:
+            return jsonify({'success': False, 'error': 'Isi minimal satu fungsional dengan pegawai.'}), 400
+
+        # Validasi seluruh NIP sebelum satu pun INSERT dilakukan.
+        placeholders = ','.join(f':nip_{i}' for i in range(len(all_nips)))
+        nip_params = {f'nip_{i}': nip for i, nip in enumerate(all_nips)}
+        pegawai_rows = db.session.execute(
+            db.text(f"""
+                SELECT NIP, Nama, UnitKerja, FingerID
+                FROM PEGAWAI
+                WHERE NIP IN ({placeholders})
+            """),
+            nip_params
+        ).mappings().all()
+        pegawai_map = {str(row['NIP']).strip(): row for row in pegawai_rows}
+        missing = [nip for nip in all_nips if nip not in pegawai_map]
+        if missing:
+            return jsonify({
+                'success': False,
+                'error': 'Pegawai tidak ditemukan pada master PEGAWAI: ' + ', '.join(missing)
+            }), 400
+
+        # Cegah duplikasi dengan roster aktif yang sudah tersimpan pada periode
+        # dan unit yang sama. Tidak ada data lama yang ditimpa/dihapus.
+        existing = db.session.execute(
+            db.text(f"""
+                SELECT a.NIP, t.FungsionalTIM, t.Shift, t.NoUrutTim
+                FROM MF_TIM_SIAGA_ANGGOTA a
+                INNER JOIN MF_TIM_SIAGA t ON t.GUIDTim = a.GUIDTim
+                WHERE a.NIP IN ({placeholders})
+                  AND a.BulanPeriode = :bulan
+                  AND a.TahunPeriode = :tahun
+                  AND a.IDUnitKerja = :unit_id
+                  AND a.IsAktif = 'Y'
+                  AND t.BulanPeriode = :bulan
+                  AND t.TahunPeriode = :tahun
+                  AND t.IDUnitKerja = :unit_id
+                  AND t.IsAktif = 'Y'
+            """),
+            {**nip_params, 'bulan': bulan, 'tahun': tahun, 'unit_id': unit_id}
+        ).mappings().all()
+        if existing:
+            details = [
+                f"{row['NIP']} sudah ada pada {row['FungsionalTIM']} Shift {row['Shift']} (roster #{row['NoUrutTim']})"
+                for row in existing
+            ]
+            return jsonify({
+                'success': False,
+                'error': 'Sebagian pegawai sudah tercatat dalam roster periode/unit ini. Tidak ada perubahan yang disimpan.',
+                'duplicates': details
+            }), 409
+
+        update_by = (
+            getattr(getattr(g, 'user', None), 'NIP', None)
+            or session.get('NIP')
+            or 'HRIS'
+        )
+        now = datetime.now()
+        saved = []
+
+        # Semua INSERT berada dalam satu transaksi. Jika salah satu gagal,
+        # rollback membatalkan seluruh batch, bukan menyisakan roster parsial.
+        for roster in sorted(normalized_rosters, key=lambda row: (row['no_urut_jabatan'], row['fungsional'].casefold())):
+            for shift_value in (('1', '2') if shift1_sama_shift2 else ('1',)):
+                last = db.session.execute(
+                    db.text("""
+                        SELECT COALESCE(MAX(NoUrutTim), 0)
+                        FROM MF_TIM_SIAGA
+                        WHERE BulanPeriode = :bulan
+                          AND TahunPeriode = :tahun
+                          AND IDUnitKerja = :unit_id
+                          AND FungsionalTIM = :fungsional
+                          AND Shift = :shift
+                          AND IsAktif = 'Y'
+                    """),
+                    {
+                        'bulan': bulan, 'tahun': tahun, 'unit_id': unit_id,
+                        'fungsional': roster['fungsional'], 'shift': shift_value
+                    }
+                ).scalar() or 0
+                no_urut = int(last) + 1
+                guid_tim = str(uuid.uuid4())
+                nama_tim = (
+                    f"{roster['fungsional']} {unit_obj.NAMA_UNIT_KERJA} "
+                    f"#{no_urut} {bulan}/{tahun}"
+                )[:50]
+
+                db.session.execute(
+                    db.text("""
+                        INSERT INTO MF_TIM_SIAGA (
+                            NoUrutTim, GUIDTim, NamaTim, IDUnitKerja, IsAktif,
+                            UpdateBy, UpdateDate, BulanPeriode, TahunPeriode,
+                            FungsionalTIM, Shift
+                        ) VALUES (
+                            :no_urut, :guid_tim, :nama_tim, :unit_id, 'Y',
+                            :update_by, :update_date, :bulan, :tahun,
+                            :fungsional, :shift
+                        )
+                    """),
+                    {
+                        'no_urut': no_urut, 'guid_tim': guid_tim, 'nama_tim': nama_tim,
+                        'unit_id': unit_id, 'update_by': update_by, 'update_date': now,
+                        'bulan': bulan, 'tahun': tahun,
+                        'fungsional': roster['fungsional'], 'shift': shift_value
+                    }
+                )
+
+                for index, nip in enumerate(roster['pegawai'], start=1):
+                    db.session.execute(
+                        db.text("""
+                            INSERT INTO MF_TIM_SIAGA_ANGGOTA (
+                                GUIDTim, NIP, Fungsional, IsAktif, IDUnitKerja,
+                                Nourut, UpdateDate, UpdateBy, BulanPeriode,
+                                TahunPeriode, Shift
+                            ) VALUES (
+                                :guid_tim, :nip, :fungsional, 'Y', :unit_id,
+                                :nomor, :update_date, :update_by, :bulan,
+                                :tahun, :shift
+                            )
+                        """),
+                        {
+                            'guid_tim': guid_tim, 'nip': nip,
+                            'fungsional': roster['fungsional'], 'unit_id': unit_id,
+                            'nomor': index, 'update_date': now, 'update_by': update_by,
+                            'bulan': bulan, 'tahun': tahun, 'shift': shift_value
+                        }
+                    )
+
+                saved.append({
+                    'fungsional': roster['fungsional'],
+                    'no_urut_jabatan': roster['no_urut_jabatan'],
+                    'shift': shift_value,
+                    'no_urut_roster': no_urut,
+                    'jumlah_pegawai': len(roster['pegawai']),
+                    'pegawai': [
+                        {'nip': nip, 'nama': str(pegawai_map[nip]['Nama'] or '')}
+                        for nip in roster['pegawai']
+                    ]
+                })
+
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'message': f'{len(normalized_rosters)} roster fungsional berhasil disimpan.',
+            'unit_kerja': unit_obj.NAMA_UNIT_KERJA,
+            'bulan': bulan,
+            'tahun': tahun,
+            'shift1_sama_shift2': shift1_sama_shift2,
+            'rosters': saved
+        }), 200
+
+    except Exception as exc:
+        db.session.rollback()
+        current_app.logger.exception('Gagal menyimpan batch roster siaga')
+        return jsonify({
+            'success': False,
+            'error': 'Gagal menyimpan roster siaga. Seluruh perubahan dibatalkan.'
+        }), 500
+
+
 def data_siaga_cetak_daftar_lembur_siaga():
     """Render halaman Data Siaga Cetak Daftar Lembur Siaga."""
     return render_template('pages/dashboard_2/Data_Siaga_Cetak_Daftar_Lembur_Siaga.html')
