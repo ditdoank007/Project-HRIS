@@ -2152,7 +2152,7 @@ def api_rejadwal_siaga_edit_personil():
                 SELECT LOWER(COALESCE(d.Transaksi, '')) AS transaksi,
                        UPPER(COALESCE(d.Jenis, '')) AS jenis
                 FROM DINAS_LUAR d
-                INNER JOIN Pegawai p ON p.FingerID = d.FingerID
+                INNER JOIN PEGAWAI p ON p.FingerID = d.FingerID
                 WHERE p.NIP = :nip
                   AND DATE(d.TglAwalDinasLuar) <= :tgl
                   AND DATE(d.TglAkhirDinasLuar) >= :tgl
