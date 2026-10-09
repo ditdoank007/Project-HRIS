@@ -751,8 +751,8 @@ body {
   z-index: 1050;
   width: 250px;
   overflow-y: auto;
-  border-right: 1px solid rgba(255,255,255,.16);
-  background: var(--ui-brand);
+  border-right: 1px solid rgba(255,255,255,.08);
+  background: #111827;
 }
 
 .hris-shell .navbar-wrapper,
@@ -837,18 +837,18 @@ body {
 }
 
 .hris-shell .nxl-link.hris-active {
-  color: var(--ui-brand-dark);
-  background: rgba(255,255,255,.16);
+  color: #fff;
+  background: #eb6831;
   font-weight: 700;
 }
 
 .hris-shell .nxl-hasmenu > .nxl-link.hris-active {
   color: #fff;
-  background: rgba(255,255,255,.16);
+  background: #eb6831;
 }
 \n.hris-shell .nxl-hasmenu.hris-open > .nxl-link {
   color: #fff;
-  background: rgba(0,0,0,.14);
+  background: rgba(255,255,255,.08);
 }
 
 .hris-shell .nxl-hasmenu.hris-open > .nxl-link .nxl-arrow {
@@ -1048,7 +1048,7 @@ body {
 /* ============================================================
    HRIS REBORN — MODERN APPLICATION SHELL
    Visual language inspired by HRIS Calendar:
-   white topbar + Basarnas orange sidebar + compact account menu.
+   white topbar + dark sidebar + Basarnas orange active-menu accent.
    ============================================================ */
 
 .hris-app-shell {
@@ -1063,7 +1063,7 @@ body {
   width: 250px;
   display: flex;
   flex-direction: column;
-  background: var(--ui-brand);
+  background: #111827;
   color: #fff;
   box-shadow: 4px 0 18px rgba(15,23,42,.08);
   transition: width .2s ease, transform .2s ease;
@@ -1170,7 +1170,7 @@ body {
 
 .hris-nav-link.hris-active {
   color: #fff;
-  background: rgba(0,0,0,.17);
+  background: #eb6831;
 }
 
 .hris-nav-icon {
@@ -1228,7 +1228,7 @@ body {
 
 .hris-submenu .hris-nav-link.hris-active {
   color: #fff;
-  background: rgba(0,0,0,.18);
+  background: #eb6831;
 }
 
 .hris-app-main {
