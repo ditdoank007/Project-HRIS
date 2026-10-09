@@ -1889,6 +1889,8 @@ def api_rejadwal_siaga_get_jadwal():
             })
 
         guid_log = first_log.GUID_LOG
+        # Satu roster HRIS 2013 dapat memakai GUIDLog berbeda antar-fungsional.
+        # Filter jadwal berdasarkan tanggal/unit/shift, bukan hanya GUIDLog pertama.
         try:
             rows = db.session.query(
                 LogActivity, Pegawai, MfUnitKerja, MfOrgzSiaga, MfStatus
@@ -1900,7 +1902,6 @@ def api_rejadwal_siaga_get_jadwal():
                 MfStatus, LogActivity.STATUS_ID == MfStatus.STATUS_ID
             ).filter(
                 LogActivity.ACTIVITY == 'Piket Siaga',
-                LogActivity.GUID_LOG == guid_log,
                 db.func.date(LogActivity.ACTIVITY_DATE) == selected_date,
                 LogActivity.UNIT_KERJA_ID == str(unit_id_int),
                 LogActivity.SHIFT == shift
@@ -1943,7 +1944,6 @@ def api_rejadwal_siaga_get_jadwal():
                 MfUnitKerja, LogActivity.UNIT_KERJA_ID == MfUnitKerja.UNIT_KERJA_ID
             ).filter(
                 LogActivity.ACTIVITY == 'Piket Siaga',
-                LogActivity.GUID_LOG == guid_log,
                 db.func.date(LogActivity.ACTIVITY_DATE) == selected_date,
                 LogActivity.UNIT_KERJA_ID == str(unit_id_int),
                 LogActivity.SHIFT == shift
@@ -1993,7 +1993,6 @@ def api_rejadwal_siaga_get_jadwal():
                 FROM `LOG_ACTIVITIY_BACKUP`
                 WHERE `Activity` = :activity
                   AND `GUIDBackUp` = :guid_backup
-                  AND `GUIDLog` = :guid_log
                   AND DATE(`ActivityDate`) = :selected_date
                   AND `IDUnitKerja` = :unit_id
                   AND `Shift` = :shift
