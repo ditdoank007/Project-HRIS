@@ -140,14 +140,11 @@
     </div>
 </div>
 
-{% endblock %}
-
 <style>
     .jadwal-card { margin-bottom:18px; }
     .jadwal-filter-grid { display:grid; grid-template-columns:minmax(165px,.9fr) minmax(300px,2fr) minmax(150px,.8fr) auto; gap:14px; align-items:end; }
     .jadwal-filter-date,.jadwal-filter-unit,.jadwal-filter-shift { min-width:0; }
-    .jadwal-filter-actions { align-self:end; flex-wrap:nowrap; }
-    .jadwal-filter-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .jadwal-filter-actions { display:flex; align-items:end; align-self:end; gap:8px; flex-wrap:nowrap; white-space:nowrap; }
     .jadwal-filter-hint { margin:14px 0 0; color:var(--ui-muted); font-size:12px; }
     .jadwal-filter-hint i { margin-right:5px; color:var(--ui-brand); }
     .jadwal-count { color:var(--ui-muted); font-size:12px; white-space:nowrap; }
@@ -162,6 +159,9 @@
     @media(max-width:1100px) { .jadwal-filter-grid { grid-template-columns:minmax(150px,.85fr) minmax(230px,1.5fr) minmax(135px,.8fr); } .jadwal-filter-actions { grid-column:1/-1; flex-wrap:wrap; } }
     @media(max-width:700px) { .hris-page { padding:15px; } .jadwal-filter-grid,.jadwal-add-grid { grid-template-columns:minmax(0,1fr); } .jadwal-filter-actions { grid-column:auto; } .jadwal-filter-actions .hris-btn { flex:1; } }
 </style>
+{% endblock %}
+
+
 
 {% block script %}
 <script>
