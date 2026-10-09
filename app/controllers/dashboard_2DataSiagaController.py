@@ -1917,6 +1917,11 @@ def api_pembuatan_roster_siaga_batch_save():
         shift = str(data.get('shift') or '').strip()
         shift1_sama_shift2 = data.get('shift1_sama_shift2') is True
         shifts_to_save = ('1', '2') if shift1_sama_shift2 else (shift,)
+        no_urut_tim_raw = data.get('no_urut_tim')
+        try:
+            no_urut_tim = int(no_urut_tim_raw)
+        except (TypeError, ValueError):
+            no_urut_tim = 0
         roster_input = data.get('rosters')
 
         if bulan not in {f'{i:02d}' for i in range(1, 13)}:
@@ -1927,6 +1932,8 @@ def api_pembuatan_roster_siaga_batch_save():
             return jsonify({'success': False, 'error': 'Unit kerja wajib dipilih.'}), 400
         if not shift1_sama_shift2 and shift not in ('1', '2'):
             return jsonify({'success': False, 'error': 'Shift harus 1 atau 2.'}), 400
+        if no_urut_tim < 1:
+            return jsonify({'success': False, 'error': 'No. Urut Tim harus bilangan bulat minimal 1.'}), 400
         if not isinstance(roster_input, list) or not roster_input:
             return jsonify({'success': False, 'error': 'Tambahkan minimal satu roster fungsional.'}), 400
 
@@ -1973,10 +1980,7 @@ def api_pembuatan_roster_siaga_batch_save():
 
             role_key = str(role_obj.NAMA_JABATAN).strip().casefold()
             if role_key in seen_roles:
-                return jsonify({
-                    'success': False,
-                    'error': f'Roster {role_obj.NAMA_JABATAN} dikirim lebih dari satu kali.'
-                }), 400
+                return jsonify({'success': False, 'error': 'Simpan satu jabatan dan satu No. Urut Tim setiap kali.'}), 400
             seen_roles.add(role_key)
 
             members = item.get('pegawai') or []
@@ -2002,6 +2006,7 @@ def api_pembuatan_roster_siaga_batch_save():
                 normalized_rosters.append({
                     'fungsional': str(role_obj.NAMA_JABATAN).strip(),
                     'no_urut_jabatan': int(role_obj.NO_URUT or 0),
+                    'no_urut_tim': no_urut_tim,
                     'pegawai': nips
                 })
 
@@ -2027,35 +2032,30 @@ def api_pembuatan_roster_siaga_batch_save():
                 'error': 'Pegawai tidak ditemukan pada master PEGAWAI: ' + ', '.join(missing)
             }), 400
 
-        # Cegah duplikasi dengan roster aktif yang sudah tersimpan pada periode
-        # dan unit yang sama. Tidak ada data lama yang ditimpa/dihapus.
-        existing = db.session.execute(
-            db.text(f"""
-                SELECT a.NIP, t.FungsionalTIM, t.Shift, t.NoUrutTim
-                FROM MF_TIM_SIAGA_ANGGOTA a
-                INNER JOIN MF_TIM_SIAGA t ON t.GUIDTim = a.GUIDTim
-                WHERE a.NIP IN ({placeholders})
-                  AND a.BulanPeriode = :bulan
-                  AND a.TahunPeriode = :tahun
-                  AND a.IDUnitKerja = :unit_id
-                  AND a.IsAktif = 'Y'
-                  AND t.BulanPeriode = :bulan
+        # Satu nomor tim hanya boleh dipakai sekali untuk jabatan/periode/unit/shift.
+        # Ini menjaga nomor tim sebagai pola rotasi tanggal, bukan urutan anggota.
+        existing_team = db.session.execute(
+            db.text("""
+                SELECT t.GUIDTim, t.Shift
+                FROM MF_TIM_SIAGA t
+                WHERE t.BulanPeriode = :bulan
                   AND t.TahunPeriode = :tahun
                   AND t.IDUnitKerja = :unit_id
+                  AND t.FungsionalTIM = :fungsional
+                  AND t.NoUrutTim = :no_urut_tim
                   AND t.Shift IN ({shifts_sql})
                   AND t.IsAktif = 'Y'
             """),
-            {**nip_params, 'bulan': bulan, 'tahun': tahun, 'unit_id': unit_id}
+            {
+                'bulan': bulan, 'tahun': tahun, 'unit_id': unit_id,
+                'fungsional': normalized_rosters[0]['fungsional'],
+                'no_urut_tim': no_urut_tim
+            }
         ).mappings().all()
-        if existing:
-            details = [
-                f"{row['NIP']} sudah ada pada {row['FungsionalTIM']} Shift {row['Shift']} (roster #{row['NoUrutTim']})"
-                for row in existing
-            ]
+        if existing_team:
             return jsonify({
                 'success': False,
-                'error': 'Sebagian pegawai sudah tercatat dalam roster periode/unit ini. Tidak ada perubahan yang disimpan.',
-                'duplicates': details
+                'error': f"Tim {no_urut_tim} untuk {normalized_rosters[0]['fungsional']} sudah ada pada periode, unit, dan shift tersebut. Gunakan Cari Daftar Siaga untuk mengubah data yang tersimpan."
             }), 409
 
         update_by = (
@@ -2071,23 +2071,7 @@ def api_pembuatan_roster_siaga_batch_save():
         # rollback membatalkan seluruh batch, bukan menyisakan roster parsial.
         for roster in sorted(normalized_rosters, key=lambda row: (row['no_urut_jabatan'], row['fungsional'].casefold())):
             for shift_value in shifts_to_save:
-                last = db.session.execute(
-                    db.text("""
-                        SELECT COALESCE(MAX(NoUrutTim), 0)
-                        FROM MF_TIM_SIAGA
-                        WHERE BulanPeriode = :bulan
-                          AND TahunPeriode = :tahun
-                          AND IDUnitKerja = :unit_id
-                          AND FungsionalTIM = :fungsional
-                          AND Shift = :shift
-                          AND IsAktif = 'Y'
-                    """),
-                    {
-                        'bulan': bulan, 'tahun': tahun, 'unit_id': unit_id,
-                        'fungsional': roster['fungsional'], 'shift': shift_value
-                    }
-                ).scalar() or 0
-                no_urut = int(last) + 1
+                no_urut = roster['no_urut_tim']
                 guid_tim = str(uuid.uuid4())
                 nama_tim = (
                     f"{roster['fungsional']} {unit_obj.NAMA_UNIT_KERJA} "
