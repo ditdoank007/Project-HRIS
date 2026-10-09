@@ -25,6 +25,53 @@ from app.models.orgzSiagaModel import MfOrgzSiaga
 from app.models.logActivityBackupModel import LogActivityBackup
 from app.models.dinasLuarModel import DinasLuar
 
+def _ensure_rejadwal_baseline_snapshot(unit_id, selected_date, shift):
+    """Simpan roster asli satu kali sebelum perubahan pertama pada jadwal terpilih."""
+    exists = db.session.execute(
+        db.text("""
+            SELECT COUNT(*) AS total
+            FROM LOG_ACTIVITIY_BACKUP
+            WHERE Activity = 'Piket Siaga'
+              AND GUIDBackUp = 'Reset Rejadwal'
+              AND IDUnitKerja = :unit_id
+              AND DATE(ActivityDate) = :selected_date
+              AND Shift = :shift
+        """),
+        {'unit_id': str(unit_id), 'selected_date': selected_date, 'shift': str(shift)}
+    ).mappings().first()
+    if exists and int(exists['total'] or 0) > 0:
+        return False
+
+    db.session.execute(
+        db.text("""
+            INSERT INTO LOG_ACTIVITIY_BACKUP (
+                GUIDLog, Trx, Activity, StatusID, ActivityDate, Note, Tempat,
+                Perihal, UpdateBy, UpdateDate, GUIDTim, NIP, IDUnitKerja,
+                Fungsional, TglClosing, shift1, shift2, Pengganti, StatusTrx,
+                BackUpdate, GUIDBackUp, KetUpdate, NIPPengganti, Biaya, Qty,
+                SatuanQty, Shift, TransacForm, TglJamIn, TglJamOut,
+                TglJamBakuIn, TglJamBakuOut
+            )
+            SELECT
+                l.GUIDLog, l.Trx, l.Activity, l.StatusID, l.ActivityDate,
+                l.Note, l.Tempat, l.Perihal, l.UpdateBy, l.UpdateDate,
+                l.GUIDTim, l.NIP, l.IDUnitKerja, l.Fungsional, l.TglClosing,
+                l.shift1, l.shift2, l.Pengganti, l.StatusTrx, NOW(),
+                'Reset Rejadwal', 'Snapshot roster asli sebelum perubahan',
+                l.NIPPengganti, l.Biaya, l.Qty, l.SatuanQty, l.Shift,
+                l.TransacForm, l.TglJamIn, l.TglJamOut,
+                l.TglJamBakuIn, l.TglJamBakuOut
+            FROM LOG_ACTIVITIY l
+            WHERE l.Activity = 'Piket Siaga'
+              AND DATE(l.ActivityDate) = :selected_date
+              AND l.IDUnitKerja = :unit_id
+              AND l.Shift = :shift
+        """),
+        {'unit_id': str(unit_id), 'selected_date': selected_date, 'shift': str(shift)}
+    )
+    return True
+
+
 def data_siaga_absensi_kehadiran():
     """Render halaman Absensi Kehadiran Piket Siaga.
 
@@ -2119,6 +2166,9 @@ def api_rejadwal_siaga_edit_personil():
                 return jsonify({'success': False, 'error': 'Pegawai pengganti sedang cuti, sakit, atau dinas luar pada tanggal tersebut.'}), 409
 
         actor = str(session.get('nip') or session.get('NIP') or 'system')[:50]
+        # Simpan roster asli sebelum perubahan pertama.
+        _ensure_rejadwal_baseline_snapshot(old_log.UNIT_KERJA_ID, selected_date, shift)
+
         # Salin baris lama ke tabel backup sebelum mengubah roster.
         db.session.execute(db.text("""
             INSERT INTO LOG_ACTIVITIY_BACKUP
@@ -2207,6 +2257,9 @@ def api_rejadwal_siaga_delete_personil():
         ).with_for_update().first()
         if not log:
             return jsonify({'success': False, 'error': 'Personel tidak ditemukan pada jadwal terpilih.'}), 404
+
+        # Simpan roster asli sebelum penghapusan pertama.
+        _ensure_rejadwal_baseline_snapshot(log.UNIT_KERJA_ID, selected_date, shift)
 
         actor = str(session.get('nip') or session.get('NIP') or 'system')[:50]
         backup = LogActivityBackup(
@@ -2449,13 +2502,7 @@ def api_rejadwal_siaga_get_fungsional():
 def api_rejadwal_siaga_get_shift():
     """API: Get list Shift"""
     try:
-        shift_list = MfShift.query.filter(MfShift.NAMA_SHIFT != '').order_by(MfShift.SHIFT_ID).all()
-        data = [{'id': s.SHIFT_ID, 'nama': s.NAMA_SHIFT} for s in shift_list]
-        return jsonify({'success': True, 'data': data})
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e), 'data': []})
-
-def api_rejadwal_siaga_add_personil():
+        shift_list = MfShift.query.filter(MfShidef api_rejadwal_siaga_add_personil():
     """Tambah personel ke roster terpilih dengan validasi yang mengikuti HRIS 2013."""
     try:
         data = request.get_json(silent=True) or {}
@@ -2530,6 +2577,9 @@ def api_rejadwal_siaga_add_personil():
         if deleted_backup:
             return jsonify({'success': False, 'error': 'Personel ada di daftar rollback. Gunakan tombol Rollback agar data lama dipulihkan utuh.'}), 409
 
+        # Simpan roster asli sebelum personel baru ditambahkan.
+        _ensure_rejadwal_baseline_snapshot(unit_id, selected_date, shift)
+
         new_log = LogActivity(
             GUID_LOG=parent.GUID_LOG,
             TRAKSAKSI_ID=parent.TRAKSAKSI_ID or 0,
@@ -2566,7 +2616,7 @@ def api_rejadwal_siaga_add_personil():
         return jsonify({'success': False, 'error': 'Penambahan gagal. Tidak ada perubahan yang disimpan.'}), 500
 
 def api_rejadwal_siaga_reset():
-    """Reset jadwal mengikuti alur HRIS 2013 dalam satu transaksi database."""
+    """Pulihkan seluruh roster asli sebelum perubahan personel dalam satu transaksi."""
     try:
         data = request.get_json(silent=True) or {}
         unit_raw = str(data.get('unit_kerja_id') or '').strip()
@@ -2580,108 +2630,105 @@ def api_rejadwal_siaga_reset():
         except (TypeError, ValueError):
             return jsonify({'success': False, 'error': 'Unit atau tanggal tidak valid.'}), 400
 
-        actor = str(session.get('nip') or session.get('NIP') or 'system')[:50]
-        active = LogActivity.query.filter(
-            LogActivity.ACTIVITY == 'Piket Siaga',
-            db.func.date(LogActivity.ACTIVITY_DATE) == selected_date,
-            LogActivity.UNIT_KERJA_ID == str(unit_id),
-            LogActivity.SHIFT == shift
-        ).with_for_update().all()
-        guid_logs = {row.GUID_LOG for row in active if row.GUID_LOG}
-        if not active:
-            return jsonify({'success': False, 'error': 'Tidak ada jadwal untuk di-reset.'}), 404
+        snapshot_rows = db.session.execute(
+            db.text("""
+                SELECT IDBackUp
+                FROM LOG_ACTIVITIY_BACKUP
+                WHERE Activity = 'Piket Siaga'
+                  AND GUIDBackUp = 'Reset Rejadwal'
+                  AND IDUnitKerja = :unit_id
+                  AND DATE(ActivityDate) = :selected_date
+                  AND Shift = :shift
+                ORDER BY IDBackUp
+                FOR UPDATE
+            """),
+            {'unit_id': str(unit_id), 'selected_date': selected_date, 'shift': shift}
+        ).mappings().all()
+        if not snapshot_rows:
+            return jsonify({
+                'success': False,
+                'error': (
+                    'Snapshot roster asli tidak ditemukan. Reset otomatis hanya '
+                    'dapat memulihkan perubahan yang dilakukan setelah fitur '
+                    'snapshot roster diaktifkan.'
+                )
+            }), 409
 
-        # Hapus hanya personel pengganti/entri Rejadwal; roster asli dipertahankan.
-        for row in active:
-            if (row.PENGGANTI or 0) != 0 or (row.TRANSAKSI_FORM or '').strip().lower() == 'rejadwal siaga':
-                db.session.delete(row)
-            elif (row.PENGGANTI or 0) == 0:
-                row.STATUS_ID = 2
-                row.UPDATE_BY = actor
-                row.UPDATE_DATE = datetime.now()
+        db.session.execute(
+            db.text("""
+                DELETE FROM LOG_ACTIVITIY
+                WHERE Activity = 'Piket Siaga'
+                  AND DATE(ActivityDate) = :selected_date
+                  AND IDUnitKerja = :unit_id
+                  AND Shift = :shift
+            """),
+            {'unit_id': str(unit_id), 'selected_date': selected_date, 'shift': shift}
+        )
 
-        backups = LogActivityBackup.query.filter(
-            LogActivityBackup.ACTIVITY == 'Piket Siaga',
-            LogActivityBackup.GUID_BACKUP == 'Delete Rejadwal',
-            db.func.date(LogActivityBackup.ACTIVITY_DATE) == selected_date,
-            LogActivityBackup.UNIT_KERJA_ID == str(unit_id),
-            LogActivityBackup.SHIFT == shift,
-            db.func.coalesce(LogActivityBackup.PENGGANTI, 0) == 0
-        ).with_for_update().all()
-        restored_count = 0
-        for backup in backups:
-            exists = LogActivity.query.filter(
-                LogActivity.ACTIVITY == 'Piket Siaga',
-                LogActivity.NIP == backup.NIP,
-                db.func.date(LogActivity.ACTIVITY_DATE) == selected_date,
-                LogActivity.UNIT_KERJA_ID == str(unit_id),
-                LogActivity.SHIFT == shift
-            ).first()
-            if not exists:
-                db.session.add(LogActivity(
-                    GUID_LOG=backup.GUID_LOG,
-                    TRAKSAKSI_ID=0,
-                    UNIT_KERJA_ID=backup.UNIT_KERJA_ID,
-                    GUID_LOG_BACKUP='',
-                    GUID_TIM=backup.GUID_TIM or '',
-                    STATUS_ID=2,
-                    NIP=backup.NIP,
-                    TRX=backup.TRX,
-                    ACTIVITY=backup.ACTIVITY,
-                    ACTIVITY_DATE=backup.ACTIVITY_DATE,
-                    NOTE=backup.NOTE,
-                    TEMPAT=backup.TEMPAT,
-                    PERIHAL=backup.PERIHAL,
-                    UPDATE_BY=actor,
-                    UPDATE_DATE=datetime.now(),
-                    FUNGSIONAL=backup.FUNGSIONAL,
-                    TGL_CLOSING=backup.TGL_CLOSING,
-                    SHIFT_1=backup.SHIFT_1,
-                    SHIFT_2=backup.SHIFT_2,
-                    PENGGANTI=backup.PENGGANTI or 0,
-                    STATUS_TRX=None,
-                    KET_UPDATE='Reset jadwal - pemulihan roster asli',
-                    NIP_PENGGANTI=backup.NIP_PENGGANTI,
-                    SHIFT=backup.SHIFT,
-                    TRANSAKSI_FORM=None
-                ))
-                restored_count += 1
-            db.session.delete(backup)
+        # SQL fisik mempertahankan setiap baris meskipun GUIDLog berulang.
+        db.session.execute(
+            db.text("""
+                INSERT INTO LOG_ACTIVITIY (
+                    GUIDLog, Trx, Activity, StatusID, ActivityDate, Note, Tempat,
+                    Perihal, UpdateBy, UpdateDate, GUIDTim, NIP, IDUnitKerja,
+                    Fungsional, TglClosing, shift1, shift2, Pengganti, StatusTrx,
+                    ketUpdate, NIPPengganti, Shift, TransacForm, TransacID,
+                    GUIDLogBackUp, Biaya, Qty, SatuanQty, TglJamIn, TglJamOut,
+                    TglJamBakuIn, TglJamBakuOut
+                )
+                SELECT
+                    b.GUIDLog, b.Trx, b.Activity, b.StatusID, b.ActivityDate,
+                    b.Note, b.Tempat, b.Perihal, b.UpdateBy, b.UpdateDate,
+                    b.GUIDTim, b.NIP, b.IDUnitKerja, b.Fungsional, b.TglClosing,
+                    b.shift1, b.shift2, COALESCE(b.Pengganti, 0), b.StatusTrx,
+                    'Reset jadwal - roster asli dipulihkan', b.NIPPengganti,
+                    b.Shift, b.TransacForm, 0, '', b.Biaya, b.Qty, b.SatuanQty,
+                    b.TglJamIn, b.TglJamOut, b.TglJamBakuIn, b.TglJamBakuOut
+                FROM LOG_ACTIVITIY_BACKUP b
+                WHERE b.Activity = 'Piket Siaga'
+                  AND b.GUIDBackUp = 'Reset Rejadwal'
+                  AND b.IDUnitKerja = :unit_id
+                  AND DATE(b.ActivityDate) = :selected_date
+                  AND b.Shift = :shift
+                ORDER BY b.IDBackUp
+            """),
+            {'unit_id': str(unit_id), 'selected_date': selected_date, 'shift': shift}
+        )
 
-        # Tandai pegawai yang sedang cuti/sakit/dinas luar sebagaimana HRIS 2013.
-        originals = LogActivity.query.filter(
-            LogActivity.ACTIVITY == 'Piket Siaga',
-            db.func.date(LogActivity.ACTIVITY_DATE) == selected_date,
-            LogActivity.UNIT_KERJA_ID == str(unit_id),
-            LogActivity.SHIFT == shift,
-            db.func.coalesce(LogActivity.PENGGANTI, 0) == 0
-        ).all()
-        for row in originals:
-            absensi_rows = DinasLuar.query.join(
-                Pegawai, DinasLuar.FINGER_ID == Pegawai.FINGER_ID
-            ).filter(
-                Pegawai.NIP == row.NIP,
-                db.func.date(DinasLuar.TGL_AWAL_DINAS_LUAR) <= selected_date,
-                db.func.date(DinasLuar.TGL_AKHIR_DINAS_LUAR) >= selected_date,
-                db.func.lower(DinasLuar.TRANSAKSI) != 'alpa'
-            ).all()
-            matching = next((item for item in absensi_rows if
-                str(item.TRANSAKSI or '').strip().lower() in ('cuti', 'sakit')
-                or (str(item.TRANSAKSI or '').strip().lower() == 'dinasluar'
-                    and str(item.JENIS or '').strip().upper() in ('SD', 'DL'))), None)
-            if matching:
-                transaksi = 'DL' if str(matching.TRANSAKSI or '').strip().lower() == 'dinasluar' else matching.TRANSAKSI
-                row.STATUS_ID = 1
-                row.STATUS_TRX = transaksi
-                row.UPDATE_BY = actor
-                row.UPDATE_DATE = datetime.now()
+        db.session.execute(
+            db.text("""
+                DELETE FROM LOG_ACTIVITIY_BACKUP
+                WHERE Activity = 'Piket Siaga'
+                  AND IDUnitKerja = :unit_id
+                  AND DATE(ActivityDate) = :selected_date
+                  AND Shift = :shift
+                  AND GUIDBackUp IN ('Reset Rejadwal', 'Delete Rejadwal')
+            """),
+            {'unit_id': str(unit_id), 'selected_date': selected_date, 'shift': shift}
+        )
 
         db.session.commit()
-        return jsonify({'success': True, 'message': f'Reset jadwal berhasil. {restored_count} personel dipulihkan.'})
+        return jsonify({
+            'success': True,
+            'message': (
+                f'Reset berhasil. {len(snapshot_rows)} baris roster asli '
+                'telah dipulihkan untuk unit, tanggal, dan shift terpilih.'
+            ),
+            'data': {
+                'unit_kerja_id': unit_id,
+                'tgl': tgl_raw,
+                'shift': shift,
+                'jumlah_baris_dipulihkan': len(snapshot_rows),
+            }
+        })
     except Exception:
         db.session.rollback()
-        current_app.logger.exception('Gagal reset jadwal siaga')
-        return jsonify({'success': False, 'error': 'Reset gagal. Semua perubahan dibatalkan.'}), 500
+        current_app.logger.exception('Gagal memulihkan roster asli jadwal siaga')
+        return jsonify({
+            'success': False,
+            'error': 'Reset gagal. Seluruh perubahan dibatalkan; roster tidak diubah sebagian.'
+        }), 500
+
 
 def data_siaga_membuat_jadwal_piket_siaga():
     """Render halaman Data Siaga Membuat Jadwal Piket Siaga."""
