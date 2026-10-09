@@ -2634,7 +2634,6 @@ def api_rejadwal_siaga_add_personil():
             GUID_LOG=parent.GUID_LOG,
             TRAKSAKSI_ID=parent.TRAKSAKSI_ID or 0,
             UNIT_KERJA_ID=parent.UNIT_KERJA_ID,
-            GUID_LOG_BACKUP='',
             GUID_TIM=parent.GUID_TIM,
             STATUS_ID=2,
             NIP=nip,
