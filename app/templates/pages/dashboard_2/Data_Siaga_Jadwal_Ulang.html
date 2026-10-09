@@ -32,17 +32,17 @@
             </div>
             <div class="hris-card-body">
                 <div class="jadwal-filter-grid">
-                    <div class="hris-field">
+                    <div class="hris-field jadwal-filter-date">
+                        <label class="hris-label" for="tglJadwal"><i class="bi bi-calendar3"></i> Tanggal Jadwal</label>
+                        <input type="date" id="tglJadwal" class="hris-input">
+                    </div>
+                    <div class="hris-field jadwal-filter-unit">
                         <label class="hris-label" for="unitKerja"><i class="bi bi-building"></i> Unit Kerja</label>
                         <select id="unitKerja" class="hris-select">
                             <option value="">Pilih unit kerja...</option>
                         </select>
                     </div>
-                    <div class="hris-field">
-                        <label class="hris-label" for="tglJadwal"><i class="bi bi-calendar3"></i> Tanggal Jadwal</label>
-                        <input type="date" id="tglJadwal" class="hris-input">
-                    </div>
-                    <div class="hris-field">
+                    <div class="hris-field jadwal-filter-shift">
                         <label class="hris-label" for="shift"><i class="bi bi-clock"></i> Shift</label>
                         <select id="shift" class="hris-select">
                             <option value="">Pilih shift...</option>
@@ -144,7 +144,9 @@
 
 <style>
     .jadwal-card { margin-bottom:18px; }
-    .jadwal-filter-grid { display:grid; grid-template-columns:minmax(190px,1.2fr) minmax(170px,.9fr) minmax(150px,.8fr) auto; gap:14px; align-items:end; }
+    .jadwal-filter-grid { display:grid; grid-template-columns:minmax(165px,.9fr) minmax(300px,2fr) minmax(150px,.8fr) auto; gap:14px; align-items:end; }
+    .jadwal-filter-date,.jadwal-filter-unit,.jadwal-filter-shift { min-width:0; }
+    .jadwal-filter-actions { align-self:end; flex-wrap:nowrap; }
     .jadwal-filter-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
     .jadwal-filter-hint { margin:14px 0 0; color:var(--ui-muted); font-size:12px; }
     .jadwal-filter-hint i { margin-right:5px; color:var(--ui-brand); }
@@ -157,7 +159,7 @@
     #pegawaiDropdown .pegawai-item { cursor:pointer; padding:9px 12px; white-space:normal; }
     #pegawaiDropdown .pegawai-item:hover { background:#fff5ef; }
     #tableBodyJadwal .btn-action,#tableBodyRollback .btn-action { min-height:30px; padding:5px 8px; border-radius:7px; }
-    @media(max-width:1050px) { .jadwal-filter-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .jadwal-filter-actions { grid-column:1/-1; } }
+    @media(max-width:1100px) { .jadwal-filter-grid { grid-template-columns:minmax(150px,.85fr) minmax(230px,1.5fr) minmax(135px,.8fr); } .jadwal-filter-actions { grid-column:1/-1; flex-wrap:wrap; } }
     @media(max-width:700px) { .hris-page { padding:15px; } .jadwal-filter-grid,.jadwal-add-grid { grid-template-columns:minmax(0,1fr); } .jadwal-filter-actions { grid-column:auto; } .jadwal-filter-actions .hris-btn { flex:1; } }
 </style>
 
