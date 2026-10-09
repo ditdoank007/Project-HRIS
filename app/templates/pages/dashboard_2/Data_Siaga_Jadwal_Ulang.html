@@ -4,188 +4,162 @@
 {% block title %}- Ubah Jadwal Piket{% endblock %}
 
 {% block content %}
-<div class="nxl-content">
-    <div class="page-header">
-        <div class="page-header-left d-flex align-items-center">
-            <div class="page-header-title">
-                <h5 class="m-b-10">Data Siaga</h5>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/hris-ui.css') }}">
+
+<div class="hris-modern">
+    <div class="hris-page">
+        <div class="hris-page-header">
+            <div>
+                <h1 class="hris-page-title"><i class="bi bi-arrow-repeat"></i> Ubah Jadwal Piket</h1>
+                <p class="hris-page-subtitle">Kelola personel piket, status kehadiran, dan pemulihan jadwal dengan aman.</p>
             </div>
-            <ul class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url_for('main.view_data_siaga_jadwal_ulang') }}">Ubah Jadwal Piket</a></li>
-            </ul>
         </div>
-    </div>
 
-    <div class="main-content master-siaga jadwal-ulang-page">
-        <div class="container-fluid">
-            <!-- Alert -->
-            <div id="alertContainer" class="alert alert-dismissable d-none mb-3">
-                <span id="alertMessage"></span>
-            </div>
-
-            <!-- Header -->
-            <div class="card mb-4">
-                <div class="card-header-custom d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0"><i class="bi bi-people me-2"></i>Jadwal Ulang Piket Siaga</h6>
+        <div id="alertContainer" class="d-none" role="status" aria-live="polite" style="margin-bottom:16px;">
+            <div class="hris-card">
+                <div class="hris-card-body" style="padding:12px 16px;">
+                    <span id="alertMessage"></span>
                 </div>
             </div>
-
-            <!-- ========== FILTER SECTION ========== -->
-            <div class="card mb-4 filter-card">
-                <div class="card-header-customm">
-                    <h6 class="mb-0">Jadwal Piket</h6>
-                </div>
-                <div class="card-body">
-                    <div class="jadwal-filter-grid">
-                        <div class="jadwal-filter-field">
-                            <label for="unitKerja"><i class="bi bi-building"></i> Unit Kerja</label>
-                            <select id="unitKerja" class="form-select">
-                                <option value="">Pilih unit kerja...</option>
-                            </select>
-                        </div>
-                        <div class="jadwal-filter-field">
-                            <label for="tglJadwal"><i class="bi bi-calendar3"></i> Tanggal Jadwal</label>
-                            <input type="date" id="tglJadwal" class="form-control">
-                        </div>
-                        <div class="jadwal-filter-field">
-                            <label for="shift"><i class="bi bi-clock"></i> Shift</label>
-                            <select id="shift" class="form-select">
-                                <option value="">Pilih shift...</option>
-                            </select>
-                        </div>
-                        <div class="jadwal-filter-actions">
-                            <button class="btn btn-orange-figma" id="btnShow"><i class="bi bi-search me-1"></i> Tampilkan</button>
-                            <button class="btn btn-reset-jadwal" id="btnReset"><i class="bi bi-arrow-counterclockwise me-1"></i> Reset Jadwal</button>
-                        </div>
-                    </div>
-                    <p class="jadwal-filter-hint"><i class="bi bi-info-circle me-1"></i> Pilih unit, tanggal, dan shift sebelum menampilkan atau mengubah jadwal.</p>
-                </div>
-            </div>
-
-            <!-- ========== TABEL JADWAL ========== -->
-            <div class="card mb-4 filter-card">
-                <div class="card-header-customm d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0">Daftar Personil Piket</h6>
-                    <small id="infoJadwal" class="text-muted"></small>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-sm align-middle text-center">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>No</th>
-                                    <th>NIP</th>
-                                    <th>Nama</th>
-                                    <th>Fungsional</th>
-                                    <th>Status</th>
-                                    <th>Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tableBodyJadwal">
-                                <tr><td colspan="6" class="py-4 text-muted">Pilih Unit, Tanggal, Shift lalu klik Show</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ========== ROLLBACK SECTION ========== -->
-            <div class="card mb-4 filter-card">
-                <div class="card-header-customm">
-                    <h6 class="mb-0"><i class="bi bi-arrow-counterclockwise me-2"></i>Pemulihan Personel Terhapus</h6>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-sm align-middle text-center">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>No</th>
-                                    <th>NIP</th>
-                                    <th>Nama</th>
-                                    <th>Fungsional</th>
-                                    <th>Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tableBodyRollback">
-                                <tr><td colspan="5" class="py-4 text-muted">Data rollback akan muncul setelah ada personil yang dihapus</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ========== TAMBAH PERSONIL ========== -->
-            <div class="card mb-4 filter-card">
-                <div class="card-header-customm">
-                    <h6 class="mb-0"><i class="bi bi-person-plus me-2"></i>Tambah Personel Piket</h6>
-                </div>
-                <div class="card-body">
-                    <div class="jadwal-add-grid">
-                        <div class="jadwal-add-field position-relative">
-                            <label for="searchPegawai">Nama Personel</label>
-                            <input type="text" id="searchPegawai" class="form-control"
-                                   placeholder="Cari nama atau NIP pegawai..." autocomplete="off">
-                            <div id="pegawaiDropdown" class="dropdown-menu w-100"
-                                 style="display:none; max-height:240px; overflow-y:auto; position:absolute; z-index:1050;"></div>
-                            <input type="hidden" id="selectedNIP">
-                        </div>
-                        <div class="jadwal-add-field">
-                            <label for="fungsionalAdd">Fungsional Piket</label>
-                            <select id="fungsionalAdd" class="form-select">
-                                <option value="">Pilih fungsional...</option>
-                            </select>
-                        </div>
-                        <div class="jadwal-add-submit">
-                            <button class="btn btn-orange-figma" id="btnAddPersonil">
-                                <i class="bi bi-person-plus me-1"></i> Tambah Personel
-                            </button>
-                        </div>
-                    </div>
-                    <p class="jadwal-filter-hint mt-3 mb-0"><i class="bi bi-shield-check me-1"></i> Pastikan unit, tanggal, shift, dan fungsional sudah sesuai sebelum menambahkan personel.</p>
-                </div>
-            </div>
-
         </div>
+
+        <section class="hris-card jadwal-card" aria-labelledby="jadwalFilterTitle">
+            <div class="hris-card-header">
+                <div>
+                    <h2 class="hris-card-title" id="jadwalFilterTitle"><i class="bi bi-funnel"></i> Filter Jadwal Piket</h2>
+                    <p class="hris-page-subtitle">Pilih unit kerja, tanggal, dan shift untuk memuat jadwal yang akan dikelola.</p>
+                </div>
+            </div>
+            <div class="hris-card-body">
+                <div class="jadwal-filter-grid">
+                    <div class="hris-field">
+                        <label class="hris-label" for="unitKerja"><i class="bi bi-building"></i> Unit Kerja</label>
+                        <select id="unitKerja" class="hris-select">
+                            <option value="">Pilih unit kerja...</option>
+                        </select>
+                    </div>
+                    <div class="hris-field">
+                        <label class="hris-label" for="tglJadwal"><i class="bi bi-calendar3"></i> Tanggal Jadwal</label>
+                        <input type="date" id="tglJadwal" class="hris-input">
+                    </div>
+                    <div class="hris-field">
+                        <label class="hris-label" for="shift"><i class="bi bi-clock"></i> Shift</label>
+                        <select id="shift" class="hris-select">
+                            <option value="">Pilih shift...</option>
+                        </select>
+                    </div>
+                    <div class="jadwal-filter-actions">
+                        <button type="button" class="hris-btn hris-btn-primary" id="btnShow"><i class="bi bi-search"></i><span>Tampilkan</span></button>
+                        <button type="button" class="hris-btn hris-btn-secondary" id="btnReset"><i class="bi bi-arrow-counterclockwise"></i><span>Reset Jadwal</span></button>
+                    </div>
+                </div>
+                <p class="jadwal-filter-hint"><i class="bi bi-info-circle"></i> Muat jadwal terlebih dahulu sebelum mengubah, menghapus, menambah, atau memulihkan personel.</p>
+            </div>
+        </section>
+
+        <section class="hris-card jadwal-card" aria-labelledby="jadwalListTitle">
+            <div class="hris-card-header">
+                <div>
+                    <h2 class="hris-card-title" id="jadwalListTitle"><i class="bi bi-people"></i> Daftar Personel Piket</h2>
+                    <p class="hris-page-subtitle">Personel yang tercatat pada unit, tanggal, dan shift terpilih.</p>
+                </div>
+                <span id="infoJadwal" class="jadwal-count"></span>
+            </div>
+            <div class="hris-table-wrap">
+                <table class="hris-table-modern" id="tableJadwal">
+                    <thead>
+                        <tr>
+                            <th style="width:56px;text-align:center;">No</th>
+                            <th>NIP</th>
+                            <th>Nama</th>
+                            <th>Fungsional</th>
+                            <th>Status</th>
+                            <th style="width:125px;text-align:center;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBodyJadwal">
+                        <tr><td colspan="6" class="jadwal-empty"><i class="bi bi-funnel"></i>Pilih unit kerja, tanggal, dan shift, lalu klik Tampilkan.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="hris-card jadwal-card" aria-labelledby="jadwalRollbackTitle">
+            <div class="hris-card-header">
+                <div>
+                    <h2 class="hris-card-title" id="jadwalRollbackTitle"><i class="bi bi-arrow-counterclockwise"></i> Pemulihan Personel Terhapus</h2>
+                    <p class="hris-page-subtitle">Pulihkan personel dari catatan backup jadwal yang tersedia.</p>
+                </div>
+            </div>
+            <div class="hris-table-wrap">
+                <table class="hris-table-modern" id="tableRollback">
+                    <thead>
+                        <tr>
+                            <th style="width:56px;text-align:center;">No</th>
+                            <th>NIP</th>
+                            <th>Nama</th>
+                            <th>Fungsional</th>
+                            <th style="width:140px;text-align:center;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBodyRollback">
+                        <tr><td colspan="5" class="jadwal-empty"><i class="bi bi-archive"></i>Data pemulihan akan tampil setelah jadwal dimuat.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="hris-card jadwal-card" aria-labelledby="jadwalAddTitle">
+            <div class="hris-card-header">
+                <div>
+                    <h2 class="hris-card-title" id="jadwalAddTitle"><i class="bi bi-person-plus"></i> Tambah Personel Piket</h2>
+                    <p class="hris-page-subtitle">Cari pegawai dan tentukan fungsional untuk jadwal yang sudah dimuat.</p>
+                </div>
+            </div>
+            <div class="hris-card-body">
+                <div class="jadwal-add-grid">
+                    <div class="hris-field position-relative">
+                        <label class="hris-label" for="searchPegawai">Nama Personel</label>
+                        <input type="text" id="searchPegawai" class="hris-input" placeholder="Cari nama atau NIP pegawai..." autocomplete="off">
+                        <div id="pegawaiDropdown" class="dropdown-menu w-100" style="display:none;max-height:240px;overflow-y:auto;position:absolute;z-index:1050;"></div>
+                        <input type="hidden" id="selectedNIP">
+                    </div>
+                    <div class="hris-field">
+                        <label class="hris-label" for="fungsionalAdd">Fungsional Piket</label>
+                        <select id="fungsionalAdd" class="hris-select">
+                            <option value="">Pilih fungsional...</option>
+                        </select>
+                    </div>
+                    <div class="jadwal-add-submit">
+                        <button type="button" class="hris-btn hris-btn-primary" id="btnAddPersonil"><i class="bi bi-person-plus"></i><span>Tambah Personel</span></button>
+                    </div>
+                </div>
+                <p class="jadwal-filter-hint"><i class="bi bi-shield-check"></i> Pastikan filter jadwal dan fungsional sudah sesuai sebelum menambahkan personel.</p>
+            </div>
+        </section>
     </div>
 </div>
 
-<style>
-    .jadwal-ulang-page { --siaga-orange:#ef6b2e; --siaga-orange-dark:#d9571f; --siaga-ink:#1f2a3d; --siaga-muted:#758399; }
-    .jadwal-ulang-page .filter-card { border:1px solid #e6ebf2; border-radius:14px; overflow:visible; background:#fff; box-shadow:0 5px 18px rgba(31,42,61,.045); margin-bottom:22px !important; }
-    .jadwal-ulang-page .card-header-customm { background:linear-gradient(105deg,#f2682d,#f58242); color:#fff; padding:13px 18px; border:0; }
-    .jadwal-ulang-page .card-header-customm h6 { color:#fff; font-size:.91rem; font-weight:700; letter-spacing:.01em; }
-    .jadwal-ulang-page .card-body { padding:22px; }
-    .jadwal-ulang-page .jadwal-filter-grid { display:grid; grid-template-columns:minmax(210px,1.25fr) minmax(170px,.9fr) minmax(155px,.8fr) auto; gap:16px; align-items:end; }
-    .jadwal-ulang-page .jadwal-filter-field,.jadwal-ulang-page .jadwal-add-field { min-width:0; }
-    .jadwal-ulang-page .jadwal-filter-field label,.jadwal-ulang-page .jadwal-add-field label { display:block; margin:0 0 8px; color:#48566c; font-size:.78rem; font-weight:700; }
-    .jadwal-ulang-page .jadwal-filter-field label i { margin-right:5px; color:var(--siaga-orange); }
-    .jadwal-ulang-page .form-control,.jadwal-ulang-page .form-select,.jadwal-ulang-page select { width:100%; min-height:43px; border:1px solid #dfe5ed; border-radius:9px; color:#26344b; background-color:#fff; box-shadow:none; font-size:.88rem; }
-    .jadwal-ulang-page .form-control:focus,.jadwal-ulang-page .form-select:focus,.jadwal-ulang-page select:focus { border-color:#f2a078; box-shadow:0 0 0 3px rgba(239,107,46,.12); }
-    .jadwal-ulang-page .jadwal-filter-actions { display:flex; align-items:center; gap:9px; }
-    .jadwal-ulang-page .btn-orange-figma { display:inline-flex; justify-content:center; align-items:center; background:var(--siaga-orange); color:#fff; border:1px solid var(--siaga-orange); border-radius:9px; min-height:43px; padding:9px 16px; font-weight:700; white-space:nowrap; box-shadow:0 3px 8px rgba(239,107,46,.14); }
-    .jadwal-ulang-page .btn-orange-figma:hover { background:var(--siaga-orange-dark); border-color:var(--siaga-orange-dark); color:#fff; }
-    .jadwal-ulang-page .btn-reset-jadwal { display:inline-flex; justify-content:center; align-items:center; background:#fff8e9; color:#9b6100; border:1px solid #f4d79a; border-radius:9px; min-height:43px; padding:9px 14px; font-weight:700; white-space:nowrap; }
-    .jadwal-ulang-page .btn-reset-jadwal:hover { background:#ffefc9; color:#7a4b00; }
-    .jadwal-ulang-page .jadwal-filter-hint { margin:15px 0 0; color:#8491a4; font-size:.78rem; }
-    .jadwal-ulang-page .card-header-customm.d-flex { gap:12px; }
-    .jadwal-ulang-page #infoJadwal { color:rgba(255,255,255,.92) !important; font-size:.78rem; }
-    .jadwal-ulang-page .table-responsive { border:1px solid #e6ebf2; border-radius:10px; overflow-x:auto; }
-    .jadwal-ulang-page .table { width:100%; margin:0; min-width:700px; }
-    .jadwal-ulang-page .table thead th { background:#f4f6f9; color:#68778e; border-bottom:1px solid #e4eaf1; padding:13px 14px; font-size:.72rem; text-transform:uppercase; letter-spacing:.045em; white-space:nowrap; }
-    .jadwal-ulang-page .table tbody td { padding:12px 14px; color:#35435a; border-color:#edf1f5; vertical-align:middle; font-size:.84rem; }
-    .jadwal-ulang-page .table tbody tr:nth-child(even) { background:#fafbfd; }
-    .jadwal-ulang-page .table tbody tr:hover { background:#fff7f1; }
-    .jadwal-ulang-page .table tbody td.py-4 { color:#8794a8 !important; font-size:.8rem; }
-    .jadwal-ulang-page .btn-action { display:inline-flex; align-items:center; justify-content:center; gap:5px; min-height:33px; padding:6px 10px; border-radius:8px; font-size:.76rem; }
-    .jadwal-ulang-page .jadwal-add-grid { display:grid; grid-template-columns:minmax(260px,1.35fr) minmax(220px,1fr) auto; gap:18px; align-items:end; }
-    .jadwal-ulang-page .jadwal-add-submit .btn { min-height:43px; padding-left:18px; padding-right:18px; }
-    .jadwal-ulang-page #pegawaiDropdown { z-index:1050 !important; border:1px solid #e2e8f0; border-radius:10px; box-shadow:0 10px 24px rgba(23,32,51,.14); max-height:240px; overflow-y:auto; }
-    .jadwal-ulang-page .pegawai-item { cursor:pointer; padding:10px 12px; white-space:normal; }
-    .jadwal-ulang-page .pegawai-item:hover { background:#fff4ed; }
-    @media(max-width:1100px) { .jadwal-ulang-page .jadwal-filter-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .jadwal-ulang-page .jadwal-filter-actions { grid-column:1/-1; } }
-    @media(max-width:768px) { .jadwal-ulang-page .card-body { padding:15px; } .jadwal-ulang-page .jadwal-filter-grid,.jadwal-ulang-page .jadwal-add-grid { grid-template-columns:1fr; } .jadwal-ulang-page .jadwal-filter-actions { grid-column:auto; flex-wrap:wrap; } .jadwal-ulang-page .jadwal-filter-actions button { flex:1; } }
-</style>
 {% endblock %}
+
+<style>
+    .jadwal-card { margin-bottom:18px; }
+    .jadwal-filter-grid { display:grid; grid-template-columns:minmax(190px,1.2fr) minmax(170px,.9fr) minmax(150px,.8fr) auto; gap:14px; align-items:end; }
+    .jadwal-filter-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .jadwal-filter-hint { margin:14px 0 0; color:var(--ui-muted); font-size:12px; }
+    .jadwal-filter-hint i { margin-right:5px; color:var(--ui-brand); }
+    .jadwal-count { color:var(--ui-muted); font-size:12px; white-space:nowrap; }
+    .jadwal-empty { padding:26px 12px !important; text-align:center; color:var(--ui-muted) !important; font-size:13px !important; }
+    .jadwal-empty i { margin-right:7px; color:#a3afbf; }
+    .jadwal-add-grid { display:grid; grid-template-columns:minmax(240px,1.3fr) minmax(200px,1fr) auto; gap:16px; align-items:end; }
+    .jadwal-add-submit .hris-btn { min-height:38px; white-space:nowrap; }
+    #pegawaiDropdown { border:1px solid var(--ui-border); border-radius:8px; box-shadow:var(--ui-shadow); }
+    #pegawaiDropdown .pegawai-item { cursor:pointer; padding:9px 12px; white-space:normal; }
+    #pegawaiDropdown .pegawai-item:hover { background:#fff5ef; }
+    #tableBodyJadwal .btn-action,#tableBodyRollback .btn-action { min-height:30px; padding:5px 8px; border-radius:7px; }
+    @media(max-width:1050px) { .jadwal-filter-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .jadwal-filter-actions { grid-column:1/-1; } }
+    @media(max-width:700px) { .hris-page { padding:15px; } .jadwal-filter-grid,.jadwal-add-grid { grid-template-columns:minmax(0,1fr); } .jadwal-filter-actions { grid-column:auto; } .jadwal-filter-actions .hris-btn { flex:1; } }
+</style>
 
 {% block script %}
 <script>
@@ -250,7 +224,7 @@ $(document).ready(function() {
                 guidLog = r.guid_log;
                 jadwalData = r.jadwal || [];
                 rollbackData = r.rollback || [];
-                $('#infoJadwal').text(`GUID: ${guidLog} | ${jadwalData.length} personil`);
+                $('#infoJadwal').text(`${jadwalData.length} personel`);
                 renderJadwal();
                 renderRollback();
             } else {
@@ -261,7 +235,7 @@ $(document).ready(function() {
         }).fail(function() {
             showAlert('danger', 'Gagal memuat data');
         }).always(function() {
-            $btn.prop('disabled', false).html('<i class="bi bi-arrow-clockwise"></i> Show');
+            $btn.prop('disabled', false).html('<i class="bi bi-search"></i><span>Tampilkan</span>');
         });
     });
 
@@ -518,7 +492,7 @@ $(document).ready(function() {
                 showAlert('danger', msg);
             },
             complete: function() {
-                $btn.prop('disabled', false).html('<i class="bi bi-save me-2"></i> Save');
+                $btn.prop('disabled', false).html('<i class="bi bi-person-plus"></i><span>Tambah Personel</span>');
             }
         });
     });
@@ -544,7 +518,7 @@ $(document).ready(function() {
                 try { msg = (JSON.parse(xhr.responseText) || {}).error || msg; } catch(e) {}
                 showAlert('danger', msg);
             },
-            complete: function() { $btn.prop('disabled', false).html('<i class="bi bi-arrow-repeat"></i> Reset'); }
+            complete: function() { $btn.prop('disabled', false).html('<i class="bi bi-arrow-counterclockwise"></i><span>Reset Jadwal</span>'); }
         });
     });
 
