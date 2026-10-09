@@ -2042,10 +2042,10 @@ def api_pembuatan_roster_siaga_batch_save():
                   AND t.BulanPeriode = :bulan
                   AND t.TahunPeriode = :tahun
                   AND t.IDUnitKerja = :unit_id
-                  AND t.Shift IN :shifts
+                  AND t.Shift IN ({shifts_sql})
                   AND t.IsAktif = 'Y'
             """),
-            {**nip_params, 'bulan': bulan, 'tahun': tahun, 'unit_id': unit_id, 'shifts': tuple(shifts_to_save)}
+            {**nip_params, 'bulan': bulan, 'tahun': tahun, 'unit_id': unit_id}
         ).mappings().all()
         if existing:
             details = [
@@ -2065,6 +2065,7 @@ def api_pembuatan_roster_siaga_batch_save():
         )
         now = datetime.now()
         saved = []
+        shifts_sql = ', '.join("'" + value + "'" for value in shifts_to_save)
 
         # Semua INSERT berada dalam satu transaksi. Jika salah satu gagal,
         # rollback membatalkan seluruh batch, bukan menyisakan roster parsial.
