@@ -205,3 +205,72 @@ body.hris-dashboard2 .nxl-container {
 @media (max-width: 650px) {
   body.hris-dashboard2 .nxl-header { left: 0 !important; }
 }
+
+/* Dashboard2: proper compact sidebar when the template toggles html.minimenu.
+   Keep icons centered, hide labels/arrows, and move the page/header with the sidebar. */
+html.minimenu body.hris-dashboard2 .nxl-navigation,
+html.minimenu body.hris-dashboard2 .nxl-navigation .navbar-wrapper,
+html.minimenu body.hris-dashboard2 .nxl-navigation .navbar-content {
+  width: 72px !important;
+  min-width: 72px !important;
+  max-width: 72px !important;
+}
+html.minimenu body.hris-dashboard2 .nxl-navigation {
+  overflow: visible !important;
+}
+html.minimenu body.hris-dashboard2 .nxl-navigation .nxl-navbar {
+  width: 72px !important;
+  padding: 0 8px 18px !important;
+}
+html.minimenu body.hris-dashboard2 .custom-nav-header .header-container:first-child {
+  justify-content: center !important;
+  padding: 12px 8px !important;
+  gap: 0 !important;
+}
+html.minimenu body.hris-dashboard2 .custom-nav-header .header-container:first-child img {
+  width: 32px !important;
+  height: 32px !important;
+  flex: 0 0 32px !important;
+}
+html.minimenu body.hris-dashboard2 .custom-nav-header .header-container:first-child .nav-text-label,
+html.minimenu body.hris-dashboard2 .nxl-navigation .nxl-mtext,
+html.minimenu body.hris-dashboard2 .nxl-navigation .nxl-arrow {
+  display: none !important;
+}
+html.minimenu body.hris-dashboard2 .nxl-navigation .nxl-link {
+  justify-content: center !important;
+  padding: 0 !important;
+  width: 56px !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+html.minimenu body.hris-dashboard2 .nxl-navigation .nxl-micon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  min-width: 100% !important;
+  margin: 0 !important;
+}
+html.minimenu body.hris-dashboard2 .nxl-navigation .nxl-submenu {
+  display: none !important;
+}
+html.minimenu body.hris-dashboard2 .nxl-header {
+  left: 72px !important;
+}
+html.minimenu body.hris-dashboard2 .nxl-container {
+  margin-left: 72px !important;
+}
+@media (max-width: 900px) {
+  html.minimenu body.hris-dashboard2 .nxl-header {
+    left: 72px !important;
+  }
+}
+@media (max-width: 650px) {
+  html.minimenu body.hris-dashboard2 .nxl-header {
+    left: 0 !important;
+  }
+  html.minimenu body.hris-dashboard2 .nxl-container {
+    margin-left: 0 !important;
+  }
+}
