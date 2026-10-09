@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AGENDA HRIS Reborn - Basarnas Surabaya">
+    <title>BHRIS AGENDA {% block title %}{% endblock %}</title>
+
+    <link rel="shortcut icon" type="image/x-icon"
+          href="{{ url_for('static', filename='static_dashboard_1/assets/images/logo-full.png') }}">
+
+    <link rel="stylesheet" type="text/css"
+          href="{{ url_for('static', filename='static_dashboard_1/assets/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" type="text/css"
+          href="{{ url_for('static', filename='static_dashboard_1/assets/vendors/css/vendors.min.css') }}">
+    <link rel="stylesheet" type="text/css"
+          href="{{ url_for('static', filename='static_dashboard_1/assets/css/theme.min.css') }}">
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/hris-global.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/hris-ui.css') }}?v=20261008-6">
+    <script src="{{ url_for('static', filename='js/hris-global.js') }}"></script>
+
+    <style>
+        /* AGENDA uses the same NEXL shell dimensions as Dashboard UMUM. */
+        .nxl-hasmenu > .nxl-link {
+            cursor: pointer;
+        }
+
+        .nxl-hasmenu.menu-open > .nxl-submenu,
+        .nxl-hasmenu.hris-active > .nxl-submenu {
+            display: block;
+        }
+
+        .nxl-hasmenu.menu-open > .nxl-link .nxl-arrow,
+        .nxl-hasmenu.hris-active > .nxl-link .nxl-arrow {
+            transform: rotate(90deg);
+        }
+
+        /* Dashboard4 = HRIS Calendar shell, Agenda identity */
+        .agenda-sidebar-brand { padding: 14px 18px !important; min-height: 64px; background:#111827; }
+        .agenda-brand-row { display:flex; align-items:center; gap:12px; position:relative; }
+        .agenda-brand-row img { width:28px !important; height:28px !important; object-fit:contain; flex:0 0 28px; }
+        .agenda-brand-text { min-width:0; }
+        .agenda-brand-name { color:#fff; font-size:16px; font-weight:800; letter-spacing:1px; line-height:1.1; }
+        .agenda-brand-office { margin-top:3px; color:#9ca3af; font-size:10px; white-space:nowrap; }
+        .agenda-sidebar-toggle { margin-left:auto; flex:0 0 30px; width:30px; height:30px; border:1px solid rgba(255,255,255,.12); border-radius:6px; background:transparent; color:#d1d5db; cursor:pointer; font-size:20px; line-height:1; }
+        .agenda-sidebar-toggle:hover { background:rgba(255,255,255,.08); color:#fff; }
+        .agenda-dashboard-link { margin-top:0 !important; }
+        body.agenda-sidebar-minimized .nxl-navigation { width:72px !important; }
+        body.agenda-sidebar-minimized .nxl-navigation .navbar-wrapper,
+        body.agenda-sidebar-minimized .nxl-navigation .navbar-content { width:72px !important; }
+        body.agenda-sidebar-minimized .nxl-container { width:calc(100% - 72px) !important; margin-left:72px !important; }
+        body.agenda-sidebar-minimized .agenda-brand-text,
+        body.agenda-sidebar-minimized .nxl-navigation .nxl-mtext { display:none !important; }
+        body.agenda-sidebar-minimized .agenda-sidebar-brand { padding-left:10px !important; padding-right:10px !important; }
+        body.agenda-sidebar-minimized .agenda-brand-row { justify-content:center; }
+        body.agenda-sidebar-minimized .agenda-sidebar-toggle { position:absolute; right:-13px; top:18px; z-index:20; background:#111827; }
+        body.agenda-sidebar-minimized .nxl-navigation .nxl-link { justify-content:center; padding-left:0 !important; padding-right:0 !important; }
+        body.agenda-sidebar-minimized .nxl-navigation .nxl-micon { margin-right:0 !important; }
+        @media (max-width:650px) {
+          body.agenda-sidebar-minimized .nxl-container { width:100% !important; margin-left:0 !important; }
+        }
+    </style>
+
+    {% block head %}{% endblock %}
+</head>
+
+<body class="hris-modern">
+
+    {% include 'partials/header.html' %}
+
+    <nav class="nxl-navigation" aria-label="Menu AGENDA">
+        <div class="navbar-wrapper">
+            <div class="navbar-content">
+                <ul class="nxl-navbar">
+                    <div class="custom-nav-header agenda-sidebar-brand">
+                        <div class="agenda-brand-row">
+                            <img src="{{ url_for('static', filename='static_dashboard_1/assets/images/logo-full.png') }}"
+                                 alt="Basarnas" width="28" height="28">
+                            <div class="agenda-brand-text">
+                                <div class="agenda-brand-name">AGENDA</div>
+                                <div class="agenda-brand-office">Kantor SAR Surabaya</div>
+                            </div>
+                            <button type="button" id="sidebarToggle" class="agenda-sidebar-toggle"
+                                    title="Minimize sidebar" aria-label="Minimize sidebar">‹</button>
+                        </div>
+                    </div>
+
+                    <li class="nxl-item agenda-dashboard-link">
+                        <a href="{{ url_for('main.dashboard4_home') }}"
+                           class="nxl-link{% if request.endpoint == 'main.dashboard4_home' %} active{% endif %}">
+                            <span class="nxl-micon"><i class="feather-home"></i></span>
+                            <span class="nxl-mtext">DASHBOARD</span>
+                        </a>
+                    </li>
+
+                    {% if is_administrator() or has_form_access('AGENDA_RAPAT') %}
+                    <li class="nxl-item">
+                        <a href="{{ url_for('main.view_agenda_rapat') }}"
+                           class="nxl-link{% if request.endpoint == 'main.view_agenda_rapat' %} active{% endif %}">
+                            <span class="nxl-micon"><i class="ti ti-calendar-event"></i></span>
+                            <span class="nxl-mtext">Rapat</span>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% if is_administrator() or has_form_access('AGENDA_DISPOSISI') %}
+                    <li class="nxl-item">
+                        <a href="{{ url_for('main.view_agenda_disposisi') }}"
+                           class="nxl-link{% if request.endpoint == 'main.view_agenda_disposisi' %} active{% endif %}">
+                            <span class="nxl-micon"><i class="ti ti-send"></i></span>
+                            <span class="nxl-mtext">Disposisi</span>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% if is_administrator() or has_form_access('SUMDA_KESAMAPTAAN') %}
+                    <li class="nxl-item">
+                        <a href="{{ url_for('main.view_kesamaptaan') }}"
+                           class="nxl-link{% if request.endpoint == 'main.view_kesamaptaan' %} active{% endif %}">
+                            <span class="nxl-micon"><i class="ti ti-run"></i></span>
+                            <span class="nxl-mtext">Kesamaptaan</span>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% if is_administrator() or has_form_access('REKAM_MEDIS') %}
+                    <li class="nxl-item nxl-hasmenu{% if request.endpoint in ['main.view_rekam_medis_pegawai', 'main.view_rekam_medis_non_pegawai'] %} hris-active{% endif %}">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="ti ti-heartbeat"></i></span>
+                            <span class="nxl-mtext">Rekam Medis</span>
+                            <span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item">
+                                <a href="{{ url_for('main.view_rekam_medis_pegawai') }}"
+                                   class="nxl-link{% if request.endpoint == 'main.view_rekam_medis_pegawai' %} active{% endif %}">
+                                    <span class="nxl-mtext">Rekam Medis Pegawai</span>
+                                </a>
+                            </li>
+                            <li class="nxl-item">
+                                <a href="{{ url_for('main.view_rekam_medis_non_pegawai') }}"
+                                   class="nxl-link{% if request.endpoint == 'main.view_rekam_medis_non_pegawai' %} active{% endif %}">
+                                    <span class="nxl-mtext">Rekam Medis Non Pegawai</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    {% endif %}
+
+                    <li class="nxl-item">
+                        <a href="{{ url_for('main.index') }}" class="nxl-link">
+                            <span class="nxl-micon"><i class="ti ti-arrow-left"></i></span>
+                            <span class="nxl-mtext">Kembali ke Portal</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="nxl-container">
+        {% block content %}
+        {% endblock %}
+    </main>
+
+<script src="{{ url_for('static', filename='static_dashboard_1/assets/vendors/js/vendors.min.js') }}"></script>
+<script src="{{ url_for('static', filename='static_dashboard_1/assets/js/common-init.min.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', function () {
+            document.body.classList.toggle('agenda-sidebar-minimized');
+            const minimized = document.body.classList.contains('agenda-sidebar-minimized');
+            sidebarToggle.textContent = minimized ? '›' : '‹';
+            sidebarToggle.setAttribute('aria-label', minimized ? 'Maximize sidebar' : 'Minimize sidebar');
+        });
+    }
+    document.querySelectorAll('.nxl-hasmenu > .nxl-link').forEach(function (link) {
+        link.addEventListener('click', function (event) {
+            event.preventDefault();
+            link.closest('.nxl-hasmenu')?.classList.toggle('menu-open');
+        });
+    });
+
+    document.getElementById('headerSignOutBtn')?.addEventListener('click', async function () {
+        try {
+            await fetch('/api/logout', { method: 'POST' });
+        } finally {
+            window.location.href = "{{ url_for('main.index') }}";
+        }
+    });
+});
+</script>
+
+{% block script %}{% endblock %}
+</body>
+</html>
+
+
+<style>
+/* AGENDA shell — active menu is intentionally WHITE; orange is reserved for brand/actions. */
+.nxl-navigation .nxl-navbar .nxl-item > .nxl-link.active,
+.nxl-navigation .nxl-navbar .nxl-item.hris-active > .nxl-link {
+    color:#172033 !important;
+    background:#ffffff !important;
+    box-shadow:0 2px 8px rgba(0,0,0,.10) !important;
+    border-radius:6px !important;
+}
+.nxl-navigation .nxl-navbar .nxl-item > .nxl-link.active .nxl-micon,
+.nxl-navigation .nxl-navbar .nxl-item.hris-active > .nxl-link .nxl-micon {
+    color:#172033 !important;
+}
+.nxl-navigation .nxl-navbar .nxl-item > .nxl-link.active .nxl-mtext,
+.nxl-navigation .nxl-navbar .nxl-item.hris-active > .nxl-link .nxl-mtext {
+    color:#172033 !important;
+}
+.nxl-navigation .nxl-navbar .nxl-item > .nxl-link:hover {
+    color:#ffffff !important;
+    background:rgba(255,255,255,.10) !important;
+}
+.nxl-navigation .nxl-navbar .nxl-item > .nxl-link:hover .nxl-micon,
+.nxl-navigation .nxl-navbar .nxl-item > .nxl-link:hover .nxl-mtext {
+    color:#ffffff !important;
+}
+</style>
