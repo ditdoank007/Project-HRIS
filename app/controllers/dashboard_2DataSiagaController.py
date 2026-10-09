@@ -2034,6 +2034,32 @@ def api_rejadwal_siaga_get_jadwal():
         current_app.logger.exception('Gagal memuat jadwal ulang siaga')
         return jsonify({'success': False, 'error': 'Gagal memuat jadwal. Periksa log aplikasi.'}), 500
 
+
+def api_rejadwal_siaga_search_pegawai():
+    """Autocomplete pegawai berdasarkan nama; NIP hanya dikirim sebagai nilai pilihan."""
+    try:
+        keyword = str(request.args.get('keyword') or '').strip()
+        if len(keyword) < 2:
+            return jsonify({'success': True, 'data': []})
+        pattern = f"%{keyword}%"
+        rows = Pegawai.query.filter(
+            db.or_(
+                Pegawai.NAMA.ilike(pattern),
+                Pegawai.NIP.ilike(pattern)
+            )
+        ).order_by(Pegawai.NAMA.asc()).limit(15).all()
+        return jsonify({
+            'success': True,
+            'data': [
+                {'nip': p.NIP, 'nama': p.NAMA}
+                for p in rows
+            ]
+        })
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception('Gagal mencari pegawai untuk penggantian piket')
+        return jsonify({'success': False, 'error': 'Pencarian pegawai gagal.'}), 500
+
 def api_rejadwal_siaga_edit_personil():
     """Ganti personel dengan jejak penggantian yang mengikuti pola HRIS 2013."""
     try:
