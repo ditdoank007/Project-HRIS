@@ -2393,14 +2393,14 @@ def api_rejadwal_siaga_reset():
                 row.STATUS_ID = 2
                 row.UPDATE_BY = actor
                 row.UPDATE_DATE = datetime.now()
-                row.STATUS_TRX = None
 
         backups = LogActivityBackup.query.filter(
             LogActivityBackup.ACTIVITY == 'Piket Siaga',
             LogActivityBackup.GUID_BACKUP == 'Delete Rejadwal',
             db.func.date(LogActivityBackup.ACTIVITY_DATE) == selected_date,
             LogActivityBackup.UNIT_KERJA_ID == str(unit_id),
-            LogActivityBackup.SHIFT == shift
+            LogActivityBackup.SHIFT == shift,
+            db.func.coalesce(LogActivityBackup.PENGGANTI, 0) == 0
         ).with_for_update().all()
         restored_count = 0
         for backup in backups:
