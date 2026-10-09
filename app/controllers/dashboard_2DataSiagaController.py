@@ -1914,7 +1914,9 @@ def api_pembuatan_roster_siaga_batch_save():
         bulan = str(data.get('bulan') or '').strip().zfill(2)
         tahun = str(data.get('tahun') or '').strip()
         unit_id = str(data.get('unit_kerja_id') or '').strip()
+        shift = str(data.get('shift') or '').strip()
         shift1_sama_shift2 = data.get('shift1_sama_shift2') is True
+        shifts_to_save = ('1', '2') if shift1_sama_shift2 else (shift,)
         roster_input = data.get('rosters')
 
         if bulan not in {f'{i:02d}' for i in range(1, 13)}:
@@ -1923,6 +1925,8 @@ def api_pembuatan_roster_siaga_batch_save():
             return jsonify({'success': False, 'error': 'Tahun tidak valid.'}), 400
         if not unit_id:
             return jsonify({'success': False, 'error': 'Unit kerja wajib dipilih.'}), 400
+        if not shift1_sama_shift2 and shift not in ('1', '2'):
+            return jsonify({'success': False, 'error': 'Shift harus 1 atau 2.'}), 400
         if not isinstance(roster_input, list) or not roster_input:
             return jsonify({'success': False, 'error': 'Tambahkan minimal satu roster fungsional.'}), 400
 
@@ -2038,9 +2042,10 @@ def api_pembuatan_roster_siaga_batch_save():
                   AND t.BulanPeriode = :bulan
                   AND t.TahunPeriode = :tahun
                   AND t.IDUnitKerja = :unit_id
+                  AND t.Shift IN :shifts
                   AND t.IsAktif = 'Y'
             """),
-            {**nip_params, 'bulan': bulan, 'tahun': tahun, 'unit_id': unit_id}
+            {**nip_params, 'bulan': bulan, 'tahun': tahun, 'unit_id': unit_id, 'shifts': tuple(shifts_to_save)}
         ).mappings().all()
         if existing:
             details = [
@@ -2064,7 +2069,7 @@ def api_pembuatan_roster_siaga_batch_save():
         # Semua INSERT berada dalam satu transaksi. Jika salah satu gagal,
         # rollback membatalkan seluruh batch, bukan menyisakan roster parsial.
         for roster in sorted(normalized_rosters, key=lambda row: (row['no_urut_jabatan'], row['fungsional'].casefold())):
-            for shift_value in (('1', '2') if shift1_sama_shift2 else ('1',)):
+            for shift_value in shifts_to_save:
                 last = db.session.execute(
                     db.text("""
                         SELECT COALESCE(MAX(NoUrutTim), 0)
@@ -2148,6 +2153,7 @@ def api_pembuatan_roster_siaga_batch_save():
             'unit_kerja': unit_obj.NAMA_UNIT_KERJA,
             'bulan': bulan,
             'tahun': tahun,
+            'shift': shift,
             'shift1_sama_shift2': shift1_sama_shift2,
             'rosters': saved
         }), 200
