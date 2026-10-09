@@ -155,7 +155,10 @@
     #pegawaiDropdown { border:1px solid var(--ui-border); border-radius:8px; box-shadow:var(--ui-shadow); }
     #pegawaiDropdown .pegawai-item { cursor:pointer; padding:9px 12px; white-space:normal; }
     #pegawaiDropdown .pegawai-item:hover { background:#fff5ef; }
-    #tableBodyJadwal .btn-action,#tableBodyRollback .btn-action { min-height:30px; padding:5px 8px; border-radius:7px; }
+    #tableBodyJadwal tr { height:42px; }
+    #tableBodyJadwal td { padding:7px 10px !important; vertical-align:middle; line-height:1.25; }
+    #tableBodyJadwal .jadwal-action-cell { white-space:nowrap; text-align:center; }
+    #tableBodyJadwal .btn-action,#tableBodyRollback .btn-action { min-height:28px; min-width:30px; padding:4px 7px; border-radius:7px; margin:0 2px; vertical-align:middle; }
     @media(max-width:1100px) { .jadwal-filter-grid { grid-template-columns:minmax(150px,.85fr) minmax(230px,1.5fr) minmax(135px,.8fr); } .jadwal-filter-actions { grid-column:1/-1; flex-wrap:wrap; } }
     @media(max-width:700px) { .hris-page { padding:15px; } .jadwal-filter-grid,.jadwal-add-grid { grid-template-columns:minmax(0,1fr); } .jadwal-filter-actions { grid-column:auto; } .jadwal-filter-actions .hris-btn { flex:1; } }
 </style>
@@ -312,12 +315,12 @@ $(document).ready(function() {
                     <td class="text-start">${row.nama}</td>
                     <td>${row.fungsional}</td>
                     <td><span class="badge ${statusBadge}">${row.status || '-'}</span></td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-danger btn-action btn-delete-jadwal" title="Hapus dari jadwal">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-secondary btn-action btn-ubah-status" title="Ubah Status">
+                    <td class="jadwal-action-cell">
+                        <button class="btn btn-sm btn-outline-secondary btn-action btn-edit-jadwal" title="Ganti petugas" aria-label="Ganti petugas">
                             <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger btn-action btn-delete-jadwal" title="Hapus dari jadwal" aria-label="Hapus dari jadwal">
+                            <i class="bi bi-trash"></i>
                         </button>
                     </td>
                 </tr>
@@ -380,30 +383,56 @@ $(document).ready(function() {
     });
 
     // ============================================
-    // UBAH STATUS
+    // GANTI PETUGAS — mengikuti pola penggantian HRIS 2013
     // ============================================
-    $('#tableBodyJadwal').on('click', '.btn-ubah-status', function() {
+    $('#tableBodyJadwal').on('click', '.btn-edit-jadwal', function() {
         const $row = $(this).closest('tr');
-        const nip = $row.data('nip');
-        const actDate = $row.data('act');
-        const shift = $row.data('shift');
+        const oldNip = String($row.data('nip') || '').trim();
+        const actDate = String($row.data('act') || '').trim();
+        const shift = String($row.data('shift') || '').trim();
+        const currentName = String($row.find('td').eq(2).text() || '').trim();
+        const newNip = window.prompt(
+            'GANTI PETUGAS\nPetugas saat ini: ' + currentName + ' (' + oldNip + ')\n\nMasukkan NIP pegawai pengganti:',
+            ''
+        );
+        if (newNip === null) return;
+        const cleanNip = newNip.trim();
+        if (!cleanNip) {
+            showAlert('warning', 'NIP pegawai pengganti wajib diisi.');
+            return;
+        }
+        if (cleanNip === oldNip) {
+            showAlert('warning', 'NIP pengganti sama dengan petugas saat ini.');
+            return;
+        }
+        if (!window.confirm('Ganti ' + currentName + ' (' + oldNip + ') dengan NIP ' + cleanNip + '?')) return;
 
-        if (!confirm(`Ubah status ${nip}?`)) return;
-
+        const $btn = $(this).prop('disabled', true);
         $.ajax({
-            url: '/api/rejadwal-siaga/ubah-status',
+            url: '/api/rejadwal-siaga/edit-personil',
             method: 'POST',
             contentType: 'application/json',
-            data: JSON.stringify({ guid_log: guidLog, nip: nip, act_date: actDate, shift: shift }),
+            data: JSON.stringify({
+                guid_log: guidLog,
+                old_nip: oldNip,
+                new_nip: cleanNip,
+                act_date: actDate,
+                shift: shift
+            }),
             success: function(r) {
-                if (r.success) {
-                    showAlert('success', r.message);
+                if (r && r.success) {
+                    showAlert('success', r.message || 'Petugas berhasil diganti.');
                     $('#btnShow').click();
                 } else {
-                    showAlert('danger', r.error || 'Gagal mengubah status');
+                    showAlert('danger', (r && r.error) || 'Gagal mengganti petugas.');
                 }
             },
-            error: function() { showAlert('danger', 'Gagal mengubah status'); }
+            error: function(xhr) {
+                let msg = 'Gagal mengganti petugas.';
+                try { msg = JSON.parse(xhr.responseText).error || msg; } catch (e) {}
+                showAlert('danger', msg + ' (HTTP ' + xhr.status + ')');
+            },
+            complete: function() { $btn.prop('disabled', false); }
         });
     });
 
