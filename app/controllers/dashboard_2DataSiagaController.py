@@ -1,5 +1,5 @@
 # controllers/dashboard_2DataSiagaController.py
-from flask import render_template, request, jsonify, g, current_app, send_file
+from flask import render_template, request, jsonify, g, current_app, send_file, session
 from datetime import datetime, timedelta
 import uuid
 import io
@@ -1861,199 +1861,189 @@ def data_siaga_jadwal_ulang():
     return render_template('pages/dashboard_2/Data_Siaga_Jadwal_Ulang.html')
 
 def api_rejadwal_siaga_get_jadwal():
-    """
-    API: Get data jadwal piket siaga berdasarkan Unit, Tanggal, Shift
-    """
+    """Ambil jadwal aktif dan daftar rollback untuk unit, tanggal, dan shift terpilih."""
     try:
-        unit_kerja_id = request.args.get('unit_kerja_id', '')
-        tgl = request.args.get('tgl', '')
-        shift = request.args.get('shift', '')
-        
-        if not unit_kerja_id or not tgl or not shift:
-            return jsonify({'success': False, 'error': 'Unit, Tanggal, dan Shift harus diisi'})
-        
-        tgl_date = datetime.strptime(tgl, '%Y-%m-%d')
-        
-        # Cari GUID_LOG
-        guid_log_result = db.session.query(LogActivity.GUID_LOG).filter(
-            LogActivity.ACTIVITY == 'Piket Siaga',
-            db.func.date(LogActivity.ACTIVITY_DATE) == tgl_date.date(),
-            LogActivity.UNIT_KERJA_ID == int(unit_kerja_id),
-            LogActivity.SHIFT == shift
-        ).first()
-        
-        if not guid_log_result:
-            return jsonify({'success': False, 'error': 'Jadwal tidak ditemukan'})
-        
-        guid_log = guid_log_result[0]
-        
-        # Query jadwal
+        unit_id = str(request.args.get('unit_kerja_id') or '').strip()
+        tgl_raw = str(request.args.get('tgl') or '').strip()
+        shift = str(request.args.get('shift') or '').strip()
+        if not unit_id or not tgl_raw or not shift:
+            return jsonify({'success': False, 'error': 'Unit, tanggal, dan shift wajib dipilih.'}), 400
+
         try:
-            jadwal_list = db.session.query(
+            unit_id_int = int(unit_id)
+            selected_date = datetime.strptime(tgl_raw, '%Y-%m-%d').date()
+        except (TypeError, ValueError):
+            return jsonify({'success': False, 'error': 'Filter unit atau tanggal tidak valid.'}), 400
+
+        query = LogActivity.query.filter(
+            LogActivity.ACTIVITY == 'Piket Siaga',
+            db.func.date(LogActivity.ACTIVITY_DATE) == selected_date,
+            LogActivity.UNIT_KERJA_ID == str(unit_id_int),
+            LogActivity.SHIFT == shift
+        )
+        first_log = query.order_by(LogActivity.GUID_LOG.asc()).first()
+        if not first_log:
+            return jsonify({
+                'success': True, 'guid_log': '', 'jadwal': [], 'rollback': [],
+                'message': 'Jadwal tidak ditemukan untuk filter tersebut.'
+            })
+
+        guid_log = first_log.GUID_LOG
+        try:
+            rows = db.session.query(
                 LogActivity, Pegawai, MfUnitKerja, MfOrgzSiaga, MfStatus
-            ).join(
-                Pegawai, LogActivity.NIP == Pegawai.NIP
-            ).join(
+            ).outerjoin(Pegawai, LogActivity.NIP == Pegawai.NIP).outerjoin(
                 MfUnitKerja, LogActivity.UNIT_KERJA_ID == MfUnitKerja.UNIT_KERJA_ID
-            ).join(
+            ).outerjoin(
                 MfOrgzSiaga, LogActivity.FUNGSIONAL == MfOrgzSiaga.FUNGSIONAL
             ).outerjoin(
                 MfStatus, LogActivity.STATUS_ID == MfStatus.STATUS_ID
             ).filter(
                 LogActivity.ACTIVITY == 'Piket Siaga',
                 LogActivity.GUID_LOG == guid_log,
-                db.func.date(LogActivity.ACTIVITY_DATE) == tgl_date.date(),
-                LogActivity.UNIT_KERJA_ID == int(unit_kerja_id),
+                db.func.date(LogActivity.ACTIVITY_DATE) == selected_date,
+                LogActivity.UNIT_KERJA_ID == str(unit_id_int),
                 LogActivity.SHIFT == shift
-            ).order_by(MfOrgzSiaga.URUT_FUNGSIONAL).all()
+            ).order_by(MfOrgzSiaga.URUT_FUNGSIONAL.asc(), LogActivity.NIP.asc()).all()
         except Exception:
-            jadwal_list = db.session.query(
+            db.session.rollback()
+            rows = db.session.query(
                 LogActivity, Pegawai, MfUnitKerja
-            ).join(
-                Pegawai, LogActivity.NIP == Pegawai.NIP
-            ).join(
+            ).outerjoin(Pegawai, LogActivity.NIP == Pegawai.NIP).outerjoin(
                 MfUnitKerja, LogActivity.UNIT_KERJA_ID == MfUnitKerja.UNIT_KERJA_ID
             ).filter(
                 LogActivity.ACTIVITY == 'Piket Siaga',
                 LogActivity.GUID_LOG == guid_log,
-                db.func.date(LogActivity.ACTIVITY_DATE) == tgl_date.date(),
-                LogActivity.UNIT_KERJA_ID == int(unit_kerja_id),
+                db.func.date(LogActivity.ACTIVITY_DATE) == selected_date,
+                LogActivity.UNIT_KERJA_ID == str(unit_id_int),
                 LogActivity.SHIFT == shift
-            ).all()
-        
-        # ✅ Query rollback - gunakan NIP_PENGGANTI untuk join ke Pegawai
-        # karena model LogActivityBackup tidak punya field NIP
-        rollback_list = db.session.query(
-            LogActivityBackup, Pegawai
-        ).outerjoin(
-            Pegawai, LogActivityBackup.NIP_PENGGANTI == Pegawai.NIP
-        ).filter(
-            LogActivityBackup.ACTIVITY == 'Piket Siaga',
-            LogActivityBackup.TRANSAKSI_FORM == 'Delete Rejadwal',
-            LogActivityBackup.GUID_LOG == guid_log,
-            db.func.date(LogActivityBackup.ACTIVITY_DATE) == tgl_date.date(),
-            LogActivityBackup.SHIFT == shift
-        ).all()
-        
-        # Format jadwal
+            ).order_by(LogActivity.NIP.asc()).all()
+
         jadwal_data = []
-        for i, item in enumerate(jadwal_list, 1):
+        for number, item in enumerate(rows, 1):
             if len(item) == 5:
-                log, peg, unit, orgz, status = item
-                status_text = status.STATUS if status else '-'
+                log, pegawai, unit, orgz, status = item
+                status_text = status.STATUS if status else None
                 bg_status = status.BG_STATUS if status else ''
             else:
-                log, peg, unit = item
-                orgz = None
-                status_text = 'Hadir' if log.STATUS_ID == 3 else ('Pending' if log.STATUS_ID == 2 else '-')
+                log, pegawai, unit = item
+                status_text = None
                 bg_status = ''
-            
+            if not status_text:
+                status_text = {3: 'Hadir', 0: 'Tidak Hadir', 1: 'Dinas Luar/Cuti/Sakit', 2: 'Belum'}.get(log.STATUS_ID, 'Belum')
             jadwal_data.append({
-                'no': i,
+                'no': number,
                 'guid_log': log.GUID_LOG,
-                'nip': log.NIP,
-                'nama': peg.NAMA if peg else '-',
+                'nip': log.NIP or '',
+                'nama': pegawai.NAMA if pegawai else (log.NIP or '-'),
                 'fungsional': log.FUNGSIONAL or '',
                 'status_id': log.STATUS_ID,
                 'status': status_text,
                 'bg_status': bg_status,
-                'unit_kerja': unit.NAMA_UNIT_KERJA if unit else '',
+                'unit_kerja': unit.UNIT_KERJA_NAME if unit else '',
                 'shift': log.SHIFT or '',
                 'act_date': log.ACTIVITY_DATE.strftime('%Y.%m.%d') if log.ACTIVITY_DATE else '',
                 'status_trx': log.STATUS_TRX or '',
-                'pengganti': log.PENGGANTI or '0',
+                'pengganti': log.PENGGANTI or 0,
+                'transac_form': log.TRANSAKSI_FORM or '',
             })
-        
-        # Format rollback
-        rollback_data = []
-        for i, (lb, peg) in enumerate(rollback_list, 1):
-            rollback_data.append({
-                'no': i,
-                'guid_log_backup': lb.GUID_LOG_BACKUP,  # ✅ PK untuk identifikasi
-                'guid_log': lb.GUID_LOG,
-                'nip': lb.NIP_PENGGANTI or '-',  # ✅ NIP disimpan di NIP_PENGGANTI
-                'nama': peg.NAMA if peg else (lb.NIP_PENGGANTI or '-'),
-                'fungsional': lb.FUNGSIONAL or '',
-                'shift': lb.SHIFT or '',
-                'act_date': lb.ACTIVITY_DATE.strftime('%Y.%m.%d') if lb.ACTIVITY_DATE else '',
-            })
-        
-        return jsonify({
-            'success': True,
-            'guid_log': guid_log,
-            'jadwal': jadwal_data,
-            'rollback': rollback_data
-        })
-        
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return jsonify({'success': False, 'error': str(e)})
 
+        backups = LogActivityBackup.query.filter(
+            LogActivityBackup.ACTIVITY == 'Piket Siaga',
+            LogActivityBackup.GUID_BACKUP == 'Delete Rejadwal',
+            LogActivityBackup.GUID_LOG == guid_log,
+            db.func.date(LogActivityBackup.ACTIVITY_DATE) == selected_date,
+            LogActivityBackup.UNIT_KERJA_ID == str(unit_id_int),
+            LogActivityBackup.SHIFT == shift
+        ).order_by(LogActivityBackup.GUID_LOG_BACKUP.asc()).all()
+
+        rollback_data = []
+        for number, backup in enumerate(backups, 1):
+            pegawai = Pegawai.query.filter(Pegawai.NIP == backup.NIP).first()
+            rollback_data.append({
+                'no': number,
+                'id_backup': backup.GUID_LOG_BACKUP,
+                'guid_log': backup.GUID_LOG,
+                'nip': backup.NIP or '-',
+                'nama': pegawai.NAMA if pegawai else (backup.NIP or '-'),
+                'fungsional': backup.FUNGSIONAL or '',
+                'shift': backup.SHIFT or '',
+                'act_date': backup.ACTIVITY_DATE.strftime('%Y.%m.%d') if backup.ACTIVITY_DATE else '',
+            })
+
+        return jsonify({'success': True, 'guid_log': guid_log, 'jadwal': jadwal_data, 'rollback': rollback_data})
+    except Exception as exc:
+        db.session.rollback()
+        current_app.logger.exception('Gagal memuat jadwal ulang siaga')
+        return jsonify({'success': False, 'error': 'Gagal memuat jadwal. Periksa log aplikasi.'}), 500
 
 def api_rejadwal_siaga_delete_personil():
-    """
-    API: Hapus personil dari jadwal
-    """
+    """Backup satu baris jadwal ke LOG_ACTIVITIY_BACKUP lalu hapus secara atomik."""
     try:
-        data = request.get_json()
-        print("📥 Delete Personil:", data)
-        
-        guid_log = data.get('guid_log', '')
-        nip = data.get('nip', '')
-        act_date = data.get('act_date', '')
-        shift = data.get('shift', '')
-        
-        if not guid_log or not nip:
-            return jsonify({'success': False, 'error': 'Data tidak lengkap'})
-        
-        act_date_fixed = act_date.replace('.', '-')
-        act_date_obj = datetime.strptime(act_date_fixed, '%Y-%m-%d')
-        
+        data = request.get_json(silent=True) or {}
+        guid_log = str(data.get('guid_log') or '').strip()
+        nip = str(data.get('nip') or '').strip()
+        act_date = str(data.get('act_date') or '').strip().replace('.', '-')
+        shift = str(data.get('shift') or '').strip()
+        if not all([guid_log, nip, act_date, shift]):
+            return jsonify({'success': False, 'error': 'Data personel belum lengkap.'}), 400
+        try:
+            selected_date = datetime.strptime(act_date, '%Y-%m-%d').date()
+        except ValueError:
+            return jsonify({'success': False, 'error': 'Tanggal jadwal tidak valid.'}), 400
+
         log = LogActivity.query.filter(
             LogActivity.GUID_LOG == guid_log,
             LogActivity.NIP == nip,
-            db.func.date(LogActivity.ACTIVITY_DATE) == act_date_obj.date(),
-            LogActivity.SHIFT == shift
-        ).first()
-        
+            db.func.date(LogActivity.ACTIVITY_DATE) == selected_date,
+            LogActivity.SHIFT == shift,
+            LogActivity.ACTIVITY == 'Piket Siaga'
+        ).with_for_update().first()
         if not log:
-            return jsonify({'success': False, 'error': 'Data tidak ditemukan'})
-        
-        # ✅ Backup - simpan NIP di NIP_PENGGANTI, tandai di TRANSAKSI_FORM
+            return jsonify({'success': False, 'error': 'Personel tidak ditemukan pada jadwal terpilih.'}), 404
+
+        actor = str(session.get('nip') or session.get('NIP') or 'system')[:50]
         backup = LogActivityBackup(
-            GUID_LOG_BACKUP=f"BACKUP_{log.GUID_LOG}_{log.NIP}_{datetime.now().strftime('%Y%m%d%H%M%S')}",
             GUID_LOG=log.GUID_LOG,
             TRX=log.TRX,
             ACTIVITY=log.ACTIVITY,
+            STATUS_ID=log.STATUS_ID,
             ACTIVITY_DATE=log.ACTIVITY_DATE,
             NOTE=log.NOTE,
             TEMPAT=log.TEMPAT,
             PERIHAL=log.PERIHAL,
-            UPDATE_BY='admin',
+            UPDATE_BY=actor,
             UPDATE_DATE=datetime.now(),
+            GUID_TIM=log.GUID_TIM,
+            NIP=log.NIP,
+            UNIT_KERJA_ID=log.UNIT_KERJA_ID,
             FUNGSIONAL=log.FUNGSIONAL,
+            TGL_CLOSING=log.TGL_CLOSING,
             SHIFT_1=log.SHIFT_1,
             SHIFT_2=log.SHIFT_2,
             PENGGANTI=log.PENGGANTI,
             STATUS_TRX=log.STATUS_TRX,
-            KET_UPDATE=f"Delete Rejadwal - {log.NIP}",
-            NIP_PENGGANTI=log.NIP,  # ✅ Simpan NIP asli di sini
+            BACK_UPDATE=datetime.now(),
+            GUID_BACKUP='Delete Rejadwal',
+            KET_UPDATE=f'Delete Rejadwal - {log.NIP}',
+            NIP_PENGGANTI=log.NIP_PENGGANTI,
+            BIAYA=log.BIAYA,
+            QTY=log.QTY,
+            SATUAN_QTY=log.SATUAN_QTY,
             SHIFT=log.SHIFT,
-            TRANSAKSI_FORM='Delete Rejadwal',  # ✅ Tanda bahwa ini data delete
+            TGL_JAM_IN=log.TGL_JAM_IN,
+            TGL_JAM_OUT=log.TGL_JAM_OUT,
+            TGL_JAM_BAKU_IN=log.TGL_JAM_BAKU_IN,
+            TGL_JAM_BAKU_OUT=log.TGL_JAM_BAKU_OUT
         )
         db.session.add(backup)
         db.session.delete(log)
         db.session.commit()
-        
-        return jsonify({'success': True, 'message': f'Personil {nip} berhasil dihapus'})
-        
-    except Exception as e:
+        return jsonify({'success': True, 'message': f'Personel {nip} berhasil dihapus dan disimpan ke daftar rollback.'})
+    except Exception:
         db.session.rollback()
-        import traceback
-        traceback.print_exc()
-        return jsonify({'success': False, 'error': str(e)})
-
+        current_app.logger.exception('Gagal menghapus personel jadwal siaga')
+        return jsonify({'success': False, 'error': 'Penghapusan gagal. Tidak ada perubahan yang disimpan.'}), 500
 
 def api_rejadwal_siaga_cancel_request():
     """
@@ -2137,104 +2127,108 @@ def api_rejadwal_siaga_batal_piket():
 
 
 def api_rejadwal_siaga_ubah_status():
-    """
-    API: Ubah status (Ubahstatus) - Update StatusID = 2, StatusTrx = '-'
-    """
+    """Batalkan status request sesuai perilaku Ubahstatus pada HRIS 2013 (StatusID=2)."""
     try:
-        data = request.get_json()
-        guid_log = data.get('guid_log', '')
-        nip = data.get('nip', '')
-        act_date = data.get('act_date', '')
-        shift = data.get('shift', '')
-        
-        if not guid_log or not nip:
-            return jsonify({'success': False, 'error': 'Data tidak lengkap'})
-        
-        act_date_fixed = act_date.replace('.', '-')
-        act_date_obj = datetime.strptime(act_date_fixed, '%Y-%m-%d')
-        
+        data = request.get_json(silent=True) or {}
+        guid_log = str(data.get('guid_log') or '').strip()
+        nip = str(data.get('nip') or '').strip()
+        act_date = str(data.get('act_date') or '').strip().replace('.', '-')
+        shift = str(data.get('shift') or '').strip()
+        if not all([guid_log, nip, act_date, shift]):
+            return jsonify({'success': False, 'error': 'Data personel belum lengkap.'}), 400
+        try:
+            selected_date = datetime.strptime(act_date, '%Y-%m-%d').date()
+        except ValueError:
+            return jsonify({'success': False, 'error': 'Tanggal jadwal tidak valid.'}), 400
         log = LogActivity.query.filter(
             LogActivity.GUID_LOG == guid_log,
             LogActivity.NIP == nip,
-            db.func.date(LogActivity.ACTIVITY_DATE) == act_date_obj.date(),
-            LogActivity.SHIFT == shift
+            db.func.date(LogActivity.ACTIVITY_DATE) == selected_date,
+            LogActivity.SHIFT == shift,
+            LogActivity.ACTIVITY == 'Piket Siaga'
         ).first()
-        
         if not log:
-            return jsonify({'success': False, 'error': 'Data tidak ditemukan'})
-        
+            return jsonify({'success': False, 'error': 'Data jadwal tidak ditemukan.'}), 404
         log.STATUS_ID = 2
         log.STATUS_TRX = '-'
-        log.UPDATE_BY = 'admin'
+        log.UPDATE_BY = str(session.get('nip') or session.get('NIP') or 'system')[:50]
         log.UPDATE_DATE = datetime.now()
-        
         db.session.commit()
-        
-        return jsonify({'success': True, 'message': 'Status berhasil diubah'})
-        
-    except Exception as e:
+        return jsonify({'success': True, 'message': f'Status request {nip} berhasil dikembalikan ke Pending.'})
+    except Exception:
         db.session.rollback()
-        return jsonify({'success': False, 'error': str(e)})
-
+        current_app.logger.exception('Gagal mengubah status jadwal siaga')
+        return jsonify({'success': False, 'error': 'Status gagal diubah.'}), 500
 
 def api_rejadwal_siaga_rollback():
-    """
-    API: Rollback personil yang terdelete
-    """
+    """Pulihkan baris yang dihapus dengan mempertahankan GUIDTim, unit, dan atribut legacy."""
     try:
-        data = request.get_json()
-        print("📥 Rollback:", data)
-        
-        guid_log = data.get('guid_log', '')
-        nip = data.get('nip', '')
-        guid_log_backup = data.get('guid_log_backup', '')  # ✅ PK
-        
-        if not guid_log or not nip or not guid_log_backup:
-            return jsonify({'success': False, 'error': 'Data tidak lengkap'})
-        
-        # ✅ Cari by GUID_LOG_BACKUP (Primary Key)
-        backup = LogActivityBackup.query.get(guid_log_backup)
-        
-        if not backup:
-            return jsonify({'success': False, 'error': 'Data backup tidak ditemukan'})
-        
-        # Insert ke LogActivity
-        new_log = LogActivity(
+        data = request.get_json(silent=True) or {}
+        guid_log = str(data.get('guid_log') or '').strip()
+        nip = str(data.get('nip') or '').strip()
+        backup_id = data.get('id_backup', data.get('guid_log_backup'))
+        if not guid_log or not nip or backup_id in (None, ''):
+            return jsonify({'success': False, 'error': 'Data rollback belum lengkap.'}), 400
+        try:
+            backup_id = int(backup_id)
+        except (TypeError, ValueError):
+            return jsonify({'success': False, 'error': 'ID backup tidak valid.'}), 400
+
+        backup = db.session.get(LogActivityBackup, backup_id)
+        if not backup or backup.GUID_BACKUP != 'Delete Rejadwal' or backup.GUID_LOG != guid_log or backup.NIP != nip:
+            return jsonify({'success': False, 'error': 'Data backup tidak ditemukan atau tidak sesuai jadwal.'}), 404
+
+        duplicate = LogActivity.query.filter(
+            LogActivity.ACTIVITY == 'Piket Siaga',
+            LogActivity.NIP == backup.NIP,
+            db.func.date(LogActivity.ACTIVITY_DATE) == backup.ACTIVITY_DATE,
+            LogActivity.SHIFT == backup.SHIFT
+        ).first()
+        if duplicate:
+            return jsonify({'success': False, 'error': 'Personel sudah terjadwal pada tanggal dan shift ini.'}), 409
+
+        restored = LogActivity(
             GUID_LOG=backup.GUID_LOG,
             TRAKSAKSI_ID=0,
-            UNIT_KERJA_ID=0,
-            GUID_LOG_BACKUP=backup.GUID_LOG_BACKUP or '',
-            GUID_TIM='',
+            UNIT_KERJA_ID=backup.UNIT_KERJA_ID,
+            GUID_LOG_BACKUP='',
+            GUID_TIM=backup.GUID_TIM or '',
             STATUS_ID=2,
-            NIP=backup.NIP_PENGGANTI,  # ✅ Ambil NIP dari NIP_PENGGANTI
+            NIP=backup.NIP,
             TRX=backup.TRX,
             ACTIVITY=backup.ACTIVITY,
             ACTIVITY_DATE=backup.ACTIVITY_DATE,
             NOTE=backup.NOTE,
             TEMPAT=backup.TEMPAT,
             PERIHAL=backup.PERIHAL,
-            UPDATE_BY='admin',
+            UPDATE_BY=str(session.get('nip') or session.get('NIP') or 'system')[:50],
             UPDATE_DATE=datetime.now(),
             FUNGSIONAL=backup.FUNGSIONAL,
-            PENGGANTI=backup.PENGGANTI,
-            KET_UPDATE=backup.KET_UPDATE,
-            NIP_PENGGANTI=backup.NIP_PENGGANTI,
-            SHIFT=backup.SHIFT,
+            TGL_CLOSING=backup.TGL_CLOSING,
             SHIFT_1=backup.SHIFT_1,
-            SHIFT_2=backup.SHIFT_2
+            SHIFT_2=backup.SHIFT_2,
+            PENGGANTI=backup.PENGGANTI or 0,
+            STATUS_TRX=backup.STATUS_TRX,
+            KET_UPDATE='Rollback personel terhapus',
+            NIP_PENGGANTI=backup.NIP_PENGGANTI,
+            BIAYA=backup.BIAYA,
+            QTY=backup.QTY,
+            SATUAN_QTY=backup.SATUAN_QTY,
+            SHIFT=backup.SHIFT,
+            TRANSAKSI_FORM=None,
+            TGL_JAM_IN=backup.TGL_JAM_IN,
+            TGL_JAM_OUT=backup.TGL_JAM_OUT,
+            TGL_JAM_BAKU_IN=backup.TGL_JAM_BAKU_IN,
+            TGL_JAM_BAKU_OUT=backup.TGL_JAM_BAKU_OUT
         )
-        db.session.add(new_log)
+        db.session.add(restored)
         db.session.delete(backup)
         db.session.commit()
-        
-        return jsonify({'success': True, 'message': 'Rollback berhasil'})
-        
-    except Exception as e:
+        return jsonify({'success': True, 'message': f'Personel {nip} berhasil dipulihkan.'})
+    except Exception:
         db.session.rollback()
-        import traceback
-        traceback.print_exc()
-        return jsonify({'success': False, 'error': str(e)})
-
+        current_app.logger.exception('Gagal rollback jadwal siaga')
+        return jsonify({'success': False, 'error': 'Rollback gagal. Tidak ada perubahan yang disimpan.'}), 500
 
 def api_rejadwal_siaga_get_fungsional():
     """API: Get list Fungsional dari MfOrgzSiaga"""
@@ -2256,97 +2250,232 @@ def api_rejadwal_siaga_get_shift():
         return jsonify({'success': False, 'error': str(e), 'data': []})
 
 def api_rejadwal_siaga_add_personil():
-    """
-    API: Tambah personil ke jadwal yang sudah ada
-    """
+    """Tambah personel ke roster terpilih dengan validasi yang mengikuti HRIS 2013."""
     try:
-        data = request.get_json()
-        print("📥 Tambah Personil:", data)
-        
-        guid_log = data.get('guid_log', '')
-        nip = data.get('nip', '')
-        fungsional = data.get('fungsional', '')
-        unit_kerja_id = data.get('unit_kerja_id', '')
-        tgl = data.get('tgl', '')
-        shift = data.get('shift', '')
-        
-        if not guid_log or not nip:
-            return jsonify({'success': False, 'error': 'Data tidak lengkap'})
-        
-        # Konversi tanggal
-        tgl_date = datetime.strptime(tgl, '%Y-%m-%d')
-        
-        # Cek apakah personil sudah ada di jadwal
-        existing = LogActivity.query.filter(
+        data = request.get_json(silent=True) or {}
+        guid_log = str(data.get('guid_log') or '').strip()
+        nip = str(data.get('nip') or '').strip()
+        fungsional = str(data.get('fungsional') or '').strip()
+        unit_raw = str(data.get('unit_kerja_id') or '').strip()
+        tgl_raw = str(data.get('tgl') or '').strip()
+        shift = str(data.get('shift') or '').strip()
+        if not all([guid_log, nip, fungsional, unit_raw, tgl_raw, shift]):
+            return jsonify({'success': False, 'error': 'Jadwal, unit, tanggal, shift, personel, dan fungsional wajib lengkap.'}), 400
+        try:
+            unit_id = int(unit_raw)
+            selected_date = datetime.strptime(tgl_raw, '%Y-%m-%d').date()
+        except (TypeError, ValueError):
+            return jsonify({'success': False, 'error': 'Unit atau tanggal tidak valid.'}), 400
+
+        parent = LogActivity.query.filter(
             LogActivity.GUID_LOG == guid_log,
-            LogActivity.NIP == nip,
-            db.func.date(LogActivity.ACTIVITY_DATE) == tgl_date.date(),
-            LogActivity.SHIFT == shift
+            LogActivity.ACTIVITY == 'Piket Siaga',
+            db.func.date(LogActivity.ACTIVITY_DATE) == selected_date,
+            LogActivity.UNIT_KERJA_ID == str(unit_id),
+            LogActivity.SHIFT == shift,
+            LogActivity.FUNGSIONAL == fungsional,
+            db.func.coalesce(LogActivity.PENGGANTI, 0) == 0
         ).first()
-        
-        if existing:
-            return jsonify({'success': False, 'error': f'Personil {nip} sudah ada di jadwal ini'})
-        
-        # Ambil data pegawai
+        if not parent or not parent.GUID_TIM:
+            return jsonify({'success': False, 'error': 'Tim induk untuk fungsional tersebut tidak ditemukan pada jadwal ini.'}), 409
+
         pegawai = Pegawai.query.filter(Pegawai.NIP == nip).first()
         if not pegawai:
-            return jsonify({'success': False, 'error': 'Pegawai tidak ditemukan'})
-        
-        # Ambil data log yang sudah ada
-        existing_log = LogActivity.query.filter(
-            LogActivity.GUID_LOG == guid_log
+            return jsonify({'success': False, 'error': 'Pegawai tidak ditemukan.'}), 404
+        if str(getattr(pegawai, 'IS_KELUAR', '') or '').strip().upper() == 'Y':
+            return jsonify({'success': False, 'error': 'Pegawai sudah tidak aktif.'}), 409
+
+        existing = LogActivity.query.filter(
+            LogActivity.ACTIVITY == 'Piket Siaga',
+            LogActivity.NIP == nip,
+            db.func.date(LogActivity.ACTIVITY_DATE) == selected_date,
+            LogActivity.SHIFT == shift
         ).first()
-        
-        if not existing_log:
-            return jsonify({'success': False, 'error': 'Jadwal induk tidak ditemukan'})
-        
-        # ✅ Ambil TRAKSAKSI_ID dengan fallback
-        traksaksi_id = existing_log.TRAKSAKSI_ID if existing_log.TRAKSAKSI_ID else 0
-        
-        # ✅ Ambil UNIT_KERJA_ID dengan fallback
-        final_unit_kerja_id = int(unit_kerja_id) if unit_kerja_id else (pegawai.UNIT_KERJA_ID or 0)
-        
-        # Insert personil baru
+        if existing:
+            return jsonify({'success': False, 'error': 'Pegawai sudah terjadwal pada tanggal dan shift tersebut.'}), 409
+
+        # Aturan HRIS 2013: shift 1 menolak personel yang sedang cuti/sakit/dinas luar SD atau DL.
+        absensi = DinasLuar.query.join(
+            Pegawai, DinasLuar.FINGER_ID == Pegawai.FINGER_ID
+        ).filter(
+            Pegawai.NIP == nip,
+            db.func.date(DinasLuar.TGL_AWAL_DINAS_LUAR) <= selected_date,
+            db.func.date(DinasLuar.TGL_AKHIR_DINAS_LUAR) >= selected_date,
+            db.func.lower(DinasLuar.TRANSAKSI) != 'alpa'
+        ).all()
+        blocked = [
+            row for row in absensi
+            if (str(row.TRANSAKSI or '').strip().lower() in ('cuti', 'sakit')
+                or (str(row.TRANSAKSI or '').strip().lower() == 'dinasluar'
+                    and str(row.JENIS or '').strip().upper() in ('SD', 'DL')))
+        ]
+        if blocked and shift == '1':
+            return jsonify({'success': False, 'error': 'Personel sedang cuti, sakit, atau dinas luar pada tanggal tersebut.'}), 409
+
+        # Personel yang pernah dihapus harus dipulihkan melalui tombol Rollback.
+        deleted_backup = LogActivityBackup.query.filter(
+            LogActivityBackup.GUID_BACKUP == 'Delete Rejadwal',
+            LogActivityBackup.ACTIVITY == 'Piket Siaga',
+            LogActivityBackup.NIP == nip,
+            db.func.date(LogActivityBackup.ACTIVITY_DATE) == selected_date,
+            LogActivityBackup.UNIT_KERJA_ID == str(unit_id),
+            LogActivityBackup.SHIFT == shift
+        ).first()
+        if deleted_backup:
+            return jsonify({'success': False, 'error': 'Personel ada di daftar rollback. Gunakan tombol Rollback agar data lama dipulihkan utuh.'}), 409
+
         new_log = LogActivity(
-            GUID_LOG=guid_log,
-            NIP=nip,
-            TRAKSAKSI_ID=traksaksi_id,  # ✅ WAJIB DIISI
-            UNIT_KERJA_ID=final_unit_kerja_id,
+            GUID_LOG=parent.GUID_LOG,
+            TRAKSAKSI_ID=parent.TRAKSAKSI_ID or 0,
+            UNIT_KERJA_ID=parent.UNIT_KERJA_ID,
             GUID_LOG_BACKUP='',
-            GUID_TIM=existing_log.GUID_TIM or '',
+            GUID_TIM=parent.GUID_TIM,
+            STATUS_ID=2,
+            NIP=nip,
+            TRX=parent.TRX or 'Jadwal Piket',
             ACTIVITY='Piket Siaga',
-            ACTIVITY_DATE=tgl_date,
-            NOTE=existing_log.NOTE or '',
-            TEMPAT=existing_log.TEMPAT or '',
-            PERIHAL=existing_log.PERIHAL or '',
-            TRX=existing_log.TRX or 'Jadwal Piket',
-            UPDATE_BY='admin',
+            ACTIVITY_DATE=selected_date,
+            NOTE=parent.NOTE,
+            TEMPAT=parent.TEMPAT,
+            PERIHAL=parent.PERIHAL,
+            UPDATE_BY=str(session.get('nip') or session.get('NIP') or 'system')[:50],
             UPDATE_DATE=datetime.now(),
             FUNGSIONAL=fungsional,
-            SHIFT=shift,
+            TGL_CLOSING=None,
             SHIFT_1=0,
             SHIFT_2=0,
-            PENGGANTI=0,
-            STATUS_ID=2,
+            PENGGANTI=1,
             STATUS_TRX='-',
-            KET_UPDATE=f'Tambah personil by admin - {nip}',
+            KET_UPDATE=f'Rejadwal Siaga - tambah personel {nip}',
             NIP_PENGGANTI=nip,
-            TGL_CLOSING=None
+            SHIFT=shift,
+            TRANSAKSI_FORM='Rejadwal Siaga'
         )
-        
         db.session.add(new_log)
         db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'message': f'Personil {nip} berhasil ditambahkan ke jadwal'
-        })
-        
-    except Exception as e:
+        return jsonify({'success': True, 'message': f'Personel {pegawai.NAMA} berhasil ditambahkan ke jadwal.'})
+    except Exception:
         db.session.rollback()
-        import traceback
-        traceback.print_exc()
-        return jsonify({'success': False, 'error': str(e)})
+        current_app.logger.exception('Gagal menambah personel jadwal siaga')
+        return jsonify({'success': False, 'error': 'Penambahan gagal. Tidak ada perubahan yang disimpan.'}), 500
+
+def api_rejadwal_siaga_reset():
+    """Reset jadwal mengikuti alur HRIS 2013 dalam satu transaksi database."""
+    try:
+        data = request.get_json(silent=True) or {}
+        unit_raw = str(data.get('unit_kerja_id') or '').strip()
+        tgl_raw = str(data.get('tgl') or '').strip()
+        shift = str(data.get('shift') or '').strip()
+        if not all([unit_raw, tgl_raw, shift]):
+            return jsonify({'success': False, 'error': 'Unit, tanggal, dan shift wajib dipilih.'}), 400
+        try:
+            unit_id = int(unit_raw)
+            selected_date = datetime.strptime(tgl_raw, '%Y-%m-%d').date()
+        except (TypeError, ValueError):
+            return jsonify({'success': False, 'error': 'Unit atau tanggal tidak valid.'}), 400
+
+        actor = str(session.get('nip') or session.get('NIP') or 'system')[:50]
+        active = LogActivity.query.filter(
+            LogActivity.ACTIVITY == 'Piket Siaga',
+            db.func.date(LogActivity.ACTIVITY_DATE) == selected_date,
+            LogActivity.UNIT_KERJA_ID == str(unit_id),
+            LogActivity.SHIFT == shift
+        ).with_for_update().all()
+        guid_logs = {row.GUID_LOG for row in active if row.GUID_LOG}
+        if not active:
+            return jsonify({'success': False, 'error': 'Tidak ada jadwal untuk di-reset.'}), 404
+
+        # Hapus hanya personel pengganti/entri Rejadwal; roster asli dipertahankan.
+        for row in active:
+            if (row.PENGGANTI or 0) != 0 or (row.TRANSAKSI_FORM or '').strip().lower() == 'rejadwal siaga':
+                db.session.delete(row)
+            elif (row.PENGGANTI or 0) == 0:
+                row.STATUS_ID = 2
+                row.UPDATE_BY = actor
+                row.UPDATE_DATE = datetime.now()
+                row.STATUS_TRX = None
+
+        backups = LogActivityBackup.query.filter(
+            LogActivityBackup.ACTIVITY == 'Piket Siaga',
+            LogActivityBackup.GUID_BACKUP == 'Delete Rejadwal',
+            db.func.date(LogActivityBackup.ACTIVITY_DATE) == selected_date,
+            LogActivityBackup.UNIT_KERJA_ID == str(unit_id),
+            LogActivityBackup.SHIFT == shift
+        ).with_for_update().all()
+        restored_count = 0
+        for backup in backups:
+            exists = LogActivity.query.filter(
+                LogActivity.ACTIVITY == 'Piket Siaga',
+                LogActivity.NIP == backup.NIP,
+                db.func.date(LogActivity.ACTIVITY_DATE) == selected_date,
+                LogActivity.UNIT_KERJA_ID == str(unit_id),
+                LogActivity.SHIFT == shift
+            ).first()
+            if not exists:
+                db.session.add(LogActivity(
+                    GUID_LOG=backup.GUID_LOG,
+                    TRAKSAKSI_ID=0,
+                    UNIT_KERJA_ID=backup.UNIT_KERJA_ID,
+                    GUID_LOG_BACKUP='',
+                    GUID_TIM=backup.GUID_TIM or '',
+                    STATUS_ID=2,
+                    NIP=backup.NIP,
+                    TRX=backup.TRX,
+                    ACTIVITY=backup.ACTIVITY,
+                    ACTIVITY_DATE=backup.ACTIVITY_DATE,
+                    NOTE=backup.NOTE,
+                    TEMPAT=backup.TEMPAT,
+                    PERIHAL=backup.PERIHAL,
+                    UPDATE_BY=actor,
+                    UPDATE_DATE=datetime.now(),
+                    FUNGSIONAL=backup.FUNGSIONAL,
+                    TGL_CLOSING=backup.TGL_CLOSING,
+                    SHIFT_1=backup.SHIFT_1,
+                    SHIFT_2=backup.SHIFT_2,
+                    PENGGANTI=backup.PENGGANTI or 0,
+                    STATUS_TRX=None,
+                    KET_UPDATE='Reset jadwal - pemulihan roster asli',
+                    NIP_PENGGANTI=backup.NIP_PENGGANTI,
+                    SHIFT=backup.SHIFT,
+                    TRANSAKSI_FORM=None
+                ))
+                restored_count += 1
+            db.session.delete(backup)
+
+        # Tandai pegawai yang sedang cuti/sakit/dinas luar sebagaimana HRIS 2013.
+        originals = LogActivity.query.filter(
+            LogActivity.ACTIVITY == 'Piket Siaga',
+            db.func.date(LogActivity.ACTIVITY_DATE) == selected_date,
+            LogActivity.UNIT_KERJA_ID == str(unit_id),
+            LogActivity.SHIFT == shift,
+            db.func.coalesce(LogActivity.PENGGANTI, 0) == 0
+        ).all()
+        for row in originals:
+            absensi_rows = DinasLuar.query.join(
+                Pegawai, DinasLuar.FINGER_ID == Pegawai.FINGER_ID
+            ).filter(
+                Pegawai.NIP == row.NIP,
+                db.func.date(DinasLuar.TGL_AWAL_DINAS_LUAR) <= selected_date,
+                db.func.date(DinasLuar.TGL_AKHIR_DINAS_LUAR) >= selected_date,
+                db.func.lower(DinasLuar.TRANSAKSI) != 'alpa'
+            ).all()
+            matching = next((item for item in absensi_rows if
+                str(item.TRANSAKSI or '').strip().lower() in ('cuti', 'sakit')
+                or (str(item.TRANSAKSI or '').strip().lower() == 'dinasluar'
+                    and str(item.JENIS or '').strip().upper() in ('SD', 'DL'))), None)
+            if matching:
+                transaksi = 'DL' if str(matching.TRANSAKSI or '').strip().lower() == 'dinasluar' else matching.TRANSAKSI
+                row.STATUS_ID = 1
+                row.STATUS_TRX = transaksi
+                row.UPDATE_BY = actor
+                row.UPDATE_DATE = datetime.now()
+
+        db.session.commit()
+        return jsonify({'success': True, 'message': f'Reset jadwal berhasil. {restored_count} personel dipulihkan.'})
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception('Gagal reset jadwal siaga')
+        return jsonify({'success': False, 'error': 'Reset gagal. Semua perubahan dibatalkan.'}), 500
 
 def data_siaga_membuat_jadwal_piket_siaga():
     """Render halaman Data Siaga Membuat Jadwal Piket Siaga."""
