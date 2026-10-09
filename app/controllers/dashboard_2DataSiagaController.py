@@ -1904,7 +1904,37 @@ def api_rejadwal_siaga_get_jadwal():
                 db.func.date(LogActivity.ACTIVITY_DATE) == selected_date,
                 LogActivity.UNIT_KERJA_ID == str(unit_id_int),
                 LogActivity.SHIFT == shift
-            ).order_by(MfOrgzSiaga.URUT_FUNGSIONAL.asc(), LogActivity.NIP.asc()).all()
+            ).filter(
+                db.or_(
+                    LogActivity.STATUS_ID != 0,
+                    LogActivity.NIP_PENGGANTI.is_(None),
+                    LogActivity.NIP_PENGGANTI == ''
+                )
+            ).order_by(
+                db.text("""
+                    CASE
+                      WHEN UPPER(COALESCE(MfUnitKerja.UNIT_KERJA_NAME, '')) LIKE 'KN %'
+                        OR UPPER(COALESCE(MfUnitKerja.UNIT_KERJA_NAME, '')) LIKE '%KAPAL%'
+                        OR UPPER(COALESCE(MfUnitKerja.UNIT_KERJA_NAME, '')) LIKE '%KN SAR%'
+                      THEN CASE
+                        WHEN UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) IN ('PW', 'PERWIRA')
+                          OR UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) LIKE '%PERWIRA%' THEN 1
+                        WHEN UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) = 'ABK'
+                          OR UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) LIKE '%ABK%' THEN 2
+                        ELSE 99 END
+                      ELSE CASE
+                        WHEN UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) IN ('KGR', 'KAGAHAR')
+                          OR UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) LIKE '%KAGAHAR%' THEN 1
+                        WHEN UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) IN ('KOM', 'KOMUNIKASI')
+                          OR UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) LIKE '%KOMUNIKASI%' THEN 2
+                        WHEN UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) IN ('RSC', 'RESCUER')
+                          OR UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) LIKE '%RESCUER%' THEN 3
+                        ELSE 99 END
+                    END,
+                    LOG_ACTIVITIY.FUNGSIONAL ASC,
+                    LOG_ACTIVITIY.NIP ASC
+                """)
+            ).all()
         except Exception:
             db.session.rollback()
             rows = db.session.query(
@@ -1999,6 +2029,135 @@ def api_rejadwal_siaga_get_jadwal():
         db.session.rollback()
         current_app.logger.exception('Gagal memuat jadwal ulang siaga')
         return jsonify({'success': False, 'error': 'Gagal memuat jadwal. Periksa log aplikasi.'}), 500
+
+def api_rejadwal_siaga_edit_personil():
+    """Ganti personel dengan jejak penggantian yang mengikuti pola HRIS 2013."""
+    try:
+        data = request.get_json(silent=True) or {}
+        guid_log = str(data.get('guid_log') or '').strip()
+        old_nip = str(data.get('old_nip') or '').strip()
+        new_nip = str(data.get('new_nip') or '').strip()
+        act_date = str(data.get('act_date') or '').strip().replace('.', '-')
+        shift = str(data.get('shift') or '').strip()
+        if not all([guid_log, old_nip, new_nip, act_date, shift]):
+            return jsonify({'success': False, 'error': 'Data jadwal dan pegawai pengganti wajib lengkap.'}), 400
+        if old_nip == new_nip:
+            return jsonify({'success': False, 'error': 'Pegawai pengganti sama dengan pegawai saat ini.'}), 400
+        try:
+            selected_date = datetime.strptime(act_date, '%Y-%m-%d').date()
+        except ValueError:
+            return jsonify({'success': False, 'error': 'Tanggal jadwal tidak valid.'}), 400
+
+        old_log = LogActivity.query.filter(
+            LogActivity.GUID_LOG == guid_log,
+            LogActivity.NIP == old_nip,
+            db.func.date(LogActivity.ACTIVITY_DATE) == selected_date,
+            LogActivity.SHIFT == shift,
+            LogActivity.ACTIVITY == 'Piket Siaga'
+        ).with_for_update().first()
+        if not old_log:
+            return jsonify({'success': False, 'error': 'Petugas yang akan diganti tidak ditemukan pada jadwal ini.'}), 404
+        if int(old_log.PENGGANTI or 0) == 1:
+            return jsonify({'success': False, 'error': 'Baris ini sudah merupakan petugas pengganti.'}), 409
+
+        new_pegawai = Pegawai.query.filter(Pegawai.NIP == new_nip).first()
+        if not new_pegawai:
+            return jsonify({'success': False, 'error': 'Pegawai pengganti tidak ditemukan.'}), 404
+
+        duplicate = LogActivity.query.filter(
+            LogActivity.ACTIVITY == 'Piket Siaga',
+            LogActivity.NIP == new_nip,
+            db.func.date(LogActivity.ACTIVITY_DATE) == selected_date,
+            LogActivity.SHIFT == shift,
+            LogActivity.GUID_LOG == guid_log
+        ).first()
+        if duplicate:
+            return jsonify({'success': False, 'error': 'Pegawai pengganti sudah terdaftar pada jadwal ini.'}), 409
+
+        # HRIS 2013: Shift 1 tidak boleh diganti dengan pegawai yang sedang cuti,
+        # sakit, atau dinas luar jenis SD/DL.
+        if shift == '1':
+            absensi_rows = db.session.execute(db.text("""
+                SELECT LOWER(COALESCE(d.Transaksi, '')) AS transaksi,
+                       UPPER(COALESCE(d.Jenis, '')) AS jenis
+                FROM DinasLuar d
+                INNER JOIN Pegawai p ON p.FingerID = d.FingerID
+                WHERE p.NIP = :nip
+                  AND DATE(d.TglAwalDinasLuar) <= :tgl
+                  AND DATE(d.TglAkhirDinasLuar) >= :tgl
+                  AND (
+                    LOWER(COALESCE(d.Transaksi, '')) IN ('sakit', 'cuti')
+                    OR (LOWER(COALESCE(d.Transaksi, '')) = 'dinasluar'
+                        AND UPPER(COALESCE(d.Jenis, '')) IN ('SD', 'DL'))
+                  )
+            """), {'nip': new_nip, 'tgl': selected_date}).mappings().all()
+            if absensi_rows:
+                return jsonify({'success': False, 'error': 'Pegawai pengganti sedang cuti, sakit, atau dinas luar pada tanggal tersebut.'}), 409
+
+        actor = str(session.get('nip') or session.get('NIP') or 'system')[:50]
+        # Salin baris lama ke tabel backup sebelum mengubah roster.
+        db.session.execute(db.text("""
+            INSERT INTO LOG_ACTIVITIY_BACKUP
+                (GUIDLog, Trx, Activity, StatusID, ActivityDate, Note, Tempat,
+                 Perihal, UpdateBy, UpdateDate, GUIDTim, NIP, IDUnitKerja,
+                 Fungsional, Pengganti, BackUpdate, GUIDBackUp, KetUpdate,
+                 NIPPengganti, Shift)
+            SELECT GUIDLog, Trx, Activity, StatusID, ActivityDate, Note, Tempat,
+                   Perihal, :actor, NOW(), GUIDTim, NIP, IDUnitKerja,
+                   Fungsional, Pengganti, NOW(), 'Edit Rejadwal',
+                   KetUpdate, NIPPengganti, Shift
+            FROM LOG_ACTIVITIY
+            WHERE GUIDLog = :guid_log
+              AND NIP = :old_nip
+              AND DATE(ActivityDate) = :tgl
+              AND Shift = :shift
+              AND Activity = 'Piket Siaga'
+        """), {'actor': actor, 'guid_log': guid_log, 'old_nip': old_nip, 'tgl': selected_date, 'shift': shift})
+
+        # Pola HRIS 2013: baris pengganti mewarisi atribut jadwal; baris lama
+        # ditandai StatusID=0 dan NIPPengganti agar riwayatnya tetap dapat ditelusuri.
+        db.session.execute(db.text("""
+            INSERT INTO LOG_ACTIVITIY
+                (GUIDLog, Trx, Activity, StatusID, ActivityDate, Note, Tempat,
+                 Perihal, UpdateBy, UpdateDate, GUIDTim, NIP, IDUnitKerja,
+                 Fungsional, Pengganti, Shift, StatusTrx, NIPPengganti,
+                 KetUpdate, TransacForm)
+            SELECT GUIDLog, Trx, Activity, 2, ActivityDate, Note, Tempat,
+                   Perihal, :actor, NOW(), GUIDTim, :new_nip, IDUnitKerja,
+                   Fungsional, 1, Shift, '-', :new_nip,
+                   :ket_update, 'Rejadwal Siaga'
+            FROM LOG_ACTIVITIY
+            WHERE GUIDLog = :guid_log
+              AND NIP = :old_nip
+              AND DATE(ActivityDate) = :tgl
+              AND Shift = :shift
+              AND Activity = 'Piket Siaga'
+        """), {
+            'actor': actor, 'new_nip': new_nip, 'ket_update': f'Rejadwal Siaga - pengganti {old_nip}',
+            'guid_log': guid_log, 'old_nip': old_nip, 'tgl': selected_date, 'shift': shift
+        })
+        db.session.execute(db.text("""
+            UPDATE LOG_ACTIVITIY
+            SET StatusID = 0,
+                UpdateBy = :actor,
+                UpdateDate = NOW(),
+                NIPPengganti = :new_nip,
+                KetUpdate = :ket_update
+            WHERE GUIDLog = :guid_log
+              AND NIP = :old_nip
+              AND DATE(ActivityDate) = :tgl
+              AND Shift = :shift
+              AND Activity = 'Piket Siaga'
+        """), {
+            'actor': actor, 'new_nip': new_nip, 'ket_update': f'Digantikan oleh {new_nip}',
+            'guid_log': guid_log, 'old_nip': old_nip, 'tgl': selected_date, 'shift': shift
+        })
+        db.session.commit()
+        return jsonify({'success': True, 'message': f'{old_nip} berhasil diganti oleh {new_pegawai.NAMA}.'})
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception('Gagal mengganti personel jadwal siaga')
+        return jsonify({'success': False, 'error': 'Penggantian gagal. Perubahan dibatalkan.'}), 500
 
 def api_rejadwal_siaga_delete_personil():
     """Backup satu baris jadwal ke LOG_ACTIVITIY_BACKUP lalu hapus secara atomik."""
