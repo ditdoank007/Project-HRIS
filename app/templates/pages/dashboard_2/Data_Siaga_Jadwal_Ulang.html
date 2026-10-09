@@ -177,21 +177,58 @@ $(document).ready(function() {
     // ============================================
     // LOAD UNIT KERJA & SHIFT
     // ============================================
-    $.get('/api/unit-kerja/list', function(r) {
-        if (r.data && r.data.length) {
-            r.data.forEach(function(u) {
-                $('#unitKerja').append(`<option value="${u.UNIT_KERJA_ID || u.unit_kerja_id}">${u.NAMA_UNIT_KERJA || u.nama_unit_kerja}</option>`);
+    // API Master Unit Kerja mengembalikan {status:'success', data:[{unit_kerja_id,nama_unit_kerja,...}]}
+    $.get('/api/unit-kerja/list')
+        .done(function(r) {
+            const rows = Array.isArray(r.data) ? r.data : [];
+            const $unit = $('#unitKerja').empty().append('<option value="">Pilih unit kerja...</option>');
+            rows.forEach(function(u) {
+                const id = u.unit_kerja_id ?? u.UNIT_KERJA_ID;
+                const name = u.nama_unit_kerja ?? u.NAMA_UNIT_KERJA;
+                const isUse = u.is_use ?? u.IS_USE;
+                if (id !== undefined && id !== null && name && (isUse === undefined || ['Y', '1', 1, true].includes(isUse))) {
+                    $unit.append($('<option>', { value: String(id), text: String(name) }));
+                }
             });
-        }
-    });
+            if (!rows.length) {
+                showAlert('warning', 'Master unit kerja tidak mengembalikan data.');
+            }
+        })
+        .fail(function(xhr) {
+            showAlert('danger', 'Gagal memuat unit kerja (' + xhr.status + ').');
+        });
 
-    $.get('/api/rejadwal-siaga/shift', function(r) {
-        if (r.success && r.data) {
-            r.data.forEach(function(s) {
-                $('#shift').append(`<option value="${s.id}">${s.nama}</option>`);
+    // Ambil master shift. Jika master lama gagal/tidak berisi data, fallback
+    // ke dua nilai shift yang dipakai HRIS 2013: 1 dan 2.
+    function populateShiftOptions(rows) {
+        const $shift = $('#shift').empty().append('<option value="">Pilih shift...</option>');
+        const validRows = (Array.isArray(rows) ? rows : []).filter(function(s) {
+            const id = s.id ?? s.shift_id ?? s.SHIFT_ID;
+            const name = s.nama ?? s.nama_shift ?? s.NAMA_SHIFT;
+            return id !== undefined && id !== null && String(name || '').trim() !== '';
+        });
+        if (validRows.length) {
+            validRows.forEach(function(s) {
+                const id = s.id ?? s.shift_id ?? s.SHIFT_ID;
+                const name = s.nama ?? s.nama_shift ?? s.NAMA_SHIFT;
+                $shift.append($('<option>', { value: String(id), text: String(name) }));
             });
+        } else {
+            $shift.append('<option value="1">Shift 1</option><option value="2">Shift 2</option>');
         }
-    });
+    }
+
+    $.get('/api/rejadwal-siaga/shift')
+        .done(function(r) {
+            populateShiftOptions(r && r.success ? r.data : []);
+            if (!(r && r.success && Array.isArray(r.data) && r.data.length)) {
+                console.warn('Master shift kosong/gagal; memakai opsi Shift 1 dan Shift 2.');
+            }
+        })
+        .fail(function(xhr) {
+            populateShiftOptions([]);
+            console.warn('API master shift gagal (' + xhr.status + '); memakai opsi Shift 1 dan Shift 2.');
+        });
 
     $.get('/api/rejadwal-siaga/fungsional', function(r) {
         if (r.success && r.data) {
@@ -220,22 +257,35 @@ $(document).ready(function() {
             unit_kerja_id: unit,
             tgl: tgl,
             shift: shift
-        }, function(r) {
-            console.log('🔍 Jadwal response:', r);
-            if (r.success) {
-                guidLog = r.guid_log;
-                jadwalData = r.jadwal || [];
-                rollbackData = r.rollback || [];
-                $('#infoJadwal').text(`${jadwalData.length} personel`);
+        }).done(function(r) {
+            console.log('Jadwal Ulang response:', r);
+            if (r && r.success) {
+                guidLog = r.guid_log || '';
+                jadwalData = Array.isArray(r.jadwal) ? r.jadwal : [];
+                rollbackData = Array.isArray(r.rollback) ? r.rollback : [];
+                $('#infoJadwal').text(jadwalData.length + ' personel');
                 renderJadwal();
                 renderRollback();
+                if (!jadwalData.length) {
+                    showAlert('warning', r.message || 'Jadwal tidak ditemukan untuk unit, tanggal, dan shift ini.');
+                } else {
+                    showAlert('success', 'Jadwal berhasil dimuat: ' + jadwalData.length + ' personel.');
+                }
             } else {
-                showAlert('warning', r.error || 'Jadwal tidak ditemukan');
-                $('#tableBodyJadwal').html('<tr><td colspan="6" class="py-4 text-muted">Jadwal tidak ditemukan</td></tr>');
-                $('#tableBodyRollback').html('<tr><td colspan="5" class="py-4 text-muted">-</td></tr>');
+                guidLog = '';
+                jadwalData = [];
+                rollbackData = [];
+                renderJadwal();
+                renderRollback();
+                showAlert('warning', (r && r.error) || 'Jadwal tidak ditemukan.');
             }
-        }).fail(function() {
-            showAlert('danger', 'Gagal memuat data');
+        }).fail(function(xhr) {
+            let msg = 'Gagal memuat jadwal.';
+            try {
+                const response = JSON.parse(xhr.responseText);
+                msg = response.error || msg;
+            } catch (e) {}
+            showAlert('danger', msg + ' (HTTP ' + xhr.status + ')');
         }).always(function() {
             $btn.prop('disabled', false).html('<i class="bi bi-search"></i><span>Tampilkan</span>');
         });
