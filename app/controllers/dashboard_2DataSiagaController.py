@@ -48,8 +48,7 @@ def _ensure_rejadwal_baseline_snapshot(unit_id, selected_date, shift):
                 GUIDLog, Trx, Activity, StatusID, ActivityDate, Note, Tempat,
                 Perihal, UpdateBy, UpdateDate, GUIDTim, NIP, IDUnitKerja,
                 Fungsional, TglClosing, shift1, shift2, Pengganti, StatusTrx,
-                BackUpdate, GUIDBackUp, KetUpdate, NIPPengganti, Biaya, Qty,
-                SatuanQty, Shift, TransacForm, TglJamIn, TglJamOut,
+                BackUpdate, GUIDBackUp, KetUpdate, NIPPengganti, Shift, TransacForm, TglJamIn, TglJamOut,
                 TglJamBakuIn, TglJamBakuOut
             )
             SELECT
@@ -58,7 +57,7 @@ def _ensure_rejadwal_baseline_snapshot(unit_id, selected_date, shift):
                 l.GUIDTim, l.NIP, l.IDUnitKerja, l.Fungsional, l.TglClosing,
                 l.shift1, l.shift2, l.Pengganti, l.StatusTrx, NOW(),
                 'Reset Rejadwal', 'Snapshot roster asli sebelum perubahan',
-                l.NIPPengganti, l.Biaya, l.Qty, l.SatuanQty, l.Shift,
+                l.NIPPengganti, l.Shift,
                 l.TransacForm, l.TglJamIn, l.TglJamOut,
                 l.TglJamBakuIn, l.TglJamBakuOut
             FROM LOG_ACTIVITIY l
@@ -2704,7 +2703,7 @@ def api_rejadwal_siaga_reset():
                     Perihal, UpdateBy, UpdateDate, GUIDTim, NIP, IDUnitKerja,
                     Fungsional, TglClosing, shift1, shift2, Pengganti, StatusTrx,
                     ketUpdate, NIPPengganti, Shift, TransacForm, TransacID,
-                    GUIDLogBackUp, Biaya, Qty, SatuanQty, TglJamIn, TglJamOut,
+                    GUIDLogBackUp, TglJamIn, TglJamOut,
                     TglJamBakuIn, TglJamBakuOut
                 )
                 SELECT
@@ -2713,7 +2712,7 @@ def api_rejadwal_siaga_reset():
                     b.GUIDTim, b.NIP, b.IDUnitKerja, b.Fungsional, b.TglClosing,
                     b.shift1, b.shift2, COALESCE(b.Pengganti, 0), b.StatusTrx,
                     'Reset jadwal - roster asli dipulihkan', b.NIPPengganti,
-                    b.Shift, b.TransacForm, 0, '', b.Biaya, b.Qty, b.SatuanQty,
+                    b.Shift, b.TransacForm, 0, '',
                     b.TglJamIn, b.TglJamOut, b.TglJamBakuIn, b.TglJamBakuOut
                 FROM LOG_ACTIVITIY_BACKUP b
                 WHERE b.Activity = 'Piket Siaga'
