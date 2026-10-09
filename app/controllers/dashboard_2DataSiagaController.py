@@ -2121,11 +2121,11 @@ def api_rejadwal_siaga_edit_personil():
                 (GUIDLog, Trx, Activity, StatusID, ActivityDate, Note, Tempat,
                  Perihal, UpdateBy, UpdateDate, GUIDTim, NIP, IDUnitKerja,
                  Fungsional, Pengganti, Shift, StatusTrx, NIPPengganti,
-                 KetUpdate, TransacForm)
+                 KetUpdate, TransacForm, TransacID, GUIDLogBackUp)
             SELECT GUIDLog, Trx, Activity, 2, ActivityDate, Note, Tempat,
                    Perihal, :actor, NOW(), GUIDTim, :new_nip, IDUnitKerja,
                    Fungsional, 1, Shift, '-', :new_nip,
-                   :ket_update, 'Rejadwal Siaga'
+                   :ket_update, 'Rejadwal Siaga', COALESCE(TransacID, 0), ''
             FROM LOG_ACTIVITIY
             WHERE GUIDLog = :guid_log
               AND NIP = :old_nip
