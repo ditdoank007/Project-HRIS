@@ -2296,7 +2296,30 @@ def api_rejadwal_siaga_delete_personil():
             TGL_JAM_BAKU_OUT=log.TGL_JAM_BAKU_OUT
         )
         db.session.add(backup)
-        db.session.delete(log)
+        db.session.flush()
+
+        # Hapus tepat satu baris fisik. GUIDLog dapat dipakai bersama oleh
+        # beberapa anggota roster sehingga tidak aman dijadikan identitas DELETE ORM.
+        delete_result = db.session.execute(
+            db.text("""
+                DELETE FROM LOG_ACTIVITIY
+                WHERE GUIDLog = :guid_log
+                  AND NIP = :nip
+                  AND DATE(ActivityDate) = :selected_date
+                  AND Shift = :shift
+                  AND Activity = 'Piket Siaga'
+                LIMIT 1
+            """),
+            {
+                'guid_log': guid_log,
+                'nip': nip,
+                'selected_date': selected_date,
+                'shift': shift,
+            }
+        )
+        if delete_result.rowcount != 1:
+            raise ValueError('Baris personel tidak berhasil dihapus; transaksi dibatalkan.')
+
         db.session.commit()
         return jsonify({'success': True, 'message': f'Personel {nip} berhasil dihapus dan disimpan ke daftar rollback.'})
     except Exception:
