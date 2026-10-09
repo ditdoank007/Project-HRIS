@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zxx">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Portal Internal Basarnas Surabaya untuk mendukung administrasi, kepegawaian, operasional, dan layanan internal pegawai.">
+    <meta name="keywords" content="Basarnas, Basarnas Surabaya, Portal Internal, Kepegawaian, Operasional SAR">
+    <title>BHRIS Dashboard {% block title %}{% endblock %}</title>
+
+    <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='static_dashboard_2/assets/images/logo1.png') }}">
+
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='static_dashboard_2/assets/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='static_dashboard_2/assets/vendors/css/vendors.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='static_dashboard_2/assets/vendors/css/select2.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='static_dashboard_2/assets/vendors/css/select2-theme.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='static_dashboard_2/assets/css/theme.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='static_dashboard_1/assets/vendors/css/daterangepicker.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='static_dashboard_1/assets/vendors/css/jquery-jvectormap.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='static_dashboard_1/assets/vendors/css/jquery.time-to.min.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='static_dashboard_1/assets/css/theme.min.css') }}">
+    <!-- HRIS REBORN GLOBAL UI -->
+    <link rel="stylesheet"
+          type="text/css"
+          href="{{ url_for('static', filename='css/hris-global.css') }}">
+</head>
+
+<body>
+    <!-- Header Start -->
+    {% include 'partials/header.html' %}
+    <!-- Header End -->
+
+    <!-- Sidebar Start -->
+    {% include 'partials/nav_dashboard2.html' %}
+    <!-- Sidebar End -->
+
+    <!-- Main Start -->
+    <main class="nxl-container">
+        {% block content %}
+        {% endblock %}
+    </main>
+    <!-- Main End -->
+
+    <script src="{{ url_for('static', filename='static_dashboard_2/assets/vendors/js/vendors.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='static_dashboard_2/assets/vendors/js/select2.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='static_dashboard_2/assets/vendors/js/select2-active.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='static_dashboard_2/assets/js/common-init.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='static_dashboard_2/assets/js/theme-customizer-init.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='static_dashboard_1/assets/vendors/js/daterangepicker.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='static_dashboard_1/assets/vendors/js/apexcharts.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='static_dashboard_1/assets/vendors/js/jquery.time-to.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='static_dashboard_1/assets/vendors/js/circle-progress.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='static_dashboard_1/assets/js/analytics-init.min.js') }}"></script>
+    {% block script %}
+    {% endblock %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const signOutBtn = document.getElementById('headerSignOutBtn');
+            if (signOutBtn) {
+                signOutBtn.addEventListener('click', async function () {
+                    try {
+                        await fetch('/api/logout', { method: 'POST' });
+                    } catch (err) {
+                        console.error('Gagal logout:', err);
+                    } finally {
+                        window.location.href = "{{ url_for('main.index') }}";
+                    }
+                });
+            }
+        });
+    </script>
+
+<script>
+/* Global display standard: DD-MM-YYYY. API values and form controls remain unchanged. */
+(function () {
+  "use strict";
+  const isoDate = /\b(\d{4})-(\d{2})-(\d{2})\b/g;
+  function formatTextNode(node) {
+    if (!node || node.nodeType !== Node.TEXT_NODE || !node.nodeValue) return;
+    const parent = node.parentElement;
+    if (!parent || parent.closest("script,style,textarea,input,select,option,code,pre")) return;
+    if (isoDate.test(node.nodeValue)) {
+      isoDate.lastIndex = 0;
+      node.nodeValue = node.nodeValue.replace(isoDate, "$3-$2-$1");
+    } else {
+      isoDate.lastIndex = 0;
+    }
+  }
+  function scan(root) {
+    if (root.nodeType === Node.TEXT_NODE) return formatTextNode(root);
+    if (root.nodeType !== Node.ELEMENT_NODE && root.nodeType !== Node.DOCUMENT_NODE) return;
+    if (root.nodeType === Node.ELEMENT_NODE && root.matches("script,style,textarea,input,select,option,code,pre")) return;
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let node;
+    while ((node = walker.nextNode())) formatTextNode(node);
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => scan(document.body), { once: true });
+  } else {
+    scan(document.body);
+  }
+  new MutationObserver(records => records.forEach(record => {
+    if (record.type === "characterData") formatTextNode(record.target);
+    record.addedNodes && record.addedNodes.forEach(node => scan(node));
+  })).observe(document.documentElement, { childList: true, subtree: true, characterData: true });
+})();
+</script>
+
+</body>
+
+</html>
