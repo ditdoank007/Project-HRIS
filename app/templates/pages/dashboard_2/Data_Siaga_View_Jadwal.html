@@ -1,1159 +1,221 @@
 {% extends "layout/baseDashboard2.html" %}
-
+{% block title %}- Preview Jadwal Siaga{% endblock %}
 {% block content %}
+<style>
+.view-siaga{padding:18px 20px 32px;color:#263449}
+.view-siaga .vs-card{background:#fff;border:1px solid #e7edf4;border-radius:15px;box-shadow:0 8px 26px rgba(15,23,42,.045);overflow:hidden}
+.view-siaga .vs-head{padding:18px 22px;border-bottom:1px solid #edf1f6;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.view-siaga .vs-title{font-size:18px;font-weight:800;margin:0;color:#172033}
+.view-siaga .vs-muted{color:#8795a9;font-size:12px;margin-top:4px}
+.view-siaga .vs-body{padding:20px 22px}
+.view-siaga .vs-label{font-size:11px;font-weight:800;color:#536277;margin-bottom:7px;display:block}
+.view-siaga .form-select{min-height:42px;border-radius:9px;border-color:#dce4ee;font-size:12px;color:#334155}
+.view-siaga .vs-primary{background:#f2652b;border:1px solid #f2652b;color:#fff;border-radius:9px;min-height:42px;font-size:12px;font-weight:800;padding:0 16px}
+.view-siaga .vs-datebar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;padding:18px;background:linear-gradient(135deg,#fff8f3,#fff 60%);border:1px solid #f7dfd2;border-radius:12px}
+.view-siaga .vs-date{font-size:22px;font-weight:850;letter-spacing:-.025em;color:#172033;text-align:center}
+.view-siaga .vs-daylabel{font-size:10px;text-transform:uppercase;letter-spacing:.1em;font-weight:800;color:#e45e27;text-align:center;margin-bottom:5px}
+.view-siaga .vs-nav{border:1px solid #dce4ee;background:#fff;color:#425168;border-radius:9px;padding:10px 13px;font-size:11px;font-weight:800;white-space:nowrap}
+.view-siaga .vs-nav:disabled{opacity:.35;cursor:not-allowed}
+.view-siaga .vs-nav.next{justify-self:end}
+.view-siaga .vs-summary{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.view-siaga .vs-chip{display:inline-flex;align-items:center;gap:6px;background:#f4f7fb;border:1px solid #e8edf4;color:#536277;border-radius:8px;padding:7px 10px;font-size:10px;font-weight:800}
+.view-siaga .vs-chip.orange{background:#fff3ec;border-color:#ffdfcf;color:#d95720}
+.view-siaga .vs-table{width:100%;border-collapse:separate;border-spacing:0}
+.view-siaga .vs-table thead th{background:#f7f9fc;color:#7b899d;text-transform:uppercase;letter-spacing:.06em;font-size:10px;font-weight:850;padding:13px 16px;border-bottom:1px solid #e8edf4}
+.view-siaga .vs-table tbody td{padding:14px 16px;border-bottom:1px solid #edf1f5;font-size:12px;color:#3e4d63;vertical-align:middle}
+.view-siaga .vs-table tbody tr:last-child td{border-bottom:0}
+.view-siaga .vs-table tbody tr:nth-child(even){background:#fbfcfe}
+.view-siaga .vs-no{width:64px;color:#9aa7b8;font-weight:800}
+.view-siaga .vs-person{font-weight:750;color:#253248}
+.view-siaga .vs-role{display:inline-flex;align-items:center;gap:7px;background:#fff3ec;color:#d95720;border:1px solid #ffdfcf;border-radius:7px;padding:5px 9px;font-size:10px;font-weight:850}
+.view-siaga .vs-role-dot{width:6px;height:6px;border-radius:50%;background:#f2652b}
+.view-siaga .vs-empty{text-align:center;padding:44px 20px;color:#8795a9}
+.view-siaga .vs-empty i{font-size:30px;color:#c3ccd8}
+.view-siaga .vs-status{font-size:11px;color:#8291a7}
+@media(max-width:720px){.view-siaga{padding:12px 8px 24px}.view-siaga .vs-body{padding:15px}.view-siaga .vs-head{padding:15px}.view-siaga .vs-datebar{grid-template-columns:auto 1fr auto;padding:12px;gap:6px}.view-siaga .vs-date{font-size:15px}.view-siaga .vs-nav{padding:9px 8px;font-size:10px}.view-siaga .vs-table thead th,.view-siaga .vs-table tbody td{padding:11px 9px}.view-siaga .vs-table tbody td{font-size:11px}}
+</style>
 
-<div class="container-fluid">
-
-    <!-- ===================================================== -->
-    <!-- HEADER -->
-    <!-- ===================================================== -->
-
-    <div class="page-header mb-4">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <h4 class="fw-bold mb-1">
-                    View Jadwal Siaga
-                </h4>
-
-                <div class="text-muted">
-                    Melihat jadwal piket siaga yang telah dibuat
-                </div>
-            </div>
-        </div>
+<div class="container-fluid view-siaga">
+  <div class="vs-card mb-4">
+    <div class="vs-head">
+      <div>
+        <h4 class="vs-title"><i class="bi bi-calendar2-week me-2" style="color:#f2652b"></i>Preview Jadwal Siaga</h4>
+        <div class="vs-muted">Periksa hasil roster harian sebelum digunakan sebagai jadwal operasional.</div>
+      </div>
+      <span class="vs-chip orange"><i class="bi bi-eye"></i> Mode Pratinjau</span>
     </div>
-
-
-    <!-- ===================================================== -->
-    <!-- FILTER -->
-    <!-- ===================================================== -->
-
-    <div class="card mb-4">
-
-        <div class="card-header">
-            <h6 class="mb-0">
-                Filter Jadwal
-            </h6>
+    <div class="vs-body">
+      <div class="row g-3 align-items-end">
+        <div class="col-6 col-lg-2">
+          <label class="vs-label" for="filterTahun">Tahun</label>
+          <select id="filterTahun" class="form-select"><option value="">Pilih tahun</option></select>
         </div>
-
-        <div class="card-body">
-
-            <div class="row g-3">
-
-                <!-- BULAN -->
-
-                <div class="col-md-2">
-
-                    <label class="form-label">
-                        Tahun
-                    </label>
-
-                    <select
-                        id="filterTahun"
-                        class="form-select"
-                    >
-        <option value="" selected>Pilih</option>
-
-                    </select>
-
-                </div>
-
-
-                <!-- TAHUN -->
-
-                <div class="col-md-2">
-
-                    <label class="form-label">
-                        Bulan
-                    </label>
-
-                    <select
-                        id="filterBulan"
-                        class="form-select"
-                    >
-        <option value="" selected>Pilih</option>
-
-                    </select>
-
-                </div>
-
-
-                <!-- UNIT -->
-
-                <div class="col-md-3">
-
-                    <label class="form-label">
-                        Unit Kerja
-                    </label>
-
-                    <select
-                        id="filterUnit"
-                        class="form-select"
-                    >
-
-                        <option value="">
-                            Pilih Unit Kerja
-                        </option>
-
-                    </select>
-
-                </div>
-
-
-                <!-- JABATAN -->
-
-                <div class="col-md-3">
-
-                    <label class="form-label">
-                        Jabatan Siaga
-                    </label>
-
-                    <select
-                        id="filterFungsional"
-                        class="form-select"
-                    >
-
-                        <option value="">
-                            Pilih Jabatan Siaga
-                        </option>
-
-                    </select>
-
-                </div>
-
-
-                <!-- BUTTON -->
-
-                <div class="col-md-2 d-flex align-items-end">
-
-                    <button
-                        type="button"
-                        id="btnTampilkan"
-                        class="btn btn-primary w-100"
-                    >
-
-                        <i class="bi bi-search me-1"></i>
-
-                        Tampilkan
-
-                    </button>
-
-                </div>
-
-            </div>
-
+        <div class="col-6 col-lg-2">
+          <label class="vs-label" for="filterBulan">Bulan</label>
+          <select id="filterBulan" class="form-select"><option value="">Pilih bulan</option></select>
         </div>
-
-    </div>
-
-
-    <!-- ===================================================== -->
-    <!-- INFORMATION -->
-    <!-- ===================================================== -->
-
-    <div
-        id="viewInfo"
-        class="alert alert-info d-none"
-    >
-    </div>
-
-
-    <!-- ===================================================== -->
-    <!-- RESULT -->
-    <!-- ===================================================== -->
-
-    <div
-        id="resultContainer"
-        class="d-none"
-    >
-
-        <div class="card">
-
-            <div class="card-header">
-
-                <div class="d-flex justify-content-between align-items-center">
-
-                    <div>
-
-                        <h6
-                            id="resultTitle"
-                            class="mb-1 fw-bold"
-                        >
-                        </h6>
-
-                        <div
-                            id="resultSubtitle"
-                            class="text-muted small"
-                        >
-                        </div>
-
-                    </div>
-
-                    <div>
-
-                        <span
-                            id="resultSummary"
-                            class="badge bg-secondary"
-                        >
-                        </span>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <div class="card-body p-0">
-
-                <div class="table-responsive">
-
-                    <table
-                        class="table table-hover align-middle mb-0"
-                    >
-
-                        <thead class="table-light">
-
-                            <tr>
-
-                                <th
-                                    style="width: 90px;"
-                                    class="text-center"
-                                >
-                                    Roster
-                                </th>
-
-                                <th>
-                                    Shift 1
-                                </th>
-
-                                <th>
-                                    Shift 2
-                                </th>
-
-                                <th
-                                    style="width: 160px;"
-                                >
-                                    Status
-                                </th>
-
-                            </tr>
-
-                        </thead>
-
-                        <tbody
-                            id="resultBody"
-                        >
-                        </tbody>
-
-                    </table>
-
-                </div>
-
-            </div>
-
+        <div class="col-12 col-lg-4">
+          <label class="vs-label" for="filterUnit">Unit Kerja</label>
+          <select id="filterUnit" class="form-select"><option value="">Pilih unit kerja</option></select>
         </div>
-
-    </div>
-
-
-    <!-- ===================================================== -->
-    <!-- EMPTY -->
-    <!-- ===================================================== -->
-
-    <div
-        id="emptyState"
-        class="card d-none"
-    >
-
-        <div class="card-body text-center py-5">
-
-            <i
-                class="bi bi-calendar-x fs-1 text-muted"
-            ></i>
-
-            <h6 class="mt-3">
-                Tidak ada jadwal siaga
-            </h6>
-
-            <div class="text-muted">
-                Tidak ditemukan jadwal berdasarkan filter yang dipilih.
-            </div>
-
+        <div class="col-6 col-lg-2">
+          <label class="vs-label" for="filterShift">Shift</label>
+          <select id="filterShift" class="form-select">
+            <option value="1">Shift 1</option><option value="2">Shift 2</option>
+          </select>
         </div>
-
+        <div class="col-6 col-lg-2">
+          <button type="button" id="btnTampilkan" class="vs-primary w-100"><i class="bi bi-search me-1"></i> Tampilkan</button>
+        </div>
+      </div>
+      <div id="viewInfo" class="vs-status mt-3" role="status">Pilih periode, unit, dan shift untuk melihat jadwal.</div>
     </div>
+  </div>
 
+  <div id="resultContainer" class="vs-card d-none">
+    <div class="vs-head">
+      <div>
+        <h5 class="vs-title" style="font-size:15px">Daftar Petugas Siaga</h5>
+        <div id="resultSubtitle" class="vs-muted"></div>
+      </div>
+      <div class="vs-summary">
+        <span id="resultUnitChip" class="vs-chip"></span>
+        <span id="resultShiftChip" class="vs-chip orange"></span>
+      </div>
+    </div>
+    <div class="vs-body">
+      <div class="vs-datebar mb-4">
+        <button type="button" id="btnPrev" class="vs-nav"><i class="bi bi-chevron-left me-1"></i> Sebelumnya</button>
+        <div>
+          <div class="vs-daylabel">Tanggal Jadwal</div>
+          <div id="resultTitle" class="vs-date">—</div>
+        </div>
+        <button type="button" id="btnNext" class="vs-nav next">Berikutnya <i class="bi bi-chevron-right ms-1"></i></button>
+      </div>
+      <div class="table-responsive">
+        <table class="vs-table">
+          <thead><tr><th class="vs-no">No.</th><th>Nama Pegawai</th><th>Jabatan Petugas Siaga</th></tr></thead>
+          <tbody id="resultBody"></tbody>
+        </table>
+      </div>
+      <div id="emptyState" class="vs-empty d-none">
+        <i class="bi bi-calendar2-x"></i>
+        <div class="fw-bold mt-2">Belum ada petugas untuk tanggal ini</div>
+        <div class="small mt-1">Pastikan roster periode, unit, shift, dan nomor tim sudah tersimpan.</div>
+      </div>
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3 pt-3 border-top">
+        <span id="resultSummary" class="vs-status"></span>
+        <span class="vs-status"><i class="bi bi-shield-check me-1"></i>Pratinjau tidak mengubah data roster.</span>
+      </div>
+    </div>
+  </div>
 </div>
 
-
 <script>
-
 (() => {
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const tahunEl = $("filterTahun"), bulanEl = $("filterBulan"), unitEl = $("filterUnit"), shiftEl = $("filterShift");
+  const btnTampilkan = $("btnTampilkan"), resultContainer = $("resultContainer"), resultBody = $("resultBody");
+  const resultTitle = $("resultTitle"), resultSubtitle = $("resultSubtitle"), resultSummary = $("resultSummary");
+  const resultUnitChip = $("resultUnitChip"), resultShiftChip = $("resultShiftChip"), emptyState = $("emptyState"), viewInfo = $("viewInfo");
+  const bulanNama = ["","Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+  let activeRoles = [], activeDay = 1, lastUnitName = "", lastLoaded = false;
 
-    "use strict";
+  for (let i=1;i<=12;i++) {
+    const o=document.createElement("option"); o.value=String(i).padStart(2,"0"); o.textContent=bulanNama[i]; bulanEl.appendChild(o);
+  }
+  const now = new Date();
+  for (let y=2013;y<=now.getFullYear()+1;y++) { const o=document.createElement("option");o.value=String(y);o.textContent=String(y);tahunEl.appendChild(o); }
+  tahunEl.value=String(now.getFullYear()); bulanEl.value=String(now.getMonth()+1).padStart(2,"0");
 
-
-    /* =========================================================
-       ELEMENT
-       ========================================================= */
-
-    const bulanEl =
-        document.getElementById("filterBulan");
-
-    const tahunEl =
-        document.getElementById("filterTahun");
-
-    const unitEl =
-        document.getElementById("filterUnit");
-
-    const fungsionalEl =
-        document.getElementById("filterFungsional");
-
-    const btnTampilkan =
-        document.getElementById("btnTampilkan");
-
-    const resultContainer =
-        document.getElementById("resultContainer");
-
-    const resultBody =
-        document.getElementById("resultBody");
-
-    const resultTitle =
-        document.getElementById("resultTitle");
-
-    const resultSubtitle =
-        document.getElementById("resultSubtitle");
-
-    const resultSummary =
-        document.getElementById("resultSummary");
-
-    const emptyState =
-        document.getElementById("emptyState");
-
-    const viewInfo =
-        document.getElementById("viewInfo");
-
-
-    /* =========================================================
-       BULAN
-       ========================================================= */
-
-    const bulanNama = [
-        "",
-        "Januari",
-        "Februari",
-        "Maret",
-        "April",
-        "Mei",
-        "Juni",
-        "Juli",
-        "Agustus",
-        "September",
-        "Oktober",
-        "November",
-        "Desember"
-    ];
-
-
-    for (let i = 1; i <= 12; i++) {
-
-        const option =
-            document.createElement("option");
-
-        option.value =
-            String(i).padStart(2, "0");
-
-        option.textContent =
-            bulanNama[i];
-
-        bulanEl.appendChild(option);
-
+  function escapeHtml(v){return String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");}
+  function monthDays(){return new Date(Number(tahunEl.value),Number(bulanEl.value),0).getDate();}
+  function formatDate(day){return new Intl.DateTimeFormat("id-ID",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(new Date(Number(tahunEl.value),Number(bulanEl.value)-1,day));}
+  async function getJson(url,options){const response=await fetch(url,options);let data;try{data=await response.json();}catch(_){throw new Error("Server mengirim respons yang tidak dapat dibaca.");}if(!response.ok||data.success===false)throw new Error(data.error||"Permintaan gagal.");return data;}
+  async function loadUnit(){
+    const result=await getJson("{{ url_for('main.api_siaga_master_unit_aktif') }}");
+    unitEl.innerHTML='<option value="">Pilih unit kerja</option>';
+    for(const row of result.data||[]){const o=document.createElement("option");o.value=row.id_unit_kerja;o.textContent=row.nama_unit_kerja;unitEl.appendChild(o);}
+  }
+  async function loadRoles(){
+    const result=await getJson("{{ url_for('main.api_siaga_master_jabatan_aktif') }}");
+    const rows=Array.isArray(result.data)?result.data:Array.isArray(result)?result:[];
+    activeRoles=rows.map(r=>({name:String(r.NamaJabatan??r.nama_jabatan??""),order:Number(r.NoUrut??r.no_urut??999)}))
+      .filter(r=>r.name).sort((a,b)=>a.order-b.order);
+  }
+  function isKapalUnit(){
+    const name=(unitEl.options[unitEl.selectedIndex]?.text||"").toUpperCase();
+    return /KN\s?SAR|KAPAL|KNSAR/.test(name);
+  }
+  function roleSet(){
+    const desired=isKapalUnit()?["PERWIRA","ABK"]:["KAGAHAR","KOM","RESCUER"];
+    return desired.map(key=>activeRoles.find(r=>r.name.toUpperCase().includes(key))).filter(Boolean);
+  }
+  async function loadRoleRows(role){
+    const params=new URLSearchParams({bulan:bulanEl.value,tahun:tahunEl.value,unit_kerja_id:unitEl.value,fungsional:role.name});
+    const data=await getJson("{{ url_for('main.api_siaga_view_jadwal_get') }}?"+params.toString());
+    return data.data||[];
+  }
+  function teamForDay(rows,day,shift){
+    const rosterMap=new Map();
+    for(const row of rows){
+      if(String(row.shift)!==String(shift))continue;
+      const teamNo=Number(row.no_urut);
+      if(!Number.isInteger(teamNo)||teamNo<1)continue;
+      if(!rosterMap.has(teamNo))rosterMap.set(teamNo,[]);
+      if(row.nama_pegawai)rosterMap.get(teamNo).push({name:row.nama_pegawai,order:Number(row.nourut)||999,nip:row.nip});
     }
-
-
-    /* =========================================================
-       DEFAULT PERIODE
-       ========================================================= */
-
-    bulanEl.value = "";
-
-    const currentYear =
-        new Date().getFullYear();
-
-    for (
-        let year = 2013;
-        year <= currentYear + 1;
-        year++
-    ) {
-
-        const option =
-            document.createElement("option");
-
-        option.value =
-            String(year);
-
-        option.textContent =
-            String(year);
-
-        tahunEl.appendChild(option);
-
-    }
-
-    tahunEl.value = "";
-
-
-    /* =========================================================
-       LOAD UNIT
-       ========================================================= */
-
-    async function loadUnit() {
-
-        const response =
-            await fetch(
-                "{{ url_for('main.api_siaga_master_unit_aktif') }}"
-            );
-
-        const result =
-            await response.json();
-
-        if (
-            !response.ok ||
-            !result.success
-        ) {
-
-            throw new Error(
-                result.error ||
-                "Gagal mengambil unit kerja."
-            );
-
-        }
-
-
-        unitEl.innerHTML = `
-            <option value="">
-                Pilih Unit Kerja
-            </option>
-        `;
-
-
-        for (
-            const row of result.data || []
-        ) {
-
-            const option =
-                document.createElement("option");
-
-            option.value =
-                row.id_unit_kerja;
-
-            option.textContent =
-                row.nama_unit_kerja;
-
-            unitEl.appendChild(option);
-
-        }
-
-    }
-
-
-    /* =========================================================
-       LOAD JABATAN SIAGA
-       ========================================================= */
-
-    async function loadFungsional() {
-
-        console.log(
-            "[VIEW-JADWAL] loadFungsional()"
-        );
-
-        const response =
-            await fetch(
-                "{{ url_for('main.api_siaga_master_jabatan_aktif') }}",
-                {
-                    method: "GET",
-                    headers: {
-                        "Accept": "application/json"
-                    },
-                    cache: "no-store"
-                }
-            );
-
-        const result =
-            await response.json();
-
-        console.log(
-            "[VIEW-JADWAL] response jabatan:",
-            result
-        );
-
-        if (!response.ok) {
-
-            throw new Error(
-                result?.error ||
-                "Gagal mengambil jabatan siaga."
-            );
-
-        }
-
-        const rows =
-            Array.isArray(result?.data)
-                ? result.data
-                : Array.isArray(result)
-                    ? result
-                    : [];
-
-        fungsionalEl.innerHTML = `
-            <option value="">
-                Pilih Jabatan Siaga
-            </option>
-        `;
-
-        for (const row of rows) {
-
-            const option =
-                document.createElement("option");
-
-            option.value =
-                String(
-                    row.NamaJabatan ??
-                    row.nama_jabatan ??
-                    ""
-                );
-
-            option.textContent =
-                String(
-                    row.NamaJabatan ??
-                    row.nama_jabatan ??
-                    ""
-                );
-
-            if (
-                option.value.trim() === "" ||
-                option.textContent.trim() === ""
-            ) {
-                continue;
-            }
-
-            fungsionalEl.appendChild(
-                option
-            );
-
-        }
-
-        console.log(
-            "[VIEW-JADWAL] jumlah jabatan:",
-            fungsionalEl.options.length - 1
-        );
-
-    }
-
-
-    /* =========================================================
-       ESCAPE HTML
-       ========================================================= */
-
-    function escapeHtml(value) {
-
-        return String(
-            value ?? ""
-        )
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-
-    }
-
-
-    /* =========================================================
-       GROUP DATA
-       ========================================================= */
-
-    function groupRoster(rows) {
-
-        const groups =
-            new Map();
-
-
-        for (
-            const row of rows
-        ) {
-
-            const roster =
-                String(
-                    row.no_urut
-                );
-
-            if (
-                !groups.has(roster)
-            ) {
-
-                groups.set(
-                    roster,
-                    {
-                        roster,
-                        shift1: [],
-                        shift2: []
-                    }
-                );
-
-            }
-
-
-            const group =
-                groups.get(roster);
-
-
-            const shift =
-                String(
-                    row.shift
-                );
-
-
-            const person = {
-
-                nip:
-                    row.nip,
-
-                nama:
-                    row.nama_pegawai ||
-                    row.nip ||
-                    "-",
-
-                nourut:
-                    row.nourut
-
-            };
-
-
-            if (shift === "1") {
-
-                group.shift1.push(person);
-
-            }
-
-            if (shift === "2") {
-
-                group.shift2.push(person);
-
-            }
-
-        }
-
-
-        return Array.from(
-            groups.values()
-        )
-        .sort(
-            (a, b) =>
-                Number(a.roster) -
-                Number(b.roster)
-        );
-
-    }
-
-
-    /* =========================================================
-       RENDER PERSONEL
-       ========================================================= */
-
-    function renderPersonel(
-        persons
-    ) {
-
-        if (!persons.length) {
-
-            return `
-                <span class="text-muted">
-                    —
-                </span>
-            `;
-
-        }
-
-
-        return persons
-            .map(
-                person => `
-                    <div class="mb-1 text-start">
-                        <span class="fw-semibold">
-                            ${escapeHtml(person.nama)}
-                        </span>
-                    </div>
-                `
-            )
-            .join("");
-
-    }
-
-
-    /* =========================================================
-       LOAD JADWAL
-       ========================================================= */
-
-    async function loadJadwal() {
-
-        const bulan =
-            bulanEl.value;
-
-        const tahun =
-            tahunEl.value;
-
-        const unit =
-            unitEl.value;
-
-        const fungsional =
-            fungsionalEl.value;
-
-
-        if (!unit) {
-
-            alert(
-                "Unit kerja wajib dipilih."
-            );
-
-            return;
-
-        }
-
-
-        if (!fungsional) {
-
-            alert(
-                "Jabatan siaga wajib dipilih."
-            );
-
-            return;
-
-        }
-
-
-        btnTampilkan.disabled =
-            true;
-
-        btnTampilkan.innerHTML = `
-            <span
-                class="spinner-border spinner-border-sm me-1"
-            ></span>
-            Memuat...
-        `;
-
-
-        resultContainer.classList.add(
-            "d-none"
-        );
-
-        emptyState.classList.add(
-            "d-none"
-        );
-
-        viewInfo.classList.add(
-            "d-none"
-        );
-
-
-        try {
-
-            const response =
-                await fetch(
-                    "{{ url_for('main.api_siaga_view_jadwal_get') }}?" +
-                    new URLSearchParams({
-                        bulan,
-                        tahun,
-                        unit_kerja_id: unit,
-                        fungsional
-                    })
-                );
-
-
-            const result =
-                await response.json();
-
-
-            if (
-                !response.ok ||
-                !result.success
-            ) {
-
-                throw new Error(
-                    result.error ||
-                    "Gagal mengambil jadwal."
-                );
-
-            }
-
-
-            const rows =
-                result.data || [];
-
-
-            if (!rows.length) {
-
-                emptyState.classList.remove(
-                    "d-none"
-                );
-
-                return;
-
-            }
-
-
-            const groups =
-                groupRoster(rows);
-
-
-            resultBody.innerHTML = "";
-
-
-            let lengkap = 0;
-            let belumLengkap = 0;
-
-
-            for (
-                const group of groups
-            ) {
-
-                const isComplete =
-                    group.shift1.length > 0 &&
-                    group.shift2.length > 0;
-
-
-                if (isComplete) {
-
-                    lengkap++;
-
-                } else {
-
-                    belumLengkap++;
-
-                }
-
-
-                const tr =
-                    document.createElement("tr");
-
-
-                tr.innerHTML = `
-
-                    <td class="text-center">
-
-                        <span class="fw-bold">
-                            #${escapeHtml(group.roster)}
-                        </span>
-
-                    </td>
-
-
-                    <td class="text-start">
-
-                        ${renderPersonel(
-                            group.shift1
-                        )}
-
-                    </td>
-
-
-                    <td class="text-start">
-
-                        ${renderPersonel(
-                            group.shift2
-                        )}
-
-                    </td>
-
-
-                    <td>
-
-                        ${
-                            isComplete
-
-                            ?
-
-                            `
-                            <span class="badge bg-success">
-                                Lengkap
-                            </span>
-                            `
-
-                            :
-
-                            `
-                            <button
-                                type="button"
-                                class="btn btn-sm btn-warning"
-                                data-lengkapi-shift2="${escapeHtml(group.roster)}"
-                                title="Lengkapi Shift 2"
-                            >
-                                <i class="bi bi-plus-circle me-1"></i>
-                                LENGKAPI SHIFT 2
-                            </button>
-                            `
-                        }
-
-                    </td>
-
-                `;
-
-
-                resultBody.appendChild(
-                    tr
-                );
-
-            }
-
-
-            resultTitle.textContent =
-                fungsionalEl.options[
-                    fungsionalEl.selectedIndex
-                ]?.text || fungsional;
-
-
-            resultSubtitle.textContent =
-                `${unitEl.options[
-                    unitEl.selectedIndex
-                ]?.text || unit} — ${bulanNama[
-                    Number(bulan)
-                ]} ${tahun}`;
-
-
-            resultSummary.textContent =
-                `${groups.length} roster | ` +
-                `${lengkap} lengkap | ` +
-                `${belumLengkap} belum lengkap`;
-
-
-            resultContainer.classList.remove(
-                "d-none"
-            );
-
-
-            viewInfo.textContent =
-                `Data berhasil dimuat. ` +
-                `${groups.length} roster ditemukan.`;
-
-
-            viewInfo.classList.remove(
-                "d-none"
-            );
-
-
-        } catch (error) {
-
-            console.error(error);
-
-            alert(
-                error.message ||
-                "Terjadi kesalahan."
-            );
-
-        } finally {
-
-            btnTampilkan.disabled =
-                false;
-
-            btnTampilkan.innerHTML = `
-                <i class="bi bi-search me-1"></i>
-                Tampilkan
-            `;
-
-        }
-
-    }
-
-
-    /* =========================================================
-       EVENT
-       ========================================================= */
-
-    btnTampilkan.addEventListener(
-        "click",
-        loadJadwal
-    );
-
-
-    /* =========================================================
-       LENGKAPI SHIFT 2
-       ========================================================= */
-
-    resultBody.addEventListener(
-        "click",
-        async event => {
-
-            const button =
-                event.target.closest(
-                    "[data-lengkapi-shift2]"
-                );
-
-            if (!button) {
-                return;
-            }
-
-            const roster =
-                button.dataset.lengkapiShift2;
-
-            const bulan =
-                bulanEl.value;
-
-            const tahun =
-                tahunEl.value;
-
-            const unit =
-                unitEl.value;
-
-            const fungsional =
-                fungsionalEl.value;
-
-
-            if (!bulan || !tahun) {
-                alert(
-                    "Tahun dan bulan wajib dipilih."
-                );
-                return;
-            }
-
-
-            if (!unit) {
-                alert(
-                    "Unit kerja wajib dipilih."
-                );
-                return;
-            }
-
-
-            if (!fungsional) {
-                alert(
-                    "Jabatan siaga wajib dipilih."
-                );
-                return;
-            }
-
-
-            const confirmed =
-                confirm(
-                    "Lengkapi Shift 2 untuk Roster #" +
-                    roster +
-                    "?\n\n" +
-                    "Anggota Shift 2 akan dibuat " +
-                    "sama persis dengan Shift 1."
-                );
-
-            if (!confirmed) {
-                return;
-            }
-
-
-            button.disabled = true;
-
-            button.innerHTML = `
-                <span
-                    class="spinner-border spinner-border-sm me-1"
-                ></span>
-                Memproses...
-            `;
-
-
-            try {
-
-                const response =
-                    await fetch(
-                        "{{ url_for('main.api_siaga_view_jadwal_lengkapi_shift2') }}",
-                        {
-                            method: "POST",
-
-                            headers: {
-                                "Content-Type":
-                                    "application/json",
-                                "Accept":
-                                    "application/json"
-                            },
-
-                            body: JSON.stringify({
-                                bulan,
-                                tahun,
-                                unit_kerja_id: unit,
-                                fungsional,
-                                no_urut: roster
-                            })
-                        }
-                    );
-
-
-                const result =
-                    await response.json();
-
-
-                if (
-                    !response.ok ||
-                    !result.success
-                ) {
-                    throw new Error(
-                        result.error ||
-                        "Gagal melengkapi Shift 2."
-                    );
-                }
-
-
-                alert(
-                    result.message ||
-                    (
-                        "Shift 2 Roster #" +
-                        roster +
-                        " berhasil dilengkapi."
-                    )
-                );
-
-
-                await loadJadwal();
-
-            } catch (error) {
-
-                console.error(
-                    "[VIEW-JADWAL] Lengkapi Shift 2:",
-                    error
-                );
-
-                alert(
-                    error.message ||
-                    "Terjadi kesalahan saat melengkapi Shift 2."
-                );
-
-                button.disabled = false;
-
-                button.innerHTML = `
-                    <i class="bi bi-plus-circle me-1"></i>
-                    LENGKAPI SHIFT 2
-                `;
-
-            }
-
-        }
-    );
-
-
-    /* =========================================================
-       INITIAL LOAD MASTER
-       ========================================================= */
-
-    Promise.all([
-        loadUnit(),
-        loadFungsional()
-    ])
-    .catch(
-        error => {
-
-            console.error(error);
-
-            alert(
-                error.message ||
-                "Gagal memuat master data."
-            );
-
-        }
-    );
-
+    const teams=[...rosterMap.keys()].sort((a,b)=>a-b);
+    if(!teams.length)return [];
+    const count=teams.length;
+    // Tim bernomor N bertugas pada tanggal N, N+jumlahTim, dan seterusnya.
+    const teamNo=((day-1)%count)+1;
+    return (rosterMap.get(teamNo)||[]).sort((a,b)=>a.order-b.order);
+  }
+  function updateNav(){ $("btnPrev").disabled=activeDay<=1; $("btnNext").disabled=activeDay>=monthDays(); }
+  async function renderDay(){
+    if(!tahunEl.value||!bulanEl.value||!unitEl.value){return;}
+    const days=monthDays();activeDay=Math.min(Math.max(activeDay,1),days);
+    resultTitle.textContent=formatDate(activeDay);
+    resultSubtitle.textContent=bulanNama[Number(bulanEl.value)]+" "+tahunEl.value;
+    resultUnitChip.textContent=lastUnitName;
+    resultShiftChip.textContent="Shift "+shiftEl.value;
+    resultBody.innerHTML="";emptyState.classList.add("d-none");
+    viewInfo.textContent="Memuat jadwal tanggal "+activeDay+"…";
+    try{
+      const roles=roleSet();
+      if(!roles.length)throw new Error("Jabatan aktif belum tersedia pada Master Jabatan Siaga.");
+      const all=[];
+      for(const role of roles){
+        const rows=await loadRoleRows(role);
+        for(const person of teamForDay(rows,activeDay,shiftEl.value))all.push({name:person.name,role:role.name,order:person.order});
+      }
+      if(!all.length){emptyState.classList.remove("d-none");}
+      else{
+        all.forEach((person,index)=>{
+          const tr=document.createElement("tr");
+          tr.innerHTML='<td class="vs-no">'+(index+1)+'</td><td><span class="vs-person">'+escapeHtml(person.name)+'</span></td><td><span class="vs-role"><span class="vs-role-dot"></span>'+escapeHtml(person.role)+'</span></td>';
+          resultBody.appendChild(tr);
+        });
+      }
+      resultSummary.textContent=all.length+" petugas ditampilkan · "+roles.length+" jabatan diperiksa";
+      viewInfo.textContent="Jadwal berhasil dimuat. Gunakan tombol tanggal untuk membandingkan roster harian.";
+      updateNav();
+    }catch(error){viewInfo.textContent=error.message||"Gagal memuat jadwal.";resultSummary.textContent="";console.error("[VIEW-JADWAL]",error);}
+  }
+  async function showSchedule(){
+    if(!tahunEl.value||!bulanEl.value||!unitEl.value){viewInfo.textContent="Pilih tahun, bulan, dan unit kerja terlebih dahulu.";return;}
+    btnTampilkan.disabled=true;btnTampilkan.innerHTML='<span class="spinner-border spinner-border-sm me-1"></span> Memuat…';
+    try{lastUnitName=unitEl.options[unitEl.selectedIndex]?.text||"";activeDay=1;resultContainer.classList.remove("d-none");await renderDay();lastLoaded=true;}
+    catch(error){viewInfo.textContent=error.message||"Gagal memuat jadwal.";}
+    finally{btnTampilkan.disabled=false;btnTampilkan.innerHTML='<i class="bi bi-search me-1"></i> Tampilkan';}
+  }
+  btnTampilkan.addEventListener("click",showSchedule);
+  $("btnPrev").addEventListener("click",async()=>{if(activeDay>1){activeDay--;await renderDay();}});
+  $("btnNext").addEventListener("click",async()=>{if(activeDay<monthDays()){activeDay++;await renderDay();}});
+  for(const el of [tahunEl,bulanEl,unitEl,shiftEl])el.addEventListener("change",()=>{if(lastLoaded)showSchedule();});
+  Promise.all([loadUnit(),loadRoles()]).catch(error=>{viewInfo.textContent=error.message||"Gagal memuat master data.";console.error(error);});
 })();
-
 </script>
-
 {% endblock %}
