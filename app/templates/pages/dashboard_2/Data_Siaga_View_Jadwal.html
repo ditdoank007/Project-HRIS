@@ -187,17 +187,34 @@
       const roles=roleSet();
       if(!roles.length)throw new Error("Jabatan aktif belum tersedia pada Master Jabatan Siaga.");
       const all=[];
+      const roleResults=[];
       for(const role of roles){
         const rows=await loadRoleRows(role);
-        for(const person of teamForDay(rows,activeDay,shiftEl.value))all.push({name:person.name,role:role.name,order:person.order});
+        const persons=teamForDay(rows,activeDay,shiftEl.value);
+        roleResults.push({role,persons});
+        for(const person of persons)all.push({name:person.name,role:role.name,order:person.order});
       }
-      if(!all.length){emptyState.classList.remove("d-none");}
-      else{
-        all.forEach((person,index)=>{
-          const tr=document.createElement("tr");
-          tr.innerHTML='<td class="vs-no">'+(index+1)+'</td><td><span class="vs-person">'+escapeHtml(person.name)+'</span></td><td><span class="vs-role"><span class="vs-role-dot"></span>'+escapeHtml(person.role)+'</span></td>';
-          resultBody.appendChild(tr);
-        });
+      if(!all.length){
+        emptyState.classList.remove("d-none");
+      } else {
+        let displayNo=0;
+        for(const item of roleResults){
+          // Pertahankan urutan jabatan siaga. Jabatan yang belum memiliki
+          // anggota pada tanggal terpilih tetap terlihat sebagai indikator,
+          // agar operator tahu roster jabatan tersebut belum terisi.
+          if(!item.persons.length){
+            const tr=document.createElement("tr");
+            tr.innerHTML='<td class="vs-no">—</td><td><span class="vs-status">Belum ada personel pada roster tanggal ini</span></td><td><span class="vs-role"><span class="vs-role-dot"></span>'+escapeHtml(item.role.name)+'</span></td>';
+            resultBody.appendChild(tr);
+            continue;
+          }
+          for(const person of item.persons){
+            displayNo++;
+            const tr=document.createElement("tr");
+            tr.innerHTML='<td class="vs-no">'+displayNo+'</td><td><span class="vs-person">'+escapeHtml(person.name)+'</span></td><td><span class="vs-role"><span class="vs-role-dot"></span>'+escapeHtml(item.role.name)+'</span></td>';
+            resultBody.appendChild(tr);
+          }
+        }
       }
       resultSummary.textContent=all.length+" petugas ditampilkan · "+roles.length+" jabatan diperiksa";
       viewInfo.textContent="Jadwal berhasil dimuat. Gunakan tombol tanggal untuk membandingkan roster harian.";
