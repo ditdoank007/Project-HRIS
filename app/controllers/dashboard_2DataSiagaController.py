@@ -2273,42 +2273,41 @@ def api_rejadwal_siaga_delete_personil():
         _ensure_rejadwal_baseline_snapshot(log.UNIT_KERJA_ID, selected_date, shift)
 
         actor = str(session.get('nip') or session.get('NIP') or 'system')[:50]
-        backup = LogActivityBackup(
-            GUID_LOG_BACKUP=_next_log_activity_backup_id(),
-            GUID_LOG=log.GUID_LOG,
-            TRX=log.TRX,
-            ACTIVITY=log.ACTIVITY,
-            STATUS_ID=log.STATUS_ID,
-            ACTIVITY_DATE=log.ACTIVITY_DATE,
-            NOTE=log.NOTE,
-            TEMPAT=log.TEMPAT,
-            PERIHAL=log.PERIHAL,
-            UPDATE_BY=actor,
-            UPDATE_DATE=datetime.now(),
-            GUID_TIM=log.GUID_TIM,
-            NIP=log.NIP,
-            UNIT_KERJA_ID=log.UNIT_KERJA_ID,
-            FUNGSIONAL=log.FUNGSIONAL,
-            TGL_CLOSING=log.TGL_CLOSING,
-            SHIFT_1=log.SHIFT_1,
-            SHIFT_2=log.SHIFT_2,
-            PENGGANTI=log.PENGGANTI,
-            STATUS_TRX=log.STATUS_TRX,
-            BACK_UPDATE=datetime.now(),
-            GUID_BACKUP='Delete Rejadwal',
-            KET_UPDATE=f'Delete Rejadwal - {log.NIP}',
-            NIP_PENGGANTI=log.NIP_PENGGANTI,
-            BIAYA=log.BIAYA,
-            QTY=log.QTY,
-            SATUAN_QTY=log.SATUAN_QTY,
-            SHIFT=log.SHIFT,
-            TGL_JAM_IN=log.TGL_JAM_IN,
-            TGL_JAM_OUT=log.TGL_JAM_OUT,
-            TGL_JAM_BAKU_IN=log.TGL_JAM_BAKU_IN,
-            TGL_JAM_BAKU_OUT=log.TGL_JAM_BAKU_OUT
-        )
-        db.session.add(backup)
-        db.session.flush()
+        # Simpan snapshot asli sebelum penghapusan pertama.
+        _ensure_rejadwal_baseline_snapshot(log.UNIT_KERJA_ID, selected_date, shift)
+
+        # Gunakan SQL fisik: model ORM backup berisi kolom yang tidak tersedia
+        # pada skema database produksi (mis. Biaya/Qty/SatuanQty).
+        backup_result = db.session.execute(db.text("""
+            INSERT INTO LOG_ACTIVITIY_BACKUP (
+                IDBackUp, GUIDLog, Trx, Activity, StatusID, ActivityDate, Note, Tempat,
+                Perihal, UpdateBy, UpdateDate, GUIDTim, NIP, IDUnitKerja,
+                Fungsional, Pengganti, BackUpdate, GUIDBackUp, KetUpdate,
+                NIPPengganti, Shift
+            )
+            SELECT
+                :backup_id, GUIDLog, Trx, Activity, StatusID, ActivityDate, Note, Tempat,
+                Perihal, :actor, NOW(), GUIDTim, NIP, IDUnitKerja,
+                Fungsional, Pengganti, NOW(), 'Delete Rejadwal',
+                :ket_update, NIPPengganti, Shift
+            FROM LOG_ACTIVITIY
+            WHERE GUIDLog = :guid_log
+              AND NIP = :nip
+              AND DATE(ActivityDate) = :selected_date
+              AND Shift = :shift
+              AND Activity = 'Piket Siaga'
+            LIMIT 1
+        """), {
+            'backup_id': _next_log_activity_backup_id(),
+            'actor': actor,
+            'ket_update': f'Delete Rejadwal - {log.NIP}',
+            'guid_log': guid_log,
+            'nip': nip,
+            'selected_date': selected_date,
+            'shift': shift,
+        })
+        if backup_result.rowcount != 1:
+            raise ValueError('Backup personel gagal dibuat; penghapusan dibatalkan.')
 
         # Hapus tepat satu baris fisik. GUIDLog dapat dipakai bersama oleh
         # beberapa anggota roster sehingga tidak aman dijadikan identitas DELETE ORM.
