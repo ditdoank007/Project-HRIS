@@ -1948,27 +1948,50 @@ def api_rejadwal_siaga_get_jadwal():
                 'transac_form': log.TRANSAKSI_FORM or '',
             })
 
-        backups = LogActivityBackup.query.filter(
-            LogActivityBackup.ACTIVITY == 'Piket Siaga',
-            LogActivityBackup.GUID_BACKUP == 'Delete Rejadwal',
-            LogActivityBackup.GUID_LOG == guid_log,
-            db.func.date(LogActivityBackup.ACTIVITY_DATE) == selected_date,
-            LogActivityBackup.UNIT_KERJA_ID == str(unit_id_int),
-            LogActivityBackup.SHIFT == shift
-        ).order_by(LogActivityBackup.GUID_LOG_BACKUP.asc()).all()
+        # Gunakan SQL fisik untuk tabel backup. Model ORM legacy memilih kolom
+        # (mis. Biaya) yang tidak tersedia di database HRIS aktif, sehingga
+        # query ORM gagal meskipun kolom itu tidak dipakai halaman ini.
+        backups = db.session.execute(
+            db.text("""
+                SELECT
+                    `IDBackUp` AS id_backup,
+                    `GUIDLog` AS guid_log,
+                    `NIP` AS nip,
+                    `Fungsional` AS fungsional,
+                    `Shift` AS shift,
+                    `ActivityDate` AS activity_date
+                FROM `LOG_ACTIVITIY_BACKUP`
+                WHERE `Activity` = :activity
+                  AND `GUIDBackUp` = :guid_backup
+                  AND `GUIDLog` = :guid_log
+                  AND DATE(`ActivityDate`) = :selected_date
+                  AND `IDUnitKerja` = :unit_id
+                  AND `Shift` = :shift
+                ORDER BY `IDBackUp` ASC
+            """),
+            {
+                'activity': 'Piket Siaga',
+                'guid_backup': 'Delete Rejadwal',
+                'guid_log': guid_log,
+                'selected_date': selected_date,
+                'unit_id': str(unit_id_int),
+                'shift': shift,
+            }
+        ).mappings().all()
 
         rollback_data = []
         for number, backup in enumerate(backups, 1):
-            pegawai = Pegawai.query.filter(Pegawai.NIP == backup.NIP).first()
+            pegawai = Pegawai.query.filter(Pegawai.NIP == backup['nip']).first()
+            activity_date = backup['activity_date']
             rollback_data.append({
                 'no': number,
-                'id_backup': backup.GUID_LOG_BACKUP,
-                'guid_log': backup.GUID_LOG,
-                'nip': backup.NIP or '-',
-                'nama': pegawai.NAMA if pegawai else (backup.NIP or '-'),
-                'fungsional': backup.FUNGSIONAL or '',
-                'shift': backup.SHIFT or '',
-                'act_date': backup.ACTIVITY_DATE.strftime('%Y.%m.%d') if backup.ACTIVITY_DATE else '',
+                'id_backup': backup['id_backup'],
+                'guid_log': backup['guid_log'],
+                'nip': backup['nip'] or '-',
+                'nama': pegawai.NAMA if pegawai else (backup['nip'] or '-'),
+                'fungsional': backup['fungsional'] or '',
+                'shift': backup['shift'] or '',
+                'act_date': activity_date.strftime('%Y.%m.%d') if activity_date else '',
             })
 
         return jsonify({'success': True, 'guid_log': guid_log, 'jadwal': jadwal_data, 'rollback': rollback_data})
