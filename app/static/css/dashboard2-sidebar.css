@@ -1,99 +1,107 @@
 /* Dashboard2 unified visual shell: aligned with Dashboard1.
    Styling only; nav_dashboard2.html routes, labels, icons and handlers remain intact. */
-body:has(#menu-mini-button) .nxl-navigation,
-body:has(#menu-mini-button) .nxl-navigation .navbar-wrapper,
-body:has(#menu-mini-button) .nxl-navigation .navbar-content,
-body:has(#menu-mini-button) .nxl-navbar {
+body.hris-dashboard2 .nxl-navigation,
+body.hris-dashboard2 .nxl-navigation .navbar-wrapper,
+body.hris-dashboard2 .nxl-navigation .navbar-content,
+body.hris-dashboard2 .nxl-navbar {
   background: #111827 !important;
 }
-body:has(#menu-mini-button) .nxl-navigation {
+body.hris-dashboard2 .nxl-navigation {
   width: 250px !important; border-right: 0 !important; box-shadow: none !important;
 }
-body:has(#menu-mini-button) .nxl-navigation .navbar-wrapper,
-body:has(#menu-mini-button) .nxl-navigation .navbar-content { width: 250px !important; }
-body:has(#menu-mini-button) .nxl-navbar { padding: 0 8px 18px !important; }
-body:has(#menu-mini-button) .custom-nav-header {
+body.hris-dashboard2 .nxl-navigation .navbar-wrapper,
+body.hris-dashboard2 .nxl-navigation .navbar-content { width: 250px !important; }
+body.hris-dashboard2 .nxl-navbar { padding: 0 8px 18px !important; }
+body.hris-dashboard2 .custom-nav-header {
   min-height: 64px !important; padding: 14px 16px !important; background: #111827 !important;
 }
-body:has(#menu-mini-button) .custom-nav-header .header-container { display:flex; align-items:center; gap:10px; }
-body:has(#menu-mini-button) .custom-nav-header img {
+body.hris-dashboard2 .custom-nav-header .header-container { display:flex; align-items:center; gap:10px; }
+body.hris-dashboard2 .custom-nav-header img {
   width:28px !important; height:28px !important; object-fit:contain; flex:0 0 28px;
 }
-body:has(#menu-mini-button) .custom-nav-header .nav-text-label {
+body.hris-dashboard2 .custom-nav-header .nav-text-label {
   color:#fff !important; font-size:12px !important; font-weight:800 !important; letter-spacing:.2px !important;
 }
-body:has(#menu-mini-button) .custom-nav-header .header-container:nth-child(2) {
+body.hris-dashboard2 .custom-nav-header .header-container:nth-child(2) {
   min-height:0 !important; margin-top:0 !important; padding:0 !important; border:0 !important;
 }
-body:has(#menu-mini-button) .custom-nav-header .header-container:nth-child(2) .nav-text-label,
-body:has(#menu-mini-button) .custom-nav-header .nav-separator,
-body:has(#menu-mini-button) .nxl-navigation .nxl-item.nxl-caption { display:none !important; }
-body:has(#menu-mini-button) .custom-nav-header .nxl-navigation-toggle { color:#fff !important; }
-body:has(#menu-mini-button) .nxl-navigation .nxl-navbar > .nxl-item { margin:0 0 5px !important; }
-body:has(#menu-mini-button) .nxl-navigation .nxl-link {
+body.hris-dashboard2 .custom-nav-header .header-container:nth-child(2) .nav-text-label,
+body.hris-dashboard2 .custom-nav-header .nav-separator,
+body.hris-dashboard2 .nxl-navigation .nxl-item.nxl-caption { display:none !important; }
+body.hris-dashboard2 .custom-nav-header .nxl-navigation-toggle { color:#fff !important; }
+body.hris-dashboard2 .nxl-navigation .nxl-navbar > .nxl-item { margin:0 0 5px !important; }
+body.hris-dashboard2 .nxl-navigation .nxl-link {
   min-height:38px !important; padding:0 12px !important; border-radius:7px !important;
   color:#fff !important; background:transparent !important; font-size:11px !important;
   font-weight:700 !important; letter-spacing:0 !important;
   transition:background-color .15s ease,color .15s ease;
 }
-body:has(#menu-mini-button) .nxl-navigation .nxl-link:hover,
-body:has(#menu-mini-button) .nxl-navigation .nxl-item.hris-active > .nxl-link,
-body:has(#menu-mini-button) .nxl-navigation .nxl-link.active {
+body.hris-dashboard2 .nxl-navigation .nxl-link:hover,
+body.hris-dashboard2 .nxl-navigation .nxl-item.hris-active > .nxl-link,
+body.hris-dashboard2 .nxl-navigation .nxl-link.active {
   color:#fff !important; background:#eb6831 !important;
 }
-body:has(#menu-mini-button) .nxl-navigation .nxl-micon {
+body.hris-dashboard2 .nxl-navigation .nxl-micon {
   width:22px !important; color:inherit !important; font-size:16px !important;
 }
-body:has(#menu-mini-button) .nxl-navigation .nxl-arrow { color:inherit !important; }
-body:has(#menu-mini-button) .nxl-navigation .nxl-submenu {
+body.hris-dashboard2 .nxl-navigation .nxl-arrow { color:inherit !important; }
+body.hris-dashboard2 .nxl-navigation .nxl-submenu {
   padding:3px 0 4px 16px !important; background:transparent !important;
 }
-body:has(#menu-mini-button) .nxl-navigation .nxl-submenu .nxl-link {
+body.hris-dashboard2 .nxl-navigation .nxl-submenu .nxl-link {
   min-height:34px !important; padding-left:12px !important;
   color:#cbd5e1 !important; font-size:10px !important; font-weight:600 !important;
 }
-body:has(#menu-mini-button) .nxl-navigation .nxl-submenu .nxl-link:hover,
-body:has(#menu-mini-button) .nxl-navigation .nxl-submenu .nxl-link.active {
+body.hris-dashboard2 .nxl-navigation .nxl-submenu .nxl-link:hover,
+body.hris-dashboard2 .nxl-navigation .nxl-submenu .nxl-link.active {
   color:#fff !important; background:rgba(235,104,49,.18) !important;
 }
-body:has(#menu-mini-button) .nxl-navigation .nxl-hasmenu > .nxl-link { cursor:pointer; }
+body.hris-dashboard2 .nxl-navigation .nxl-hasmenu > .nxl-link { cursor:pointer; }
 
 /* Match Dashboard1's clean white top header instead of Dashboard2's orange bar. */
-body:has(#menu-mini-button) .nxl-header {
+body.hris-dashboard2 .nxl-header {
   background:#fff !important; color:#111827 !important; border-bottom:1px solid #e5e7eb !important;
   box-shadow:none !important;
 }
-body:has(#menu-mini-button) .nxl-header .header-wrapper { min-height:64px !important; }
-body:has(#menu-mini-button) .nxl-header .agenda-topbar-kicker {
+body.hris-dashboard2 .nxl-header .header-wrapper { min-height:64px !important; }
+body.hris-dashboard2 .nxl-header .agenda-topbar-kicker {
   color:#9ca3af !important; font-size:9px !important; font-weight:700 !important;
   letter-spacing:1px !important; line-height:1.4 !important;
 }
-body:has(#menu-mini-button) .nxl-header .agenda-topbar-page {
+body.hris-dashboard2 .nxl-header .agenda-topbar-page {
   color:#111827 !important; font-size:16px !important; font-weight:800 !important; line-height:1.3 !important;
 }
-body:has(#menu-mini-button) .nxl-header .dropdown > a,
-body:has(#menu-mini-button) .nxl-header .dropdown-toggle {
+body.hris-dashboard2 .nxl-header .dropdown > a,
+body.hris-dashboard2 .nxl-header .dropdown-toggle {
   color:#111827 !important; font-size:11px !important; font-weight:700 !important;
 }
-body:has(#menu-mini-button) .nxl-header .nxl-head-mobile-toggler { color:#111827 !important; }
-body:has(#menu-mini-button) .nxl-container {
-  margin-top:64px;
-}
+body.hris-dashboard2 .nxl-header .nxl-head-mobile-toggler { color:#111827 !important; }
 @media (max-width:900px) {
-  body:has(#menu-mini-button) .nxl-navigation,
-  body:has(#menu-mini-button) .nxl-navigation .navbar-wrapper,
-  body:has(#menu-mini-button) .nxl-navigation .navbar-content { width:210px !important; }
+  body.hris-dashboard2 .nxl-navigation,
+  body.hris-dashboard2 .nxl-navigation .navbar-wrapper,
+  body.hris-dashboard2 .nxl-navigation .navbar-content { width:210px !important; }
 }
 @media (max-width:650px) {
-  body:has(#menu-mini-button) .nxl-navigation { width:250px !important; }
-  body:has(#menu-mini-button) .nxl-container { margin-top:64px; }
-}
+  body.hris-dashboard2 .nxl-navigation { width:250px !important; }
+  }
 
 
 /* Dashboard2 does not use the AGENDA topbar title from the shared header partial. */
-body:has(#menu-mini-button) .nxl-header .agenda-topbar-title {
+body.hris-dashboard2 .nxl-header .agenda-topbar-title {
   display: none !important;
 }
-body:has(#menu-mini-button) .nxl-header .header-left {
+body.hris-dashboard2 .nxl-header .header-left {
   min-width: 0;
+}
+
+/* Keep Dashboard2 header in normal document flow; no artificial blank strip. */
+body.hris-dashboard2 .nxl-header {
+  position: relative !important;
+  top: auto !important;
+}
+body.hris-dashboard2 .nxl-container {
+  margin-top: 0 !important;
+}
+body.hris-dashboard2 .nxl-header .agenda-topbar-title {
+  display: none !important;
 }
