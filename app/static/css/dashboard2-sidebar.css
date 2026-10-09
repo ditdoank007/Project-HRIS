@@ -88,3 +88,12 @@ body.hris-dashboard2 .nxl-container {
   body.hris-dashboard2 .nxl-navigation { width:250px !important; }
   body.hris-dashboard2 .nxl-container { margin-top:64px; }
 }
+
+
+/* Dashboard2 does not use the AGENDA topbar title from the shared header partial. */
+body.hris-dashboard2 .nxl-header .agenda-topbar-title {
+  display: none !important;
+}
+body.hris-dashboard2 .nxl-header .header-left {
+  min-width: 0;
+}
