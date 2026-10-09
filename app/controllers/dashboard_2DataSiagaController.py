@@ -1875,96 +1875,107 @@ def api_rejadwal_siaga_get_jadwal():
         except (TypeError, ValueError):
             return jsonify({'success': False, 'error': 'Filter unit atau tanggal tidak valid.'}), 400
 
-        query = LogActivity.query.filter(
-            LogActivity.ACTIVITY == 'Piket Siaga',
-            db.func.date(LogActivity.ACTIVITY_DATE) == selected_date,
-            LogActivity.UNIT_KERJA_ID == str(unit_id_int),
-            LogActivity.SHIFT == shift
-        )
-        first_log = query.order_by(LogActivity.GUID_LOG.asc()).first()
-        if not first_log:
+        # Baca roster dengan SQL fisik, bukan entity ORM.
+        # LOG_ACTIVITIY memakai GUIDLog yang sama untuk beberapa anggota dalam
+        # satu roster. Jika GUIDLog dipetakan ORM sebagai primary key, SQLAlchemy
+        # identity map dapat menganggap beberapa anggota sebagai satu objek dan
+        # mengulang NIP/Fungsional milik satu baris. Query SQL ini mempertahankan
+        # setiap baris fisik, sesuai implementasi HRIS 2013.
+        roster_rows = db.session.execute(
+            db.text("""
+                SELECT
+                    l.GUIDLog AS guid_log,
+                    l.NIP AS nip,
+                    p.Nama AS nama,
+                    l.Fungsional AS fungsional,
+                    l.StatusID AS status_id,
+                    s.Status AS status_text,
+                    s.bgStatus AS bg_status,
+                    u.UnitKerjaName AS unit_kerja,
+                    l.Shift AS shift,
+                    l.ActivityDate AS activity_date,
+                    l.StatusTrx AS status_trx,
+                    l.Pengganti AS pengganti,
+                    l.TransaksiForm AS transac_form
+                FROM LOG_ACTIVITIY l
+                LEFT JOIN PEGAWAI p
+                    ON p.NIP = l.NIP
+                LEFT JOIN MF_UNIT_KERJA u
+                    ON u.IDUnitKerja = l.IDUnitKerja
+                LEFT JOIN MF_STATUS s
+                    ON s.StatusID = l.StatusID
+                WHERE l.Activity = :activity
+                  AND DATE(l.ActivityDate) = :selected_date
+                  AND l.IDUnitKerja = :unit_id
+                  AND l.Shift = :shift
+                  AND (
+                      l.StatusID <> 0
+                      OR l.NIPPengganti IS NULL
+                      OR l.NIPPengganti = ''
+                  )
+                ORDER BY
+                    CASE
+                      WHEN UPPER(COALESCE(u.UnitKerjaName, '')) LIKE 'KN %'
+                        OR UPPER(COALESCE(u.UnitKerjaName, '')) LIKE '%KAPAL%'
+                        OR UPPER(COALESCE(u.UnitKerjaName, '')) LIKE '%KN SAR%'
+                      THEN CASE
+                        WHEN UPPER(COALESCE(l.Fungsional, '')) IN ('PW', 'PERWIRA')
+                          OR UPPER(COALESCE(l.Fungsional, '')) LIKE '%PERWIRA%' THEN 1
+                        WHEN UPPER(COALESCE(l.Fungsional, '')) = 'ABK'
+                          OR UPPER(COALESCE(l.Fungsional, '')) LIKE '%ABK%' THEN 2
+                        ELSE 99 END
+                      ELSE CASE
+                        WHEN UPPER(COALESCE(l.Fungsional, '')) IN ('KGR', 'KAGAHAR')
+                          OR UPPER(COALESCE(l.Fungsional, '')) LIKE '%KAGAHAR%' THEN 1
+                        WHEN UPPER(COALESCE(l.Fungsional, '')) IN ('KOM', 'KOMUNIKASI')
+                          OR UPPER(COALESCE(l.Fungsional, '')) LIKE '%KOMUNIKASI%' THEN 2
+                        WHEN UPPER(COALESCE(l.Fungsional, '')) IN ('RSC', 'RESCUER')
+                          OR UPPER(COALESCE(l.Fungsional, '')) LIKE '%RESCUER%' THEN 3
+                        ELSE 99 END
+                    END,
+                    l.Fungsional ASC,
+                    p.Nama ASC
+            """),
+            {
+                'activity': 'Piket Siaga',
+                'selected_date': selected_date,
+                'unit_id': str(unit_id_int),
+                'shift': shift,
+            }
+        ).mappings().all()
+
+        if not roster_rows:
             return jsonify({
                 'success': True, 'guid_log': '', 'jadwal': [], 'rollback': [],
                 'message': 'Jadwal tidak ditemukan untuk filter tersebut.'
             })
 
-        guid_log = first_log.GUID_LOG
-        # Satu roster HRIS 2013 dapat memakai GUIDLog berbeda antar-fungsional.
-        # Filter jadwal berdasarkan tanggal/unit/shift, bukan hanya GUIDLog pertama.
-        # Jangan JOIN ke MF_ORGZ_SIAGA berdasarkan teks FUNGSIONAL:
-        # master dapat memiliki lebih dari satu baris untuk nilai yang sama,
-        # sehingga JOIN dapat menggandakan/mengacaukan baris roster.
-        # Fungsional sumber kebenaran adalah LOG_ACTIVITIY.FUNGSIONAL.
-        rows = db.session.query(
-            LogActivity, Pegawai, MfUnitKerja
-        ).outerjoin(
-            Pegawai, LogActivity.NIP == Pegawai.NIP
-        ).outerjoin(
-            MfUnitKerja, LogActivity.UNIT_KERJA_ID == MfUnitKerja.UNIT_KERJA_ID
-        ).filter(
-            LogActivity.ACTIVITY == 'Piket Siaga',
-            db.func.date(LogActivity.ACTIVITY_DATE) == selected_date,
-            LogActivity.UNIT_KERJA_ID == str(unit_id_int),
-            LogActivity.SHIFT == shift
-        ).filter(
-            db.or_(
-                LogActivity.STATUS_ID != 0,
-                LogActivity.NIP_PENGGANTI.is_(None),
-                LogActivity.NIP_PENGGANTI == ''
-            )
-        ).order_by(
-            db.text("""
-                CASE
-                  WHEN UPPER(COALESCE(MF_UNIT_KERJA.UnitKerjaName, '')) LIKE 'KN %'
-                    OR UPPER(COALESCE(MF_UNIT_KERJA.UnitKerjaName, '')) LIKE '%KAPAL%'
-                    OR UPPER(COALESCE(MF_UNIT_KERJA.UnitKerjaName, '')) LIKE '%KN SAR%'
-                  THEN CASE
-                    WHEN UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) IN ('PW', 'PERWIRA')
-                      OR UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) LIKE '%PERWIRA%' THEN 1
-                    WHEN UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) = 'ABK'
-                      OR UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) LIKE '%ABK%' THEN 2
-                    ELSE 99 END
-                  ELSE CASE
-                    WHEN UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) IN ('KGR', 'KAGAHAR')
-                      OR UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) LIKE '%KAGAHAR%' THEN 1
-                    WHEN UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) IN ('KOM', 'KOMUNIKASI')
-                      OR UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) LIKE '%KOMUNIKASI%' THEN 2
-                    WHEN UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) IN ('RSC', 'RESCUER')
-                      OR UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) LIKE '%RESCUER%' THEN 3
-                    ELSE 99 END
-                END,
-                LOG_ACTIVITIY.FUNGSIONAL ASC,
-                PEGAWAI.NAMA ASC
-            """)
-        ).all()
-
+        guid_log = roster_rows[0]['guid_log'] or ''
         jadwal_data = []
-        for number, item in enumerate(rows, 1):
-            if len(item) == 5:
-                log, pegawai, unit, orgz, status = item
-                status_text = status.STATUS if status else None
-                bg_status = status.BG_STATUS if status else ''
-            else:
-                log, pegawai, unit = item
-                status_text = None
-                bg_status = ''
-            if not status_text:
-                status_text = {3: 'Hadir', 0: 'Tidak Hadir', 1: 'Dinas Luar/Cuti/Sakit', 2: 'Belum'}.get(log.STATUS_ID, 'Belum')
+        for number, row in enumerate(roster_rows, 1):
+            status_id = row['status_id']
+            status_text = row['status_text'] or {
+                3: 'Hadir',
+                0: 'Tidak Hadir',
+                1: 'Dinas Luar/Cuti/Sakit',
+                2: 'Belum'
+            }.get(status_id, 'Belum')
+            activity_date = row['activity_date']
             jadwal_data.append({
                 'no': number,
-                'guid_log': log.GUID_LOG,
-                'nip': log.NIP or '',
-                'nama': pegawai.NAMA if pegawai else (log.NIP or '-'),
-                'fungsional': log.FUNGSIONAL or '',
-                'status_id': log.STATUS_ID,
+                'guid_log': row['guid_log'] or '',
+                'nip': row['nip'] or '',
+                'nama': row['nama'] or (row['nip'] or '-'),
+                'fungsional': row['fungsional'] or '',
+                'status_id': status_id,
                 'status': status_text,
-                'bg_status': bg_status,
-                'unit_kerja': unit.UNIT_KERJA_NAME if unit else '',
-                'shift': log.SHIFT or '',
-                'act_date': log.ACTIVITY_DATE.strftime('%Y.%m.%d') if log.ACTIVITY_DATE else '',
-                'status_trx': log.STATUS_TRX or '',
-                'pengganti': log.PENGGANTI or 0,
-                'transac_form': log.TRANSAKSI_FORM or '',
+                'bg_status': row['bg_status'] or '',
+                'unit_kerja': row['unit_kerja'] or '',
+                'shift': row['shift'] or '',
+                'act_date': activity_date.strftime('%Y.%m.%d') if activity_date else '',
+                'status_trx': row['status_trx'] or '',
+                'pengganti': row['pengganti'] or 0,
+                'transac_form': row['transac_form'] or '',
             })
 
         # Gunakan SQL fisik untuk tabel backup. Model ORM legacy memilih kolom
