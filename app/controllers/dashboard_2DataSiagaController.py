@@ -50,6 +50,11 @@ def _ensure_rejadwal_baseline_snapshot(unit_id, selected_date, shift):
     if exists and int(exists['total'] or 0) > 0:
         return False
 
+    # Skema produksi mewajibkan IDBackUp tetapi belum AUTO_INCREMENT.
+    base_backup_id = db.session.execute(
+        db.text("SELECT COALESCE(MAX(IDBackUp), 0) FROM LOG_ACTIVITIY_BACKUP")
+    ).scalar() or 0
+
     # Gunakan hanya kolom yang dipakai oleh skema backup HRIS yang sudah ada.
     db.session.execute(
         db.text("""
@@ -60,8 +65,7 @@ def _ensure_rejadwal_baseline_snapshot(unit_id, selected_date, shift):
                 NIPPengganti, Shift
             )
             SELECT
-                (SELECT COALESCE(MAX(IDBackUp), 0) FROM LOG_ACTIVITIY_BACKUP)
-                    + ROW_NUMBER() OVER (ORDER BY l.GUIDLog, l.NIP),
+                :base_backup_id + ROW_NUMBER() OVER (ORDER BY l.GUIDLog, l.NIP),
                 l.GUIDLog, l.Trx, l.Activity, l.StatusID, l.ActivityDate,
                 l.Note, l.Tempat, l.Perihal, l.UpdateBy, l.UpdateDate,
                 l.GUIDTim, l.NIP, l.IDUnitKerja, l.Fungsional,
@@ -73,7 +77,8 @@ def _ensure_rejadwal_baseline_snapshot(unit_id, selected_date, shift):
               AND l.IDUnitKerja = :unit_id
               AND l.Shift = :shift
         """),
-        {'unit_id': str(unit_id), 'selected_date': selected_date, 'shift': str(shift)}
+        {'unit_id': str(unit_id), 'selected_date': selected_date, 'shift': str(shift),
+         'base_backup_id': int(base_backup_id)}
     )
     return True
 
@@ -2182,8 +2187,7 @@ def api_rejadwal_siaga_edit_personil():
                  Perihal, UpdateBy, UpdateDate, GUIDTim, NIP, IDUnitKerja,
                  Fungsional, Pengganti, BackUpdate, GUIDBackUp, KetUpdate,
                  NIPPengganti, Shift)
-            SELECT (SELECT COALESCE(MAX(IDBackUp), 0) + 1 FROM LOG_ACTIVITIY_BACKUP),
-                   GUIDLog, Trx, Activity, StatusID, ActivityDate, Note, Tempat,
+            SELECT :backup_id, GUIDLog, Trx, Activity, StatusID, ActivityDate, Note, Tempat,
                    Perihal, :actor, NOW(), GUIDTim, NIP, IDUnitKerja,
                    Fungsional, Pengganti, NOW(), 'Edit Rejadwal',
                    KetUpdate, NIPPengganti, Shift
@@ -2193,7 +2197,7 @@ def api_rejadwal_siaga_edit_personil():
               AND DATE(ActivityDate) = :tgl
               AND Shift = :shift
               AND Activity = 'Piket Siaga'
-        """), {'actor': actor, 'guid_log': guid_log, 'old_nip': old_nip, 'tgl': selected_date, 'shift': shift})
+        """), {'backup_id': _next_log_activity_backup_id(), 'actor': actor, 'guid_log': guid_log, 'old_nip': old_nip, 'tgl': selected_date, 'shift': shift})
 
         # Pola HRIS 2013: baris pengganti mewarisi atribut jadwal; baris lama
         # ditandai StatusID=0 dan NIPPengganti agar riwayatnya tetap dapat ditelusuri.
