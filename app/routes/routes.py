@@ -1755,6 +1755,12 @@ def api_rejadwal_siaga_add_personil():
     from app.controllers.dashboard_2DataSiagaController import api_rejadwal_siaga_add_personil
     return api_rejadwal_siaga_add_personil()
 
+@main.route('/api/rejadwal-siaga/reset', methods=['POST'])
+@login_required
+def api_rejadwal_siaga_reset():
+    from app.controllers.dashboard_2DataSiagaController import api_rejadwal_siaga_reset
+    return api_rejadwal_siaga_reset()
+
 @main.route('/siaga/view-jadwal')
 @login_required
 def view_data_siaga_view_jadwal():
