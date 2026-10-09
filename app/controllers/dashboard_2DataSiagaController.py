@@ -1891,69 +1891,52 @@ def api_rejadwal_siaga_get_jadwal():
         guid_log = first_log.GUID_LOG
         # Satu roster HRIS 2013 dapat memakai GUIDLog berbeda antar-fungsional.
         # Filter jadwal berdasarkan tanggal/unit/shift, bukan hanya GUIDLog pertama.
-        try:
-            rows = db.session.query(
-                LogActivity, Pegawai, MfUnitKerja, MfOrgzSiaga, MfStatus
-            ).outerjoin(Pegawai, LogActivity.NIP == Pegawai.NIP).outerjoin(
-                MfUnitKerja, LogActivity.UNIT_KERJA_ID == MfUnitKerja.UNIT_KERJA_ID
-            ).outerjoin(
-                MfOrgzSiaga, LogActivity.FUNGSIONAL == MfOrgzSiaga.FUNGSIONAL
-            ).outerjoin(
-                MfStatus, LogActivity.STATUS_ID == MfStatus.STATUS_ID
-            ).filter(
-                LogActivity.ACTIVITY == 'Piket Siaga',
-                db.func.date(LogActivity.ACTIVITY_DATE) == selected_date,
-                LogActivity.UNIT_KERJA_ID == str(unit_id_int),
-                LogActivity.SHIFT == shift
-            ).filter(
-                db.or_(
-                    LogActivity.STATUS_ID != 0,
-                    LogActivity.NIP_PENGGANTI.is_(None),
-                    LogActivity.NIP_PENGGANTI == ''
-                )
-            ).order_by(
-                db.text("""
-                    CASE
-                      WHEN UPPER(COALESCE(MfUnitKerja.UNIT_KERJA_NAME, '')) LIKE 'KN %'
-                        OR UPPER(COALESCE(MfUnitKerja.UNIT_KERJA_NAME, '')) LIKE '%KAPAL%'
-                        OR UPPER(COALESCE(MfUnitKerja.UNIT_KERJA_NAME, '')) LIKE '%KN SAR%'
-                      THEN CASE
-                        WHEN UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) IN ('PW', 'PERWIRA')
-                          OR UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) LIKE '%PERWIRA%' THEN 1
-                        WHEN UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) = 'ABK'
-                          OR UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) LIKE '%ABK%' THEN 2
-                        ELSE 99 END
-                      ELSE CASE
-                        WHEN UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) IN ('KGR', 'KAGAHAR')
-                          OR UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) LIKE '%KAGAHAR%' THEN 1
-                        WHEN UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) IN ('KOM', 'KOMUNIKASI')
-                          OR UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) LIKE '%KOMUNIKASI%' THEN 2
-                        WHEN UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) IN ('RSC', 'RESCUER')
-                          OR UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) LIKE '%RESCUER%' THEN 3
-                        ELSE 99 END
-                    END,
-                    LOG_ACTIVITIY.FUNGSIONAL ASC,
-                    LOG_ACTIVITIY.NIP ASC
-                """)
-            ).all()
-        except Exception:
-            db.session.rollback()
-            rows = db.session.query(
-                LogActivity, Pegawai, MfUnitKerja
-            ).outerjoin(Pegawai, LogActivity.NIP == Pegawai.NIP).outerjoin(
-                MfUnitKerja, LogActivity.UNIT_KERJA_ID == MfUnitKerja.UNIT_KERJA_ID
-            ).filter(
-                LogActivity.ACTIVITY == 'Piket Siaga',
-                db.func.date(LogActivity.ACTIVITY_DATE) == selected_date,
-                LogActivity.UNIT_KERJA_ID == str(unit_id_int),
-                LogActivity.SHIFT == shift
-            ).filter(
-                db.or_(
-                    LogActivity.STATUS_ID != 0,
-                    LogActivity.NIP_PENGGANTI.is_(None),
-                    LogActivity.NIP_PENGGANTI == ''
-                )
-            ).order_by(LogActivity.NIP.asc()).all()
+        # Jangan JOIN ke MF_ORGZ_SIAGA berdasarkan teks FUNGSIONAL:
+        # master dapat memiliki lebih dari satu baris untuk nilai yang sama,
+        # sehingga JOIN dapat menggandakan/mengacaukan baris roster.
+        # Fungsional sumber kebenaran adalah LOG_ACTIVITIY.FUNGSIONAL.
+        rows = db.session.query(
+            LogActivity, Pegawai, MfUnitKerja
+        ).outerjoin(
+            Pegawai, LogActivity.NIP == Pegawai.NIP
+        ).outerjoin(
+            MfUnitKerja, LogActivity.UNIT_KERJA_ID == MfUnitKerja.UNIT_KERJA_ID
+        ).filter(
+            LogActivity.ACTIVITY == 'Piket Siaga',
+            db.func.date(LogActivity.ACTIVITY_DATE) == selected_date,
+            LogActivity.UNIT_KERJA_ID == str(unit_id_int),
+            LogActivity.SHIFT == shift
+        ).filter(
+            db.or_(
+                LogActivity.STATUS_ID != 0,
+                LogActivity.NIP_PENGGANTI.is_(None),
+                LogActivity.NIP_PENGGANTI == ''
+            )
+        ).order_by(
+            db.text("""
+                CASE
+                  WHEN UPPER(COALESCE(MF_UNIT_KERJA.UnitKerjaName, '')) LIKE 'KN %'
+                    OR UPPER(COALESCE(MF_UNIT_KERJA.UnitKerjaName, '')) LIKE '%KAPAL%'
+                    OR UPPER(COALESCE(MF_UNIT_KERJA.UnitKerjaName, '')) LIKE '%KN SAR%'
+                  THEN CASE
+                    WHEN UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) IN ('PW', 'PERWIRA')
+                      OR UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) LIKE '%PERWIRA%' THEN 1
+                    WHEN UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) = 'ABK'
+                      OR UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) LIKE '%ABK%' THEN 2
+                    ELSE 99 END
+                  ELSE CASE
+                    WHEN UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) IN ('KGR', 'KAGAHAR')
+                      OR UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) LIKE '%KAGAHAR%' THEN 1
+                    WHEN UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) IN ('KOM', 'KOMUNIKASI')
+                      OR UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) LIKE '%KOMUNIKASI%' THEN 2
+                    WHEN UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) IN ('RSC', 'RESCUER')
+                      OR UPPER(COALESCE(LOG_ACTIVITIY.FUNGSIONAL, '')) LIKE '%RESCUER%' THEN 3
+                    ELSE 99 END
+                END,
+                LOG_ACTIVITIY.FUNGSIONAL ASC,
+                PEGAWAI.NAMA ASC
+            """)
+        ).all()
 
         jadwal_data = []
         for number, item in enumerate(rows, 1):
