@@ -2032,6 +2032,8 @@ def api_pembuatan_roster_siaga_batch_save():
                 'error': 'Pegawai tidak ditemukan pada master PEGAWAI: ' + ', '.join(missing)
             }), 400
 
+        shifts_sql = ', '.join("'" + value + "'" for value in shifts_to_save)
+
         # Satu nomor tim hanya boleh dipakai sekali untuk jabatan/periode/unit/shift.
         # Ini menjaga nomor tim sebagai pola rotasi tanggal, bukan urutan anggota.
         existing_team = db.session.execute(
@@ -2052,6 +2054,35 @@ def api_pembuatan_roster_siaga_batch_save():
                 'no_urut_tim': no_urut_tim
             }
         ).mappings().all()
+        # Cegah satu pegawai terdaftar pada lebih dari satu tim jabatan/shift dalam periode yang sama.
+        duplicate_members = db.session.execute(
+            db.text(f"""
+                SELECT a.NIP, t.FungsionalTIM, t.NoUrutTim, t.Shift
+                FROM MF_TIM_SIAGA_ANGGOTA a
+                INNER JOIN MF_TIM_SIAGA t ON t.GUIDTim = a.GUIDTim
+                WHERE a.NIP IN ({placeholders})
+                  AND a.BulanPeriode = :bulan
+                  AND a.TahunPeriode = :tahun
+                  AND a.IDUnitKerja = :unit_id
+                  AND a.IsAktif = 'Y'
+                  AND t.BulanPeriode = :bulan
+                  AND t.TahunPeriode = :tahun
+                  AND t.IDUnitKerja = :unit_id
+                  AND t.Shift IN ({shifts_sql})
+                  AND t.IsAktif = 'Y'
+            """),
+            {**nip_params, 'bulan': bulan, 'tahun': tahun, 'unit_id': unit_id}
+        ).mappings().all()
+        if duplicate_members:
+            details = [
+                f"{row['NIP']} sudah ada di tim {row['NoUrutTim']} {row['FungsionalTIM']} Shift {row['Shift']}"
+                for row in duplicate_members
+            ]
+            return jsonify({
+                'success': False,
+                'error': 'Ada pegawai yang sudah terdaftar pada roster periode ini: ' + '; '.join(details)
+            }), 409
+
         if existing_team:
             return jsonify({
                 'success': False,
@@ -2065,7 +2096,6 @@ def api_pembuatan_roster_siaga_batch_save():
         )
         now = datetime.now()
         saved = []
-        shifts_sql = ', '.join("'" + value + "'" for value in shifts_to_save)
 
         # Semua INSERT berada dalam satu transaksi. Jika salah satu gagal,
         # rollback membatalkan seluruh batch, bukan menyisakan roster parsial.
