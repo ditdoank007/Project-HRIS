@@ -1785,6 +1785,16 @@ def view_data_siaga_membuat_jadwal_piket_siaga():
     return data_siaga_membuat_jadwal_piket_siaga()
 
 
+
+@main.route('/api/siaga/roster/batch-save', methods=['POST'])
+@login_required
+def api_pembuatan_roster_siaga_batch_save():
+    from app.controllers.dashboard_2DataSiagaController import (
+        api_pembuatan_roster_siaga_batch_save as save_batch_roster
+    )
+    return save_batch_roster()
+
+
 @main.route('/api/siaga/pembuatan-jadwal/save', methods=['POST'])
 @login_required
 def api_pembuatan_jadwal_siaga_save():
