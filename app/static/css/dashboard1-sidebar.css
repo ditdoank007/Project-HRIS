@@ -6,7 +6,7 @@ body.hris-dashboard1 .nxl-navigation,
 body.hris-dashboard1 .nxl-navigation .navbar-wrapper,
 body.hris-dashboard1 .nxl-navigation .navbar-content,
 body.hris-dashboard1 .nxl-navbar {
-  background: #eb6831 !important;
+  background: #111827 !important;
 }
 
 body.hris-dashboard1 .nxl-navigation {
@@ -27,7 +27,7 @@ body.hris-dashboard1 .nxl-navbar {
 body.hris-dashboard1 .custom-nav-header {
   min-height: 64px !important;
   padding: 14px 16px !important;
-  background: #eb6831 !important;
+  background: #111827 !important;
 }
 
 body.hris-dashboard1 .custom-nav-header .header-container {
@@ -86,7 +86,7 @@ body.hris-dashboard1 .nxl-navigation .nxl-link:hover,
 body.hris-dashboard1 .nxl-navigation .nxl-item.hris-active > .nxl-link,
 body.hris-dashboard1 .nxl-navigation .nxl-link.active {
   color: #fff !important;
-  background: #c95322 !important;
+  background: #eb6831 !important;
 }
 
 body.hris-dashboard1 .nxl-navigation .nxl-micon {
@@ -107,7 +107,7 @@ body.hris-dashboard1 .nxl-navigation .nxl-submenu {
 body.hris-dashboard1 .nxl-navigation .nxl-submenu .nxl-link {
   min-height: 34px !important;
   padding-left: 12px !important;
-  color: rgba(255,255,255,.88) !important;
+  color: #cbd5e1 !important;
   font-size: 10px !important;
   font-weight: 600 !important;
 }
@@ -115,7 +115,7 @@ body.hris-dashboard1 .nxl-navigation .nxl-submenu .nxl-link {
 body.hris-dashboard1 .nxl-navigation .nxl-submenu .nxl-link:hover,
 body.hris-dashboard1 .nxl-navigation .nxl-submenu .nxl-link.active {
   color: #fff !important;
-  background: rgba(120, 40, 12, .30) !important;
+  background: rgba(235, 104, 49, .18) !important;
 }
 
 body.hris-dashboard1 .nxl-navigation .nxl-hasmenu > .nxl-link {
