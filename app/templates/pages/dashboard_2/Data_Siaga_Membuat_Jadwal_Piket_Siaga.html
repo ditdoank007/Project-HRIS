@@ -95,13 +95,9 @@ async function saveRoster(){
   var payload={bulan:month,tahun:year,unit_kerja_id:unit,shift:shift,shift1_sama_shift2:same,no_urut_tim:no,rosters:[{fungsional:role,pegawai:state.members.map(function(p){return {nip:p.nip};})}]};
   var response=await fetch("/api/siaga/roster/batch-save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});var result=await response.json();
   if(!response.ok||!result.success)throw new Error(result.error||"Roster gagal disimpan.");
-  var totalDays=new Date(Number(year),Number(month),0).getDate(),teamCount=0;
-  /* Determine team count from the largest saved roster number, including this one. */
-  try{var check=await fetch("/api/siaga/view-jadwal?bulan="+month+"&tahun="+year+"&unit_kerja_id="+encodeURIComponent(unit)+"&fungsional="+encodeURIComponent(role);if(check.ok){var jr=await check.json();var nums=(jr.data||[]).filter(function(r){return String(r.shift)===String(shift);}).map(function(r){return Number(r.no_urut)||0;});teamCount=Math.max.apply(null,nums.concat([no]));}}catch(ignore){}
-  if(!teamCount||!Number.isFinite(teamCount))teamCount=no;
-  var dates=[];for(var d=no;d<=totalDays;d+=teamCount)dates.push(d);
+  var totalDays=new Date(Number(year),Number(month),0).getDate();
   $("rosterSavedMeta").textContent=result.unit_kerja+" · "+months[Number(month)-1]+" "+year+" · Tim "+no+" · "+(same?"Shift 1 = Shift 2":"Shift "+shift);
-  $("rosterSavedRows").innerHTML=(result.rosters||[]).map(function(r){return "<tr><td><strong>"+esc(r.no_urut_roster||no)+"</strong></td><td>"+esc(r.fungsional)+"</td><td>"+esc(same?"1 & 2":r.shift)+"</td><td>"+esc(dates.join(", ")||"-")+"</td><td>"+(r.pegawai||[]).map(function(p){return esc(p.nama||p.nip);}).join("<br>")+"</td></tr>";}).join("");
+  $("rosterSavedRows").innerHTML=(result.rosters||[]).map(function(r){return "<tr><td><strong>"+esc(r.no_urut_roster||no)+"</strong></td><td>"+esc(r.fungsional)+"</td><td>"+esc(same?"1 & 2":r.shift)+"</td><td>"+"Dibentuk saat jadwal siaga dibuat"+"</td><td>"+(r.pegawai||[]).map(function(p){return esc(p.nama||p.nip);}).join("<br>")+"</td></tr>";}).join("");
   $("rosterSavedCard").classList.remove("d-none");message(result.message||"Tim siaga berhasil disimpan.","success");$("rosterSavedCard").scrollIntoView({behavior:"smooth",block:"start"});clearForm();
  }catch(err){message(err.message||"Gagal menyimpan roster.","danger");}
  finally{btn.disabled=false;btn.innerHTML='<i class="bi bi-save me-1"></i>Simpan Tim';}
