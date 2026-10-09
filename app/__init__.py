@@ -53,6 +53,11 @@ def create_app():
     )
     app.config.from_object(Config)
 
+    # Reload Jinja templates when source files change. This prevents
+    # Gunicorn workers from continuing to serve stale HTML templates.
+    app.config['TEMPLATES_AUTO_RELOAD'] = True
+    app.jinja_env.auto_reload = True
+
     # === KONFIGURASI SESSION ===
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
     app.config['SESSION_PERMANENT'] = True
