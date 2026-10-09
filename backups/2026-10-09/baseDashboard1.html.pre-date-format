@@ -1,0 +1,85 @@
+<!-- layout/baseDashboard1.html -->
+<!DOCTYPE html>
+<html lang="zxx">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Portal Internal Basarnas Surabaya untuk mendukung administrasi, kepegawaian, operasional, dan layanan internal pegawai.">
+    <meta name="keywords" content="Basarnas, Basarnas Surabaya, Portal Internal, Kepegawaian, Operasional SAR">
+    <!-- BEGIN: Apps Title-->
+    <title>BHRIS Dashboard {% block title %}{% endblock %}</title>
+    <!-- END:  Apps Title-->
+    <!-- BEGIN: Favicon-->
+    <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='static_dashboard_1/assets/images/logo-full.png') }}">
+    <!-- END: Favicon-->
+    <!-- BEGIN: Bootstrap CSS-->
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='static_dashboard_1/assets/css/bootstrap.min.css') }}">
+    <!-- END: Bootstrap CSS-->
+    <!-- BEGIN: Vendors CSS-->
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='static_dashboard_1/assets/vendors/css/vendors.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='static_dashboard_1/assets/vendors/css/daterangepicker.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='static_dashboard_1/assets/vendors/css/jquery-jvectormap.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='static_dashboard_1/assets/vendors/css/select2.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='static_dashboard_1/assets/vendors/css/select2-theme.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='static_dashboard_1/assets/vendors/css/jquery.time-to.min.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <!-- END: Vendors CSS-->
+    <!-- BEGIN: Custom CSS-->
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='static_dashboard_1/assets/css/theme.min.css') }}">
+    <!-- END: Custom CSS-->
+    <!-- HRIS REBORN GLOBAL UI -->
+    <link rel="stylesheet"
+          type="text/css"
+          href="{{ url_for('static', filename='css/hris-global.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/hris-ui.css') }}">
+    <script src="{{ url_for('static', filename='js/hris-global.js') }}"></script>
+</head>
+
+<body class="hris-modern">
+
+    <!-- Start Header -->
+    {% include 'partials/header.html' %}
+    <!-- End Header -->
+
+    <!-- Start Navigation Menu -->
+    {% include 'partials/nav_dashboard1.html' %}
+    <!-- End Navigation Menu -->
+
+    <!-- Start Main Content -->
+    <main class="nxl-container">
+        {% block content %}
+        {% endblock %}
+    </main>
+    <!-- End Main Content -->
+
+    <!-- BEGIN: Vendors JS -->
+    <script src="{{ url_for('static', filename='static_dashboard_1/assets/vendors/js/vendors.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='static_dashboard_1/assets/vendors/js/daterangepicker.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='static_dashboard_1/assets/vendors/js/apexcharts.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='static_dashboard_1/assets/vendors/js/jquery.time-to.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='static_dashboard_1/assets/vendors/js/circle-progress.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='static_dashboard_1/assets/js/common-init.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='static_dashboard_1/assets/js/analytics-init.min.js') }}"></script>
+    {% block script %}
+    {% endblock %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const signOutBtn = document.getElementById('headerSignOutBtn');
+            if (signOutBtn) {
+                signOutBtn.addEventListener('click', async function () {
+                    try {
+                        await fetch('/api/logout', { method: 'POST' });
+                    } catch (err) {
+                        console.error('Gagal logout:', err);
+                    } finally {
+                        window.location.href = "{{ url_for('main.index') }}";
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+
+</html>
