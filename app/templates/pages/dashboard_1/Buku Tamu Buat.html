@@ -1,0 +1,113 @@
+{% extends "layout/baseDashboard4.html" %}
+{% block title %}- Buat Buku Tamu{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/hris-ui.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/buku-tamu.css') }}">
+
+<div class="hris-modern">
+  <div class="hris-page bt-page">
+    <div class="bt-hero">
+      <div class="bt-hero-copy">
+        <div class="bt-eyebrow"><i class="ti ti-book"></i> HRIS Reborn · AGENDA</div>
+        <h1>BUAT BUKU TAMU</h1>
+        <p>Buat Buku Tamu digital dengan QR Code permanen untuk setiap Unit Kerja.</p>
+      </div>
+      <button type="button" class="hris-btn bt-hero-btn" id="btnHeroCreate">
+        <i class="feather-plus"></i> BUAT BUKU TAMU
+      </button>
+    </div>
+
+    <div class="hris-card bt-form-card">
+      <div class="hris-card-header">
+        <div>
+          <h3 class="hris-card-title"><i class="ti ti-book me-1"></i> Informasi Buku Tamu</h3>
+          <div class="hris-page-subtitle">Satu Unit Kerja memiliki satu QR Code Buku Tamu permanen yang dapat dicetak dan ditempel di area layanan.</div>
+        </div>
+        <a href="{{ url_for('main.view_agenda_buku_tamu') }}" class="hris-btn hris-btn-secondary">
+          <i class="feather-arrow-left"></i> Kembali
+        </a>
+      </div>
+
+      <div class="hris-card-body">
+        <div class="bt-form-intro">
+          <div class="bt-form-intro-icon"><i class="ti ti-qrcode"></i></div>
+          <div>
+            <strong>QR Code Permanen</strong>
+            <span>QR Code akan dibuat otomatis setelah data disimpan dan dapat dipreview untuk dicetak.</span>
+          </div>
+        </div>
+
+        <div class="hris-form-grid bt-form-grid">
+          <div class="hris-field">
+            <label class="hris-label" for="judul">Judul Buku Tamu <span class="text-danger">*</span></label>
+            <input id="judul" class="hris-input" maxlength="150" placeholder="Contoh: BUKU TAMU USS Lamongan">
+          </div>
+          <div class="hris-field">
+            <label class="hris-label" for="unit">Pilih Unit Kerja <span class="text-danger">*</span></label>
+            <select id="unit" class="hris-select">
+              <option value="">-- Pilih Unit Kerja --</option>
+              {% for unit in units %}
+              <option value="{{ unit.UNIT_KERJA_ID }}">{{ unit.NAMA_UNIT_KERJA }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="bt-form-note">
+          <i class="ti ti-info-circle"></i>
+          <span>Setelah disimpan, Buku Tamu akan muncul di Dashboard Buku Tamu beserta QR Code permanennya.</span>
+        </div>
+
+        <div class="hris-form-actions">
+          <a href="{{ url_for('main.view_agenda_buku_tamu') }}" class="hris-btn hris-btn-secondary">Batal</a>
+          <button class="hris-btn hris-btn-primary" id="btnSimpan">
+            <i class="feather-save"></i> SIMPAN BUKU TAMU
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+(function () {
+  const title = document.getElementById('judul');
+  const unit = document.getElementById('unit');
+  const save = document.getElementById('btnSimpan');
+
+  document.getElementById('btnHeroCreate').addEventListener('click', function () {
+    title.focus();
+    title.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+
+  save.addEventListener('click', async function () {
+    const judul = title.value.trim();
+    const unitId = unit.value;
+    if (!judul || !unitId) {
+      alert('Judul Buku Tamu dan Unit Kerja wajib diisi.');
+      if (!judul) title.focus(); else unit.focus();
+      return;
+    }
+
+    save.disabled = true;
+    try {
+      const response = await fetch('/api/agenda/buku-tamu', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ judul: judul, unit_kerja_id: unitId })
+      });
+      const result = await response.json();
+      if (result.status !== 'success') {
+        throw new Error(result.message || 'Gagal menyimpan Buku Tamu.');
+      }
+      window.location.href = '/agenda/buku-tamu';
+    } catch (error) {
+      alert(error.message);
+      save.disabled = false;
+    }
+  });
+})();
+</script>
+{% endblock %}

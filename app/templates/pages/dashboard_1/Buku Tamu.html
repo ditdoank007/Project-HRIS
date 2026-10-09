@@ -1,0 +1,446 @@
+{% extends "layout/baseDashboard4.html" %}
+{% block title %}- Buku Tamu{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/hris-ui.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/buku-tamu.css') }}">
+
+<div class="hris-modern">
+  <div class="hris-page bt-page">
+
+    <div class="hris-page-header bt-dashboard-header">
+      <div>
+        <div class="bt-breadcrumb">HRIS Reborn · AGENDA</div>
+        <h1 class="hris-page-title">BUKU TAMU</h1>
+        <p class="hris-page-subtitle">Dashboard trafik kunjungan tamu Kantor SAR Surabaya.</p>
+      </div>
+      <a href="{{ url_for('main.view_agenda_buku_tamu_buat') }}" class="hris-btn hris-btn-primary">
+        <i class="feather-plus"></i> BUAT BUKU TAMU
+      </a>
+    </div>
+
+    <div class="bt-kpi-grid">
+      <div class="hris-card bt-kpi-card">
+        <div class="hris-card-body">
+          <div class="bt-kpi-top"><span class="bt-kpi-icon"><i class="ti ti-users"></i></span><span class="bt-kpi-label">TAMU HARI INI</span></div>
+          <div class="bt-kpi-value">{{ today_count }}</div>
+          <div class="bt-kpi-note">Jumlah kunjungan hari ini</div>
+        </div>
+      </div>
+      <div class="hris-card bt-kpi-card">
+        <div class="hris-card-body">
+          <div class="bt-kpi-top"><span class="bt-kpi-icon"><i class="ti ti-calendar-month"></i></span><span class="bt-kpi-label">TAMU BULAN INI</span></div>
+          <div class="bt-kpi-value">{{ month_count }}</div>
+          <div class="bt-kpi-note">{{ month_label }}</div>
+        </div>
+      </div>
+      <div class="hris-card bt-kpi-card">
+        <div class="hris-card-body">
+          <div class="bt-kpi-top"><span class="bt-kpi-icon"><i class="ti ti-chart-bar"></i></span><span class="bt-kpi-label">TAMU TAHUN INI</span></div>
+          <div class="bt-kpi-value">{{ year_count }}</div>
+          <div class="bt-kpi-note">Total kunjungan tahun {{ year }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hris-card bt-traffic-card">
+      <div class="hris-card-header bt-traffic-header">
+        <div>
+          <h3 class="hris-card-title"><i class="ti ti-chart-line"></i> TRAFIK TAMU</h3>
+          <div class="hris-page-subtitle">Pilih periode untuk melihat jumlah kunjungan tamu per hari.</div>
+        </div>
+        <strong id="periodTotal" class="bt-period-total">0 tamu</strong>
+      </div>
+
+      <div class="hris-card-body">
+        <div class="bt-period-nav">
+          <button type="button" class="hris-btn hris-btn-secondary bt-month-nav" id="btnPrevMonth" title="Bulan sebelumnya">
+            <i class="feather-chevron-left"></i>
+          </button>
+          <div class="bt-month-current">
+            <i class="ti ti-calendar"></i>
+            <select id="statMonth" class="hris-select">
+              {% for m in range(1, 13) %}
+              <option value="{{ m }}" {% if m == month_number %}selected{% endif %}>{{ month_names[m] }}</option>
+              {% endfor %}
+            </select>
+            <input id="statYear" class="hris-input" type="number" min="2020" max="2100" value="{{ year }}">
+          </div>
+          <button type="button" class="hris-btn hris-btn-secondary bt-month-nav" id="btnNextMonth" title="Bulan berikutnya">
+            <i class="feather-chevron-right"></i>
+          </button>
+          <div class="bt-unit-filter">
+            <label for="statUnit">Unit Kerja</label>
+            <select id="statUnit" class="hris-select">
+              <option value="">Semua Unit Kerja</option>
+              {% for unit in units %}
+              <option value="{{ unit.UNIT_KERJA_ID }}">{{ unit.NAMA_UNIT_KERJA }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="bt-unit-filter">
+            <label for="statKeperluan">Keperluan</label>
+            <select id="statKeperluan" class="hris-select">
+              <option value="">Semua Keperluan</option>
+              {% for item in keperluan_types %}
+              <option value="{{ item.NAMA_KEPERLUAN }}">{{ item.NAMA_KEPERLUAN }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <button type="button" class="hris-btn hris-btn-primary" id="btnStat"><i class="feather-search"></i> Tampilkan</button>
+        </div>
+
+        <div class="bt-period-summary" id="periodSummary">
+          <div><span>Total Kunjungan</span><strong id="summaryTotal">0</strong></div>
+          <div><span>Hari Tertinggi</span><strong id="summaryPeak">-</strong></div>
+          <div><span>Rata-rata / Hari</span><strong id="summaryAverage">0</strong></div>
+        </div>
+
+        <div class="bt-traffic-wrap">
+          <div id="trafficChart" class="bt-traffic-chart"><div class="hris-loading">Memuat trafik tamu...</div></div>
+        </div>
+        <div class="bt-period-summary" id="keperluanStats" style="margin-top:16px;">
+          <div><span>Registrasi EPIRB</span><strong>0</strong></div>
+          <div><span>Magang</span><strong>0</strong></div>
+          <div><span>Hotel</span><strong>0</strong></div>
+          <div><span>Bank</span><strong>0</strong></div>
+          <div><span>Undangan</span><strong>0</strong></div>
+          <div><span>Lainnya</span><strong>0</strong></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hris-card bt-books-card">
+      <div class="hris-card-header">
+        <div>
+          <h3 class="hris-card-title"><i class="ti ti-book"></i> BUKU TAMU UNIT KERJA</h3>
+          <div class="hris-page-subtitle">QR Code permanen yang telah dibuat untuk masing-masing Unit Kerja.</div>
+        </div>
+        <a href="{{ url_for('main.view_agenda_buku_tamu_rekap') }}" class="hris-btn hris-btn-secondary">
+          <i class="ti ti-report-analytics"></i> REKAP BUKU TAMU
+        </a>
+      </div>
+      <div class="hris-table-wrap">
+        <table class="hris-table-modern">
+          <thead><tr><th>No</th><th>Judul</th><th>Unit Kerja</th><th>Status QR</th><th>Aksi</th></tr></thead>
+          <tbody>
+          {% for book in books %}
+            <tr>
+              <td>{{ loop.index }}</td>
+              <td><strong>{{ book.JUDUL }}</strong></td>
+              <td>{{ book.UNIT_KERJA_NAME }}</td>
+              <td>{% if book.QR_ACTIVE == 'Y' %}<span class="hris-badge-modern hris-badge-success">AKTIF</span>{% else %}<span class="hris-badge-modern hris-badge-danger">NONAKTIF</span>{% endif %}</td>
+              <td><button class="hris-btn hris-btn-secondary bt-action-btn" onclick="previewBook({{ book.ID }})"><i class="feather-eye"></i> Preview QR</button></td>
+            </tr>
+          {% else %}
+            <tr><td colspan="5" class="hris-empty">Belum ada Buku Tamu.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="modal fade bt-modal-preview" id="modalPreview" tabindex="-1" aria-labelledby="modalPreviewLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <div class="modal-header">
+      <div>
+        <div class="bt-modal-eyebrow"><i class="ti ti-qrcode"></i> QR CODE PERMANEN</div>
+        <h5 class="modal-title" id="modalPreviewLabel">Preview Buku Tamu</h5>
+      </div>
+      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+    </div>
+    <div class="modal-body"><div id="printBook" class="bt-print"><div class="small text-muted mb-2">VISITOR</div><h1 id="pvJudul">-</h1><h2>Unit Kerja : <span id="pvUnit">-</span></h2><img id="pvQr" src="" alt="QR Code Buku Tamu"><div class="hint">Silahkan Scan menggunakan kamera handphone dan klik tautan untuk mengisi Buku Tamu<br><br>- Terima kasih -</div></div></div>
+    <div class="modal-footer">
+      <div class="bt-modal-footer-note"><i class="ti ti-info-circle"></i> QR Code permanen — simpan/cetak dan tempel di lobby Unit Kerja.</div>
+      <div class="bt-modal-actions">
+        <button type="button" id="btnDownloadQr" class="hris-btn hris-btn-primary">
+          <i class="feather-download"></i> DOWNLOAD QR CODE
+        </button>
+        <button type="button" id="btnPrintQr" class="hris-btn hris-btn-secondary">
+          <i class="feather-printer"></i> CETAK
+        </button>
+        <button type="button" class="hris-btn hris-btn-secondary" data-bs-dismiss="modal">Tutup</button>
+      </div>
+    </div>
+  </div></div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+(function () {
+  const chart = document.getElementById('trafficChart');
+  const monthNames = {{ month_names|tojson }};
+
+  function setPeriod(year, month) {
+    let y = Number(year), m = Number(month);
+    if (m < 1) { m = 12; y--; }
+    if (m > 12) { m = 1; y++; }
+    document.getElementById('statYear').value = y;
+    document.getElementById('statMonth').value = m;
+  }
+
+  async function loadTraffic() {
+    const month = Number(document.getElementById('statMonth').value);
+    const year = Number(document.getElementById('statYear').value);
+    const unit = document.getElementById('statUnit').value;
+    const keperluan = document.getElementById('statKeperluan').value;
+    chart.innerHTML = '<div class="hris-loading">Memuat trafik tamu...</div>';
+
+    try {
+      const url = '/api/agenda/buku-tamu/rekap?year=' + encodeURIComponent(year)
+        + '&month=' + encodeURIComponent(month)
+        + '&unit_kerja_id=' + encodeURIComponent(unit)
+        + '&keperluan=' + encodeURIComponent(keperluan);
+      const response = await fetch(url);
+      const result = await response.json();
+      if (result.status !== 'success') throw new Error(result.message || 'Gagal memuat trafik.');
+
+      const counts = {};
+      (result.data || []).forEach(function (row) {
+        const day = String(row.tanggal || '').slice(0, 2);
+        counts[day] = (counts[day] || 0) + 1;
+      });
+
+      const daysInMonth = new Date(year, month, 0).getDate();
+      chart.style.gridTemplateColumns = 'repeat(' + daysInMonth + ', minmax(0, 1fr))';
+      const values = [];
+      for (let day = 1; day <= daysInMonth; day++) {
+        const key = String(day).padStart(2, '0');
+        values.push({ day: day, count: counts[key] || 0 });
+      }
+
+      const total = result.total || 0;
+      const peak = values.reduce(function (a, b) { return b.count > a.count ? b : a; }, {day: 0, count: 0});
+      const average = daysInMonth ? (total / daysInMonth).toFixed(1) : '0.0';
+
+      document.getElementById('periodTotal').textContent = total + ' tamu';
+      document.getElementById('summaryTotal').textContent = total;
+      document.getElementById('summaryPeak').textContent = peak.count ? ('Tgl ' + peak.day + ' · ' + peak.count) : '-';
+      document.getElementById('summaryAverage').textContent = average;
+
+      const stats = result.keperluan_stats || [];
+      document.getElementById('keperluanStats').innerHTML = stats.map(function (item) {
+        return '<div><span>' + item.nama + '</span><strong>' + item.total + '</strong></div>';
+      }).join('');
+
+      const max = Math.max.apply(null, values.map(function (x) { return x.count; }).concat([1]));
+      chart.innerHTML = values.map(function (item) {
+        const height = Math.max(3, Math.round((item.count / max) * 100));
+        return '<div class="bt-traffic-item" title="Tanggal ' + item.day + ': ' + item.count + ' tamu">'
+          + '<div class="bt-traffic-value">' + (item.count || '') + '</div>'
+          + '<div class="bt-traffic-bar"><span style="height:' + height + '%"></span></div>'
+          + '<div class="bt-traffic-day">' + item.day + '</div>'
+          + '</div>';
+      }).join('');
+    } catch (error) {
+      chart.innerHTML = '<div class="hris-empty">Gagal memuat trafik: ' + error.message + '</div>';
+    }
+  }
+
+  document.getElementById('btnPrevMonth').addEventListener('click', function () {
+    setPeriod(Number(document.getElementById('statYear').value), Number(document.getElementById('statMonth').value) - 1);
+    loadTraffic();
+  });
+  document.getElementById('btnNextMonth').addEventListener('click', function () {
+    setPeriod(Number(document.getElementById('statYear').value), Number(document.getElementById('statMonth').value) + 1);
+    loadTraffic();
+  });
+  document.getElementById('btnStat').addEventListener('click', loadTraffic);
+  document.getElementById('statMonth').addEventListener('change', loadTraffic);
+  document.getElementById('statYear').addEventListener('change', loadTraffic);
+  document.getElementById('statUnit').addEventListener('change', loadTraffic);
+  document.getElementById('statKeperluan').addEventListener('change', loadTraffic);
+  loadTraffic();
+})();
+
+function slugifyUnit(value) {
+  return String(value || 'unit')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'unit';
+}
+
+function loadImage(src) {
+  return new Promise(function (resolve, reject) {
+    const image = new Image();
+    image.onload = function () { resolve(image); };
+    image.onerror = reject;
+    image.src = src;
+  });
+}
+
+async function buildQrPoster() {
+  const title = document.getElementById('pvJudul').textContent.trim() || 'BUKU TAMU';
+  const unit = document.getElementById('pvUnit').textContent.trim() || '-';
+  const qr = document.getElementById('pvQr');
+
+  if (!qr.complete || !qr.naturalWidth) {
+    await new Promise(function (resolve, reject) {
+      qr.onload = resolve;
+      qr.onerror = reject;
+    });
+  }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 1200;
+  canvas.height = 840;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Border mengikuti tampilan Preview Buku Tamu.
+  ctx.strokeStyle = '#dfe5ec';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(1, 1, canvas.width - 2, canvas.height - 2);
+
+  ctx.textAlign = 'center';
+
+  ctx.fillStyle = '#64748b';
+  ctx.font = '500 20px Arial, sans-serif';
+  ctx.fillText('VISITOR', canvas.width / 2, 60);
+
+  ctx.fillStyle = '#30445c';
+  ctx.font = '800 38px Arial, sans-serif';
+  ctx.fillText(title, canvas.width / 2, 112);
+
+  ctx.font = '700 28px Arial, sans-serif';
+  ctx.fillText('Unit Kerja : ' + unit, canvas.width / 2, 154);
+
+  const qrSize = 380;
+  const qrX = (canvas.width - qrSize) / 2;
+  const qrY = 218;
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(qr, qrX, qrY, qrSize, qrSize);
+
+  ctx.fillStyle = '#64748b';
+  ctx.font = '500 19px Arial, sans-serif';
+  ctx.fillText(
+    'Silahkan Scan menggunakan kamera handphone dan klik tautan untuk mengisi Buku Tamu',
+    canvas.width / 2,
+    670
+  );
+
+  ctx.font = '500 19px Arial, sans-serif';
+  ctx.fillText('- Terima kasih -', canvas.width / 2, 725);
+
+  return canvas;
+}
+
+async function downloadQrPoster() {
+  try {
+    const canvas = await buildQrPoster();
+    const unit = slugifyUnit(document.getElementById('pvUnit').textContent);
+    canvas.toBlob(function (blob) {
+      if (!blob) {
+        alert('Gagal membuat file QR Code.');
+        return;
+      }
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'qr-buku-tamu-' + unit + '.png';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    }, 'image/png');
+  } catch (error) {
+    alert('Gagal membuat QR Code: ' + error.message);
+  }
+}
+
+async function printQrPoster() {
+  try {
+    const canvas = await buildQrPoster();
+    const imageData = canvas.toDataURL('image/png');
+    const title = document.getElementById('pvJudul').textContent.trim() || 'BUKU TAMU';
+    const unit = document.getElementById('pvUnit').textContent.trim() || '-';
+
+    const printWindow = window.open('', '_blank', 'width=1000,height=800');
+    if (!printWindow) {
+      alert('Popup cetak diblokir browser. Silakan izinkan popup untuk HRIS.');
+      return;
+    }
+
+    printWindow.document.open();
+    printWindow.document.write(`
+      <!doctype html>
+      <html lang="id">
+      <head>
+        <meta charset="utf-8">
+        <title>${title} - ${unit}</title>
+        <style>
+          @page { size: A4 portrait; margin: 10mm; }
+          html, body {
+            margin: 0;
+            padding: 0;
+            background: #fff;
+          }
+          body {
+            min-height: 100vh;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            font-family: Arial, sans-serif;
+          }
+          .poster {
+            width: 100%;
+            max-width: 190mm;
+            margin: 8mm auto 0;
+            text-align: center;
+          }
+          img {
+            display: block;
+            width: 100%;
+            height: auto;
+          }
+          @media print {
+            body { min-height: auto; }
+            .poster { margin: 0 auto; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="poster">
+          <img src="${imageData}" alt="QR Code ${title}">
+        </div>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.onload = function () {
+      setTimeout(function () {
+        printWindow.focus();
+        printWindow.print();
+      }, 250);
+    };
+  } catch (error) {
+    alert('Gagal menyiapkan cetakan: ' + error.message);
+  }
+}
+
+async function previewBook(id) {
+  const r = await fetch('/api/agenda/buku-tamu/' + id + '/preview');
+  const j = await r.json();
+  if (j.status !== 'success') return alert(j.message || 'Gagal memuat preview.');
+
+  document.getElementById('pvJudul').textContent = j.data.judul;
+  document.getElementById('pvUnit').textContent = j.data.unit_kerja;
+
+  const qrUrl = '/api/agenda/buku-tamu/' + id + '/qr';
+  document.getElementById('pvQr').src = qrUrl + '?ts=' + Date.now();
+
+  const download = document.getElementById('btnDownloadQr');
+  download.onclick = downloadQrPoster;
+
+  const print = document.getElementById('btnPrintQr');
+  print.onclick = printQrPoster;
+
+  new bootstrap.Modal(document.getElementById('modalPreview')).show();
+}
+</script>
+{% endblock %}

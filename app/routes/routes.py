@@ -154,6 +154,17 @@ from app.controllers.calendarAttendanceController import (
     api_calendar_rapat_guest_attendance,
 )
 
+from app.controllers.bukuTamuController import (
+    buku_tamu, buku_tamu_buat, buku_tamu_jenis_keperluan, buku_tamu_rekap,
+    api_buku_tamu_save, api_buku_tamu_list, api_buku_tamu_qr,
+    api_buku_tamu_preview, api_buku_tamu_rekap, export_buku_tamu_pdf,
+    api_buku_tamu_pegawai_search,
+    api_buku_tamu_jenis_keperluan_list, api_buku_tamu_jenis_keperluan_save,
+    api_buku_tamu_jenis_keperluan_toggle, api_buku_tamu_internal_keperluan,
+    api_buku_tamu_internal_info, api_buku_tamu_internal_pegawai,
+    api_buku_tamu_internal_submit,
+)
+
 from app.controllers.dashboard_1AgendaController import (
     agenda_rapat, api_agenda_rapat_list, api_agenda_rapat_save,
     api_agenda_rapat_detail, api_agenda_rapat_update,
@@ -2566,6 +2577,131 @@ def api_agenda_disposisi_cancel_route(agenda_id):
 
 
 # ============================================================
+
+# ============================================================
+# BUKU TAMU
+# ============================================================
+
+@main.route('/agenda/buku-tamu')
+@login_required
+@form_access_required('AGENDA_BUKU_TAMU')
+def view_agenda_buku_tamu():
+    return buku_tamu()
+
+
+@main.route('/agenda/buku-tamu/buat')
+@login_required
+@form_access_required('AGENDA_BUKU_TAMU')
+def view_agenda_buku_tamu_buat():
+    return buku_tamu_buat()
+
+
+@main.route('/agenda/buku-tamu/jenis-keperluan')
+@login_required
+@form_access_required('AGENDA_BUKU_TAMU')
+def view_agenda_buku_tamu_jenis_keperluan():
+    return buku_tamu_jenis_keperluan()
+
+
+@main.route('/agenda/buku-tamu/rekap')
+@login_required
+@form_access_required('AGENDA_BUKU_TAMU')
+def view_agenda_buku_tamu_rekap():
+    return buku_tamu_rekap()
+
+
+@main.route('/api/agenda/buku-tamu', methods=['GET'])
+@login_required
+@form_access_required('AGENDA_BUKU_TAMU')
+def api_agenda_buku_tamu_list_route():
+    return api_buku_tamu_list()
+
+
+@main.route('/api/agenda/buku-tamu', methods=['POST'])
+@login_required
+@form_access_required('AGENDA_BUKU_TAMU')
+def api_agenda_buku_tamu_save_route():
+    return api_buku_tamu_save()
+
+
+@main.route('/api/agenda/buku-tamu/<int:book_id>/preview', methods=['GET'])
+@login_required
+@form_access_required('AGENDA_BUKU_TAMU')
+def api_agenda_buku_tamu_preview_route(book_id):
+    return api_buku_tamu_preview(book_id)
+
+
+@main.route('/api/agenda/buku-tamu/<int:book_id>/qr', methods=['GET'])
+@login_required
+@form_access_required('AGENDA_BUKU_TAMU')
+def api_agenda_buku_tamu_qr_route(book_id):
+    return api_buku_tamu_qr(book_id)
+
+
+@main.route('/api/agenda/buku-tamu/jenis-keperluan', methods=['GET'])
+@login_required
+@form_access_required('AGENDA_BUKU_TAMU')
+def api_agenda_buku_tamu_jenis_keperluan_list_route():
+    return api_buku_tamu_jenis_keperluan_list()
+
+
+@main.route('/api/agenda/buku-tamu/jenis-keperluan', methods=['POST'])
+@login_required
+@form_access_required('AGENDA_BUKU_TAMU')
+def api_agenda_buku_tamu_jenis_keperluan_save_route():
+    return api_buku_tamu_jenis_keperluan_save()
+
+
+@main.route('/api/agenda/buku-tamu/jenis-keperluan/<int:row_id>/toggle', methods=['POST'])
+@login_required
+@form_access_required('AGENDA_BUKU_TAMU')
+def api_agenda_buku_tamu_jenis_keperluan_toggle_route(row_id):
+    return api_buku_tamu_jenis_keperluan_toggle(row_id)
+
+
+@main.route('/api/agenda/buku-tamu/rekap', methods=['GET'])
+@login_required
+@form_access_required('AGENDA_BUKU_TAMU')
+def api_agenda_buku_tamu_rekap_route():
+    return api_buku_tamu_rekap()
+
+
+@main.route('/api/agenda/buku-tamu/export-pdf', methods=['GET'])
+@login_required
+@form_access_required('AGENDA_BUKU_TAMU')
+def api_agenda_buku_tamu_export_pdf_route():
+    return export_buku_tamu_pdf()
+
+
+@main.route('/api/agenda/buku-tamu/pegawai/search', methods=['GET'])
+@login_required
+@form_access_required('AGENDA_BUKU_TAMU')
+def api_agenda_buku_tamu_pegawai_search_route():
+    return api_buku_tamu_pegawai_search()
+
+
+# Endpoint internal untuk aplikasi HRIS Calendar.
+# Validasi kunci internal dilakukan oleh controller.
+@main.route('/api/internal/calendar/buku-tamu/keperluan', methods=['GET'])
+def api_internal_calendar_buku_tamu_keperluan():
+    return api_buku_tamu_internal_keperluan()
+
+
+@main.route('/api/internal/calendar/buku-tamu/info', methods=['GET'])
+def api_calendar_buku_tamu_info_route():
+    return api_buku_tamu_internal_info()
+
+
+@main.route('/api/internal/calendar/buku-tamu/pegawai', methods=['GET'])
+def api_calendar_buku_tamu_pegawai_route():
+    return api_buku_tamu_internal_pegawai()
+
+
+@main.route('/api/internal/calendar/buku-tamu/submit', methods=['POST'])
+def api_calendar_buku_tamu_submit_route():
+    return api_buku_tamu_internal_submit()
+
+
 # KESAMAPTAAN
 # ============================================================
 

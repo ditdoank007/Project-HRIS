@@ -42,6 +42,7 @@ from app.models.rekamMedisModel import RekamMedis
 from app.models.rekamMedisKegiatanModel import RekamMedisKegiatan
 from app.models.rekamMedisPesertaModel import RekamMedisPeserta
 from app.models.rekamMedisPetugasModel import RekamMedisPetugas
+from app.models.bukuTamuModel import BukuTamu, BukuTamuEntry, JenisKeperluan
 
 
 def create_app():

@@ -116,6 +116,8 @@
                     </li>
                     {% endif %}
 
+
+
                     {% if is_administrator() or has_form_access('SUMDA_KESAMAPTAAN') %}
                     <li class="nxl-item">
                         <a href="{{ url_for('main.view_kesamaptaan') }}"
@@ -144,6 +146,42 @@
                                 <a href="{{ url_for('main.view_rekam_medis_non_pegawai') }}"
                                    class="nxl-link{% if request.endpoint == 'main.view_rekam_medis_non_pegawai' %} active{% endif %}">
                                     <span class="nxl-mtext">Rekam Medis Non Pegawai</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    {% endif %}
+
+                    {% if is_administrator() or has_form_access('AGENDA_BUKU_TAMU') %}
+                    <li class="nxl-item nxl-hasmenu{% if request.endpoint in ['main.view_agenda_buku_tamu', 'main.view_agenda_buku_tamu_buat', 'main.view_agenda_buku_tamu_jenis_keperluan', 'main.view_agenda_buku_tamu_rekap'] %} hris-active{% endif %}">
+                        <a href="javascript:void(0);" class="nxl-link">
+                            <span class="nxl-micon"><i class="ti ti-book"></i></span>
+                            <span class="nxl-mtext">Buku Tamu</span>
+                            <span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                        </a>
+                        <ul class="nxl-submenu">
+                            <li class="nxl-item">
+                                <a href="{{ url_for('main.view_agenda_buku_tamu') }}"
+                                   class="nxl-link{% if request.endpoint == 'main.view_agenda_buku_tamu' %} active{% endif %}">
+                                    <span class="nxl-mtext">Dashboard Buku Tamu</span>
+                                </a>
+                            </li>
+                            <li class="nxl-item">
+                                <a href="{{ url_for('main.view_agenda_buku_tamu_buat') }}"
+                                   class="nxl-link{% if request.endpoint == 'main.view_agenda_buku_tamu_buat' %} active{% endif %}">
+                                    <span class="nxl-mtext">Buat Buku Tamu</span>
+                                </a>
+                            </li>
+                            <li class="nxl-item">
+                                <a href="{{ url_for('main.view_agenda_buku_tamu_jenis_keperluan') }}"
+                                   class="nxl-link{% if request.endpoint == 'main.view_agenda_buku_tamu_jenis_keperluan' %} active{% endif %}">
+                                    <span class="nxl-mtext">Jenis Keperluan</span>
+                                </a>
+                            </li>
+                            <li class="nxl-item">
+                                <a href="{{ url_for('main.view_agenda_buku_tamu_rekap') }}"
+                                   class="nxl-link{% if request.endpoint == 'main.view_agenda_buku_tamu_rekap' %} active{% endif %}">
+                                    <span class="nxl-mtext">Rekap Buku Tamu</span>
                                 </a>
                             </li>
                         </ul>
@@ -239,21 +277,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 <style>
-/* AGENDA shell — active menu is intentionally WHITE; orange is reserved for brand/actions. */
+/* AGENDA shell — active menu uses Basarnas orange with white text. */
 .nxl-navigation .nxl-navbar .nxl-item > .nxl-link.active,
 .nxl-navigation .nxl-navbar .nxl-item.hris-active > .nxl-link {
-    color:#172033 !important;
-    background:#ffffff !important;
+    color:#ffffff !important;
+    background:#eb6831 !important;
     box-shadow:0 2px 8px rgba(0,0,0,.10) !important;
     border-radius:6px !important;
 }
 .nxl-navigation .nxl-navbar .nxl-item > .nxl-link.active .nxl-micon,
-.nxl-navigation .nxl-navbar .nxl-item.hris-active > .nxl-link .nxl-micon {
-    color:#172033 !important;
-}
+.nxl-navigation .nxl-navbar .nxl-item.hris-active > .nxl-link .nxl-micon,
 .nxl-navigation .nxl-navbar .nxl-item > .nxl-link.active .nxl-mtext,
 .nxl-navigation .nxl-navbar .nxl-item.hris-active > .nxl-link .nxl-mtext {
-    color:#172033 !important;
+    color:#ffffff !important;
 }
 .nxl-navigation .nxl-navbar .nxl-item > .nxl-link:hover {
     color:#ffffff !important;
