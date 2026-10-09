@@ -309,7 +309,7 @@ $(document).ready(function() {
                                (row.status_id === 2 ? 'bg-warning' : 'bg-secondary'));
             
             $tbody.append(`
-                <tr data-nip="${row.nip}" data-act="${row.act_date}" data-shift="${row.shift}">
+                <tr data-guid="${row.guid_log}" data-nip="${row.nip}" data-act="${row.act_date}" data-shift="${row.shift}">
                     <td>${row.no}</td>
                     <td>${row.nip}</td>
                     <td class="text-start">${row.nama}</td>
@@ -413,7 +413,7 @@ $(document).ready(function() {
             method: 'POST',
             contentType: 'application/json',
             data: JSON.stringify({
-                guid_log: guidLog,
+                guid_log: String($row.data('guid') || guidLog),
                 old_nip: oldNip,
                 new_nip: cleanNip,
                 act_date: actDate,
