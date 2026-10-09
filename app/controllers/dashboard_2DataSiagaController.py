@@ -2151,7 +2151,7 @@ def api_rejadwal_siaga_edit_personil():
             absensi_rows = db.session.execute(db.text("""
                 SELECT LOWER(COALESCE(d.Transaksi, '')) AS transaksi,
                        UPPER(COALESCE(d.Jenis, '')) AS jenis
-                FROM DinasLuar d
+                FROM DINAS_LUAR d
                 INNER JOIN Pegawai p ON p.FingerID = d.FingerID
                 WHERE p.NIP = :nip
                   AND DATE(d.TglAwalDinasLuar) <= :tgl
