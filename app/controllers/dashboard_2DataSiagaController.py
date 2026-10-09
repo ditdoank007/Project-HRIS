@@ -1947,6 +1947,12 @@ def api_rejadwal_siaga_get_jadwal():
                 db.func.date(LogActivity.ACTIVITY_DATE) == selected_date,
                 LogActivity.UNIT_KERJA_ID == str(unit_id_int),
                 LogActivity.SHIFT == shift
+            ).filter(
+                db.or_(
+                    LogActivity.STATUS_ID != 0,
+                    LogActivity.NIP_PENGGANTI.is_(None),
+                    LogActivity.NIP_PENGGANTI == ''
+                )
             ).order_by(LogActivity.NIP.asc()).all()
 
         jadwal_data = []
@@ -2001,7 +2007,6 @@ def api_rejadwal_siaga_get_jadwal():
             {
                 'activity': 'Piket Siaga',
                 'guid_backup': 'Delete Rejadwal',
-                'guid_log': guid_log,
                 'selected_date': selected_date,
                 'unit_id': str(unit_id_int),
                 'shift': shift,
