@@ -80,6 +80,43 @@
             }
         });
     </script>
+
+<script>
+/* Global display standard: DD-MM-YYYY. API values and form controls remain unchanged. */
+(function () {
+  "use strict";
+  const isoDate = /\b(\d{4})-(\d{2})-(\d{2})\b/g;
+  function formatTextNode(node) {
+    if (!node || node.nodeType !== Node.TEXT_NODE || !node.nodeValue) return;
+    const parent = node.parentElement;
+    if (!parent || parent.closest("script,style,textarea,input,select,option,code,pre")) return;
+    if (isoDate.test(node.nodeValue)) {
+      isoDate.lastIndex = 0;
+      node.nodeValue = node.nodeValue.replace(isoDate, "$3-$2-$1");
+    } else {
+      isoDate.lastIndex = 0;
+    }
+  }
+  function scan(root) {
+    if (root.nodeType === Node.TEXT_NODE) return formatTextNode(root);
+    if (root.nodeType !== Node.ELEMENT_NODE && root.nodeType !== Node.DOCUMENT_NODE) return;
+    if (root.nodeType === Node.ELEMENT_NODE && root.matches("script,style,textarea,input,select,option,code,pre")) return;
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let node;
+    while ((node = walker.nextNode())) formatTextNode(node);
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => scan(document.body), { once: true });
+  } else {
+    scan(document.body);
+  }
+  new MutationObserver(records => records.forEach(record => {
+    if (record.type === "characterData") formatTextNode(record.target);
+    record.addedNodes && record.addedNodes.forEach(node => scan(node));
+  })).observe(document.documentElement, { childList: true, subtree: true, characterData: true });
+})();
+</script>
+
 </body>
 
 </html>
