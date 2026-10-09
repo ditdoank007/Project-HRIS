@@ -1896,7 +1896,7 @@ def api_rejadwal_siaga_get_jadwal():
                     l.ActivityDate AS activity_date,
                     l.StatusTrx AS status_trx,
                     l.Pengganti AS pengganti,
-                    l.TransaksiForm AS transac_form
+                    l.TransacForm AS transac_form
                 FROM LOG_ACTIVITIY l
                 LEFT JOIN PEGAWAI p
                     ON p.NIP = l.NIP
