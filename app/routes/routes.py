@@ -1719,6 +1719,12 @@ def api_rejadwal_siaga_get_jadwal():
     from app.controllers.dashboard_2DataSiagaController import api_rejadwal_siaga_get_jadwal
     return api_rejadwal_siaga_get_jadwal()
 
+@main.route('/api/rejadwal-siaga/edit-personil', methods=['POST'])
+@login_required
+def api_rejadwal_siaga_edit_personil():
+    from app.controllers.dashboard_2DataSiagaController import api_rejadwal_siaga_edit_personil
+    return api_rejadwal_siaga_edit_personil()
+
 @main.route('/api/rejadwal-siaga/delete-personil', methods=['POST'])
 @login_required
 def api_rejadwal_siaga_delete_personil():
