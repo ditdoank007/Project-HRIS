@@ -1,0 +1,137 @@
+/* HRIS Dashboard1 — sidebar visual alignment with Dashboard4.
+   Scoped to body.hris-dashboard1 to avoid changing other dashboards.
+   Navigation links, permissions, routes, and submenu markup remain untouched. */
+
+body.hris-dashboard1 .nxl-navigation,
+body.hris-dashboard1 .nxl-navigation .navbar-wrapper,
+body.hris-dashboard1 .nxl-navigation .navbar-content,
+body.hris-dashboard1 .nxl-navbar {
+  background: #eb6831 !important;
+}
+
+body.hris-dashboard1 .nxl-navigation {
+  width: 250px !important;
+  border-right: 0 !important;
+  box-shadow: none !important;
+}
+
+body.hris-dashboard1 .nxl-navigation .navbar-wrapper,
+body.hris-dashboard1 .nxl-navigation .navbar-content {
+  width: 250px !important;
+}
+
+body.hris-dashboard1 .nxl-navbar {
+  padding: 0 8px 18px !important;
+}
+
+body.hris-dashboard1 .custom-nav-header {
+  min-height: 64px !important;
+  padding: 14px 16px !important;
+  background: #eb6831 !important;
+}
+
+body.hris-dashboard1 .custom-nav-header .header-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+body.hris-dashboard1 .custom-nav-header img {
+  width: 28px !important;
+  height: 28px !important;
+  object-fit: contain;
+  flex: 0 0 28px;
+}
+
+body.hris-dashboard1 .custom-nav-header .nav-text-label {
+  color: #fff !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  letter-spacing: .2px !important;
+}
+
+body.hris-dashboard1 .custom-nav-header .header-container:nth-child(2) {
+  min-height: 0 !important;
+  margin-top: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+
+body.hris-dashboard1 .custom-nav-header .header-container:nth-child(2) .nav-text-label,
+body.hris-dashboard1 .custom-nav-header .nav-separator {
+  display: none !important;
+}
+
+body.hris-dashboard1 .custom-nav-header .nxl-navigation-toggle {
+  color: #fff !important;
+}
+
+body.hris-dashboard1 .nxl-navigation .nxl-navbar > .nxl-item {
+  margin: 0 0 5px !important;
+}
+
+body.hris-dashboard1 .nxl-navigation .nxl-link {
+  min-height: 38px !important;
+  padding: 0 12px !important;
+  border-radius: 7px !important;
+  color: #fff !important;
+  background: transparent !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0 !important;
+  transition: background-color .15s ease, color .15s ease;
+}
+
+body.hris-dashboard1 .nxl-navigation .nxl-link:hover,
+body.hris-dashboard1 .nxl-navigation .nxl-item.hris-active > .nxl-link,
+body.hris-dashboard1 .nxl-navigation .nxl-link.active {
+  color: #fff !important;
+  background: #c95322 !important;
+}
+
+body.hris-dashboard1 .nxl-navigation .nxl-micon {
+  width: 22px !important;
+  color: inherit !important;
+  font-size: 16px !important;
+}
+
+body.hris-dashboard1 .nxl-navigation .nxl-arrow {
+  color: inherit !important;
+}
+
+body.hris-dashboard1 .nxl-navigation .nxl-submenu {
+  padding: 3px 0 4px 16px !important;
+  background: transparent !important;
+}
+
+body.hris-dashboard1 .nxl-navigation .nxl-submenu .nxl-link {
+  min-height: 34px !important;
+  padding-left: 12px !important;
+  color: rgba(255,255,255,.88) !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+}
+
+body.hris-dashboard1 .nxl-navigation .nxl-submenu .nxl-link:hover,
+body.hris-dashboard1 .nxl-navigation .nxl-submenu .nxl-link.active {
+  color: #fff !important;
+  background: rgba(120, 40, 12, .30) !important;
+}
+
+body.hris-dashboard1 .nxl-navigation .nxl-hasmenu > .nxl-link {
+  cursor: pointer;
+}
+
+@media (max-width: 900px) {
+  body.hris-dashboard1 .nxl-navigation,
+  body.hris-dashboard1 .nxl-navigation .navbar-wrapper,
+  body.hris-dashboard1 .nxl-navigation .navbar-content {
+    width: 210px !important;
+  }
+}
+
+@media (max-width: 650px) {
+  body.hris-dashboard1 .nxl-navigation {
+    width: 250px !important;
+  }
+}
