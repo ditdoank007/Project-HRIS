@@ -146,7 +146,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <div>
-                    <h2 class="modal-title fs-5 fw-semibold" id="replacementModalTitle"><i class="bi bi-person-arrows me-2" style="color:var(--ui-brand);"></i>Ganti Petugas Piket</h2>
+                    <h2 class="modal-title fs-5 fw-semibold" id="replacementModalTitle"><i class="bi bi-arrow-repeat me-2" style="color:#0f766e;"></i>Ganti Petugas Piket</h2>
                     <p class="mb-0 mt-1 small text-muted">Cari pegawai berdasarkan nama, lalu pilih dari hasil pencarian.</p>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
@@ -195,6 +195,9 @@
     #tableBodyJadwal .jadwal-action-cell { white-space:nowrap; text-align:center; }
     #tableBodyJadwal .jadwal-action-group { display:inline-flex; flex-flow:row nowrap; align-items:center; justify-content:center; gap:8px; white-space:nowrap; }
     #tableBodyJadwal .btn-action,#tableBodyRollback .btn-action { display:inline-flex; align-items:center; justify-content:center; min-height:30px; min-width:32px; padding:5px 8px; border-radius:8px; margin:0; vertical-align:middle; flex:0 0 auto; }
+    #tableBodyJadwal .btn-edit-jadwal { color:#0f766e; border-color:#0f766e; }
+    #tableBodyJadwal .btn-edit-jadwal:hover { color:#fff; background:#0f766e; border-color:#0f766e; }
+    #tableBodyJadwal .btn-edit-jadwal i { font-size:17px; }
     #replacementModal .modal-dialog { max-width:520px; }
     #replacementModal .modal-content { border:1px solid rgba(226,232,240,.9); border-radius:18px; background:rgba(255,255,255,.96); box-shadow:0 24px 80px rgba(15,23,42,.24); overflow:visible; }
     #replacementModal .modal-header { padding:20px 22px 14px; border-bottom:1px solid #edf0f5; }
@@ -206,8 +209,12 @@
     #replacementSuggestions .replacement-option { display:block; width:100%; padding:11px 14px; border:0; border-bottom:1px solid #f1f5f9; background:#fff; text-align:left; color:#1e293b; }
     #replacementSuggestions .replacement-option:hover,#replacementSuggestions .replacement-option:focus { background:#fff4ed; outline:0; }
     #replacementSuggestions .replacement-option small { display:block; margin-top:3px; color:#64748b; }
-    body.modal-open .modal-backdrop.show { opacity:.28; backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); }
-    #replacementModal { backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px); }
+    /* Paksa modal ke layer teratas; blur hanya diterapkan pada backdrop di belakang modal. */
+    body.modal-open .modal-backdrop { z-index:19990 !important; background:rgba(15,23,42,.30) !important; opacity:1 !important; backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); }
+    #replacementModal { z-index:20000 !important; position:fixed !important; inset:0; overflow-y:auto; }
+    #replacementModal .modal-dialog { position:relative; z-index:20001; margin-left:auto; margin-right:auto; }
+    #replacementModal .modal-content { position:relative; z-index:20002; background:#fff; }
+    #replacementSuggestions { z-index:20010; }
     @media(max-width:1100px) { .jadwal-filter-grid { grid-template-columns:minmax(150px,.85fr) minmax(230px,1.5fr) minmax(135px,.8fr); } .jadwal-filter-actions { grid-column:1/-1; flex-wrap:wrap; } }
     @media(max-width:700px) { .hris-page { padding:15px; } .jadwal-filter-grid,.jadwal-add-grid { grid-template-columns:minmax(0,1fr); } .jadwal-filter-actions { grid-column:auto; } .jadwal-filter-actions .hris-btn { flex:1; } }
 </style>
@@ -367,7 +374,7 @@ $(document).ready(function() {
                     <td class="jadwal-action-cell">
                         <div class="jadwal-action-group">
                             <button type="button" class="btn btn-sm btn-outline-primary btn-action btn-edit-jadwal" title="Ganti petugas" aria-label="Ganti petugas">
-                                <i class="bi bi-person-arrows"></i>
+                                <i class="bi bi-arrow-repeat"></i>
                             </button>
                             <button type="button" class="btn btn-sm btn-outline-danger btn-action btn-delete-jadwal" title="Hapus dari jadwal" aria-label="Hapus dari jadwal">
                                 <i class="bi bi-trash3"></i>
