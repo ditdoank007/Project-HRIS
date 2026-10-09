@@ -1,0 +1,595 @@
+<!-- pages/dashboard_2/Data_Siaga_Jadwal_Ulang.html -->
+{% extends "layout/baseDashboard2.html" %}
+
+{% block title %}- Ubah Jadwal Piket{% endblock %}
+
+{% block content %}
+<div class="nxl-content">
+    <div class="page-header">
+        <div class="page-header-left d-flex align-items-center">
+            <div class="page-header-title">
+                <h5 class="m-b-10">Data Siaga</h5>
+            </div>
+            <ul class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.view_data_siaga_jadwal_ulang') }}">Ubah Jadwal Piket</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="main-content master-siaga">
+        <div class="container-fluid">
+            <!-- Alert -->
+            <div id="alertContainer" class="alert alert-dismissable d-none mb-3">
+                <span id="alertMessage"></span>
+            </div>
+
+            <!-- Header -->
+            <div class="card mb-4">
+                <div class="card-header-custom d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="bi bi-people me-2"></i>Jadwal Ulang Piket Siaga</h6>
+                </div>
+            </div>
+
+            <!-- ========== FILTER SECTION ========== -->
+            <div class="card mb-4 filter-card">
+                <div class="card-header-customm">
+                    <h6 class="mb-0">Jadwal Piket</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-12 d-flex flex-column flex-md-row align-items-start align-items-md-center flex-wrap gap-2">
+                            <span class="fw-bold">Unit</span>
+                            <select id="unitKerja" class="form-select-sm border custom-select" style="width:200px;">
+                                <option value="">- Pilih Unit -</option>
+                            </select>
+
+                            <span class="fw-bold">Tanggal</span>
+                            <div class="input-group input-group-sm" style="width:150px;">
+                                <input type="date" id="tglJadwal" class="form-control form-control-sm border" 
+                                       style="position: relative; z-index: 1; cursor: pointer;">
+                            </div>
+
+                            <span class="fw-bold">Shift</span>
+                            <select id="shift" class="form-select-sm border custom-select" style="width:150px;">
+                                <option value="">- Pilih Shift -</option>
+                            </select>
+
+                            <button class="btn btn-sm btn-orange-figma" id="btnShow">
+                                <i class="bi bi-arrow-clockwise"></i> Show
+                            </button>
+
+                            <button class="btn btn-sm btn-warning" id="btnReset">
+                                <i class="bi bi-arrow-repeat"></i> Reset
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== TABEL JADWAL ========== -->
+            <div class="card mb-4 filter-card">
+                <div class="card-header-customm d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">Daftar Personil Piket</h6>
+                    <small id="infoJadwal" class="text-muted"></small>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm align-middle text-center">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>No</th>
+                                    <th>NIP</th>
+                                    <th>Nama</th>
+                                    <th>Fungsional</th>
+                                    <th>Status</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBodyJadwal">
+                                <tr><td colspan="6" class="py-4 text-muted">Pilih Unit, Tanggal, Shift lalu klik Show</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== ROLLBACK SECTION ========== -->
+            <div class="card mb-4 filter-card">
+                <div class="card-header-customm">
+                    <h6 class="mb-0">Roll back personil yang terdelete</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm align-middle text-center">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>No</th>
+                                    <th>NIP</th>
+                                    <th>Nama</th>
+                                    <th>Fungsional</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBodyRollback">
+                                <tr><td colspan="5" class="py-4 text-muted">Data rollback akan muncul setelah ada personil yang dihapus</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== TAMBAH PERSONIL ========== -->
+            <div class="card mb-4 filter-card">
+                <div class="card-header-customm">
+                    <h6 class="mb-0">Penambahan Personil</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12 d-md-flex align-items-center">
+                            <div class="col-md-1"></div>
+                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Nama Personil</label>
+                            <div class="col-md-7 position-relative">
+                                <input type="text" id="searchPegawai" class="form-control form-control-sm w-100"
+                                       placeholder="Ketik nama pegawai..." autocomplete="off">
+                                <div id="pegawaiDropdown" class="dropdown-menu w-100 shadow"
+                                     style="display:none; max-height:200px;overflow-y:auto;position:absolute;z-index:1000;"></div>
+                                <input type="hidden" id="selectedNIP">
+                            </div>
+                        </div>
+
+                        <div class="col-12 d-md-flex align-items-center">
+                            <div class="col-md-1"></div>
+                            <label class="col-md-2 text-md-start pe-md-4 fw-bold mb-1 mb-md-0">Fungsional</label>
+                            <div class="col-md-7">
+                                <select id="fungsionalAdd" class="form-select form-select-sm w-100">
+                                    <option value="">Pilih Fungsional</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-12 d-md-flex">
+                            <div class="col-md-3"></div>
+                            <div class="col-md-2">
+                                <button class="btn btn-primary btn-sm w-100" id="btnAddPersonil">
+                                    <i class="bi bi-save me-2"></i> Save
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+    *, *::before, *::after { box-sizing: border-box; }
+    .btn-orange-figma { background-color: #e66b30; color: #fff; border: none; border-radius: 5px; font-weight: 600; padding: 6px 16px; }
+    .btn-orange-figma:hover { background-color: #cc5a20; color: #fff; }
+    .pegawai-item { cursor: pointer; padding: 6px 12px; }
+    .pegawai-item:hover { background-color: #f0f0f0; }
+    #pegawaiDropdown { position: absolute !important; z-index: 9999 !important; background: #fff; border: 1px solid #dee2e6; box-shadow: 0 4px 12px rgba(0,0,0,0.15); max-height: 200px; overflow-y: auto; }
+    .position-relative { position: relative; z-index: auto; }
+    .btn-action { padding: 2px 8px; font-size: 0.75rem; }
+    input[type="date"].form-control-sm { cursor: pointer; min-height: 31px; position: relative; z-index: 1; }
+    .input-custom-style:focus { border-color: #e65c00; outline: none; z-index: 2; }
+</style>
+{% endblock %}
+
+{% block script %}
+<script>
+$(document).ready(function() {
+    let guidLog = '';
+    let jadwalData = [];
+    let rollbackData = [];
+
+    // ============================================
+    // ✅ NONAKTIFKAN PLUGIN YANG MENGGANGGU INPUT DATE
+    // ============================================
+    try {
+        if ($.fn.select2) {
+            $('select').each(function() {
+                if ($(this).hasClass('select2-hidden-accessible')) {
+                    $(this).select2('destroy');
+                }
+            });
+        }
+    } catch(e) {}
+
+    try {
+        if ($.fn.daterangepicker) {
+            $('input[type="date"]').each(function() {
+                if ($(this).data('daterangepicker')) {
+                    $(this).daterangepicker('destroy');
+                }
+            });
+        }
+    } catch(e) {}
+
+    // ✅ Cegah event propagation yang mengganggu date picker
+    $('#tglJadwal').on('click', function(e) {
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        try { this.showPicker(); } catch(err) {}
+    });
+
+    $('#tglJadwal').on('mousedown', function(e) {
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+    });
+
+    $('#tglJadwal').on('focus', function(e) {
+        e.stopPropagation();
+    });
+
+    // ✅ Clone dan replace input date untuk menghapus semua event listener lama
+    const $oldDateInput = $('#tglJadwal');
+    const $newDateInput = $oldDateInput.clone(false);
+    $oldDateInput.replaceWith($newDateInput);
+
+    // Tambahkan event listener baru ke input yang sudah di-clone
+    $('#tglJadwal').on('click', function(e) {
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        try { this.showPicker(); } catch(err) {}
+    });
+
+    $('#tglJadwal').on('mousedown', function(e) {
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+    });
+
+    // Set default tanggal hari ini
+    const today = new Date().toISOString().split('T')[0];
+    $('#tglJadwal').val(today);
+
+    // ============================================
+    // LOAD UNIT KERJA & SHIFT
+    // ============================================
+    $.get('/api/unit-kerja/list', function(r) {
+        if (r.data && r.data.length) {
+            r.data.forEach(function(u) {
+                $('#unitKerja').append(`<option value="${u.UNIT_KERJA_ID || u.unit_kerja_id}">${u.NAMA_UNIT_KERJA || u.nama_unit_kerja}</option>`);
+            });
+        }
+    });
+
+    $.get('/api/rejadwal-siaga/shift', function(r) {
+        if (r.success && r.data) {
+            r.data.forEach(function(s) {
+                $('#shift').append(`<option value="${s.id}">${s.nama}</option>`);
+            });
+        }
+    });
+
+    $.get('/api/rejadwal-siaga/fungsional', function(r) {
+        if (r.success && r.data) {
+            r.data.forEach(function(f) {
+                $('#fungsionalAdd').append(`<option value="${f}">${f}</option>`);
+            });
+        }
+    });
+
+    // ============================================
+    // SHOW JADWAL
+    // ============================================
+    $('#btnShow').click(function() {
+        const unit = $('#unitKerja').val();
+        const tgl = $('#tglJadwal').val();
+        const shift = $('#shift').val();
+
+        if (!unit || !tgl || !shift) {
+            showAlert('warning', 'Unit, Tanggal, dan Shift harus diisi!');
+            return;
+        }
+
+        const $btn = $(this).prop('disabled', true).html('<i class="bi bi-hourglass-split me-1"></i>Loading...');
+
+        $.get('/api/rejadwal-siaga/get-jadwal', {
+            unit_kerja_id: unit,
+            tgl: tgl,
+            shift: shift
+        }, function(r) {
+            console.log('🔍 Jadwal response:', r);
+            if (r.success) {
+                guidLog = r.guid_log;
+                jadwalData = r.jadwal || [];
+                rollbackData = r.rollback || [];
+                $('#infoJadwal').text(`GUID: ${guidLog} | ${jadwalData.length} personil`);
+                renderJadwal();
+                renderRollback();
+            } else {
+                showAlert('warning', r.error || 'Jadwal tidak ditemukan');
+                $('#tableBodyJadwal').html('<tr><td colspan="6" class="py-4 text-muted">Jadwal tidak ditemukan</td></tr>');
+                $('#tableBodyRollback').html('<tr><td colspan="5" class="py-4 text-muted">-</td></tr>');
+            }
+        }).fail(function() {
+            showAlert('danger', 'Gagal memuat data');
+        }).always(function() {
+            $btn.prop('disabled', false).html('<i class="bi bi-arrow-clockwise"></i> Show');
+        });
+    });
+
+    // ============================================
+    // RENDER JADWAL
+    // ============================================
+    function renderJadwal() {
+        const $tbody = $('#tableBodyJadwal').empty();
+        if (!jadwalData.length) {
+            $tbody.html('<tr><td colspan="6" class="py-4 text-muted">Tidak ada data</td></tr>');
+            return;
+        }
+        jadwalData.forEach(function(row) {
+            const statusBadge = row.status_id === 3 ? 'bg-success' : 
+                               (row.status_id === 0 ? 'bg-danger' : 
+                               (row.status_id === 2 ? 'bg-warning' : 'bg-secondary'));
+            
+            $tbody.append(`
+                <tr data-nip="${row.nip}" data-act="${row.act_date}" data-shift="${row.shift}">
+                    <td>${row.no}</td>
+                    <td>${row.nip}</td>
+                    <td class="text-start">${row.nama}</td>
+                    <td>${row.fungsional}</td>
+                    <td><span class="badge ${statusBadge}">${row.status || '-'}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger btn-action btn-delete-jadwal" title="Hapus dari jadwal">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary btn-action btn-ubah-status" title="Ubah Status">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                    </td>
+                </tr>
+            `);
+        });
+    }
+
+    // ============================================
+    // RENDER ROLLBACK
+    // ============================================
+    function renderRollback() {
+        const $tbody = $('#tableBodyRollback').empty();
+        if (!rollbackData.length) {
+            $tbody.html('<tr><td colspan="5" class="py-4 text-muted">Tidak ada data rollback</td></tr>');
+            return;
+        }
+        rollbackData.forEach(function(row) {
+            $tbody.append(`
+                <tr data-nip="${row.nip}" data-id="${row.id_backup}" data-act="${row.act_date}" data-shift="${row.shift}">
+                    <td>${row.no}</td>
+                    <td>${row.nip}</td>
+                    <td class="text-start">${row.nama}</td>
+                    <td>${row.fungsional}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-success btn-action btn-rollback" title="Rollback personil">
+                            <i class="bi bi-arrow-counterclockwise"></i> Rollback
+                        </button>
+                    </td>
+                </tr>
+            `);
+        });
+    }
+
+    // ============================================
+    // DELETE JADWAL (CloseData)
+    // ============================================
+    $('#tableBodyJadwal').on('click', '.btn-delete-jadwal', function() {
+        const $row = $(this).closest('tr');
+        const nip = $row.data('nip');
+        const actDate = $row.data('act');
+        const shift = $row.data('shift');
+
+        if (!confirm(`Hapus ${nip} dari jadwal?`)) return;
+
+        $.ajax({
+            url: '/api/rejadwal-siaga/delete-personil',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ guid_log: guidLog, nip: nip, act_date: actDate, shift: shift }),
+            success: function(r) {
+                if (r.success) {
+                    showAlert('success', r.message);
+                    $('#btnShow').click();
+                } else {
+                    showAlert('danger', r.error || 'Gagal menghapus');
+                }
+            },
+            error: function() { showAlert('danger', 'Gagal menghapus'); }
+        });
+    });
+
+    // ============================================
+    // UBAH STATUS
+    // ============================================
+    $('#tableBodyJadwal').on('click', '.btn-ubah-status', function() {
+        const $row = $(this).closest('tr');
+        const nip = $row.data('nip');
+        const actDate = $row.data('act');
+        const shift = $row.data('shift');
+
+        if (!confirm(`Ubah status ${nip}?`)) return;
+
+        $.ajax({
+            url: '/api/rejadwal-siaga/ubah-status',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ guid_log: guidLog, nip: nip, act_date: actDate, shift: shift }),
+            success: function(r) {
+                if (r.success) {
+                    showAlert('success', r.message);
+                    $('#btnShow').click();
+                } else {
+                    showAlert('danger', r.error || 'Gagal mengubah status');
+                }
+            },
+            error: function() { showAlert('danger', 'Gagal mengubah status'); }
+        });
+    });
+
+    // ============================================
+    // ROLLBACK
+    // ============================================
+    $('#tableBodyRollback').on('click', '.btn-rollback', function() {
+        const $row = $(this).closest('tr');
+        const nip = $row.data('nip');
+        const idBackup = $row.data('id');
+        const actDate = $row.data('act');
+        const shift = $row.data('shift');
+
+        if (!confirm(`Rollback ${nip} ke jadwal?`)) return;
+
+        $.ajax({
+            url: '/api/rejadwal-siaga/rollback',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ guid_log: guidLog, nip: nip, id_backup: String(idBackup), act_date: actDate, shift: shift }),
+            success: function(r) {
+                if (r.success) {
+                    showAlert('success', r.message);
+                    $('#btnShow').click();
+                } else {
+                    showAlert('danger', r.error || 'Gagal rollback');
+                }
+            },
+            error: function() { showAlert('danger', 'Gagal rollback'); }
+        });
+    });
+
+    // ============================================
+    // SEARCH PEGAWAI
+    // ============================================
+    let searchTimeout;
+    $('#searchPegawai').on('input', function() {
+        clearTimeout(searchTimeout);
+        const keyword = $(this).val().trim();
+        if (keyword.length < 1) { $('#pegawaiDropdown').hide(); return; }
+
+        searchTimeout = setTimeout(function() {
+            $.get('/api/dinas-luar/search-pegawai', { keyword: keyword }, function(r) {
+                const $dd = $('#pegawaiDropdown').empty();
+                if (r.data && r.data.length) {
+                    r.data.forEach(function(p) {
+                        $dd.append(`<a class="dropdown-item pegawai-item" href="#" data-nip="${p.nip}" data-nama="${p.nama}">
+                            <strong>${p.nama}</strong> <small class="text-muted">(${p.nip})</small></a>`);
+                    });
+                    $dd.show();
+                } else {
+                    $dd.html('<span class="dropdown-item text-muted">Tidak ditemukan</span>').show();
+                }
+            }).fail(function() {
+                $('#pegawaiDropdown').html('<span class="dropdown-item text-danger">Gagal mencari</span>').show();
+            });
+        }, 300);
+    });
+
+    $('#pegawaiDropdown').on('click', '.pegawai-item', function(e) {
+        e.preventDefault();
+        const nip = $(this).data('nip');
+        const nama = $(this).data('nama');
+        $('#searchPegawai').val(nama + ' (' + nip + ')');
+        $('#selectedNIP').val(nip);
+        $('#pegawaiDropdown').hide();
+        console.log('✅ Selected:', nip, nama);
+    });
+
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('#searchPegawai, #pegawaiDropdown').length) {
+            $('#pegawaiDropdown').hide();
+        }
+    });
+
+    // ============================================
+    // TAMBAH PERSONIL (VERSI BARU)
+    // ============================================
+    $('#btnAddPersonil').click(function() {
+        const nip = $('#selectedNIP').val();
+        const fungsional = $('#fungsionalAdd').val();
+        const unit = $('#unitKerja').val();
+        const tgl = $('#tglJadwal').val();
+        const shift = $('#shift').val();
+
+        if (!guidLog) { 
+            showAlert('warning', 'Klik Show terlebih dahulu untuk memuat jadwal!'); 
+            return; 
+        }
+        if (!nip) { 
+            showAlert('warning', 'Pilih personil terlebih dahulu!'); 
+            return; 
+        }
+        if (!fungsional) { 
+            showAlert('warning', 'Pilih fungsional!'); 
+            return; 
+        }
+        if (!unit || !tgl || !shift) {
+            showAlert('warning', 'Unit, Tanggal, dan Shift harus diisi!');
+            return;
+        }
+
+        const $btn = $(this).prop('disabled', true).html('<i class="bi bi-hourglass-split me-1"></i>Menyimpan...');
+
+        $.ajax({
+            url: '/api/rejadwal-siaga/add-personil',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                guid_log: guidLog,
+                nip: nip,
+                fungsional: fungsional,
+                unit_kerja_id: unit,
+                tgl: tgl,
+                shift: shift
+            }),
+            success: function(r) {
+                if (r.success) {
+                    showAlert('success', r.message);
+                    
+                    // Reset form tambah
+                    $('#searchPegawai').val('');
+                    $('#selectedNIP').val('');
+                    $('#fungsionalAdd').val('');
+                    
+                    // Refresh jadwal
+                    $('#btnShow').click();
+                } else {
+                    showAlert('danger', r.error || 'Gagal menambahkan personil');
+                }
+            },
+            error: function(xhr) {
+                let msg = 'Gagal menambahkan personil';
+                try {
+                    const r = JSON.parse(xhr.responseText);
+                    msg = r.error || msg;
+                } catch(e) {}
+                showAlert('danger', msg);
+            },
+            complete: function() {
+                $btn.prop('disabled', false).html('<i class="bi bi-save me-2"></i> Save');
+            }
+        });
+    });
+
+    // ============================================
+    // RESET
+    // ============================================
+    $('#btnReset').click(function() {
+        if (!guidLog) { showAlert('warning', 'Tidak ada jadwal untuk direset'); return; }
+        if (!confirm('Reset jadwal ini? Semua pengganti akan dihapus.')) return;
+        // TODO: Implement API reset
+        showAlert('info', 'Fitur reset akan segera hadir');
+    });
+
+    // ============================================
+    // ALERT HELPER
+    // ============================================
+    function showAlert(type, msg) {
+        const a = $('#alertContainer').removeClass('d-none alert-success alert-danger alert-warning alert-info')
+            .addClass('alert-' + type).show();
+        $('#alertMessage').text(msg);
+        setTimeout(function() { a.addClass('d-none').hide(); }, 5000);
+    }
+
+    console.log('✅ Jadwal Ulang Piket Siaga - Halaman siap');
+});
+</script>
+{% endblock %}
