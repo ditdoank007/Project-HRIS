@@ -196,7 +196,7 @@
           resultBody.appendChild(tr);
         });
       }
-      resultSummary.textContent=all.length+" petugas ditampilkan dari roster bulanan (Tim "+(rows.length?rows.map(row=>row.no_urut_tim).filter((v,i,a)=>a.indexOf(v)===i).join(", "):"—")+")";
+      resultSummary.textContent=all.length+" petugas ditampilkan dari sumber Absensi Kehadiran Piket Siaga";
       viewInfo.textContent="Jadwal berhasil dimuat. Gunakan tombol tanggal untuk membandingkan roster harian.";
       updateNav();
     }catch(error){viewInfo.textContent=error.message||"Gagal memuat jadwal.";resultSummary.textContent="";console.error("[VIEW-JADWAL]",error);}
