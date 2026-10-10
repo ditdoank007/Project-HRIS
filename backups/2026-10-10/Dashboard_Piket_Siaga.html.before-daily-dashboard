@@ -1,0 +1,145 @@
+<!-- pages/dashboard_2/Dashboard_Piket_Siaga.html -->
+{% extends "layout/baseDashboard2.html" %}
+
+{% block title %}- Dashboard Piket Siaga{% endblock %}
+
+{% block content %}
+<div class="nxl-content">
+    <div class="page-header">
+        <div class="page-header-left d-flex align-items-center">
+            <div class="page-header-title">
+                <h5 class="m-b-10">Dashboard</h5>
+            </div>
+
+            <ul class="breadcrumb">
+                <li class="breadcrumb-item">
+                    <a href="">Dashboard Kinerja</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="page-header-right ms-auto">
+        <div class="main-content master-siaga">
+            <div class="container-fluid">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="row g-4 mb-4">
+                            <!-- Card Hijau -->
+                            <div class="col-lg-4 col-md-6">
+                                <div class="summary-card bg-success-card">
+                                    <h4>
+                                        ABSENSI KEHADIRAN KOMPLIT
+                                    </h4>
+                                    <p>
+                                        Personil Piket Siaga telah terabsen semuanya.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Card Kuning -->
+                            <div class="col-lg-4 col-md-6">
+                                <div class="summary-card bg-warning-card">
+                                    <h4>
+                                        ABSENSI KEHADIRAN SEBAGIAN BELUM DIABSEN
+                                    </h4>
+                                    <p>
+                                        Ada beberapa personil piket siaga belum terabsen.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Card Merah -->
+                            <div class="col-lg-4 col-md-12">
+                                <div class="summary-card bg-danger-card">
+                                    <h4>
+                                        ABSENSI KEHADIRAN BELUM DIABSEN
+                                    </h4>
+                                    <p>
+                                        Semua personil piket siaga belum terabsen.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-bordered attendance-table align-middle text-center">
+                                <thead>
+                                    <tr>
+                                        <th class="sticky-date">Tanggal</th>
+                                        <th class="sticky-shift">Shift</th>
+                                        <th>SURABAYA</th>
+                                        <th>TRENGGALEK</th>
+                                        <th>SUMENEP</th>
+                                        <th>BOJONEGORO</th>
+                                        <th>MALANG</th>
+                                        <th>KN WIDURA</th>
+                                        <th>KN SRIKANDI</th>
+                                        <th>KN PERMADI</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    <tr>
+                                        <td rowspan="2" class="sticky-date tanggal"> 01/07/2026 </td>
+                                        <td class="sticky-shift">Shift 1</td>
+                                        <td><span class="status success"><i class="bi bi-check-lg"></i></span></td>
+                                        <td><span class="status danger"><i class="bi bi-check-lg"></i></span></td>
+                                        <td><span class="status warning"><i class="bi bi-check-lg"></i></span></td>
+                                        <td>-</td>
+                                        <td><span class="status success"><i class="bi bi-check-lg"></i></span></td>
+                                        <td><span class="status success"><i class="bi bi-check-lg"></i></span></td>
+                                        <td><span class="status warning"><i class="bi bi-check-lg"></i></span></td>
+                                        <td><span class="status danger"><i class="bi bi-check-lg"></i></span></td>
+                                    </tr>
+
+                                    <tr>
+                                        <td class="sticky-shift">Shift 2</td>
+                                        <td><span class="status warning"><i class="bi bi-check-lg"></i></span></td>
+                                        <td><span class="status success"><i class="bi bi-check-lg"></i></span></td>
+                                        <td><span class="status danger"><i class="bi bi-check-lg"></i></span></td>
+                                        <td>-</td>
+                                        <td><span class="status success"><i class="bi bi-check-lg"></i></span></td>
+                                        <td><span class="status success"><i class="bi bi-check-lg"></i></span></td>
+                                        <td><span class="status success"><i class="bi bi-check-lg"></i></span></td>
+                                        <td><span class="status warning"><i class="bi bi-check-lg"></i></span></td>
+                                    </tr>
+
+                                    <tr>
+                                        <td rowspan="2" class="sticky-date tanggal"> 02/07/2026 </td>
+                                        <td class="sticky-shift">Shift 1</td>
+                                        <td><span class="status success"><i class="bi bi-check-lg"></i></span></td>
+                                        <td><span class="status success"><i class="bi bi-check-lg"></i></span></td>
+                                        <td><span class="status success"><i class="bi bi-check-lg"></i></span></td>
+                                        <td><span class="status warning"><i class="bi bi-check-lg"></i></span></td>
+                                        <td><span class="status danger"><i class="bi bi-check-lg"></i></span></td>
+                                        <td><span class="status success"><i class="bi bi-check-lg"></i></span></td>
+                                        <td><span class="status success"><i class="bi bi-check-lg"></i></span></td>
+                                        <td><span class="status success"><i class="bi bi-check-lg"></i></span></td>
+                                    </tr>
+
+                                    <tr>
+                                        <td class="sticky-shift">Shift 2</td>
+                                        <td><span class="status danger"><i class="bi bi-check-lg"></i></span></td>
+                                        <td><span class="status success"><i class="bi bi-check-lg"></i></span></td>
+                                        <td><span class="status warning"><i class="bi bi-check-lg"></i></span></td>
+                                        <td><span class="status success"><i class="bi bi-check-lg"></i></span></td>
+                                        <td><span class="status success"><i class="bi bi-check-lg"></i></span></td>
+                                        <td><span class="status danger"><i class="bi bi-check-lg"></i></span></td>
+                                        <td><span class="status success"><i class="bi bi-check-lg"></i></span></td>
+                                        <td><span class="status success"><i class="bi bi-check-lg"></i></span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+
+{% endblock %}
