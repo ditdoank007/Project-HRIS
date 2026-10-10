@@ -904,6 +904,80 @@ def api_absensi_kehadiran_internal_pdf():
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
+
+def api_absensi_kehadiran_month_get():
+    """Ambil data satu bulan dalam satu query untuk kalender dashboard HRIS 2013."""
+    try:
+        tahun = int((request.args.get('tahun') or '').strip())
+        bulan = int((request.args.get('bulan') or '').strip())
+        if tahun < 2000 or tahun > 2100 or bulan < 1 or bulan > 12:
+            raise ValueError("Tahun atau bulan tidak valid")
+
+        start_date = f"{tahun:04d}-{bulan:02d}-01"
+        if bulan == 12:
+            end_date = f"{tahun + 1:04d}-01-01"
+        else:
+            end_date = f"{tahun:04d}-{bulan + 1:02d}-01"
+
+        rows = db.session.execute(db.text("""
+            SELECT
+                l.ActivityDate AS activity_date,
+                l.IDUnitKerja AS unit_id,
+                u.UnitKerjaName AS unit_kerja,
+                l.Shift AS shift,
+                l.StatusID AS status_id,
+                l.NIP AS nip,
+                l.Fungsional AS fungsional
+            FROM LOG_ACTIVITIY l
+            LEFT JOIN MF_UNIT_KERJA u ON u.IDUnitKerja = l.IDUnitKerja
+            WHERE l.Activity = 'Piket Siaga'
+              AND l.ActivityDate >= :start_date
+              AND l.ActivityDate < :end_date
+              AND NOT (
+                  COALESCE(l.Pengganti, 0) = 0
+                  AND NULLIF(TRIM(COALESCE(l.NIPPengganti, '')), '') IS NOT NULL
+                  AND TRIM(l.NIPPengganti) <> '-'
+              )
+            ORDER BY
+                l.ActivityDate ASC,
+                COALESCE(u.UrutReport, 999999) ASC,
+                u.UnitKerjaName ASC,
+                l.Shift ASC,
+                CASE
+                    WHEN UPPER(COALESCE(u.UnitKerjaName, '')) LIKE 'KN %'
+                      OR UPPER(COALESCE(u.UnitKerjaName, '')) LIKE '%KAPAL%'
+                    THEN CASE
+                        WHEN UPPER(COALESCE(l.Fungsional, '')) LIKE '%PERWIRA%' OR UPPER(COALESCE(l.Fungsional, '')) = 'PW' THEN 1
+                        WHEN UPPER(COALESCE(l.Fungsional, '')) LIKE '%ABK%' THEN 2
+                        ELSE 99 END
+                    ELSE CASE
+                        WHEN UPPER(COALESCE(l.Fungsional, '')) LIKE '%KAGAHAR%' OR UPPER(COALESCE(l.Fungsional, '')) = 'KGR' THEN 1
+                        WHEN UPPER(COALESCE(l.Fungsional, '')) LIKE '%KOMUNIKASI%' OR UPPER(COALESCE(l.Fungsional, '')) IN ('KOM','KOMUNIKASI') THEN 2
+                        WHEN UPPER(COALESCE(l.Fungsional, '')) LIKE '%RESCUER%' OR UPPER(COALESCE(l.Fungsional, '')) = 'RSC' THEN 3
+                        ELSE 99 END
+                END,
+                l.Fungsional ASC
+        """), {'start_date': start_date, 'end_date': end_date}).mappings().all()
+
+        data = [{
+            'activity_date': row['activity_date'].strftime('%Y-%m-%d') if row['activity_date'] else '',
+            'unit_id': str(row['unit_id'] or ''),
+            'unit_kerja': row['unit_kerja'] or '',
+            'shift': str(row['shift'] or ''),
+            'status_id': int(row['status_id']) if row['status_id'] is not None else 0,
+            'nip': row['nip'] or '',
+            'fungsional': row['fungsional'] or '',
+        } for row in rows]
+
+        return jsonify({'success': True, 'data': data, 'total': len(data), 'tahun': tahun, 'bulan': bulan})
+    except (ValueError, TypeError) as exc:
+        return jsonify({'success': False, 'error': str(exc), 'data': []}), 400
+    except Exception as exc:
+        db.session.rollback()
+        current_app.logger.exception("Gagal memuat data kalender bulanan kehadiran siaga")
+        return jsonify({'success': False, 'error': str(exc), 'data': []}), 500
+
+
 def api_absensi_kehadiran_update():
     """
     API SIMPAN KEHADIRAN PIKET SIAGA.
