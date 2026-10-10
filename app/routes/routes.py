@@ -1804,7 +1804,10 @@ def api_pembuatan_jadwal_siaga_save():
 @main.route('/api/siaga/view-jadwal')
 @login_required
 def api_siaga_view_jadwal_get():
-    return data_siaga_api_view_jadwal_get()
+    from app.controllers.dashboard_2DataSiagaController import (
+        api_siaga_view_jadwal_get as get_roster_preview
+    )
+    return get_roster_preview()
 
 
 
