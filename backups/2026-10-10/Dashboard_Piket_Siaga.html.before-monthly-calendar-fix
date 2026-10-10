@@ -1,0 +1,238 @@
+{% extends "layout/baseDashboard2.html" %}
+
+{% block title %}- Dashboard Kehadiran Siaga{% endblock %}
+
+{% block content %}
+<div class="nxl-content hris-siaga-dashboard">
+  <div class="page-header hris-siaga-page-header">
+    <div class="page-header-left">
+      <div class="page-header-title">
+        <h5>Dashboard Kehadiran Siaga</h5>
+        <p>Ringkasan kehadiran petugas siaga berdasarkan tanggal dan unit kerja.</p>
+      </div>
+    </div>
+    <div class="siaga-dashboard-toolbar">
+      <div class="siaga-view-switch" role="group" aria-label="Mode tampilan">
+        <button type="button" class="active" id="siagaViewDay"><i class="bi bi-calendar-day"></i> Harian</button>
+        <button type="button" id="siagaViewMonth"><i class="bi bi-calendar-month"></i> Bulanan</button>
+      </div>
+      <div class="siaga-date-control" aria-label="Pilih tanggal dashboard">
+        <button type="button" class="siaga-date-arrow" id="siagaDatePrev" aria-label="Periode sebelumnya" title="Periode sebelumnya"><i class="bi bi-chevron-left"></i></button>
+        <div class="siaga-date-current">
+          <span class="siaga-date-caption" id="siagaDateCaption">TANGGAL DASHBOARD</span>
+          <strong id="siagaDashboardDate">Memuat tanggal...</strong>
+        </div>
+        <button type="button" class="siaga-date-calendar" id="siagaCalendarButton" aria-label="Pilih tanggal melalui kalender" title="Pilih tanggal"><i class="bi bi-calendar3"></i></button>
+        <input type="date" id="siagaDashboardDateInput" aria-label="Pilih tanggal" tabindex="-1">
+        <button type="button" class="siaga-date-arrow" id="siagaDateNext" aria-label="Periode berikutnya" title="Periode berikutnya"><i class="bi bi-chevron-right"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="siaga-dashboard-content" id="siagaDailyView">
+    <div class="siaga-summary-grid">
+      <article class="siaga-summary-card siaga-summary-complete">
+        <div class="siaga-summary-icon"><i class="bi bi-check2-circle"></i></div>
+        <div><span>ABSENSI KEHADIRAN KOMPLIT</span><strong id="siagaCountComplete">—</strong><p>Unit dan shift yang seluruh personelnya sudah dikonfirmasi.</p></div>
+      </article>
+      <article class="siaga-summary-card siaga-summary-partial">
+        <div class="siaga-summary-icon"><i class="bi bi-hourglass-split"></i></div>
+        <div><span>ABSENSI SEBAGIAN</span><strong id="siagaCountPartial">—</strong><p>Masih ada personel yang belum dikonfirmasi.</p></div>
+      </article>
+      <article class="siaga-summary-card siaga-summary-pending">
+        <div class="siaga-summary-icon"><i class="bi bi-exclamation-circle"></i></div>
+        <div><span>BELUM DIABSEN</span><strong id="siagaCountPending">—</strong><p>Belum ada konfirmasi kehadiran pada unit dan shift.</p></div>
+      </article>
+    </div>
+    <section class="siaga-dashboard-table-card">
+      <div class="siaga-dashboard-table-heading">
+        <div><h6>Status Kehadiran per Unit</h6><p id="siagaDashboardSubtitle">Status Shift 1 dan Shift 2 pada tanggal terpilih.</p></div>
+        <span class="siaga-live-badge"><i class="bi bi-arrow-repeat"></i> Data operasional</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table siaga-dashboard-table align-middle text-center mb-0">
+          <thead><tr><th class="text-start">UNIT KERJA</th><th>SHIFT 1</th><th>SHIFT 2</th></tr></thead>
+          <tbody id="siagaDashboardTableBody"><tr><td colspan="3" class="siaga-dashboard-empty">Memuat data kehadiran...</td></tr></tbody>
+        </table>
+      </div>
+      <div class="siaga-dashboard-legend">
+        <span><i class="siaga-legend-dot complete"></i> Komplit</span>
+        <span><i class="siaga-legend-dot partial"></i> Sebagian belum diabsen</span>
+        <span><i class="siaga-legend-dot pending"></i> Belum diabsen</span>
+        <span><i class="siaga-legend-dot empty"></i> Tidak ada data</span>
+      </div>
+    </section>
+  </div>
+
+  <section class="siaga-month-view" id="siagaMonthlyView" hidden>
+    <div class="siaga-month-heading">
+      <div><h6>Kalender Kehadiran Siaga</h6><p>Pilih salah satu tanggal untuk membuka rincian harian.</p></div>
+      <div class="siaga-month-legend"><span class="complete"></span> Komplit <span class="partial"></span> Sebagian <span class="pending"></span> Belum diabsen</div>
+    </div>
+    <div class="siaga-calendar-grid" id="siagaCalendarGrid">
+      <div class="siaga-dashboard-empty">Memuat kalender bulanan...</div>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+(function () {
+  "use strict";
+  const apiUrl = "{{ url_for('main.api_absensi_kehadiran_get') }}";
+  const unitOrder = {{ siaga_unit_order|tojson }};
+  const dateLabel = document.getElementById("siagaDashboardDate");
+  const dateInput = document.getElementById("siagaDashboardDateInput");
+  const tableBody = document.getElementById("siagaDashboardTableBody");
+  const subtitle = document.getElementById("siagaDashboardSubtitle");
+  const countComplete = document.getElementById("siagaCountComplete");
+  const countPartial = document.getElementById("siagaCountPartial");
+  const countPending = document.getElementById("siagaCountPending");
+  const dailyView = document.getElementById("siagaDailyView");
+  const monthlyView = document.getElementById("siagaMonthlyView");
+  const calendarGrid = document.getElementById("siagaCalendarGrid");
+  const dayButton = document.getElementById("siagaViewDay");
+  const monthButton = document.getElementById("siagaViewMonth");
+  const dateCaption = document.getElementById("siagaDateCaption");
+
+  const pad = value => String(value).padStart(2, "0");
+  const toISO = date => date.getFullYear() + "-" + pad(date.getMonth() + 1) + "-" + pad(date.getDate());
+  const parseISO = value => { const [y,m,d] = value.split("-").map(Number); return new Date(y, m - 1, d, 12, 0, 0); };
+  const displayDate = value => new Intl.DateTimeFormat("id-ID", {weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(parseISO(value));
+  const displayMonth = value => new Intl.DateTimeFormat("id-ID", {month:"long",year:"numeric"}).format(parseISO(value));
+  const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+  let selectedDate = toISO(new Date());
+  let viewMode = "day";
+  let monthRequestToken = 0;
+
+  function statusFor(rows) {
+    if (!rows.length) return "empty";
+    const confirmed = rows.filter(row => Number(row.status_id) === 3 || Number(row.status_id) === -1).length;
+    if (confirmed === 0) return "pending";
+    if (confirmed < rows.length) return "partial";
+    return "complete";
+  }
+  function labelFor(status) {
+    return ({complete:"Komplit",partial:"Sebagian belum diabsen",pending:"Belum diabsen",empty:"Tidak ada data"})[status] || status;
+  }
+  function iconFor(status) {
+    return ({complete:"bi-check-lg",partial:"bi-hourglass-split",pending:"bi-exclamation-lg",empty:"bi-dash"})[status] || "bi-dash";
+  }
+  function renderStatus(status) {
+    return '<span class="siaga-status-cell ' + status + '" title="' + escapeHtml(labelFor(status)) + '"><i class="bi ' + iconFor(status) + '"></i><span>' + escapeHtml(labelFor(status)) + '</span></span>';
+  }
+  function groupRows(rows) {
+    const units = new Map();
+    rows.forEach(row => {
+      const name = String(row.unit_kerja || "").trim();
+      if (!name) return;
+      if (!units.has(name)) units.set(name, {"1": [], "2": []});
+      const shift = String(row.shift || "");
+      if (shift === "1" || shift === "2") units.get(name)[shift].push(row);
+    });
+    return units;
+  }
+  function orderedNames(units) {
+    const names = unitOrder.map(unit => unit.name).filter(name => name);
+    units.forEach((value, name) => { if (!names.includes(name)) names.push(name); });
+    return names;
+  }
+  function renderDashboard(rows) {
+    const units = groupRows(rows);
+    let complete = 0, partial = 0, pending = 0;
+    const statusRows = orderedNames(units).map(name => {
+      const shifts = units.get(name) || {"1": [], "2": []};
+      const s1 = statusFor(shifts["1"]), s2 = statusFor(shifts["2"]);
+      [s1,s2].forEach(status => { if (status === "complete") complete++; else if (status === "partial") partial++; else if (status === "pending") pending++; });
+      return '<tr><td class="text-start"><div class="siaga-unit-name"><span class="siaga-unit-icon"><i class="bi bi-building"></i></span><strong>' + escapeHtml(name) + '</strong></div></td><td>' + renderStatus(s1) + '</td><td>' + renderStatus(s2) + '</td></tr>';
+    });
+    countComplete.textContent = complete;
+    countPartial.textContent = partial;
+    countPending.textContent = pending;
+    tableBody.innerHTML = statusRows.length ? statusRows.join("") : '<tr><td colspan="3" class="siaga-dashboard-empty">Tidak ada data unit kerja.</td></tr>';
+    subtitle.textContent = "Status Shift 1 dan Shift 2 pada " + displayDate(selectedDate) + ".";
+  }
+  async function fetchDay(date) {
+    const response = await fetch(apiUrl + "?tgl=" + encodeURIComponent(date), {headers:{"Accept":"application/json"}});
+    const result = await response.json();
+    if (!response.ok || !result.success) throw new Error(result.error || "Gagal memuat data.");
+    return result.data || [];
+  }
+  async function loadDashboard() {
+    dateLabel.textContent = viewMode === "month" ? displayMonth(selectedDate) : displayDate(selectedDate);
+    dateInput.value = selectedDate;
+    if (viewMode === "month") return loadMonth();
+    tableBody.innerHTML = '<tr><td colspan="3" class="siaga-dashboard-empty"><span class="spinner-border spinner-border-sm me-2"></span>Memuat data kehadiran...</td></tr>';
+    try { renderDashboard(await fetchDay(selectedDate)); }
+    catch (error) {
+      tableBody.innerHTML = '<tr><td colspan="3" class="siaga-dashboard-empty siaga-dashboard-error"><i class="bi bi-exclamation-triangle me-2"></i>' + escapeHtml(error.message || "Gagal memuat data kehadiran.") + '</td></tr>';
+      countComplete.textContent = "—"; countPartial.textContent = "—"; countPending.textContent = "—";
+    }
+  }
+  function switchView(mode) {
+    viewMode = mode;
+    dailyView.hidden = mode !== "day";
+    monthlyView.hidden = mode !== "month";
+    dayButton.classList.toggle("active", mode === "day");
+    monthButton.classList.toggle("active", mode === "month");
+    dateCaption.textContent = mode === "month" ? "BULAN DASHBOARD" : "TANGGAL DASHBOARD";
+    loadDashboard();
+  }
+  async function loadMonth() {
+    const token = ++monthRequestToken;
+    const base = parseISO(selectedDate);
+    const year = base.getFullYear(), month = base.getMonth();
+    const first = new Date(year, month, 1, 12);
+    const lastDay = new Date(year, month + 1, 0, 12).getDate();
+    const offset = (first.getDay() + 6) % 7;
+    calendarGrid.innerHTML = '<div class="siaga-dashboard-empty">Memuat kalender bulanan...</div>';
+    try {
+      const dates = Array.from({length:lastDay}, (_,i) => toISO(new Date(year, month, i + 1, 12)));
+      const results = await Promise.all(dates.map(async date => ({date, rows:await fetchDay(date)})));
+      if (token !== monthRequestToken || viewMode !== "month") return;
+      const weekdayHeaders = ["Sen","Sel","Rab","Kam","Jum","Sab","Min"].map(day => '<div class="siaga-calendar-weekday">' + day + '</div>').join("");
+      let cells = Array.from({length:offset}, () => '<div class="siaga-calendar-blank"></div>');
+      results.forEach(({date,rows}) => {
+        const units = groupRows(rows);
+        let total = 0, complete = 0, partial = 0, pending = 0;
+        orderedNames(units).forEach(name => {
+          const shifts = units.get(name) || {"1":[],"2":[]};
+          ["1","2"].forEach(shift => {
+            const status = statusFor(shifts[shift]);
+            if (status !== "empty") { total++; if(status==="complete") complete++; else if(status==="partial") partial++; else pending++; }
+          });
+        });
+        const dayNum = Number(date.slice(-2));
+        const today = date === toISO(new Date());
+        const selected = date === selectedDate;
+        const overall = total === 0 ? "empty" : pending > 0 ? (complete + partial > 0 ? "partial" : "pending") : partial > 0 ? "partial" : "complete";
+        cells.push('<button type="button" class="siaga-calendar-day ' + overall + (today ? ' today' : '') + (selected ? ' selected' : '') + '" data-date="' + date + '" title="' + escapeHtml(displayDate(date)) + '"><span class="siaga-calendar-day-number">' + dayNum + '</span><span class="siaga-calendar-day-label">' + (total ? (complete + partial + pending) + ' unit-shift' : 'Belum ada data') + '</span><span class="siaga-calendar-day-dots"><i class="complete"></i><i class="partial"></i><i class="pending"></i></span></button>');
+      });
+      calendarGrid.innerHTML = weekdayHeaders + cells.join("");
+      calendarGrid.querySelectorAll("[data-date]").forEach(button => button.addEventListener("click", () => { selectedDate = button.dataset.date; switchView("day"); }));
+    } catch (error) {
+      if (token === monthRequestToken) calendarGrid.innerHTML = '<div class="siaga-dashboard-empty siaga-dashboard-error">' + escapeHtml(error.message || "Gagal memuat kalender bulanan.") + '</div>';
+    }
+  }
+  function shiftPeriod(delta) {
+    const date = parseISO(selectedDate);
+    if (viewMode === "month") date.setDate(1), date.setMonth(date.getMonth() + delta);
+    else date.setDate(date.getDate() + delta);
+    selectedDate = toISO(date);
+    loadDashboard();
+  }
+  document.getElementById("siagaDatePrev").addEventListener("click", () => shiftPeriod(-1));
+  document.getElementById("siagaDateNext").addEventListener("click", () => shiftPeriod(1));
+  document.getElementById("siagaCalendarButton").addEventListener("click", () => {
+    dateInput.focus();
+    if (typeof dateInput.showPicker === "function") dateInput.showPicker();
+    else dateInput.click();
+  });
+  dateInput.addEventListener("change", () => { if (dateInput.value) { selectedDate = dateInput.value; loadDashboard(); } });
+  dayButton.addEventListener("click", () => switchView("day"));
+  monthButton.addEventListener("click", () => switchView("month"));
+  loadDashboard();
+})();
+</script>
+{% endblock %}
