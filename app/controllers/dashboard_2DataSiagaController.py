@@ -3068,143 +3068,113 @@ def data_siaga_view_jadwal():
 
 def api_siaga_view_jadwal_get():
     """
-    API READ-ONLY VIEW JADWAL SIAGA.
-
-    Sumber:
-        MF_TIM_SIAGA
-        MF_TIM_SIAGA_ANGGOTA
-        MF_UNIT_KERJA
-        PEGAWAI
-
-    Tidak melakukan INSERT / UPDATE / DELETE.
+    API READ-ONLY PREVIEW JADWAL SIAGA.
+    Sumber kebenaran jadwal operasional adalah LOG_ACTIVITIY,
+    sama seperti halaman Ubah Jadwal Piket. Tidak mengubah data.
     """
-
     try:
-        bulan = str(
-            request.args.get('bulan') or ''
-        ).strip().zfill(2)
+        tgl = str(request.args.get('tgl') or '').strip()
+        unit_id = str(request.args.get('unit_kerja_id') or '').strip()
+        shift = str(request.args.get('shift') or '').strip()
 
-        tahun = str(
-            request.args.get('tahun') or ''
-        ).strip()
-
-        unit_id = str(
-            request.args.get('unit_kerja_id') or ''
-        ).strip()
-
-        fungsional = str(
-            request.args.get('fungsional') or ''
-        ).strip()
-
-        if bulan not in {
-            '01', '02', '03', '04', '05', '06',
-            '07', '08', '09', '10', '11', '12'
-        }:
-            return jsonify({
-                'success': False,
-                'error': 'Bulan tidak valid.'
-            }), 400
-
-        if len(tahun) != 4 or not tahun.isdigit():
-            return jsonify({
-                'success': False,
-                'error': 'Tahun tidak valid.'
-            }), 400
-
+        if not tgl:
+            return jsonify({'success': False, 'error': 'Tanggal jadwal wajib dipilih.'}), 400
         if not unit_id:
-            return jsonify({
-                'success': False,
-                'error': 'Unit kerja wajib dipilih.'
-            }), 400
-
-        if not fungsional:
-            return jsonify({
-                'success': False,
-                'error': 'Jabatan siaga wajib dipilih.'
-            }), 400
+            return jsonify({'success': False, 'error': 'Unit kerja wajib dipilih.'}), 400
+        if shift not in ('1', '2'):
+            return jsonify({'success': False, 'error': 'Shift tidak valid.'}), 400
 
         rows = db.session.execute(
             db.text("""
                 SELECT
-                    t.NoUrutTim,
-                    t.GUIDTim,
-                    t.NamaTim,
-                    t.IDUnitKerja,
-                    u.UnitKerjaName,
-                    t.FungsionalTIM,
-                    t.Shift AS RosterShift,
-                    t.BulanPeriode,
-                    t.TahunPeriode,
-                    t.IsAktif AS RosterAktif,
-                    a.Nourut,
-                    a.NIP,
+                    l.GUIDLog,
+                    l.NIP,
                     p.Nama AS NamaPegawai,
-                    a.Fungsional AS FungsionalAnggota,
-                    a.Shift AS AnggotaShift,
-                    a.IsAktif AS AnggotaAktif
-                FROM MF_TIM_SIAGA t
-                LEFT JOIN MF_TIM_SIAGA_ANGGOTA a
-                    ON a.GUIDTim = t.GUIDTim
-                LEFT JOIN PEGAWAI p
-                    ON p.NIP = a.NIP
-                LEFT JOIN MF_UNIT_KERJA u
-                    ON u.IDUnitKerja = t.IDUnitKerja
-                WHERE t.BulanPeriode = :bulan
-                  AND t.TahunPeriode = :tahun
-                  AND t.IDUnitKerja = :unit_id
-                  AND t.FungsionalTIM = :fungsional
+                    l.Fungsional,
+                    l.Shift,
+                    l.ActivityDate,
+                    l.IDUnitKerja,
+                    u.UnitKerjaName,
+                    CASE
+                        WHEN UPPER(TRIM(COALESCE(l.Fungsional, ''))) IN ('KGR', 'KAGAHAR')
+                          OR UPPER(TRIM(COALESCE(l.Fungsional, ''))) LIKE '%KAGAHAR%'
+                        THEN 1
+                        WHEN UPPER(TRIM(COALESCE(l.Fungsional, ''))) IN ('PW', 'PERWIRA')
+                          OR UPPER(TRIM(COALESCE(l.Fungsional, ''))) LIKE '%PERWIRA%'
+                        THEN 1
+                        WHEN UPPER(TRIM(COALESCE(l.Fungsional, ''))) IN ('KOM', 'KOMUNIKASI')
+                          OR UPPER(TRIM(COALESCE(l.Fungsional, ''))) LIKE '%KOMUNIKASI%'
+                        THEN 2
+                        WHEN UPPER(TRIM(COALESCE(l.Fungsional, ''))) IN ('RSC', 'RESCUER')
+                          OR UPPER(TRIM(COALESCE(l.Fungsional, ''))) LIKE '%RESCUER%'
+                        THEN 3
+                        WHEN UPPER(TRIM(COALESCE(l.Fungsional, ''))) = 'ABK'
+                          OR UPPER(TRIM(COALESCE(l.Fungsional, ''))) LIKE '%ANAK BUAH KAPAL%'
+                        THEN 2
+                        ELSE 99
+                    END AS UrutanJabatan,
+                    CASE
+                        WHEN UPPER(COALESCE(u.UnitKerjaName, '')) LIKE 'KN %'
+                          OR UPPER(COALESCE(u.UnitKerjaName, '')) LIKE '%KAPAL%'
+                          OR UPPER(COALESCE(u.UnitKerjaName, '')) LIKE '%KN SAR%'
+                        THEN 1 ELSE 0
+                    END AS UnitKapal
+                FROM LOG_ACTIVITIY l
+                LEFT JOIN PEGAWAI p ON p.NIP = l.NIP
+                LEFT JOIN MF_UNIT_KERJA u ON u.IDUnitKerja = l.IDUnitKerja
+                WHERE l.Activity = 'Piket Siaga'
+                  AND DATE(l.ActivityDate) = :tgl
+                  AND l.IDUnitKerja = :unit_id
+                  AND CAST(l.Shift AS CHAR) = :shift
+                  AND NOT (
+                      COALESCE(l.Pengganti, 0) = 0
+                      AND NULLIF(TRIM(COALESCE(l.NIPPengganti, '')), '') IS NOT NULL
+                      AND TRIM(l.NIPPengganti) <> '-'
+                  )
                 ORDER BY
-                    t.NoUrutTim ASC,
-                    t.Shift ASC,
-                    a.Nourut ASC
+                    UnitKapal ASC,
+                    CASE
+                        WHEN UPPER(COALESCE(u.UnitKerjaName, '')) LIKE 'KN %'
+                          OR UPPER(COALESCE(u.UnitKerjaName, '')) LIKE '%KAPAL%'
+                          OR UPPER(COALESCE(u.UnitKerjaName, '')) LIKE '%KN SAR%'
+                        THEN
+                            CASE
+                                WHEN UPPER(TRIM(COALESCE(l.Fungsional, ''))) IN ('PW', 'PERWIRA')
+                                  OR UPPER(TRIM(COALESCE(l.Fungsional, ''))) LIKE '%PERWIRA%' THEN 1
+                                WHEN UPPER(TRIM(COALESCE(l.Fungsional, ''))) = 'ABK'
+                                  OR UPPER(TRIM(COALESCE(l.Fungsional, ''))) LIKE '%ANAK BUAH KAPAL%' THEN 2
+                                ELSE 99
+                            END
+                        ELSE
+                            CASE
+                                WHEN UPPER(TRIM(COALESCE(l.Fungsional, ''))) IN ('KGR', 'KAGAHAR')
+                                  OR UPPER(TRIM(COALESCE(l.Fungsional, ''))) LIKE '%KAGAHAR%' THEN 1
+                                WHEN UPPER(TRIM(COALESCE(l.Fungsional, ''))) IN ('KOM', 'KOMUNIKASI')
+                                  OR UPPER(TRIM(COALESCE(l.Fungsional, ''))) LIKE '%KOMUNIKASI%' THEN 2
+                                WHEN UPPER(TRIM(COALESCE(l.Fungsional, ''))) IN ('RSC', 'RESCUER')
+                                  OR UPPER(TRIM(COALESCE(l.Fungsional, ''))) LIKE '%RESCUER%' THEN 3
+                                ELSE 99
+                            END
+                    END,
+                    p.Nama ASC
             """),
-            {
-                'bulan': bulan,
-                'tahun': tahun,
-                'unit_id': unit_id,
-                'fungsional': fungsional,
-            }
+            {'tgl': tgl, 'unit_id': unit_id, 'shift': shift}
         ).mappings().all()
 
-        data = []
+        data = [{
+            'guid_log': row['GUIDLog'],
+            'nip': row['NIP'],
+            'nama_pegawai': row['NamaPegawai'],
+            'fungsional': row['Fungsional'],
+            'shift': row['Shift'],
+            'unit_name': row['UnitKerjaName'],
+        } for row in rows]
 
-        for row in rows:
-            data.append({
-                'no_urut': row['NoUrutTim'],
-                'guid_tim': row['GUIDTim'],
-                'nama_tim': row['NamaTim'],
-                'unit_id': row['IDUnitKerja'],
-                'unit_name': row['UnitKerjaName'],
-                'fungsional': row['FungsionalTIM'],
-                'shift': row['RosterShift'],
-                'bulan': row['BulanPeriode'],
-                'tahun': row['TahunPeriode'],
-                'roster_aktif': row['RosterAktif'],
-                'nourut': row['Nourut'],
-                'nip': row['NIP'],
-                'nama_pegawai': row['NamaPegawai'],
-                'fungsional_anggota':
-                    row['FungsionalAnggota'],
-                'shift_anggota':
-                    row['AnggotaShift'],
-                'anggota_aktif':
-                    row['AnggotaAktif'],
-            })
+        return jsonify({'success': True, 'data': data, 'count': len(data)})
+    except Exception:
+        current_app.logger.exception('Gagal memuat preview jadwal siaga dari LOG_ACTIVITIY')
+        return jsonify({'success': False, 'error': 'Gagal memuat jadwal operasional. Periksa log server.'}), 500
 
-        return jsonify({
-            'success': True,
-            'data': data,
-            'count': len(data),
-        })
-
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-
-        return jsonify({
-            'success': False,
-            'error': str(e),
-        }), 500
 
 def api_siaga_view_jadwal_edit():
     """
