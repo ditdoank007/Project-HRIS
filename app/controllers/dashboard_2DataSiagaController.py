@@ -3069,112 +3069,194 @@ def data_siaga_view_jadwal():
 def api_siaga_view_jadwal_get():
     """
     API READ-ONLY PREVIEW JADWAL SIAGA.
-    Sumber kebenaran jadwal operasional adalah LOG_ACTIVITIY,
-    sama seperti halaman Ubah Jadwal Piket. Tidak mengubah data.
+    Sumber data adalah roster MF_TIM_SIAGA dan MF_TIM_SIAGA_ANGGOTA.
+    NoUrutTim menentukan giliran tanggal; Nourut anggota hanya urutan personel.
     """
     try:
         tgl = str(request.args.get('tgl') or '').strip()
         unit_id = str(request.args.get('unit_kerja_id') or '').strip()
         shift = str(request.args.get('shift') or '').strip()
 
-        if not tgl:
-            return jsonify({'success': False, 'error': 'Tanggal jadwal wajib dipilih.'}), 400
+        try:
+            jadwal_date = datetime.strptime(tgl, '%Y-%m-%d').date()
+        except (TypeError, ValueError):
+            return jsonify({'success': False, 'error': 'Tanggal jadwal tidak valid.'}), 400
+
         if not unit_id:
             return jsonify({'success': False, 'error': 'Unit kerja wajib dipilih.'}), 400
         if shift not in ('1', '2'):
             return jsonify({'success': False, 'error': 'Shift tidak valid.'}), 400
 
-        rows = db.session.execute(
+        bulan = f'{jadwal_date.month:02d}'
+        tahun = str(jadwal_date.year)
+        hari = jadwal_date.day
+
+        # Hanya membaca roster aktif pada periode bulan/tahun yang dipilih.
+        team_rows = db.session.execute(
             db.text("""
                 SELECT
-                    l.GUIDLog,
-                    l.NIP,
-                    p.Nama AS NamaPegawai,
-                    l.Fungsional,
-                    l.Shift,
-                    l.ActivityDate,
-                    l.IDUnitKerja,
-                    u.UnitKerjaName,
-                    CASE
-                        WHEN UPPER(TRIM(COALESCE(l.Fungsional, ''))) IN ('KGR', 'KAGAHAR')
-                          OR UPPER(TRIM(COALESCE(l.Fungsional, ''))) LIKE '%KAGAHAR%'
-                        THEN 1
-                        WHEN UPPER(TRIM(COALESCE(l.Fungsional, ''))) IN ('PW', 'PERWIRA')
-                          OR UPPER(TRIM(COALESCE(l.Fungsional, ''))) LIKE '%PERWIRA%'
-                        THEN 1
-                        WHEN UPPER(TRIM(COALESCE(l.Fungsional, ''))) IN ('KOM', 'KOMUNIKASI')
-                          OR UPPER(TRIM(COALESCE(l.Fungsional, ''))) LIKE '%KOMUNIKASI%'
-                        THEN 2
-                        WHEN UPPER(TRIM(COALESCE(l.Fungsional, ''))) IN ('RSC', 'RESCUER')
-                          OR UPPER(TRIM(COALESCE(l.Fungsional, ''))) LIKE '%RESCUER%'
-                        THEN 3
-                        WHEN UPPER(TRIM(COALESCE(l.Fungsional, ''))) = 'ABK'
-                          OR UPPER(TRIM(COALESCE(l.Fungsional, ''))) LIKE '%ANAK BUAH KAPAL%'
-                        THEN 2
-                        ELSE 99
-                    END AS UrutanJabatan,
-                    CASE
-                        WHEN UPPER(COALESCE(u.UnitKerjaName, '')) LIKE 'KN %'
-                          OR UPPER(COALESCE(u.UnitKerjaName, '')) LIKE '%KAPAL%'
-                          OR UPPER(COALESCE(u.UnitKerjaName, '')) LIKE '%KN SAR%'
-                        THEN 1 ELSE 0
-                    END AS UnitKapal
-                FROM LOG_ACTIVITIY l
-                LEFT JOIN PEGAWAI p ON p.NIP = l.NIP
-                LEFT JOIN MF_UNIT_KERJA u ON u.IDUnitKerja = l.IDUnitKerja
-                WHERE l.Activity = 'Piket Siaga'
-                  AND DATE(l.ActivityDate) = :tgl
-                  AND l.IDUnitKerja = :unit_id
-                  AND CAST(l.Shift AS CHAR) = :shift
-                  AND NOT (
-                      COALESCE(l.Pengganti, 0) = 0
-                      AND NULLIF(TRIM(COALESCE(l.NIPPengganti, '')), '') IS NOT NULL
-                      AND TRIM(l.NIPPengganti) <> '-'
-                  )
-                ORDER BY
-                    UnitKapal ASC,
-                    CASE
-                        WHEN UPPER(COALESCE(u.UnitKerjaName, '')) LIKE 'KN %'
-                          OR UPPER(COALESCE(u.UnitKerjaName, '')) LIKE '%KAPAL%'
-                          OR UPPER(COALESCE(u.UnitKerjaName, '')) LIKE '%KN SAR%'
-                        THEN
-                            CASE
-                                WHEN UPPER(TRIM(COALESCE(l.Fungsional, ''))) IN ('PW', 'PERWIRA')
-                                  OR UPPER(TRIM(COALESCE(l.Fungsional, ''))) LIKE '%PERWIRA%' THEN 1
-                                WHEN UPPER(TRIM(COALESCE(l.Fungsional, ''))) = 'ABK'
-                                  OR UPPER(TRIM(COALESCE(l.Fungsional, ''))) LIKE '%ANAK BUAH KAPAL%' THEN 2
-                                ELSE 99
-                            END
-                        ELSE
-                            CASE
-                                WHEN UPPER(TRIM(COALESCE(l.Fungsional, ''))) IN ('KGR', 'KAGAHAR')
-                                  OR UPPER(TRIM(COALESCE(l.Fungsional, ''))) LIKE '%KAGAHAR%' THEN 1
-                                WHEN UPPER(TRIM(COALESCE(l.Fungsional, ''))) IN ('KOM', 'KOMUNIKASI')
-                                  OR UPPER(TRIM(COALESCE(l.Fungsional, ''))) LIKE '%KOMUNIKASI%' THEN 2
-                                WHEN UPPER(TRIM(COALESCE(l.Fungsional, ''))) IN ('RSC', 'RESCUER')
-                                  OR UPPER(TRIM(COALESCE(l.Fungsional, ''))) LIKE '%RESCUER%' THEN 3
-                                ELSE 99
-                            END
-                    END,
-                    p.Nama ASC
+                    t.GUIDTim,
+                    t.NoUrutTim,
+                    t.FungsionalTIM,
+                    t.Shift
+                FROM MF_TIM_SIAGA t
+                WHERE t.BulanPeriode = :bulan
+                  AND t.TahunPeriode = :tahun
+                  AND t.IDUnitKerja = :unit_id
+                  AND CAST(t.Shift AS CHAR) = :shift
+                  AND t.IsAktif = 'Y'
+                ORDER BY t.FungsionalTIM, t.NoUrutTim, t.GUIDTim
             """),
-            {'tgl': tgl, 'unit_id': unit_id, 'shift': shift}
+            {
+                'bulan': bulan,
+                'tahun': tahun,
+                'unit_id': unit_id,
+                'shift': shift,
+            }
         ).mappings().all()
 
-        data = [{
-            'guid_log': row['GUIDLog'],
-            'nip': row['NIP'],
-            'nama_pegawai': row['NamaPegawai'],
-            'fungsional': row['Fungsional'],
-            'shift': row['Shift'],
-            'unit_name': row['UnitKerjaName'],
-        } for row in rows]
+        # Urutan jabatan resmi selalu mengikuti master aktif.
+        role_rows = (
+            MfJabatanSiaga.query
+            .filter(MfJabatanSiaga.IS_AKTIF == 'Y')
+            .order_by(MfJabatanSiaga.NO_URUT.asc())
+            .all()
+        )
+        role_order = {
+            str(row.NAMA_JABATAN or '').strip().casefold(): int(row.NO_URUT or 9999)
+            for row in role_rows
+        }
 
-        return jsonify({'success': True, 'data': data, 'count': len(data)})
+        unit_row = db.session.execute(
+            db.text("""
+                SELECT UnitKerjaName
+                FROM MF_UNIT_KERJA
+                WHERE IDUnitKerja = :unit_id
+                LIMIT 1
+            """),
+            {'unit_id': unit_id}
+        ).mappings().first()
+        unit_name = str(unit_row['UnitKerjaName'] or '') if unit_row else ''
+        unit_is_ship = (
+            unit_name.upper().startswith('KN ')
+            or 'KAPAL' in unit_name.upper()
+            or 'KN SAR' in unit_name.upper()
+        )
+
+        # Tentukan nomor tim aktif per jabatan:
+        # 3 tim bernomor 1, 2, 3 -> tim 1 aktif tanggal 1, 4, 7...,
+        # tim 2 tanggal 2, 5, 8..., tim 3 tanggal 3, 6, 9...
+        teams_by_role = {}
+        for row in team_rows:
+            role_name = str(row['FungsionalTIM'] or '').strip()
+            if not role_name or row['NoUrutTim'] is None:
+                continue
+            teams_by_role.setdefault(role_name.casefold(), []).append(row)
+
+        selected_teams = []
+        for role_key, role_teams in teams_by_role.items():
+            # Tim dengan nomor yang sama untuk jabatan/periode/unit/shift
+            # dianggap satu slot rotasi; data anggota dibaca dari GUIDTim tim aktif.
+            unique_numbers = sorted({
+                int(team['NoUrutTim']) for team in role_teams
+                if str(team['NoUrutTim']).strip().isdigit()
+            })
+            if not unique_numbers:
+                continue
+            active_number = ((hari - 1) % len(unique_numbers)) + 1
+            if active_number not in unique_numbers:
+                continue
+            selected_teams.extend(
+                team for team in role_teams
+                if int(team['NoUrutTim']) == active_number
+            )
+
+        # Query anggota hanya untuk tim yang jatuh pada tanggal ini.
+        data = []
+        for team in selected_teams:
+            member_rows = db.session.execute(
+                db.text("""
+                    SELECT
+                        a.NIP,
+                        p.Nama AS NamaPegawai,
+                        a.Fungsional,
+                        a.Nourut
+                    FROM MF_TIM_SIAGA_ANGGOTA a
+                    LEFT JOIN PEGAWAI p ON p.NIP = a.NIP
+                    WHERE a.GUIDTim = :guid_tim
+                      AND a.BulanPeriode = :bulan
+                      AND a.TahunPeriode = :tahun
+                      AND a.IDUnitKerja = :unit_id
+                      AND CAST(a.Shift AS CHAR) = :shift
+                      AND a.IsAktif = 'Y'
+                    ORDER BY a.Nourut ASC, p.Nama ASC
+                """),
+                {
+                    'guid_tim': team['GUIDTim'],
+                    'bulan': bulan,
+                    'tahun': tahun,
+                    'unit_id': unit_id,
+                    'shift': shift,
+                }
+            ).mappings().all()
+
+            for member in member_rows:
+                name = str(member['NamaPegawai'] or '').strip()
+                if not name:
+                    continue
+                role_name = str(team['FungsionalTIM'] or member['Fungsional'] or '').strip()
+                data.append({
+                    'guid_tim': str(team['GUIDTim']),
+                    'no_urut_tim': int(team['NoUrutTim']),
+                    'nip': str(member['NIP'] or '').strip(),
+                    'nama_pegawai': name,
+                    'fungsional': role_name,
+                    'shift': shift,
+                    'unit_name': unit_name,
+                    'urutan_jabatan': role_order.get(role_name.casefold(), 9999),
+                    'urutan_anggota': int(member['Nourut'] or 9999),
+                })
+
+        # Kapal: Perwira lalu ABK. Unit reguler: Kagahar, Komunikasi, Rescuer.
+        def preview_role_priority(item):
+            key = item['fungsional'].strip().upper()
+            if unit_is_ship:
+                if key in ('PW', 'PERWIRA') or 'PERWIRA' in key:
+                    return 1
+                if key == 'ABK' or 'ANAK BUAH KAPAL' in key:
+                    return 2
+                return 99
+            if key in ('KGR', 'KAGAHAR') or 'KAGAHAR' in key:
+                return 1
+            if key in ('KOM', 'KOMUNIKASI') or 'KOMUNIKASI' in key:
+                return 2
+            if key in ('RSC', 'RESCUER') or 'RESCUER' in key:
+                return 3
+            return 99
+
+        data.sort(key=lambda item: (
+            preview_role_priority(item),
+            item['urutan_jabatan'],
+            item['urutan_anggota'],
+            item['nama_pegawai'].casefold()
+        ))
+
+        return jsonify({
+            'success': True,
+            'data': data,
+            'count': len(data),
+            'tanggal': tgl,
+            'bulan_periode': bulan,
+            'tahun_periode': tahun,
+            'unit_name': unit_name,
+            'shift': shift,
+        })
     except Exception:
-        current_app.logger.exception('Gagal memuat preview jadwal siaga dari LOG_ACTIVITIY')
-        return jsonify({'success': False, 'error': 'Gagal memuat jadwal operasional. Periksa log server.'}), 500
-
+        current_app.logger.exception('Gagal memuat preview jadwal siaga dari roster MF_TIM_SIAGA')
+        return jsonify({
+            'success': False,
+            'error': 'Gagal memuat preview roster siaga. Periksa log server.'
+        }), 500
 
 def api_siaga_view_jadwal_edit():
     """
