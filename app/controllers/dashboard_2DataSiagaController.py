@@ -3163,7 +3163,12 @@ def api_siaga_view_jadwal_get():
             })
             if not unique_numbers:
                 continue
-            active_number = ((hari - 1) % len(unique_numbers)) + 1
+            # NoUrutTim adalah slot rotasi (1, 2, 3, ...), bukan
+            # urutan anggota. Gunakan nomor tim terbesar sebagai panjang
+            # siklus agar tim bernomor 2 tetap jatuh pada tanggal 2, 4, 6...
+            # meskipun nomor tim 1 sedang tidak aktif/tersedia.
+            max_team_number = max(unique_numbers)
+            active_number = ((hari - 1) % max_team_number) + 1
             if active_number not in unique_numbers:
                 continue
             selected_teams.extend(
