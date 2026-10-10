@@ -152,26 +152,23 @@
     const desired=isKapalUnit()?["PERWIRA","ABK"]:["KAGAHAR","KOM","RESCUER"];
     return desired.map(key=>activeRoles.find(r=>r.name.toUpperCase().includes(key))).filter(Boolean);
   }
-  async function loadRoleRows(role){
-    const params=new URLSearchParams({bulan:bulanEl.value,tahun:tahunEl.value,unit_kerja_id:unitEl.value,fungsional:role.name});
+  async function loadRoleRows(){
+    const params=new URLSearchParams({
+      tgl: String(tahunEl.value)+"-"+String(bulanEl.value).padStart(2,"0")+"-"+String(activeDay).padStart(2,"0"),
+      unit_kerja_id:unitEl.value,
+      shift:shiftEl.value
+    });
     const data=await getJson("{{ url_for('main.api_siaga_view_jadwal_get') }}?"+params.toString());
     return data.data||[];
   }
-  function teamForDay(rows,day,shift){
-    const rosterMap=new Map();
-    for(const row of rows){
-      if(String(row.shift)!==String(shift))continue;
-      const teamNo=Number(row.no_urut);
-      if(!Number.isInteger(teamNo)||teamNo<1)continue;
-      if(!rosterMap.has(teamNo))rosterMap.set(teamNo,[]);
-      if(row.nama_pegawai)rosterMap.get(teamNo).push({name:row.nama_pegawai,order:Number(row.nourut)||999,nip:row.nip});
-    }
-    const teams=[...rosterMap.keys()].sort((a,b)=>a-b);
-    if(!teams.length)return [];
-    const count=teams.length;
-    // Tim bernomor N bertugas pada tanggal N, N+jumlahTim, dan seterusnya.
-    const teamNo=((day-1)%count)+1;
-    return (rosterMap.get(teamNo)||[]).sort((a,b)=>a.order-b.order);
+  function roleLabel(value){
+    const key=String(value||"").trim().toUpperCase();
+    if(["KGR","KAGAHAR"].includes(key)||key.includes("KAGAHAR"))return "KAGAHAR";
+    if(["PW","PERWIRA"].includes(key)||key.includes("PERWIRA"))return "PERWIRA";
+    if(["KOM","KOMUNIKASI"].includes(key)||key.includes("KOMUNIKASI"))return "KOM";
+    if(["RSC","RESCUER"].includes(key)||key.includes("RESCUER"))return "RESCUER";
+    if(key==="ABK"||key.includes("ANAK BUAH KAPAL"))return "ABK";
+    return String(value||"Lainnya");
   }
   function updateNav(){ $("btnPrev").disabled=activeDay<=1; $("btnNext").disabled=activeDay>=monthDays(); }
   async function renderDay(){
@@ -184,39 +181,22 @@
     resultBody.innerHTML="";emptyState.classList.add("d-none");
     viewInfo.textContent="Memuat jadwal tanggal "+activeDay+"…";
     try{
-      const roles=roleSet();
-      if(!roles.length)throw new Error("Jabatan aktif belum tersedia pada Master Jabatan Siaga.");
-      const all=[];
-      const roleResults=[];
-      for(const role of roles){
-        const rows=await loadRoleRows(role);
-        const persons=teamForDay(rows,activeDay,shiftEl.value);
-        roleResults.push({role,persons});
-        for(const person of persons)all.push({name:person.name,role:role.name,order:person.order});
-      }
+      const rows=await loadRoleRows();
+      const all=rows.map(row=>({
+        name:row.nama_pegawai,
+        role:roleLabel(row.fungsional),
+        nip:row.nip
+      })).filter(person=>person.name);
       if(!all.length){
         emptyState.classList.remove("d-none");
       } else {
-        let displayNo=0;
-        for(const item of roleResults){
-          // Pertahankan urutan jabatan siaga. Jabatan yang belum memiliki
-          // anggota pada tanggal terpilih tetap terlihat sebagai indikator,
-          // agar operator tahu roster jabatan tersebut belum terisi.
-          if(!item.persons.length){
-            const tr=document.createElement("tr");
-            tr.innerHTML='<td class="vs-no">—</td><td><span class="vs-status">Belum ada personel pada roster tanggal ini</span></td><td><span class="vs-role"><span class="vs-role-dot"></span>'+escapeHtml(item.role.name)+'</span></td>';
-            resultBody.appendChild(tr);
-            continue;
-          }
-          for(const person of item.persons){
-            displayNo++;
-            const tr=document.createElement("tr");
-            tr.innerHTML='<td class="vs-no">'+displayNo+'</td><td><span class="vs-person">'+escapeHtml(person.name)+'</span></td><td><span class="vs-role"><span class="vs-role-dot"></span>'+escapeHtml(item.role.name)+'</span></td>';
-            resultBody.appendChild(tr);
-          }
-        }
+        all.forEach((person,index)=>{
+          const tr=document.createElement("tr");
+          tr.innerHTML='<td class="vs-no">'+(index+1)+'</td><td><span class="vs-person">'+escapeHtml(person.name)+'</span></td><td><span class="vs-role"><span class="vs-role-dot"></span>'+escapeHtml(person.role)+'</span></td>';
+          resultBody.appendChild(tr);
+        });
       }
-      resultSummary.textContent=all.length+" petugas ditampilkan · "+roles.length+" jabatan diperiksa";
+      resultSummary.textContent=all.length+" petugas ditampilkan dari jadwal operasional";
       viewInfo.textContent="Jadwal berhasil dimuat. Gunakan tombol tanggal untuk membandingkan roster harian.";
       updateNav();
     }catch(error){viewInfo.textContent=error.message||"Gagal memuat jadwal.";resultSummary.textContent="";console.error("[VIEW-JADWAL]",error);}
