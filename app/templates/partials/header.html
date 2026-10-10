@@ -1,14 +1,14 @@
 <!-- partials/header.html -->
 <header class="nxl-header">
     <div class="header-wrapper d-flex justify-content-between align-items-center px-4">
-        <div class="header-left d-flex align-items-center gap-2">
-            <a href="javascript:void(0);" class="nxl-head-mobile-toggler" id="mobile-collapse">
-                <div class="hamburger hamburger--arrowturn">
-                    <div class="hamburger-box">
-                        <div class="hamburger-inner"></div>
-                    </div>
-                </div>
-            </a>
+        <div class="header-left d-flex align-items-center gap-3">
+            <div class="dashboard2-sidebar-controls" aria-label="Kontrol sidebar">
+                <a href="javascript:void(0);" class="nxl-head-mobile-toggler" id="mobile-collapse" aria-label="Buka atau tutup sidebar" title="Buka atau tutup sidebar">
+                    <div class="hamburger hamburger--arrowturn"><div class="hamburger-box"><div class="hamburger-inner"></div></div></div>
+                </a>
+                <button type="button" id="menu-mini-button" class="dashboard2-sidebar-toggle" aria-label="Minimalkan sidebar" title="Minimalkan sidebar"><i class="feather-menu"></i></button>
+                <button type="button" id="menu-expend-button" class="dashboard2-sidebar-toggle" style="display:none" aria-label="Perlebar sidebar" title="Perlebar sidebar"><i class="feather-menu"></i></button>
+            </div>
             <div class="agenda-topbar-title">
                 <div class="agenda-topbar-kicker">AGENDA INTERNAL</div>
                 <div class="agenda-topbar-page">
