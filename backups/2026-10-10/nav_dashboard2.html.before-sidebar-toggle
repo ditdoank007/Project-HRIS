@@ -1,0 +1,119 @@
+<!-- partials/nav_dashboard2.html -->
+<nav class="nxl-navigation">
+    <div class="navbar-wrapper">
+        <div class="navbar-content">
+            <ul class="nxl-navbar">
+                <div class="custom-nav-header">
+                    <div class="header-container">
+                        <img src="{{ url_for('static', filename='static_dashboard_1/assets/images/logo-full.png') }}"
+                            alt="" width="40" height="auto">
+                        <div class="nxl-navigation-toggle toggle-btn-action">
+                        </div>
+                        <span class="nav-text-label nxl-mtext">SIAGA</span>
+                    </div>
+                    <div class="header-container">
+                        <div class="nxl-navigation-toggle toggle-btn-action">
+                            <div id="menu-mini-button" class="btn-mini-style" style="cursor: pointer;">
+                                <i class="feather-menu"></i>
+                            </div>
+                            <div id="menu-expend-button" class="btn-expand-style" style="display: none;">
+                                <i class="feather-menu"></i>
+                            </div>
+                        </div>
+                        <span class="nav-text-label nxl-mtext">Navigation</span>
+                    </div>
+                    <div class="nav-separator"></div>
+                </div>
+                <li class="nxl-item nxl-caption">
+                    <label>Navigation</label>
+                </li>
+                <li class="nxl-item nxl-hasmenu">
+                    <a href="javascript:void(0);" class="nxl-link">
+                        <span class="nxl-micon"><i class="bi bi-microsoft"></i></span>
+                        <span class="nxl-mtext">Dashboards</span><span class="nxl-arrow"><i
+                                class="feather-chevron-right"></i></span>
+                    </a>
+                    <ul class="nxl-submenu">
+                        <li class="nxl-item">
+                            <a class="nxl-link" href="{{ url_for('main.view_dashboard_tim_siaga') }}">
+                                <span class="nxl-micon"><i class="bi bi-layout-text-window-reverse"></i></span>
+                                <span class="nxl-mtext">Dashboard Siaga</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="nxl-item nxl-hasmenu">
+                    <a href="javascript:void(0);" class="nxl-link">
+                        <span class="nxl-micon"><i class="bi bi-bar-chart-line-fill"></i></span>
+                        <span class="nxl-mtext">Master Data</span><span class="nxl-arrow"><i
+                                class="feather-chevron-right"></i></span>
+                    </a>
+                    <ul class="nxl-submenu">
+                        <li class="nxl-item">
+                            <a class="nxl-link" href="{{ url_for('main.view_master_data_jabatan_siaga') }}">
+                                <span class="nxl-micon"><i class="bi bi-person-badge"></i></span>
+                                <span class="nxl-mtext">Jabatan Siaga</span>
+                            </a>
+                        </li>
+                        <li class="nxl-item">
+                            <a class="nxl-link" href="{{ url_for('main.view_master_data_email_broadcast') }}">
+                                <span class="nxl-micon"><i class="bi bi-envelope"></i></span>
+                                <span class="nxl-mtext">Email Broadcast</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="nxl-item nxl-hasmenu">
+                    <a href="javascript:void(0);" class="nxl-link">
+                        <span class="nxl-micon"><i class="bi bi-file-earmark-bar-graph"></i></span>
+                        <span class="nxl-mtext">Data Siaga</span><span class="nxl-arrow"><i
+                                class="feather-chevron-right"></i></span>
+                    </a>
+                    <ul class="nxl-submenu">
+                        <li class="nxl-item">
+                            <a class="nxl-link" href="{{ url_for('main.view_data_siaga_absensi_kehadiran') }}">
+                                <span class="nxl-micon"><i class="bi bi-layout-text-window-reverse"></i></span>
+                                <span class="nxl-mtext">Absen Hadir Siaga</span></a>
+                        </li>
+                        <li class="nxl-item">
+                            <a class="nxl-link" href="{{ url_for('main.view_data_siaga_jadwal_ulang') }}">
+                                <span class="nxl-micon"><i class="bi bi-journal-text"></i></span>
+                                <span class="nxl-mtext">Ubah Jadwal Siaga</span>
+                            </a>
+                        </li>
+                        <li class="nxl-item">
+                            <a class="nxl-link" href="{{ url_for('main.view_data_siaga_view_jadwal') }}">
+                                <span class="nxl-micon"><i class="bi bi-calendar3"></i></span>
+                                <span class="nxl-mtext">View Jadwal Siaga</span>
+                            </a>
+                        </li>
+                        <li class="nxl-item">
+                            <a class="nxl-link" href="{{ url_for('main.view_data_siaga_cetak_uang_siaga') }}">
+                                <span class="nxl-micon"><i class="bi bi-currency-dollar"></i></span>
+                                <span class="nxl-mtext">Cetak Uang Siaga</span>
+                            </a>
+                        </li>
+                        <li class="nxl-item">
+                            <a class="nxl-link" href="{{ url_for('main.view_data_siaga_membuat_jadwal_piket_siaga') }}">
+                                <span class="nxl-micon"><i class="bi bi-journal-text"></i></span>
+                                <span class="nxl-mtext">Buat Jadwal Siaga</span>
+                            </a>
+                        </li>
+                        <li class="nxl-item">
+                            <a class="nxl-link" href="{{ url_for('main.view_data_siaga_cetak_rekap_siaga') }}">
+                                <span class="nxl-micon"><i class="bi bi-folder"></i></span>
+                                <span class="nxl-mtext">Rekap Hadir Siaga</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="nxl-item nxl-hasmenu">
+                    <a href="{{ url_for('main.index') }}" class="nxl-link">
+                        <span class="nxl-micon"><i class="bi bi-house-fill"></i></span>
+                        <span class="nxl-mtext">Portal</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
