@@ -274,3 +274,64 @@ html.minimenu body.hris-dashboard2 .nxl-container {
     margin-left: 0 !important;
   }
 }
+
+
+/* HRIS Dashboard Siaga — daily view and shared header sidebar controls */
+body.hris-dashboard2 .nxl-header .header-wrapper{justify-content:space-between!important}
+body.hris-dashboard2 .nxl-header .header-left{display:flex!important;min-width:0!important;flex:1 1 auto!important}
+body.hris-dashboard2 .nxl-header .agenda-topbar-title{display:none!important}
+body.hris-dashboard2 .nxl-header #mobile-collapse{display:inline-flex!important;align-items:center;justify-content:center;width:38px;height:38px;border:1px solid #e2e8f0;border-radius:10px;color:#334155!important;background:#fff}
+.dashboard2-sidebar-controls{display:flex;align-items:center;gap:6px}
+.dashboard2-sidebar-toggle{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;color:#334155;cursor:pointer;transition:all .15s ease}
+.dashboard2-sidebar-toggle:hover,#mobile-collapse:hover{background:#fff7f2!important;border-color:#f6c5ad!important;color:#e85f25!important}
+body.hris-dashboard2 .custom-nav-header .header-container:nth-child(2){display:none!important}
+body.hris-dashboard2 .custom-nav-header .header-container:first-child .nxl-navigation-toggle{display:none!important}
+
+.hris-siaga-dashboard{padding:22px 24px 32px!important}
+.hris-siaga-dashboard .hris-siaga-page-header{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:0 0 20px;margin:0 0 20px;border-bottom:1px solid #e8edf3}
+.hris-siaga-dashboard .page-header-title h5{margin:0;color:#172033;font-size:23px;font-weight:800;letter-spacing:-.035em}
+.hris-siaga-dashboard .page-header-title p{margin:6px 0 0;color:#8190a5;font-size:12px}
+.siaga-date-control{display:flex;align-items:center;gap:12px;padding:8px 10px;background:#fff;border:1px solid #e7ebf1;border-radius:14px;box-shadow:0 5px 18px rgba(15,23,42,.04)}
+.siaga-date-arrow{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border:1px solid #e5eaf0;border-radius:10px;background:#fff;color:#475569;font-size:15px;transition:all .15s ease}
+.siaga-date-arrow:hover{background:#fff5ef;border-color:#f4c2a9;color:#e85f25}
+.siaga-date-current{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:210px}
+.siaga-date-caption{font-size:9px;font-weight:800;letter-spacing:.12em;color:#eb6831}
+.siaga-date-current strong{font-size:14px;font-weight:800;color:#172033;text-align:center}
+.siaga-date-current input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.siaga-dashboard-content{display:flex;flex-direction:column;gap:20px}
+.siaga-summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.siaga-summary-card{display:flex;align-items:flex-start;gap:16px;min-height:158px;padding:24px;border:1px solid #e8edf3;border-radius:16px;background:#fff;box-shadow:0 8px 24px rgba(15,23,42,.045)}
+.siaga-summary-icon{display:flex;align-items:center;justify-content:center;flex:0 0 46px;width:46px;height:46px;border-radius:13px;font-size:22px}
+.siaga-summary-card>div:last-child{display:flex;flex-direction:column;align-items:flex-start;min-width:0}
+.siaga-summary-card span{color:#536278;font-size:10px;font-weight:800;letter-spacing:.055em;line-height:1.5}
+.siaga-summary-card strong{margin:7px 0 5px;color:#172033;font-size:31px;line-height:1;font-weight:850;letter-spacing:-.04em}
+.siaga-summary-card p{margin:0;color:#8190a5;font-size:11px;line-height:1.6}
+.siaga-summary-complete{border-top:3px solid #65b878}.siaga-summary-complete .siaga-summary-icon{background:#eaf8ee;color:#2f9950}
+.siaga-summary-partial{border-top:3px solid #eab34d}.siaga-summary-partial .siaga-summary-icon{background:#fff6df;color:#b77b11}
+.siaga-summary-pending{border-top:3px solid #d66d58}.siaga-summary-pending .siaga-summary-icon{background:#fff0ed;color:#c94e3b}
+.siaga-dashboard-table-card{overflow:hidden;background:#fff;border:1px solid #e7ebf1;border-radius:16px;box-shadow:0 8px 24px rgba(15,23,42,.045)}
+.siaga-dashboard-table-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 24px;border-bottom:1px solid #edf1f5}
+.siaga-dashboard-table-heading h6{margin:0;color:#172033;font-size:15px;font-weight:800}
+.siaga-dashboard-table-heading p{margin:5px 0 0;color:#8190a5;font-size:11px}
+.siaga-live-badge{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:9px;background:#f5f7fa;color:#64748b;font-size:10px;font-weight:750;white-space:nowrap}
+.siaga-dashboard-table{min-width:520px;font-size:12px}
+.siaga-dashboard-table thead th{padding:13px 22px;background:#f6f8fb;color:#77859a;border-bottom:1px solid #e7ebf1;font-size:9px;font-weight:850;letter-spacing:.08em}
+.siaga-dashboard-table tbody td{padding:12px 22px;border-bottom:1px solid #edf1f5;background:#fff}
+.siaga-dashboard-table tbody tr:last-child td{border-bottom:0}
+.siaga-dashboard-table tbody tr:hover td{background:#fffaf7}
+.siaga-unit-name{display:flex;align-items:center;gap:10px}
+.siaga-unit-name strong{color:#334155;font-size:12px;font-weight:750}
+.siaga-unit-icon{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:9px;background:#f4f6f9;color:#64748b;font-size:14px}
+.siaga-status-cell{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:142px;padding:8px 10px;border-radius:9px;font-size:10px;font-weight:750}
+.siaga-status-cell i{font-size:13px}
+.siaga-status-cell.complete{background:#eaf8ee;color:#248344}
+.siaga-status-cell.partial{background:#fff5dc;color:#9c6b0b}
+.siaga-status-cell.pending{background:#fff0ed;color:#bc4c39}
+.siaga-status-cell.empty{background:#f3f5f8;color:#8a96a7}
+.siaga-dashboard-empty{padding:28px!important;text-align:center;color:#8190a5;font-size:12px}
+.siaga-dashboard-error{color:#bc4c39}
+.siaga-dashboard-legend{display:flex;flex-wrap:wrap;align-items:center;gap:18px;padding:14px 24px;border-top:1px solid #edf1f5;color:#718096;font-size:10px}
+.siaga-legend-dot{display:inline-block;width:8px;height:8px;margin-right:6px;border-radius:50%}
+.siaga-legend-dot.complete{background:#65b878}.siaga-legend-dot.partial{background:#eab34d}.siaga-legend-dot.pending{background:#d66d58}.siaga-legend-dot.empty{background:#a9b4c2}
+@media(max-width:900px){.hris-siaga-dashboard{padding:18px 16px 26px!important}.siaga-summary-grid{grid-template-columns:1fr;gap:12px}.siaga-summary-card{min-height:0;padding:18px}.hris-siaga-dashboard .hris-siaga-page-header{align-items:flex-start;flex-direction:column}.siaga-date-control{width:100%;justify-content:space-between}.siaga-date-current{flex:1;min-width:0}}
+@media(max-width:560px){.hris-siaga-dashboard{padding:14px 10px 22px!important}.hris-siaga-dashboard .page-header-title h5{font-size:20px}.siaga-summary-card{gap:12px;padding:16px}.siaga-summary-icon{width:40px;height:40px;flex-basis:40px;font-size:19px}.siaga-dashboard-table-heading{align-items:flex-start;padding:16px;flex-direction:column}.siaga-dashboard-legend{gap:10px;padding:12px 16px}.siaga-dashboard-table tbody td{padding:10px 12px}}
