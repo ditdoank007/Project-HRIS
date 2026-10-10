@@ -184,7 +184,7 @@
     dayButton.classList.toggle("active", mode === "day");
     monthButton.classList.toggle("active", mode === "month");
     dateCaption.textContent = mode === "month" ? "BULAN DASHBOARD" : "TANGGAL DASHBOARD";
-    switchView("month");
+    loadDashboard();
   }
   async function loadMonth() {
     const token = ++monthRequestToken;
