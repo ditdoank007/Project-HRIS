@@ -1,0 +1,61 @@
+<!-- partials/header.html -->
+<header class="nxl-header">
+    <div class="header-wrapper d-flex justify-content-between align-items-center px-4">
+        <div class="header-left d-flex align-items-center gap-2">
+            <a href="javascript:void(0);" class="nxl-head-mobile-toggler" id="mobile-collapse">
+                <div class="hamburger hamburger--arrowturn">
+                    <div class="hamburger-box">
+                        <div class="hamburger-inner"></div>
+                    </div>
+                </div>
+            </a>
+            <div class="agenda-topbar-title">
+                <div class="agenda-topbar-kicker">AGENDA INTERNAL</div>
+                <div class="agenda-topbar-page">
+                    {% if request.endpoint == 'main.dashboard4_home' %}Dashboard
+                    {% elif request.endpoint == 'main.view_agenda_rapat' %}Rapat
+                    {% elif request.endpoint == 'main.view_agenda_disposisi' %}Disposisi
+                    {% elif request.endpoint == 'main.view_kesamaptaan' %}Kesamaptaan
+                    {% elif request.endpoint in ['main.view_rekam_medis_pegawai', 'main.view_rekam_medis_non_pegawai'] %}Rekam Medis
+                    {% else %}Dashboard{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- User Profile -->
+        <div class="dropdown">
+            <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle"
+                data-bs-toggle="dropdown">
+                <img src="{{ url_for('main.api_profilku_photo_route') }}"
+                     class="rounded-circle me-2"
+                     width="35" height="35"
+                     style="object-fit:cover;"
+                     alt="Foto profil"
+                     onerror="this.onerror=null;this.src='{{ url_for('static', filename='static_dashboard_1/assets/images/avatar/undefined.png') }}';">
+                <span>{{ session.get('nama', 'Guest') }}</span>
+            </a>
+
+            <div class="dropdown-menu dropdown-menu-end shadow-lg border-0 custom-profile-dropdown">
+                <div class="card-body p-4 text-center">
+                    <div class="avatar-big mb-3">
+                        <i class="bi bi-person-circle text-orange" style="font-size: 50px;"></i>
+                    </div>
+                    <h6 class="fw-bold mb-1 color-primary">{{ session.get('nip', '-') }} - {{ session.get('nama', 'Guest') }}</h6>
+                    <p class="text-muted small mb-0">{{ session.get('jabatan', '-') }}</p>
+
+                    <hr class="my-4">
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="text-start" style="padding-left: 15px;">
+                            <i class="bi bi-display me-2"
+                                style="color: #EB6831; font-size: 1.1rem; padding-left: 30px;"></i>
+                            <div class="small text-muted">{{ request.remote_addr }}</div>
+                        </div>
+                        <button type="button" class="btn btn-orange-figma px-4" id="headerSignOutBtn">Sign Out</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
