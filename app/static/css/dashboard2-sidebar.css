@@ -373,3 +373,7 @@ body.hris-dashboard2 .custom-nav-header .header-container:first-child .nxl-navig
 .siaga-calendar-day.empty .siaga-calendar-day-dots i{background:#cbd5e1}
 @media(max-width:1100px){.hris-siaga-dashboard .hris-siaga-page-header{align-items:flex-start;flex-direction:column}.siaga-dashboard-toolbar{width:100%;justify-content:space-between}.siaga-date-control{flex:1;max-width:430px}.siaga-date-current{flex:1;min-width:130px}}
 @media(max-width:700px){.siaga-dashboard-toolbar{align-items:stretch;flex-direction:column}.siaga-view-switch{width:100%}.siaga-view-switch button{flex:1}.siaga-date-control{width:100%;max-width:none;gap:6px}.siaga-date-current{min-width:0}.siaga-date-current strong{font-size:11px}.siaga-date-arrow,.siaga-date-calendar{width:34px;height:34px;flex:0 0 34px}.siaga-month-heading{align-items:flex-start;flex-direction:column;padding:16px}.siaga-calendar-grid{padding:6px}.siaga-calendar-blank{min-height:64px}.siaga-calendar-day{min-height:64px;padding:6px;gap:5px}.siaga-calendar-day.selected{padding:5px}.siaga-calendar-day-label{font-size:8px}.siaga-calendar-weekday{padding:8px 2px;font-size:9px}}
+
+/* Show the mobile drawer toggle only on narrow screens; desktop uses the compact-sidebar toggle. */
+body.hris-dashboard2 .nxl-header #mobile-collapse{display:none!important}
+@media(max-width:650px){body.hris-dashboard2 .nxl-header #mobile-collapse{display:inline-flex!important}}
