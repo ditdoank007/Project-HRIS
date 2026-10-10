@@ -3,6 +3,12 @@
 {% block title %}- Dashboard Kehadiran Siaga{% endblock %}
 
 {% block content %}
+  <style>
+    .hris-siaga-dashboard .hris-siaga-page-header .page-header-left { padding-left: 1.25rem; }
+    @media (max-width: 767.98px) {
+      .hris-siaga-dashboard .hris-siaga-page-header .page-header-left { padding-left: .5rem; }
+    }
+  </style>
 <div class="nxl-content hris-siaga-dashboard">
   <div class="page-header hris-siaga-page-header">
     <div class="page-header-left">
@@ -13,8 +19,8 @@
     </div>
     <div class="siaga-dashboard-toolbar">
       <div class="siaga-view-switch" role="group" aria-label="Mode tampilan">
-        <button type="button" class="active" id="siagaViewDay"><i class="bi bi-calendar-day"></i> Harian</button>
-        <button type="button" id="siagaViewMonth"><i class="bi bi-calendar-month"></i> Bulanan</button>
+        <button type="button" id="siagaViewDay"><i class="bi bi-calendar-day"></i> Harian</button>
+        <button type="button" class="active" id="siagaViewMonth"><i class="bi bi-calendar-month"></i> Bulanan</button>
       </div>
       <div class="siaga-date-control" aria-label="Pilih tanggal dashboard">
         <button type="button" class="siaga-date-arrow" id="siagaDatePrev" aria-label="Periode sebelumnya" title="Periode sebelumnya"><i class="bi bi-chevron-left"></i></button>
@@ -29,7 +35,7 @@
     </div>
   </div>
 
-  <div class="siaga-dashboard-content" id="siagaDailyView">
+  <div class="siaga-dashboard-content" id="siagaDailyView" hidden>
     <div class="siaga-summary-grid">
       <article class="siaga-summary-card siaga-summary-complete">
         <div class="siaga-summary-icon"><i class="bi bi-check2-circle"></i></div>
@@ -64,7 +70,7 @@
     </section>
   </div>
 
-  <section class="siaga-month-view" id="siagaMonthlyView" hidden>
+  <section class="siaga-month-view" id="siagaMonthlyView">
     <div class="siaga-month-heading">
       <div><h6>Kalender Kehadiran Siaga</h6><p>Pilih salah satu tanggal untuk membuka rincian harian.</p></div>
       <div class="siaga-month-legend"><span class="complete"></span> Komplit <span class="partial"></span> Sebagian <span class="pending"></span> Belum diabsen</div>
@@ -104,7 +110,7 @@
   const displayMonth = value => new Intl.DateTimeFormat("id-ID", {month:"long",year:"numeric"}).format(parseISO(value));
   const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
   let selectedDate = toISO(new Date());
-  let viewMode = "day";
+  let viewMode = "month";
   let monthRequestToken = 0;
 
   function statusFor(rows) {
@@ -178,7 +184,7 @@
     dayButton.classList.toggle("active", mode === "day");
     monthButton.classList.toggle("active", mode === "month");
     dateCaption.textContent = mode === "month" ? "BULAN DASHBOARD" : "TANGGAL DASHBOARD";
-    loadDashboard();
+    switchView("month");
   }
   async function loadMonth() {
     const token = ++monthRequestToken;
