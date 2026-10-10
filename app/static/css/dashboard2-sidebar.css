@@ -335,3 +335,41 @@ body.hris-dashboard2 .custom-nav-header .header-container:first-child .nxl-navig
 .siaga-legend-dot.complete{background:#65b878}.siaga-legend-dot.partial{background:#eab34d}.siaga-legend-dot.pending{background:#d66d58}.siaga-legend-dot.empty{background:#a9b4c2}
 @media(max-width:900px){.hris-siaga-dashboard{padding:18px 16px 26px!important}.siaga-summary-grid{grid-template-columns:1fr;gap:12px}.siaga-summary-card{min-height:0;padding:18px}.hris-siaga-dashboard .hris-siaga-page-header{align-items:flex-start;flex-direction:column}.siaga-date-control{width:100%;justify-content:space-between}.siaga-date-current{flex:1;min-width:0}}
 @media(max-width:560px){.hris-siaga-dashboard{padding:14px 10px 22px!important}.hris-siaga-dashboard .page-header-title h5{font-size:20px}.siaga-summary-card{gap:12px;padding:16px}.siaga-summary-icon{width:40px;height:40px;flex-basis:40px;font-size:19px}.siaga-dashboard-table-heading{align-items:flex-start;padding:16px;flex-direction:column}.siaga-dashboard-legend{gap:10px;padding:12px 16px}.siaga-dashboard-table tbody td{padding:10px 12px}}
+
+
+/* Dashboard Kehadiran Siaga: date picker, day/month switch and modern month grid */
+.hris-siaga-dashboard .hris-siaga-page-header{align-items:center}
+.siaga-dashboard-toolbar{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:wrap}
+.siaga-view-switch{display:flex;align-items:center;gap:4px;padding:4px;border:1px solid #e7ebf1;border-radius:12px;background:#f7f8fa}
+.siaga-view-switch button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:34px;padding:0 12px;border:0;border-radius:9px;background:transparent;color:#64748b;font-size:11px;font-weight:750;white-space:nowrap}
+.siaga-view-switch button.active{background:#fff;color:#e85f25;box-shadow:0 2px 6px rgba(15,23,42,.08)}
+.siaga-date-control{position:relative}
+.siaga-date-current{min-width:190px}
+.siaga-date-calendar{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border:1px solid #e5eaf0;border-radius:10px;background:#fff;color:#475569;font-size:15px;transition:all .15s ease}
+.siaga-date-calendar:hover{background:#fff5ef;border-color:#f4c2a9;color:#e85f25}
+#siagaDashboardDateInput{position:absolute;right:56px;top:100%;width:1px;height:1px;opacity:0;pointer-events:none}
+.siaga-month-view{overflow:hidden;background:#fff;border:1px solid #e7ebf1;border-radius:16px;box-shadow:0 8px 24px rgba(15,23,42,.045)}
+.siaga-month-view[hidden]{display:none!important}
+.siaga-month-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:20px 24px;border-bottom:1px solid #edf1f5}
+.siaga-month-heading h6{margin:0;color:#172033;font-size:15px;font-weight:800}
+.siaga-month-heading p{margin:5px 0 0;color:#8190a5;font-size:11px}
+.siaga-month-legend{display:flex;align-items:center;gap:7px;color:#718096;font-size:10px;white-space:nowrap}
+.siaga-month-legend span{width:8px;height:8px;border-radius:50%;margin-left:5px}
+.siaga-month-legend .complete{background:#65b878}.siaga-month-legend .partial{background:#eab34d}.siaga-month-legend .pending{background:#d66d58}
+.siaga-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:0;padding:14px}
+.siaga-calendar-weekday{padding:11px 8px;text-align:center;color:#7b8798;background:#f6f8fb;border:1px solid #edf1f5;font-size:10px;font-weight:850;letter-spacing:.04em}
+.siaga-calendar-blank{min-height:104px;background:#fafbfd;border:1px solid #edf1f5}
+.siaga-calendar-day{display:flex;flex-direction:column;align-items:flex-start;gap:10px;min-width:0;min-height:104px;padding:12px;border:1px solid #edf1f5;background:#fff;text-align:left;transition:background .15s,border-color .15s}
+.siaga-calendar-day:hover{position:relative;z-index:1;border-color:#f0a17b;background:#fff9f5}
+.siaga-calendar-day.selected{position:relative;z-index:1;border:2px solid #eb6831;background:#fff8f3;padding:11px}
+.siaga-calendar-day.today .siaga-calendar-day-number{display:inline-flex;align-items:center;justify-content:center;width:25px;height:25px;border-radius:8px;background:#eb6831;color:#fff}
+.siaga-calendar-day-number{color:#253249;font-size:14px;font-weight:850}
+.siaga-calendar-day-label{color:#8290a3;font-size:9px;line-height:1.4}
+.siaga-calendar-day-dots{display:flex;gap:4px;margin-top:auto}
+.siaga-calendar-day-dots i{display:block;width:7px;height:7px;border-radius:50%;background:#d5dbe4}
+.siaga-calendar-day.complete .siaga-calendar-day-dots .complete{background:#65b878}
+.siaga-calendar-day.partial .siaga-calendar-day-dots .partial{background:#eab34d}
+.siaga-calendar-day.pending .siaga-calendar-day-dots .pending{background:#d66d58}
+.siaga-calendar-day.empty .siaga-calendar-day-dots i{background:#cbd5e1}
+@media(max-width:1100px){.hris-siaga-dashboard .hris-siaga-page-header{align-items:flex-start;flex-direction:column}.siaga-dashboard-toolbar{width:100%;justify-content:space-between}.siaga-date-control{flex:1;max-width:430px}.siaga-date-current{flex:1;min-width:130px}}
+@media(max-width:700px){.siaga-dashboard-toolbar{align-items:stretch;flex-direction:column}.siaga-view-switch{width:100%}.siaga-view-switch button{flex:1}.siaga-date-control{width:100%;max-width:none;gap:6px}.siaga-date-current{min-width:0}.siaga-date-current strong{font-size:11px}.siaga-date-arrow,.siaga-date-calendar{width:34px;height:34px;flex:0 0 34px}.siaga-month-heading{align-items:flex-start;flex-direction:column;padding:16px}.siaga-calendar-grid{padding:6px}.siaga-calendar-blank{min-height:64px}.siaga-calendar-day{min-height:64px;padding:6px;gap:5px}.siaga-calendar-day.selected{padding:5px}.siaga-calendar-day-label{font-size:8px}.siaga-calendar-weekday{padding:8px 2px;font-size:9px}}
