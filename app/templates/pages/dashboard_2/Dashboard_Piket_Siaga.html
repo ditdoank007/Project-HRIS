@@ -81,6 +81,7 @@
 (function () {
   "use strict";
   const apiUrl = "{{ url_for('main.api_absensi_kehadiran_get') }}";
+  const monthApiUrl = "{{ url_for('main.api_absensi_kehadiran_month_get') }}";
   const unitOrder = {{ siaga_unit_order|tojson }};
   const dateLabel = document.getElementById("siagaDashboardDate");
   const dateInput = document.getElementById("siagaDashboardDateInput");
@@ -188,28 +189,44 @@
     const offset = (first.getDay() + 6) % 7;
     calendarGrid.innerHTML = '<div class="siaga-dashboard-empty">Memuat kalender bulanan...</div>';
     try {
-      const dates = Array.from({length:lastDay}, (_,i) => toISO(new Date(year, month, i + 1, 12)));
-      const results = await Promise.all(dates.map(async date => ({date, rows:await fetchDay(date)})));
+      const response = await fetch(monthApiUrl + "?tahun=" + year + "&bulan=" + (month + 1), {headers:{"Accept":"application/json"}});
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.error || "Gagal memuat kalender bulanan.");
       if (token !== monthRequestToken || viewMode !== "month") return;
-      const weekdayHeaders = ["Sen","Sel","Rab","Kam","Jum","Sab","Min"].map(day => '<div class="siaga-calendar-weekday">' + day + '</div>').join("");
+      const byDate = new Map();
+      (result.data || []).forEach(row => {
+        const date = String(row.activity_date || "");
+        if (!date) return;
+        if (!byDate.has(date)) byDate.set(date, []);
+        byDate.get(date).push(row);
+      });
+      const headers = ["Sen","Sel","Rab","Kam","Jum","Sab","Min"].map(day => '<div class="siaga-calendar-weekday">' + day + '</div>').join("");
       let cells = Array.from({length:offset}, () => '<div class="siaga-calendar-blank"></div>');
-      results.forEach(({date,rows}) => {
-        const units = groupRows(rows);
+      for (let day = 1; day <= lastDay; day++) {
+        const date = toISO(new Date(year, month, day, 12));
+        const units = new Map();
+        (byDate.get(date) || []).forEach(row => {
+          const name = String(row.unit_kerja || "").trim();
+          const shift = String(row.shift || "");
+          if (!name || (shift !== "1" && shift !== "2")) return;
+          if (!units.has(name)) units.set(name, {"1": [], "2": []});
+          units.get(name)[shift].push(row);
+        });
         let total = 0, complete = 0, partial = 0, pending = 0;
         orderedNames(units).forEach(name => {
-          const shifts = units.get(name) || {"1":[],"2":[]};
+          const shifts = units.get(name) || {"1": [], "2": []};
           ["1","2"].forEach(shift => {
             const status = statusFor(shifts[shift]);
-            if (status !== "empty") { total++; if(status==="complete") complete++; else if(status==="partial") partial++; else pending++; }
+            if (status !== "empty") { total++; if (status === "complete") complete++; else if (status === "partial") partial++; else pending++; }
           });
         });
-        const dayNum = Number(date.slice(-2));
         const today = date === toISO(new Date());
         const selected = date === selectedDate;
-        const overall = total === 0 ? "empty" : pending > 0 ? (complete + partial > 0 ? "partial" : "pending") : partial > 0 ? "partial" : "complete";
-        cells.push('<button type="button" class="siaga-calendar-day ' + overall + (today ? ' today' : '') + (selected ? ' selected' : '') + '" data-date="' + date + '" title="' + escapeHtml(displayDate(date)) + '"><span class="siaga-calendar-day-number">' + dayNum + '</span><span class="siaga-calendar-day-label">' + (total ? (complete + partial + pending) + ' unit-shift' : 'Belum ada data') + '</span><span class="siaga-calendar-day-dots"><i class="complete"></i><i class="partial"></i><i class="pending"></i></span></button>');
-      });
-      calendarGrid.innerHTML = weekdayHeaders + cells.join("");
+        const overall = total === 0 ? "empty" : pending > 0 ? ((complete + partial) > 0 ? "partial" : "pending") : partial > 0 ? "partial" : "complete";
+        const summary = total ? (complete + " komplit · " + partial + " sebagian · " + pending + " belum") : "Belum ada data";
+        cells.push('<button type="button" class="siaga-calendar-day ' + overall + (today ? ' today' : '') + (selected ? ' selected' : '') + '" data-date="' + date + '" title="' + escapeHtml(displayDate(date) + " — " + summary) + '" ><span class="siaga-calendar-day-number">' + day + '</span><span class="siaga-calendar-day-label">' + escapeHtml(summary) + '</span><span class="siaga-calendar-day-dots"><i class="complete"></i><i class="partial"></i><i class="pending"></i></span></button>');
+      }
+      calendarGrid.innerHTML = headers + cells.join("");
       calendarGrid.querySelectorAll("[data-date]").forEach(button => button.addEventListener("click", () => { selectedDate = button.dataset.date; switchView("day"); }));
     } catch (error) {
       if (token === monthRequestToken) calendarGrid.innerHTML = '<div class="siaga-dashboard-empty siaga-dashboard-error">' + escapeHtml(error.message || "Gagal memuat kalender bulanan.") + '</div>';
